@@ -3,6 +3,7 @@
 namespace Hibla\Http;
 
 use Hibla\Http\Handlers\HttpHandler;
+use Hibla\Http\Interfaces\CompleteHttpClientInterface;
 use Hibla\Http\Interfaces\CookieJarInterface;
 use Hibla\Http\Interfaces\RequestInterface;
 use Hibla\Http\Interfaces\UriInterface;
@@ -20,7 +21,7 @@ use Hibla\Promise\Interfaces\PromiseInterface;
  * asynchronously. It supports setting headers, body, timeouts, authentication,
  * and retry logic in a clean, readable way.
  */
-class Request extends Message implements RequestInterface
+class Request extends Message implements CompleteHttpClientInterface
 {
     private HttpHandler $handler;
     private ?CookieJarInterface $cookieJar = null;
