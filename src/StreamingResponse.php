@@ -2,7 +2,7 @@
 
 namespace Hibla\Http;
 
-use Hibla\Http\Interfaces\StreamInterface;
+use Psr\Http\Message\StreamInterface;
 
 /**
  * StreamingResponse class for handling HTTP responses with streaming capabilities.

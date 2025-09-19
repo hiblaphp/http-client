@@ -2,8 +2,8 @@
 
 namespace Hibla\Http;
 
-use Hibla\Http\Interfaces\MessageInterface;
-use Hibla\Http\Interfaces\StreamInterface;
+use Psr\Http\Message\MessageInterface;
+use Psr\Http\Message\StreamInterface;
 
 /**
  * An abstract base class providing a common implementation for HTTP messages.

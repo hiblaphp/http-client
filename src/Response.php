@@ -3,8 +3,9 @@
 namespace Hibla\Http;
 
 use Hibla\Http\Interfaces\CookieJarInterface;
-use Hibla\Http\Interfaces\ResponseInterface;
-use Hibla\Http\Interfaces\StreamInterface;
+use Hibla\Http\Interfaces\EnhancedResponseInterface;
+use Psr\Http\Message\StreamInterface;
+use Psr\Http\Message\ResponseInterface;
 
 /**
  * Represents an HTTP response.
@@ -13,7 +14,7 @@ use Hibla\Http\Interfaces\StreamInterface;
  * along with several convenient helper methods for inspecting the response status,
  * headers, and body.
  */
-class Response extends Message implements ResponseInterface
+class Response extends Message implements EnhancedResponseInterface
 {
     /**
      * @var array<int, string> Map of standard HTTP status code/reason phrases.
