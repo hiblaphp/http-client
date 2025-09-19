@@ -11,7 +11,9 @@ use Hibla\Http\SSE\SSEResponse;
 use Hibla\Promise\CancellablePromise;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
+use InvalidArgumentException;
 use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\UploadedFileInterface;
 use Psr\Http\Message\UriInterface;
 
 /**
@@ -421,7 +423,7 @@ class Request extends Message implements CompleteHttpClientInterface
     {
         $jsonContent = json_encode($data);
         if ($jsonContent === false) {
-            throw new \InvalidArgumentException('Failed to encode data as JSON');
+            throw new InvalidArgumentException('Failed to encode data as JSON');
         }
         $this->body($jsonContent);
         $this->contentType('application/json');
@@ -780,6 +782,85 @@ class Request extends Message implements CompleteHttpClientInterface
     public function cacheWith(CacheConfig $config): self
     {
         $this->cacheConfig = $config;
+
+        return $this;
+    }
+
+    /**
+     * Add a file to the multipart request.
+     *
+     * @param string $name The form field name
+     * @param string|UploadedFileInterface|resource $file File path, UploadedFile, or resource
+     * @param string|null $filename Optional filename override
+     * @param string|null $contentType Optional content type override
+     * @return self For fluent method chaining.
+     */
+    public function file(string $name, $file, ?string $filename = null, ?string $contentType = null): self
+    {
+        if (!isset($this->options['multipart'])) {
+            $this->options['multipart'] = [];
+        }
+
+        if ($file instanceof UploadedFileInterface) {
+            $this->options['multipart'][$name] = [
+                'name' => $name,
+                'contents' => $file->getStream(),
+                'filename' => $filename ?? $file->getClientFilename(),
+                'Content-Type' => $contentType ?? $file->getClientMediaType(),
+            ];
+        } elseif (is_string($file) && file_exists($file)) {
+            $this->options['multipart'][$name] = [
+                'name' => $name,
+                'contents' => fopen($file, 'r'),
+                'filename' => $filename ?? basename($file),
+                'Content-Type' => $contentType ?? mime_content_type($file) ?: 'application/octet-stream',
+            ];
+        } elseif (is_resource($file)) {
+            $this->options['multipart'][$name] = [
+                'name' => $name,
+                'contents' => $file,
+                'filename' => $filename ?? 'file',
+                'Content-Type' => $contentType ?? 'application/octet-stream',
+            ];
+        } else {
+            throw new InvalidArgumentException('File must be a file path, UploadedFileInterface, or resource');
+        }
+
+        unset($this->headers['content-type']);
+        if (isset($this->headerNames['content-type'])) {
+            unset($this->headers[$this->headerNames['content-type']]);
+            unset($this->headerNames['content-type']);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Add multiple files to the multipart request.
+     *
+     * @param array<string, mixed> $files Associative array of field names to files
+     * @return self For fluent method chaining.
+     */
+    public function files(array $files): self
+    {
+        foreach ($files as $name => $file) {
+            $this->file($name, $file);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Create a multipart form with both data and files.
+     *
+     * @param array<string, mixed> $data Form data
+     * @param array<string, mixed> $files File data
+     * @return self For fluent method chaining.
+     */
+    public function multipartWithFiles(array $data = [], array $files = []): self
+    {
+        $this->multipart($data);
+        $this->files($files);
 
         return $this;
     }
