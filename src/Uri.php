@@ -2,7 +2,7 @@
 
 namespace Hibla\Http;
 
-use Hibla\Http\Interfaces\UriInterface;
+use Psr\Http\Message\UriInterface;
 
 /**
  * A PSR-7 compliant implementation of a Uniform Resource Identifier (URI).

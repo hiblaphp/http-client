@@ -3,6 +3,7 @@
 namespace Hibla\Http\Interfaces;
 
 use Hibla\Promise\Interfaces\PromiseInterface;
+use Psr\Http\Message\RequestInterface;
 
 /**
  * Fluent HTTP client builder interface.

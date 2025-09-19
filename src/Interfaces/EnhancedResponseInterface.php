@@ -2,6 +2,8 @@
 
 namespace Hibla\Http\Interfaces;
 
+use Psr\Http\Message\ResponseInterface;
+
 /**
  * Enhanced HTTP response interface with convenient helper methods.
  * 

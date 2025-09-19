@@ -5,14 +5,14 @@ namespace Hibla\Http;
 use Hibla\Http\Handlers\HttpHandler;
 use Hibla\Http\Interfaces\CompleteHttpClientInterface;
 use Hibla\Http\Interfaces\CookieJarInterface;
-use Hibla\Http\Interfaces\RequestInterface;
-use Hibla\Http\Interfaces\UriInterface;
 use Hibla\Http\SSE\SSEEvent;
 use Hibla\Http\SSE\SSEReconnectConfig;
 use Hibla\Http\SSE\SSEResponse;
 use Hibla\Promise\CancellablePromise;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
+use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\UriInterface;
 
 /**
  * A fluent, chainable, asynchronous HTTP request builder.
