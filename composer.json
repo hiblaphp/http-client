@@ -1,0 +1,32 @@
+{
+    "name": "hiblaphp/http",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Hibla\\Http\\": "src/"
+        },
+        "files": [
+            "src/Helpers/global_functions.php",
+            "src/Helpers/namespace_functions.php"
+        ]
+    },
+    "authors": [
+        {
+            "name": "Reymart A. Calicdan",
+            "email": "reymart.calicdan@evsu.edu.ph"
+        }
+    ],
+    "require": {
+        "hiblaphp/event-loop": "dev-main",
+        "hiblaphp/promise": "dev-main",
+        "hiblaphp/async": "dev-main",
+        "symfony/cache": "^7.3",
+        "psr/cache": "^3.0",
+        "psr/simple-cache": "^3.0"
+    }
+    ,
+    "require-dev": {
+        "hiblaphp/task": "dev-main"
+    }
+}
