@@ -44,7 +44,6 @@ class Request extends Message implements CompleteHttpClientInterface
     private ?CacheConfig $cacheConfig = null;
     /** @var callable[] Callbacks to intercept the request before it is sent. */
     private array $requestInterceptors = [];
-
     /** @var callable[] Callbacks to intercept the response after it is received. */
     private array $responseInterceptors = [];
     private ?ProxyConfig $proxyConfig = null;
@@ -96,7 +95,6 @@ class Request extends Message implements CompleteHttpClientInterface
     {
         $new = clone $this;
         $new->requestInterceptors[] = $callback;
-
         return $new;
     }
 
@@ -112,7 +110,6 @@ class Request extends Message implements CompleteHttpClientInterface
     {
         $new = clone $this;
         $new->responseInterceptors[] = $callback;
-
         return $new;
     }
 
@@ -196,29 +193,29 @@ class Request extends Message implements CompleteHttpClientInterface
         $new->uri = $uri;
 
         if (! $preserveHost || ! isset($this->headerNames['host'])) {
-            $new->updateHostFromUri();
+            $new = $new->updateHostFromUri();
         }
 
         return $new;
     }
 
     /**
-     * Set multiple headers at once.
+     * Set multiple headers at once using immutable PSR-7 methods.
      *
      * @param  array<string, string>  $headers  An associative array of header names to values.
      * @return self For fluent method chaining.
      */
     public function headers(array $headers): self
     {
+        $new = $this;
         foreach ($headers as $name => $value) {
-            $this->header($name, $value);
+            $new = $new->withHeader($name, $value);
         }
-
-        return $this;
+        return $new;
     }
 
     /**
-     * Set a single header.
+     * Set a single header using immutable PSR-7 method.
      *
      * @param  string  $name  The header name.
      * @param  string  $value  The header value.
@@ -226,17 +223,7 @@ class Request extends Message implements CompleteHttpClientInterface
      */
     public function header(string $name, string $value): self
     {
-        $normalized = strtolower($name);
-
-        if (isset($this->headerNames[$normalized])) {
-            $originalName = $this->headerNames[$normalized];
-            $this->headers[$originalName] = [$value];
-        } else {
-            $this->headerNames[$normalized] = $name;
-            $this->headers[$name] = [$value];
-        }
-
-        return $this;
+        return $this->withHeader($name, $value);
     }
 
     /**
@@ -247,7 +234,7 @@ class Request extends Message implements CompleteHttpClientInterface
      */
     public function contentType(string $type): self
     {
-        return $this->header('Content-Type', $type);
+        return $this->withHeader('Content-Type', $type);
     }
 
     /**
@@ -258,7 +245,7 @@ class Request extends Message implements CompleteHttpClientInterface
      */
     public function accept(string $type): self
     {
-        return $this->header('Accept', $type);
+        return $this->withHeader('Accept', $type);
     }
 
     /**
@@ -269,7 +256,7 @@ class Request extends Message implements CompleteHttpClientInterface
      */
     public function bearerToken(string $token): self
     {
-        return $this->header('Authorization', "Bearer {$token}");
+        return $this->withHeader('Authorization', "Bearer {$token}");
     }
 
     /**
@@ -281,9 +268,9 @@ class Request extends Message implements CompleteHttpClientInterface
      */
     public function basicAuth(string $username, string $password): self
     {
-        $this->auth = ['basic', $username, $password];
-
-        return $this;
+        $new = clone $this;
+        $new->auth = ['basic', $username, $password];
+        return $new;
     }
 
     /**
@@ -294,9 +281,9 @@ class Request extends Message implements CompleteHttpClientInterface
      */
     public function timeout(int $seconds): self
     {
-        $this->timeout = $seconds;
-
-        return $this;
+        $new = clone $this;
+        $new->timeout = $seconds;
+        return $new;
     }
 
     /**
@@ -307,9 +294,9 @@ class Request extends Message implements CompleteHttpClientInterface
      */
     public function connectTimeout(int $seconds): self
     {
-        $this->connectTimeout = $seconds;
-
-        return $this;
+        $new = clone $this;
+        $new->connectTimeout = $seconds;
+        return $new;
     }
 
     /**
@@ -321,10 +308,10 @@ class Request extends Message implements CompleteHttpClientInterface
      */
     public function redirects(bool $follow = true, int $max = 5): self
     {
-        $this->followRedirects = $follow;
-        $this->maxRedirects = $max;
-
-        return $this;
+        $new = clone $this;
+        $new->followRedirects = $follow;
+        $new->maxRedirects = $max;
+        return $new;
     }
 
     /**
@@ -337,13 +324,13 @@ class Request extends Message implements CompleteHttpClientInterface
      */
     public function retry(int $maxRetries = 3, float $baseDelay = 1.0, float $backoffMultiplier = 2.0): self
     {
-        $this->retryConfig = new RetryConfig(
+        $new = clone $this;
+        $new->retryConfig = new RetryConfig(
             maxRetries: $maxRetries,
             baseDelay: $baseDelay,
             backoffMultiplier: $backoffMultiplier
         );
-
-        return $this;
+        return $new;
     }
 
     /**
@@ -354,9 +341,9 @@ class Request extends Message implements CompleteHttpClientInterface
      */
     public function retryWith(RetryConfig $config): self
     {
-        $this->retryConfig = $config;
-
-        return $this;
+        $new = clone $this;
+        $new->retryConfig = $config;
+        return $new;
     }
 
     /**
@@ -366,9 +353,9 @@ class Request extends Message implements CompleteHttpClientInterface
      */
     public function noRetry(): self
     {
-        $this->retryConfig = null;
-
-        return $this;
+        $new = clone $this;
+        $new->retryConfig = null;
+        return $new;
     }
 
     /**
@@ -379,9 +366,9 @@ class Request extends Message implements CompleteHttpClientInterface
      */
     public function verifySSL(bool $verify = true): self
     {
-        $this->verifySSL = $verify;
-
-        return $this;
+        $new = clone $this;
+        $new->verifySSL = $verify;
+        return $new;
     }
 
     /**
@@ -392,9 +379,9 @@ class Request extends Message implements CompleteHttpClientInterface
      */
     public function userAgent(string $userAgent): self
     {
-        $this->userAgent = $userAgent;
-
-        return $this;
+        $new = clone $this;
+        $new->userAgent = $userAgent;
+        return $new;
     }
 
     /**
@@ -405,11 +392,10 @@ class Request extends Message implements CompleteHttpClientInterface
      */
     public function body(string $content): self
     {
-        $this->body = $this->createTempStream();
-        $this->body->write($content);
-        $this->body->rewind();
-
-        return $this;
+        $stream = $this->createTempStream();
+        $stream->write($content);
+        $stream->rewind();
+        return $this->withBody($stream);
     }
 
     /**
@@ -425,10 +411,7 @@ class Request extends Message implements CompleteHttpClientInterface
         if ($jsonContent === false) {
             throw new InvalidArgumentException('Failed to encode data as JSON');
         }
-        $this->body($jsonContent);
-        $this->contentType('application/json');
-
-        return $this;
+        return $this->body($jsonContent)->contentType('application/json');
     }
 
     /**
@@ -440,10 +423,8 @@ class Request extends Message implements CompleteHttpClientInterface
      */
     public function form(array $data): self
     {
-        $this->body(http_build_query($data));
-        $this->contentType('application/x-www-form-urlencoded');
-
-        return $this;
+        return $this->body(http_build_query($data))
+            ->contentType('application/x-www-form-urlencoded');
     }
 
     /**
@@ -454,11 +435,12 @@ class Request extends Message implements CompleteHttpClientInterface
      */
     public function multipart(array $data): self
     {
-        $this->body = $this->createTempStream();
-        $this->options['multipart'] = $data;
-        unset($this->headers['content-type']);
-
-        return $this;
+        $new = clone $this;
+        $new->body = $this->createTempStream();
+        $new->options['multipart'] = $data;
+        // Remove Content-Type header - let cURL set it with boundary
+        $new = $new->withoutHeader('Content-Type');
+        return $new;
     }
 
     /**
@@ -466,15 +448,16 @@ class Request extends Message implements CompleteHttpClientInterface
      *
      * @param string $dataFormat The data format to return:
      *                          - 'json': Parse event data as JSON (fallback to raw string)
-     *                          - 'array': Convert entire event to array using toArray()  
+     *                          - 'array': Convert entire event to array using toArray()
      *                          - 'raw': Return raw event data string
      *                          - 'event': Return full SSEEvent object (default)
      * @return self For fluent method chaining
      */
     public function sseDataFormat(string $format = 'array'): self
     {
-        $this->sseDataFormat = $format;
-        return $this;
+        $new = clone $this;
+        $new->sseDataFormat = $format;
+        return $new;
     }
 
     /**
@@ -509,8 +492,608 @@ class Request extends Message implements CompleteHttpClientInterface
      */
     public function sseMap(callable $mapper): self
     {
-        $this->sseMapper = $mapper;
-        return $this;
+        $new = clone $this;
+        $new->sseMapper = $mapper;
+        return $new;
+    }
+
+    /**
+     * Configure SSE reconnection behavior.
+     *
+     * @param  bool  $enabled  Whether reconnection is enabled
+     * @param  int  $maxAttempts  Maximum reconnection attempts
+     * @param  float  $initialDelay  Initial delay before first reconnection
+     * @param  float  $maxDelay  Maximum delay between attempts
+     * @param  float  $backoffMultiplier  Exponential backoff multiplier
+     * @param  bool  $jitter  Add random jitter to delays
+     * @param  array  $retryableErrors  List of retryable error messages
+     * @param  callable|null  $onReconnect  Callback called before each reconnection attempt
+     * @param  callable|null  $shouldReconnect  Custom logic to determine if reconnection should occur
+     */
+    public function sseReconnect(
+        bool $enabled = true,
+        int $maxAttempts = 10,
+        float $initialDelay = 1.0,
+        float $maxDelay = 30.0,
+        float $backoffMultiplier = 2.0,
+        bool $jitter = true,
+        array $retryableErrors = [
+            'Connection refused',
+            'Connection reset',
+            'Connection timed out',
+            'Could not resolve host',
+            'Resolving timed out',
+            'SSL connection timeout',
+            'Operation timed out',
+            'Network is unreachable',
+        ],
+        ?callable $onReconnect = null,
+        ?callable $shouldReconnect = null
+    ): self {
+        $new = clone $this;
+        $new->sseReconnectConfig = new SSEReconnectConfig(
+            enabled: $enabled,
+            maxAttempts: $maxAttempts,
+            initialDelay: $initialDelay,
+            maxDelay: $maxDelay,
+            backoffMultiplier: $backoffMultiplier,
+            jitter: $jitter,
+            retryableErrors: $retryableErrors,
+            onReconnect: $onReconnect,
+            shouldReconnect: $shouldReconnect
+        );
+        return $new;
+    }
+
+    /**
+     * Configure SSE reconnection using a custom configuration object.
+     *
+     * @param  SSEReconnectConfig  $config  The reconnection configuration
+     */
+    public function sseReconnectWith(SSEReconnectConfig $config): self
+    {
+        $new = clone $this;
+        $new->sseReconnectConfig = $config;
+        return $new;
+    }
+
+    /**
+     * Disable SSE reconnection.
+     */
+    public function noSseReconnect(): self
+    {
+        $new = clone $this;
+        $new->sseReconnectConfig = null;
+        return $new;
+    }
+
+    /**
+     * Streams the response body of a GET request.
+     *
+     * @param  string  $url  The URL to stream from.
+     * @param  callable|null  $onChunk  An optional callback for each data chunk. `function(string $chunk): void`
+     * @return CancellablePromiseInterface<StreamingResponse> A promise that resolves with a StreamingResponse.
+     */
+    public function stream(string $url, ?callable $onChunk = null): CancellablePromiseInterface
+    {
+        $options = $this->buildFetchOptions('GET');
+        $options['stream'] = true;
+
+        if ($onChunk) {
+            $options['on_chunk'] = $onChunk;
+        }
+
+        return $this->handler->fetch($url, $options);
+    }
+
+    /**
+     * Downloads a file from a URL to a local destination.
+     *
+     * @param  string  $url  The URL of the file to download.
+     * @param  string  $destination  The local file path to save to.
+     * @return CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>}> A promise that resolves with download metadata.
+     */
+    public function download(string $url, string $destination): CancellablePromiseInterface
+    {
+        $options = $this->buildCurlOptions('GET', $url);
+        $options['retry'] = $this->retryConfig;
+
+        return $this->handler->download($url, $destination, $options);
+    }
+
+    /**
+     * Streams the response body of a POST request.
+     *
+     * @param  string  $url  The target URL.
+     * @param  mixed|null  $body  The request body.
+     * @param  callable|null  $onChunk  An optional callback for each data chunk. `function(string $chunk): void`
+     * @return CancellablePromiseInterface<StreamingResponse> A promise that resolves with a StreamingResponse.
+     */
+    public function streamPost(string $url, $body = null, ?callable $onChunk = null): CancellablePromiseInterface
+    {
+        $new = $this;
+        if ($body !== null) {
+            $new = $new->body($this->convertToString($body));
+        }
+        $options = $new->buildCurlOptions('POST', $url);
+        $options[CURLOPT_HEADER] = false;
+
+        return $this->handler->stream($url, $options, $onChunk);
+    }
+
+    /**
+     * Performs an asynchronous GET request.
+     *
+     * @param  string  $url  The target URL.
+     * @param  array<string, mixed>  $query  Optional query parameters to append to the URL.
+     * @return PromiseInterface<Response> A promise that resolves with a Response object.
+     */
+    public function get(string $url, array $query = []): PromiseInterface
+    {
+        if (count($query) > 0) {
+            $url .= (strpos($url, '?') !== false ? '&' : '?') . http_build_query($query);
+        }
+
+        return $this->send('GET', $url);
+    }
+
+    /**
+     * Performs an asynchronous POST request.
+     *
+     * @param  string  $url  The target URL.
+     * @param  array<string, mixed>  $data  If provided, will be JSON-encoded and set as the request body.
+     * @return PromiseInterface<Response> A promise that resolves with a Response object.
+     */
+    public function post(string $url, array $data = []): PromiseInterface
+    {
+        $new = $this;
+        if (count($data) > 0 && $this->body->getSize() === 0 && ! isset($this->options['multipart'])) {
+            $new = $new->json($data);
+        }
+
+        return $new->send('POST', $url);
+    }
+
+    /**
+     * Performs an asynchronous PUT request.
+     *
+     * @param  string  $url  The target URL.
+     * @param  array<string, mixed>  $data  If provided, will be JSON-encoded and set as the request body.
+     * @return PromiseInterface<Response> A promise that resolves with a Response object.
+     */
+    public function put(string $url, array $data = []): PromiseInterface
+    {
+        $new = $this;
+        if (count($data) > 0 && $this->body->getSize() === 0 && ! isset($this->options['multipart'])) {
+            $new = $new->json($data);
+        }
+
+        return $new->send('PUT', $url);
+    }
+
+    /**
+     * Performs an asynchronous DELETE request.
+     *
+     * @param  string  $url  The target URL.
+     * @return PromiseInterface<Response> A promise that resolves with a Response object.
+     */
+    public function delete(string $url): PromiseInterface
+    {
+        return $this->send('DELETE', $url);
+    }
+
+    /**
+     * Enables caching for this request with a specific Time-To-Live.
+     *
+     * This enables a zero-config, file-based cache for the request.
+     * The underlying handler will automatically manage the cache instance.
+     *
+     * @param  int  $ttlSeconds  The number of seconds the response should be cached.
+     * @param  bool  $respectServerHeaders  If true, the server's `Cache-Control: max-age` header will override the provided TTL.
+     * @return self For fluent method chaining.
+     */
+    public function cache(int $ttlSeconds = 3600, bool $respectServerHeaders = true): self
+    {
+        $new = clone $this;
+        $new->cacheConfig = new CacheConfig($ttlSeconds, $respectServerHeaders);
+        return $new;
+    }
+
+    /**
+     * Enables caching for this request using a custom configuration object.
+     *
+     * This method is for advanced use cases where you need to provide a specific
+     * cache implementation (e.g., Redis, Memcached) or more complex rules.
+     *
+     * @param  CacheConfig  $config  The custom caching configuration object.
+     * @return self For fluent method chaining.
+     */
+    public function cacheWith(CacheConfig $config): self
+    {
+        $new = clone $this;
+        $new->cacheConfig = $config;
+        return $new;
+    }
+
+    /**
+     * Add a file to the multipart request.
+     *
+     * @param string $name The form field name
+     * @param string|UploadedFileInterface|resource $file File path, UploadedFile, or resource
+     * @param string|null $filename Optional filename override
+     * @param string|null $contentType Optional content type override
+     * @return self For fluent method chaining.
+     */
+    public function file(string $name, $file, ?string $filename = null, ?string $contentType = null): self
+    {
+        $new = clone $this;
+        if (!isset($new->options['multipart'])) {
+            $new->options['multipart'] = [];
+        }
+
+        if ($file instanceof UploadedFileInterface) {
+            $new->options['multipart'][$name] = [
+                'name' => $name,
+                'contents' => $file->getStream(),
+                'filename' => $filename ?? $file->getClientFilename(),
+                'Content-Type' => $contentType ?? $file->getClientMediaType(),
+            ];
+        } elseif (is_string($file) && file_exists($file)) {
+            $new->options['multipart'][$name] = [
+                'name' => $name,
+                'contents' => fopen($file, 'r'),
+                'filename' => $filename ?? basename($file),
+                'Content-Type' => $contentType ?? mime_content_type($file) ?: 'application/octet-stream',
+            ];
+        } elseif (is_resource($file)) {
+            $new->options['multipart'][$name] = [
+                'name' => $name,
+                'contents' => $file,
+                'filename' => $filename ?? 'file',
+                'Content-Type' => $contentType ?? 'application/octet-stream',
+            ];
+        } else {
+            throw new InvalidArgumentException('File must be a file path, UploadedFileInterface, or resource');
+        }
+
+        // Remove Content-Type header for multipart
+        $new = $new->withoutHeader('Content-Type');
+        return $new;
+    }
+
+    /**
+     * Add multiple files to the multipart request.
+     *
+     * @param array<string, mixed> $files Associative array of field names to files
+     * @return self For fluent method chaining.
+     */
+    public function files(array $files): self
+    {
+        $new = $this;
+        foreach ($files as $name => $file) {
+            $new = $new->file($name, $file);
+        }
+        return $new;
+    }
+
+    /**
+     * Create a multipart form with both data and files.
+     *
+     * @param array<string, mixed> $data Form data
+     * @param array<string, mixed> $files File data
+     * @return self For fluent method chaining.
+     */
+    public function multipartWithFiles(array $data = [], array $files = []): self
+    {
+        return $this->multipart($data)->files($files);
+    }
+
+    /**
+     * Dispatches the configured request.
+     *
+     * This method builds the final cURL options and sends the request via the
+     * HttpHandler, which will apply caching and/or retry logic as configured.
+     *
+     * @param  string  $method  The HTTP method (GET, POST, etc.).
+     * @param  string  $url  The target URL.
+     * @return PromiseInterface<Response> A promise that resolves with the final Response object.
+     */
+    public function send(string $method, string $url): PromiseInterface
+    {
+        $processedRequest = $this->withMethod($method)->withUri(new Uri($url));
+
+        // Process request interceptors immediately (they should be synchronous)
+        foreach ($this->requestInterceptors as $interceptor) {
+            $processedRequest = $interceptor($processedRequest);
+        }
+
+        // Build options and send request
+        $options = $processedRequest->buildCurlOptions(
+            $processedRequest->getMethod(),
+            (string) $processedRequest->getUri()
+        );
+
+        $httpPromise = $this->handler->sendRequest(
+            (string) $processedRequest->getUri(),
+            $options,
+            $processedRequest->cacheConfig,
+            $processedRequest->retryConfig
+        );
+
+        // If no response interceptors, return the HTTP promise directly
+        if (empty($processedRequest->responseInterceptors)) {
+            return $httpPromise;
+        }
+
+        // Create a new promise to handle response interceptors sequentially
+        $finalPromise = new CancellablePromise(function (callable $resolve, callable $reject) use ($httpPromise, $processedRequest) {
+            $httpPromise->then(
+                function ($response) use ($processedRequest, $resolve, $reject) {
+                    try {
+                        // Process response interceptors sequentially
+                        $this->processResponseInterceptorsSequentially(
+                            $response,
+                            $processedRequest->responseInterceptors,
+                            $resolve,
+                            $reject
+                        );
+                    } catch (\Throwable $e) {
+                        $reject($e);
+                    }
+                },
+                $reject
+            );
+        });
+
+        // Set up cancellation handler
+        $finalPromise->setCancelHandler(function () use ($httpPromise) {
+            if ($httpPromise instanceof CancellablePromiseInterface) {
+                $httpPromise->cancel();
+            }
+        });
+
+        return $finalPromise;
+    }
+
+
+    /**
+     * Add a single cookie to this request (sent as Cookie header).
+     *
+     * @param  string  $name  Cookie name
+     * @param  string  $value  Cookie value
+     * @return self For fluent method chaining.
+     */
+    public function cookie(string $name, string $value): self
+    {
+        $existingCookies = $this->getHeaderLine('Cookie');
+        $newCookie = $name . '=' . urlencode($value);
+
+        if ($existingCookies !== '') {
+            return $this->withHeader('Cookie', $existingCookies . '; ' . $newCookie);
+        } else {
+            return $this->withHeader('Cookie', $newCookie);
+        }
+    }
+
+    /**
+     * Add multiple cookies at once.
+     *
+     * @param  array<string, string>  $cookies  An associative array of cookie names to values.
+     * @return self For fluent method chaining.
+     */
+    public function cookies(array $cookies): self
+    {
+        $new = $this;
+        foreach ($cookies as $name => $value) {
+            $new = $new->cookie($name, $value);
+        }
+        return $new;
+    }
+
+    /**
+     * Enable automatic cookie management with an in-memory cookie jar.
+     * Cookies from responses will be automatically stored and sent in subsequent requests.
+     *
+     * @return self For fluent method chaining.
+     */
+    public function withCookieJar(): self
+    {
+        return $this->useCookieJar(new CookieJar);
+    }
+
+    /**
+     * Enable automatic cookie management with a file-based cookie jar.
+     *
+     * @param  string  $filename  The file path to store cookies.
+     * @param  bool  $includeSessionCookies  Whether to persist session cookies (cookies without expiration).
+     * @return self For fluent method chaining.
+     */
+    public function withFileCookieJar(string $filename, bool $includeSessionCookies = false): self
+    {
+        return $this->useCookieJar(new FileCookieJar($filename, $includeSessionCookies));
+    }
+
+    /**
+     * Use a custom cookie jar for automatic cookie management.
+     *
+     * @param  CookieJarInterface  $cookieJar  The cookie jar to use.
+     * @return self For fluent method chaining.
+     */
+    public function useCookieJar(CookieJarInterface $cookieJar): self
+    {
+        $new = clone $this;
+        $new->cookieJar = $cookieJar;
+        return $new;
+    }
+
+    /**
+     * Convenience: Enable file-based cookie storage including session cookies.
+     * Perfect for testing or when you want to persist all cookies.
+     *
+     * @param  string  $filename  The file path to store cookies.
+     * @return self For fluent method chaining.
+     */
+    public function withAllCookiesSaved(string $filename): self
+    {
+        return $this->withFileCookieJar($filename, true);
+    }
+
+    /**
+     * Clear all cookies from the current cookie jar (if any).
+     *
+     * @return self For fluent method chaining.
+     */
+    public function clearCookies(): self
+    {
+        $new = clone $this;
+        if ($new->cookieJar !== null) {
+            $new->cookieJar->clear();
+        }
+        return $new;
+    }
+
+    /**
+     * Get the current cookie jar instance.
+     *
+     * @return CookieJarInterface|null The current cookie jar or null if none is set.
+     */
+    public function getCookieJar(): ?CookieJarInterface
+    {
+        return $this->cookieJar;
+    }
+
+    /**
+     * Set a cookie with additional attributes.
+     *
+     * @param  string  $name  Cookie name
+     * @param  string  $value  Cookie value
+     * @param  array<string, mixed>  $attributes  Additional cookie attributes (domain, path, expires, etc.)
+     * @return self For fluent method chaining.
+     */
+    public function cookieWithAttributes(string $name, string $value, array $attributes = []): self
+    {
+        $new = clone $this;
+        if ($new->cookieJar === null) {
+            $new->cookieJar = new CookieJar;
+        }
+
+        $cookie = new Cookie(
+            $name,
+            $value,
+            $attributes['expires'] ?? null,
+            $attributes['domain'] ?? null,
+            $attributes['path'] ?? null,
+            $attributes['secure'] ?? false,
+            $attributes['httpOnly'] ?? false,
+            $attributes['maxAge'] ?? null,
+            $attributes['sameSite'] ?? null
+        );
+
+        $new->cookieJar->setCookie($cookie);
+        return $new;
+    }
+
+    /**
+     * Configure HTTP proxy for this request.
+     *
+     * @param  string  $host  The proxy host
+     * @param  int  $port  The proxy port
+     * @param  string|null  $username  Optional proxy username
+     * @param  string|null  $password  Optional proxy password
+     * @return self For fluent method chaining.
+     */
+    public function proxy(string $host, int $port, ?string $username = null, ?string $password = null): self
+    {
+        $new = clone $this;
+        $new->proxyConfig = ProxyConfig::http($host, $port, $username, $password);
+        return $new;
+    }
+
+    /**
+     * Configure SOCKS4 proxy for this request.
+     *
+     * @param  string  $host  The proxy host
+     * @param  int  $port  The proxy port
+     * @param  string|null  $username  Optional proxy username
+     * @return self For fluent method chaining.
+     */
+    public function socks4Proxy(string $host, int $port, ?string $username = null): self
+    {
+        $new = clone $this;
+        $new->proxyConfig = ProxyConfig::socks4($host, $port, $username);
+        return $new;
+    }
+
+    /**
+     * Configure SOCKS5 proxy for this request.
+     *
+     * @param  string  $host  The proxy host
+     * @param  int  $port  The proxy port
+     * @param  string|null  $username  Optional proxy username
+     * @param  string|null  $password  Optional proxy password
+     * @return self For fluent method chaining.
+     */
+    public function socks5Proxy(string $host, int $port, ?string $username = null, ?string $password = null): self
+    {
+        $new = clone $this;
+        $new->proxyConfig = ProxyConfig::socks5($host, $port, $username, $password);
+        return $new;
+    }
+
+    /**
+     * Configure proxy using a ProxyConfig object.
+     *
+     * @param  ProxyConfig  $config  The proxy configuration
+     * @return self For fluent method chaining.
+     */
+    public function proxyWith(ProxyConfig $config): self
+    {
+        $new = clone $this;
+        $new->proxyConfig = $config;
+        return $new;
+    }
+
+    /**
+     * Disable proxy for this request.
+     *
+     * @return self For fluent method chaining.
+     */
+    public function noProxy(): self
+    {
+        $new = clone $this;
+        $new->proxyConfig = null;
+        return $new;
+    }
+
+    /**
+     * Set the HTTP version for negotiation.
+     *
+     * @param  string  $version  The HTTP version ('1.0', '1.1', '2.0', '2', '3.0', '3')
+     * @return self For fluent method chaining.
+     */
+    public function httpVersion(string $version): self
+    {
+        return $this->withProtocolVersion($version);
+    }
+
+    /**
+     * Force HTTP/2 negotiation with fallback to HTTP/1.1.
+     *
+     * @return self For fluent method chaining.
+     */
+    public function http2(): self
+    {
+        return $this->withProtocolVersion('2.0');
+    }
+
+    /**
+     * Force HTTP/3 negotiation with fallback to HTTP/1.1.
+     *
+     * @return self For fluent method chaining.
+     */
+    public function http3(): self
+    {
+        return $this->withProtocolVersion('3.0');
     }
 
     /**
@@ -571,373 +1154,6 @@ class Request extends Message implements CompleteHttpClientInterface
     }
 
     /**
-     * Configure SSE reconnection behavior.
-     *
-     * @param  bool  $enabled  Whether reconnection is enabled
-     * @param  int  $maxAttempts  Maximum reconnection attempts
-     * @param  float  $initialDelay  Initial delay before first reconnection
-     * @param  float  $maxDelay  Maximum delay between attempts
-     * @param  float  $backoffMultiplier  Exponential backoff multiplier
-     * @param  bool  $jitter  Add random jitter to delays
-     * @param  array  $retryableErrors  List of retryable error messages
-     * @param  callable|null  $onReconnect  Callback called before each reconnection attempt
-     * @param  callable|null  $shouldReconnect  Custom logic to determine if reconnection should occur
-     */
-    public function sseReconnect(
-        bool $enabled = true,
-        int $maxAttempts = 10,
-        float $initialDelay = 1.0,
-        float $maxDelay = 30.0,
-        float $backoffMultiplier = 2.0,
-        bool $jitter = true,
-        array $retryableErrors = [
-            'Connection refused',
-            'Connection reset',
-            'Connection timed out',
-            'Could not resolve host',
-            'Resolving timed out',
-            'SSL connection timeout',
-            'Operation timed out',
-            'Network is unreachable',
-        ],
-        ?callable $onReconnect = null,
-        ?callable $shouldReconnect = null
-    ): self {
-        $this->sseReconnectConfig = new SSEReconnectConfig(
-            enabled: $enabled,
-            maxAttempts: $maxAttempts,
-            initialDelay: $initialDelay,
-            maxDelay: $maxDelay,
-            backoffMultiplier: $backoffMultiplier,
-            jitter: $jitter,
-            retryableErrors: $retryableErrors,
-            onReconnect: $onReconnect,
-            shouldReconnect: $shouldReconnect
-        );
-
-        return $this;
-    }
-
-    /**
-     * Configure SSE reconnection using a custom configuration object.
-     *
-     * @param  SSEReconnectConfig  $config  The reconnection configuration
-     */
-    public function sseReconnectWith(SSEReconnectConfig $config): self
-    {
-        $this->sseReconnectConfig = $config;
-
-        return $this;
-    }
-
-    /**
-     * Disable SSE reconnection.
-     */
-    public function noSseReconnect(): self
-    {
-        $this->sseReconnectConfig = null;
-
-        return $this;
-    }
-
-    /**
-     * Streams the response body of a GET request.
-     *
-     * @param  string  $url  The URL to stream from.
-     * @param  callable|null  $onChunk  An optional callback for each data chunk. `function(string $chunk): void`
-     * @return CancellablePromiseInterface<StreamingResponse> A promise that resolves with a StreamingResponse.
-     */
-    public function stream(string $url, ?callable $onChunk = null): CancellablePromiseInterface
-    {
-        $options = $this->buildFetchOptions('GET');
-        $options['stream'] = true;
-
-        if ($onChunk) {
-            $options['on_chunk'] = $onChunk;
-        }
-
-        return $this->handler->fetch($url, $options);
-    }
-
-    /**
-     * Downloads a file from a URL to a local destination.
-     *
-     * @param  string  $url  The URL of the file to download.
-     * @param  string  $destination  The local file path to save to.
-     * @return CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>}> A promise that resolves with download metadata.
-     */
-    public function download(string $url, string $destination): CancellablePromiseInterface
-    {
-        $options = $this->buildCurlOptions('GET', $url);
-
-        $options['retry'] = $this->retryConfig;
-
-        return $this->handler->download($url, $destination, $options);
-    }
-
-    /**
-     * Streams the response body of a POST request.
-     *
-     * @param  string  $url  The target URL.
-     * @param  mixed|null  $body  The request body.
-     * @param  callable|null  $onChunk  An optional callback for each data chunk. `function(string $chunk): void`
-     * @return CancellablePromiseInterface<StreamingResponse> A promise that resolves with a StreamingResponse.
-     */
-    public function streamPost(string $url, $body = null, ?callable $onChunk = null): CancellablePromiseInterface
-    {
-        if ($body !== null) {
-            $this->body($this->convertToString($body));
-        }
-        $options = $this->buildCurlOptions('POST', $url);
-        $options[CURLOPT_HEADER] = false;
-
-        return $this->handler->stream($url, $options, $onChunk);
-    }
-
-    /**
-     * Performs an asynchronous GET request.
-     *
-     * @param  string  $url  The target URL.
-     * @param  array<string, mixed>  $query  Optional query parameters to append to the URL.
-     * @return PromiseInterface<Response> A promise that resolves with a Response object.
-     */
-    public function get(string $url, array $query = []): PromiseInterface
-    {
-        if (count($query) > 0) {
-            $url .= (strpos($url, '?') !== false ? '&' : '?') . http_build_query($query);
-        }
-
-        return $this->send('GET', $url);
-    }
-
-    /**
-     * Performs an asynchronous POST request.
-     *
-     * @param  string  $url  The target URL.
-     * @param  array<string, mixed>  $data  If provided, will be JSON-encoded and set as the request body.
-     * @return PromiseInterface<Response> A promise that resolves with a Response object.
-     */
-    public function post(string $url, array $data = []): PromiseInterface
-    {
-        if (count($data) > 0 && $this->body->getSize() === 0 && ! isset($this->options['multipart'])) {
-            $this->json($data);
-        }
-
-        return $this->send('POST', $url);
-    }
-
-    /**
-     * Performs an asynchronous PUT request.
-     *
-     * @param  string  $url  The target URL.
-     * @param  array<string, mixed>  $data  If provided, will be JSON-encoded and set as the request body.
-     * @return PromiseInterface<Response> A promise that resolves with a Response object.
-     */
-    public function put(string $url, array $data = []): PromiseInterface
-    {
-        if (count($data) > 0 && $this->body->getSize() === 0 && ! isset($this->options['multipart'])) {
-            $this->json($data);
-        }
-
-        return $this->send('PUT', $url);
-    }
-
-    /**
-     * Performs an asynchronous DELETE request.
-     *
-     * @param  string  $url  The target URL.
-     * @return PromiseInterface<Response> A promise that resolves with a Response object.
-     */
-    public function delete(string $url): PromiseInterface
-    {
-        return $this->send('DELETE', $url);
-    }
-
-    /**
-     * Enables caching for this request with a specific Time-To-Live.
-     *
-     * This enables a zero-config, file-based cache for the request.
-     * The underlying handler will automatically manage the cache instance.
-     *
-     * @param  int  $ttlSeconds  The number of seconds the response should be cached.
-     * @param  bool  $respectServerHeaders  If true, the server's `Cache-Control: max-age` header will override the provided TTL.
-     * @return self For fluent method chaining.
-     */
-    public function cache(int $ttlSeconds = 3600, bool $respectServerHeaders = true): self
-    {
-        $this->cacheConfig = new CacheConfig($ttlSeconds, $respectServerHeaders);
-
-        return $this;
-    }
-
-    /**
-     * Enables caching for this request using a custom configuration object.
-     *
-     * This method is for advanced use cases where you need to provide a specific
-     * cache implementation (e.g., Redis, Memcached) or more complex rules.
-     *
-     * @param  CacheConfig  $config  The custom caching configuration object.
-     * @return self For fluent method chaining.
-     */
-    public function cacheWith(CacheConfig $config): self
-    {
-        $this->cacheConfig = $config;
-
-        return $this;
-    }
-
-    /**
-     * Add a file to the multipart request.
-     *
-     * @param string $name The form field name
-     * @param string|UploadedFileInterface|resource $file File path, UploadedFile, or resource
-     * @param string|null $filename Optional filename override
-     * @param string|null $contentType Optional content type override
-     * @return self For fluent method chaining.
-     */
-    public function file(string $name, $file, ?string $filename = null, ?string $contentType = null): self
-    {
-        if (!isset($this->options['multipart'])) {
-            $this->options['multipart'] = [];
-        }
-
-        if ($file instanceof UploadedFileInterface) {
-            $this->options['multipart'][$name] = [
-                'name' => $name,
-                'contents' => $file->getStream(),
-                'filename' => $filename ?? $file->getClientFilename(),
-                'Content-Type' => $contentType ?? $file->getClientMediaType(),
-            ];
-        } elseif (is_string($file) && file_exists($file)) {
-            $this->options['multipart'][$name] = [
-                'name' => $name,
-                'contents' => fopen($file, 'r'),
-                'filename' => $filename ?? basename($file),
-                'Content-Type' => $contentType ?? mime_content_type($file) ?: 'application/octet-stream',
-            ];
-        } elseif (is_resource($file)) {
-            $this->options['multipart'][$name] = [
-                'name' => $name,
-                'contents' => $file,
-                'filename' => $filename ?? 'file',
-                'Content-Type' => $contentType ?? 'application/octet-stream',
-            ];
-        } else {
-            throw new InvalidArgumentException('File must be a file path, UploadedFileInterface, or resource');
-        }
-
-        unset($this->headers['content-type']);
-        if (isset($this->headerNames['content-type'])) {
-            unset($this->headers[$this->headerNames['content-type']]);
-            unset($this->headerNames['content-type']);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Add multiple files to the multipart request.
-     *
-     * @param array<string, mixed> $files Associative array of field names to files
-     * @return self For fluent method chaining.
-     */
-    public function files(array $files): self
-    {
-        foreach ($files as $name => $file) {
-            $this->file($name, $file);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Create a multipart form with both data and files.
-     *
-     * @param array<string, mixed> $data Form data
-     * @param array<string, mixed> $files File data
-     * @return self For fluent method chaining.
-     */
-    public function multipartWithFiles(array $data = [], array $files = []): self
-    {
-        $this->multipart($data);
-        $this->files($files);
-
-        return $this;
-    }
-
-    /**
-     * Dispatches the configured request.
-     *
-     * This method builds the final cURL options and sends the request via the
-     * HttpHandler, which will apply caching and/or retry logic as configured.
-     *
-     * @param  string  $method  The HTTP method (GET, POST, etc.).
-     * @param  string  $url  The target URL.
-     * @return PromiseInterface<Response> A promise that resolves with the final Response object.
-     */
-    public function send(string $method, string $url): PromiseInterface
-    {
-        if (empty($this->requestInterceptors) && empty($this->responseInterceptors)) {
-            $options = $this->buildCurlOptions($method, $url);
-
-            return $this->handler->sendRequest($url, $options, $this->cacheConfig, $this->retryConfig);
-        }
-
-        // Process request interceptors immediately (they should be synchronous)
-        $processedRequest = $this->withMethod($method)->withUri(new Uri($url));
-        foreach ($this->requestInterceptors as $interceptor) {
-            $processedRequest = $interceptor($processedRequest);
-        }
-
-        // Build options and send request
-        $options = $processedRequest->buildCurlOptions(
-            $processedRequest->getMethod(),
-            (string) $processedRequest->getUri()
-        );
-
-        $httpPromise = $this->handler->sendRequest(
-            (string) $processedRequest->getUri(),
-            $options,
-            $processedRequest->cacheConfig,
-            $processedRequest->retryConfig
-        );
-
-        // If no response interceptors, return the HTTP promise directly
-        if (empty($processedRequest->responseInterceptors)) {
-            return $httpPromise;
-        }
-
-        // Create a new promise to handle response interceptors sequentially
-        $finalPromise = new CancellablePromise(function (callable $resolve, callable $reject) use ($httpPromise, $processedRequest) {
-            $httpPromise->then(
-                function ($response) use ($processedRequest, $resolve, $reject) {
-                    try {
-                        // Process response interceptors sequentially
-                        $this->processResponseInterceptorsSequentially(
-                            $response,
-                            $processedRequest->responseInterceptors,
-                            $resolve,
-                            $reject
-                        );
-                    } catch (\Throwable $e) {
-                        $reject($e);
-                    }
-                },
-                $reject
-            );
-        });
-
-        // Set up cancellation handler
-        $finalPromise->setCancelHandler(function () use ($httpPromise) {
-            if ($httpPromise instanceof CancellablePromiseInterface) {
-                $httpPromise->cancel();
-            }
-        });
-
-        return $finalPromise;
-    }
-
-    /**
      * Process response interceptors sequentially, handling both sync and async interceptors.
      */
     private function processResponseInterceptorsSequentially(
@@ -948,7 +1164,6 @@ class Request extends Message implements CompleteHttpClientInterface
     ): void {
         if (empty($interceptors)) {
             $resolve($response);
-
             return;
         }
 
@@ -982,253 +1197,6 @@ class Request extends Message implements CompleteHttpClientInterface
         } catch (\Throwable $e) {
             $reject($e);
         }
-    }
-
-    /**
-     * Add a single cookie to this request (sent as Cookie header).
-     *
-     * @param  string  $name  Cookie name
-     * @param  string  $value  Cookie value
-     * @return self For fluent method chaining.
-     */
-    public function cookie(string $name, string $value): self
-    {
-        $existingCookies = $this->getHeaderLine('Cookie');
-        $newCookie = $name . '=' . urlencode($value);
-
-        if ($existingCookies !== '') {
-            return $this->header('Cookie', $existingCookies . '; ' . $newCookie);
-        } else {
-            return $this->header('Cookie', $newCookie);
-        }
-    }
-
-    /**
-     * Add multiple cookies at once.
-     *
-     * @param  array<string, string>  $cookies  An associative array of cookie names to values.
-     * @return self For fluent method chaining.
-     */
-    public function cookies(array $cookies): self
-    {
-        foreach ($cookies as $name => $value) {
-            $this->cookie($name, $value);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Enable automatic cookie management with an in-memory cookie jar.
-     * Cookies from responses will be automatically stored and sent in subsequent requests.
-     *
-     * @return self For fluent method chaining.
-     */
-    public function withCookieJar(): self
-    {
-        return $this->useCookieJar(new CookieJar);
-    }
-
-    /**
-     * Enable automatic cookie management with a file-based cookie jar.
-     *
-     * @param  string  $filename  The file path to store cookies.
-     * @param  bool  $includeSessionCookies  Whether to persist session cookies (cookies without expiration).
-     * @return self For fluent method chaining.
-     */
-    public function withFileCookieJar(string $filename, bool $includeSessionCookies = false): self
-    {
-        return $this->useCookieJar(new FileCookieJar($filename, $includeSessionCookies));
-    }
-
-    /**
-     * Use a custom cookie jar for automatic cookie management.
-     *
-     * @param  CookieJarInterface  $cookieJar  The cookie jar to use.
-     * @return self For fluent method chaining.
-     */
-    public function useCookieJar(CookieJarInterface $cookieJar): self
-    {
-        $new = clone $this;
-        $new->cookieJar = $cookieJar;
-
-        return $new;
-    }
-
-    /**
-     * Convenience: Enable file-based cookie storage including session cookies.
-     * Perfect for testing or when you want to persist all cookies.
-     *
-     * @param  string  $filename  The file path to store cookies.
-     * @return self For fluent method chaining.
-     */
-    public function withAllCookiesSaved(string $filename): self
-    {
-        return $this->withFileCookieJar($filename, true);
-    }
-
-    /**
-     * Clear all cookies from the current cookie jar (if any).
-     *
-     * @return self For fluent method chaining.
-     */
-    public function clearCookies(): self
-    {
-        if ($this->cookieJar !== null) {
-            $this->cookieJar->clear();
-        }
-
-        return $this;
-    }
-
-    /**
-     * Get the current cookie jar instance.
-     *
-     * @return CookieJarInterface|null The current cookie jar or null if none is set.
-     */
-    public function getCookieJar(): ?CookieJarInterface
-    {
-        return $this->cookieJar;
-    }
-
-    /**
-     * Set a cookie with additional attributes.
-     *
-     * @param  string  $name  Cookie name
-     * @param  string  $value  Cookie value
-     * @param  array<string, mixed>  $attributes  Additional cookie attributes (domain, path, expires, etc.)
-     * @return self For fluent method chaining.
-     */
-    public function cookieWithAttributes(string $name, string $value, array $attributes = []): self
-    {
-        if ($this->cookieJar === null) {
-            $this->cookieJar = new CookieJar;
-        }
-
-        $cookie = new Cookie(
-            $name,
-            $value,
-            $attributes['expires'] ?? null,
-            $attributes['domain'] ?? null,
-            $attributes['path'] ?? null,
-            $attributes['secure'] ?? false,
-            $attributes['httpOnly'] ?? false,
-            $attributes['maxAge'] ?? null,
-            $attributes['sameSite'] ?? null
-        );
-
-        $this->cookieJar->setCookie($cookie);
-
-        return $this;
-    }
-
-    /**
-     * Configure HTTP proxy for this request.
-     *
-     * @param  string  $host  The proxy host
-     * @param  int  $port  The proxy port
-     * @param  string|null  $username  Optional proxy username
-     * @param  string|null  $password  Optional proxy password
-     * @return self For fluent method chaining.
-     */
-    public function proxy(string $host, int $port, ?string $username = null, ?string $password = null): self
-    {
-        $this->proxyConfig = ProxyConfig::http($host, $port, $username, $password);
-
-        return $this;
-    }
-
-    /**
-     * Configure SOCKS4 proxy for this request.
-     *
-     * @param  string  $host  The proxy host
-     * @param  int  $port  The proxy port
-     * @param  string|null  $username  Optional proxy username
-     * @return self For fluent method chaining.
-     */
-    public function socks4Proxy(string $host, int $port, ?string $username = null): self
-    {
-        $this->proxyConfig = ProxyConfig::socks4($host, $port, $username);
-
-        return $this;
-    }
-
-    /**
-     * Configure SOCKS5 proxy for this request.
-     *
-     * @param  string  $host  The proxy host
-     * @param  int  $port  The proxy port
-     * @param  string|null  $username  Optional proxy username
-     * @param  string|null  $password  Optional proxy password
-     * @return self For fluent method chaining.
-     */
-    public function socks5Proxy(string $host, int $port, ?string $username = null, ?string $password = null): self
-    {
-        $this->proxyConfig = ProxyConfig::socks5($host, $port, $username, $password);
-
-        return $this;
-    }
-
-    /**
-     * Configure proxy using a ProxyConfig object.
-     *
-     * @param  ProxyConfig  $config  The proxy configuration
-     * @return self For fluent method chaining.
-     */
-    public function proxyWith(ProxyConfig $config): self
-    {
-        $this->proxyConfig = $config;
-
-        return $this;
-    }
-
-    /**
-     * Disable proxy for this request.
-     *
-     * @return self For fluent method chaining.
-     */
-    public function noProxy(): self
-    {
-        $this->proxyConfig = null;
-
-        return $this;
-    }
-
-    /**
-     * Set the HTTP version for negotiation.
-     *
-     * @param  string  $version  The HTTP version ('1.0', '1.1', '2.0', '2', '3.0', '3')
-     * @return self For fluent method chaining.
-     */
-    public function httpVersion(string $version): self
-    {
-        $this->protocol = $version;
-
-        return $this;
-    }
-
-    /**
-     * Force HTTP/2 negotiation with fallback to HTTP/1.1.
-     *
-     * @return self For fluent method chaining.
-     */
-    public function http2(): self
-    {
-        $this->protocol = '2.0';
-
-        return $this;
-    }
-
-    /**
-     * Force HTTP/3 negotiation with fallback to HTTP/1.1.
-     *
-     * @return self For fluent method chaining.
-     */
-    public function http3(): self
-    {
-        $this->protocol = '3.0';
-
-        return $this;
     }
 
     /**
@@ -1319,9 +1287,9 @@ class Request extends Message implements CompleteHttpClientInterface
             if ($cookieHeader !== '') {
                 $existingCookies = $this->getHeaderLine('Cookie');
                 if ($existingCookies !== '') {
-                    $this->header('Cookie', $existingCookies . '; ' . $cookieHeader);
+                    $this->headers = $this->withHeader('Cookie', $existingCookies . '; ' . $cookieHeader)->getHeaders();
                 } else {
-                    $this->header('Cookie', $cookieHeader);
+                    $this->headers = $this->withHeader('Cookie', $cookieHeader)->getHeaders();
                 }
             }
         }
@@ -1427,24 +1395,18 @@ class Request extends Message implements CompleteHttpClientInterface
     /**
      * Updates the Host header from the URI if necessary.
      */
-    private function updateHostFromUri(): void
+    private function updateHostFromUri(): self
     {
         $host = $this->uri->getHost();
         if ($host === '') {
-            return;
+            return $this;
         }
 
         if (($port = $this->uri->getPort()) !== null) {
             $host .= ':' . $port;
         }
 
-        if (isset($this->headerNames['host'])) {
-            $header = $this->headerNames['host'];
-        } else {
-            $header = 'Host';
-            $this->headerNames['host'] = 'Host';
-        }
-        $this->headers[$header] = [$host];
+        return $this->withHeader('Host', $host);
     }
 
     /**

@@ -104,13 +104,16 @@ class FetchHandler
         /** @var string|null $requestId */
         $requestId = null;
 
-        $executeRequest = function () use ($url, $options, $retryConfig, $promise, &$attempt, &$totalAttempts, &$requestId, &$executeRequest) {
+        $cookieJar = $options['_cookie_jar'] ?? null;
+        unset($options['_cookie_jar']);
+
+        $executeRequest = function () use ($url, $options, $retryConfig, $promise, &$attempt, &$totalAttempts, &$requestId, &$executeRequest, $cookieJar) { 
             $totalAttempts++;
 
             $requestId = EventLoop::getInstance()->addHttpRequest(
                 $url,
                 $options,
-                function (?string $error, ?string $responseBody, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($retryConfig, $promise, &$attempt, &$totalAttempts, &$executeRequest) {
+                function (?string $error, ?string $responseBody, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($retryConfig, $promise, &$attempt, &$totalAttempts, &$executeRequest, $cookieJar) { 
 
                     if ($promise->isCancelled()) {
                         return;
@@ -128,14 +131,11 @@ class FetchHandler
                         return;
                     }
 
-                    // If we've exhausted retries or it's not retryable, handle the final result
                     if ($error !== null) {
                         $promise->reject(new HttpException("HTTP Request failed after {$totalAttempts} attempts: {$error}"));
                     } elseif ($isRetryable) {
-                        // This means we exceeded max retries with a retryable status code
                         $promise->reject(new HttpException("HTTP Request failed with status {$httpCode} after {$totalAttempts} attempts."));
                     } else {
-                        // Success case
                         /** @var array<string, array<string>|string> $normalizedHeaders */
                         $normalizedHeaders = $this->normalizeHeaders($headers);
                         $responseObj = new Response($responseBody ?? '', $httpCode ?? 0, $normalizedHeaders);
@@ -144,13 +144,16 @@ class FetchHandler
                             $responseObj->setHttpVersion($httpVersion);
                         }
 
+                        if ($cookieJar !== null) {
+                            $responseObj->applyCookiesToJar($cookieJar);
+                        }
+
                         $promise->resolve($responseObj);
                     }
                 }
             );
         };
 
-        // Start the first request
         $executeRequest();
 
         $promise->setCancelHandler(function () use (&$requestId) {

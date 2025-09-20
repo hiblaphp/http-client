@@ -82,7 +82,7 @@ class HttpHandler
     public function sse(
         string $url,
         array $options = [],
-        ?callable $onEvent = null,  
+        ?callable $onEvent = null,
         ?callable $onError = null,
         ?SSEReconnectConfig $reconnectConfig = null
     ): CancellablePromiseInterface {
@@ -387,7 +387,7 @@ class HttpHandler
      * @param  array<int, mixed>  $curlOptions  cURL options for the request.
      * @return PromiseInterface<Response> A promise that resolves with a Response object.
      */
-    protected function executeBasicFetch(string $url, array $curlOptions): PromiseInterface
+    private function executeBasicFetch(string $url, array $curlOptions): PromiseInterface
     {
         /** @var CancellablePromise<Response> $promise */
         $promise = new CancellablePromise;
