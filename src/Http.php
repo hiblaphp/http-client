@@ -83,13 +83,19 @@ use Hibla\Promise\Interfaces\PromiseInterface;
  */
 class Http
 {
-    /** @var HttpHandler|null Singleton instance of the core HTTP handler. */
+    /** 
+     * @var HttpHandler|null Singleton instance of the core HTTP handler. 
+     */
     private static ?HttpHandler $instance = null;
 
-    /** @var TestingHttpHandler|null Testing handler instance when in testing mode. */
+    /** 
+     * @var TestingHttpHandler|null Testing handler instance when in testing mode. 
+     */
     private static ?TestingHttpHandler $testingInstance = null;
 
-    /** @var bool Flag to track if we're in testing mode. */
+    /**
+     *  @var bool Flag to track if we're in testing mode. 
+     */
     private static bool $isTesting = false;
 
     /**
@@ -233,6 +239,6 @@ class Http
             return $request->{$method}(...$arguments);
         }
 
-        throw new \BadMethodCallException("Method {$method} does not exist on ".static::class);
+        throw new \BadMethodCallException("Method {$method} does not exist on " . static::class);
     }
 }
