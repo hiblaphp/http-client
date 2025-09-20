@@ -118,13 +118,13 @@ echo "   PATCH raw body: {$patchRawData}\n\n";
 echo "7. Form Data vs JSON Test\n";
 echo "   Testing PUT with form data...\n";
 $formPutResponse = Http::request()
-    ->form(['name' => 'FormUser', 'type' => 'form'])
+    ->withForm(['name' => 'FormUser', 'type' => 'form'])
     ->put('https://httpbin.org/put')
     ->await();
 
 echo "   Testing PATCH with form data...\n";
 $formPatchResponse = Http::request()
-    ->form(['status' => 'updated'])
+    ->withForm(['status' => 'updated'])
     ->patch('https://httpbin.org/patch')
     ->await();
 

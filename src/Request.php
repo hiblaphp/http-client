@@ -200,33 +200,6 @@ class Request extends Message implements CompleteHttpClientInterface
     }
 
     /**
-     * Set multiple headers at once using immutable PSR-7 methods.
-     *
-     * @param  array<string, string>  $headers  An associative array of header names to values.
-     * @return self For fluent method chaining.
-     */
-    public function headers(array $headers): self
-    {
-        $new = $this;
-        foreach ($headers as $name => $value) {
-            $new = $new->withHeader($name, $value);
-        }
-        return $new;
-    }
-
-    /**
-     * Set a single header using immutable PSR-7 method.
-     *
-     * @param  string  $name  The header name.
-     * @param  string  $value  The header value.
-     * @return self For fluent method chaining.
-     */
-    public function header(string $name, string $value): self
-    {
-        return $this->withHeader($name, $value);
-    }
-
-    /**
      * Set the Content-Type header.
      *
      * @param  string  $type  The media type (e.g., 'application/json').
@@ -248,13 +221,23 @@ class Request extends Message implements CompleteHttpClientInterface
         return $this->withHeader('Accept', $type);
     }
 
+    public function asJson()
+    {
+        return $this->contentType('application/json');
+    }
+
+    public function asForm()
+    {
+        return $this->contentType('application/x-www-form-urlencoded');
+    }
+
     /**
      * Attach a bearer token to the Authorization header.
      *
      * @param  string  $token  The bearer token.
      * @return self For fluent method chaining.
      */
-    public function bearerToken(string $token): self
+    public function withToken(string $token): self
     {
         return $this->withHeader('Authorization', "Bearer {$token}");
     }
@@ -266,7 +249,7 @@ class Request extends Message implements CompleteHttpClientInterface
      * @param  string  $password  The password.
      * @return self For fluent method chaining.
      */
-    public function basicAuth(string $username, string $password): self
+    public function withBasicAuth(string $username, string $password): self
     {
         $new = clone $this;
         $new->auth = ['basic', $username, $password];
@@ -377,7 +360,7 @@ class Request extends Message implements CompleteHttpClientInterface
      * @param  string  $userAgent  The User-Agent string.
      * @return self For fluent method chaining.
      */
-    public function userAgent(string $userAgent): self
+    public function withUserAgent(string $userAgent): self
     {
         $new = clone $this;
         $new->userAgent = $userAgent;
@@ -405,7 +388,7 @@ class Request extends Message implements CompleteHttpClientInterface
      * @param  array<string, mixed>  $data  The data to be JSON-encoded.
      * @return self For fluent method chaining.
      */
-    public function json(array $data): self
+    public function withJson(array $data): self
     {
         $jsonContent = json_encode($data);
         if ($jsonContent === false) {
@@ -421,7 +404,7 @@ class Request extends Message implements CompleteHttpClientInterface
      * @param  array<string, mixed>  $data  The form data.
      * @return self For fluent method chaining.
      */
-    public function form(array $data): self
+    public function withForm(array $data): self
     {
         return $this->body(http_build_query($data))
             ->contentType('application/x-www-form-urlencoded');
@@ -433,12 +416,11 @@ class Request extends Message implements CompleteHttpClientInterface
      * @param  array<string, mixed>  $data  The multipart data.
      * @return self For fluent method chaining.
      */
-    public function multipart(array $data): self
+    public function withMultipart(array $data): self
     {
         $new = clone $this;
         $new->body = $this->createTempStream();
         $new->options['multipart'] = $data;
-        // Remove Content-Type header - let cURL set it with boundary
         $new = $new->withoutHeader('Content-Type');
         return $new;
     }
@@ -648,7 +630,7 @@ class Request extends Message implements CompleteHttpClientInterface
     {
         $new = $this;
         if (count($data) > 0 && $this->body->getSize() === 0 && ! isset($this->options['multipart'])) {
-            $new = $new->json($data);
+            $new = $new->withJson($data);
         }
 
         return $new->send('POST', $url);
@@ -665,7 +647,7 @@ class Request extends Message implements CompleteHttpClientInterface
     {
         $new = $this;
         if (count($data) > 0 && $this->body->getSize() === 0 && ! isset($this->options['multipart'])) {
-            $new = $new->json($data);
+            $new = $new->withJson($data);
         }
 
         return $new->send('PUT', $url);
@@ -693,7 +675,7 @@ class Request extends Message implements CompleteHttpClientInterface
     {
         $new = $this;
         if (count($data) > 0 && $this->body->getSize() === 0 && ! isset($this->options['multipart'])) {
-            $new = $new->json($data);
+            $new = $new->withJson($data);
         }
 
         return $new->send('PATCH', $url);
@@ -763,7 +745,7 @@ class Request extends Message implements CompleteHttpClientInterface
      * @param string|null $contentType Optional content type override
      * @return self For fluent method chaining.
      */
-    public function file(string $name, $file, ?string $filename = null, ?string $contentType = null): self
+    public function withFile(string $name, $file, ?string $filename = null, ?string $contentType = null): self
     {
         $new = clone $this;
         if (!isset($new->options['multipart'])) {
@@ -795,7 +777,6 @@ class Request extends Message implements CompleteHttpClientInterface
             throw new InvalidArgumentException('File must be a file path, UploadedFileInterface, or resource');
         }
 
-        // Remove Content-Type header for multipart
         $new = $new->withoutHeader('Content-Type');
         return $new;
     }
@@ -806,11 +787,11 @@ class Request extends Message implements CompleteHttpClientInterface
      * @param array<string, mixed> $files Associative array of field names to files
      * @return self For fluent method chaining.
      */
-    public function files(array $files): self
+    public function withFiles(array $files): self
     {
         $new = $this;
         foreach ($files as $name => $file) {
-            $new = $new->file($name, $file);
+            $new = $new->withFile($name, $file);
         }
         return $new;
     }
@@ -824,7 +805,7 @@ class Request extends Message implements CompleteHttpClientInterface
      */
     public function multipartWithFiles(array $data = [], array $files = []): self
     {
-        return $this->multipart($data)->files($files);
+        return $this->withMultipart($data)->withFiles($files);
     }
 
     /**
@@ -841,7 +822,7 @@ class Request extends Message implements CompleteHttpClientInterface
     {
         $processedRequest = $this->withMethod($method)->withUri(new Uri($url));
 
-        // Process request interceptors immediately (they should be synchronous)
+        // Process request interceptors immediately 
         foreach ($this->requestInterceptors as $interceptor) {
             $processedRequest = $interceptor($processedRequest);
         }
@@ -869,7 +850,6 @@ class Request extends Message implements CompleteHttpClientInterface
             $httpPromise->then(
                 function ($response) use ($processedRequest, $resolve, $reject) {
                     try {
-                        // Process response interceptors sequentially
                         $this->processResponseInterceptorsSequentially(
                             $response,
                             $processedRequest->responseInterceptors,
@@ -884,7 +864,6 @@ class Request extends Message implements CompleteHttpClientInterface
             );
         });
 
-        // Set up cancellation handler
         $finalPromise->setCancelHandler(function () use ($httpPromise) {
             if ($httpPromise instanceof CancellablePromiseInterface) {
                 $httpPromise->cancel();
@@ -902,7 +881,7 @@ class Request extends Message implements CompleteHttpClientInterface
      * @param  string  $value  Cookie value
      * @return self For fluent method chaining.
      */
-    public function cookie(string $name, string $value): self
+    public function withCookie(string $name, string $value): self
     {
         $existingCookies = $this->getHeaderLine('Cookie');
         $newCookie = $name . '=' . urlencode($value);
@@ -920,11 +899,11 @@ class Request extends Message implements CompleteHttpClientInterface
      * @param  array<string, string>  $cookies  An associative array of cookie names to values.
      * @return self For fluent method chaining.
      */
-    public function cookies(array $cookies): self
+    public function withCookies(array $cookies): self
     {
         $new = $this;
         foreach ($cookies as $name => $value) {
-            $new = $new->cookie($name, $value);
+            $new = $new->withCookie($name, $value);
         }
         return $new;
     }

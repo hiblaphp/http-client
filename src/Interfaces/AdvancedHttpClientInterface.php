@@ -21,8 +21,8 @@ interface AdvancedHttpClientInterface extends HttpClientBuilderInterface
   public function noRetry(): self;
   public function cache(int $ttlSeconds = 3600, bool $respectServerHeaders = true): self;
   public function cacheWith(CacheConfig $config): self;
-  public function cookie(string $name, string $value): self;
-  public function cookies(array $cookies): self;
+  public function withCookie(string $name, string $value): self;
+  public function withCookies(array $cookies): self;
   public function withCookieJar(): self;
   public function withFileCookieJar(string $filename, bool $includeSessionCookies = false): self;
   public function useCookieJar(CookieJarInterface $cookieJar): self;
@@ -44,7 +44,7 @@ interface AdvancedHttpClientInterface extends HttpClientBuilderInterface
   public function sseReconnect(bool $enabled = true, int $maxAttempts = 10, float $initialDelay = 1.0, float $maxDelay = 30.0, float $backoffMultiplier = 2.0, bool $jitter = true, array $retryableErrors = [], ?callable $onReconnect = null, ?callable $shouldReconnect = null): self;
   public function sseReconnectWith(SSEReconnectConfig $config): self;
   public function noSseReconnect(): self;
-  public function file(string $name, string $filePath, ?string $fileName = null, ?string $contentType = null): self;
-  public function files(array $files): self;
+  public function withFile(string $name, string $filePath, ?string $fileName = null, ?string $contentType = null): self;
+  public function withFiles(array $files): self;
   public function multipartWithFiles(array $data = [], array $files = []): self;
 }

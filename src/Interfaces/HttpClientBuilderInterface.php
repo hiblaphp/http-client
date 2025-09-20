@@ -14,17 +14,15 @@ use Psr\Http\Message\RequestInterface;
  */
 interface HttpClientBuilderInterface extends RequestInterface
 {
-    public function headers(array $headers): self;
-    public function header(string $name, string $value): self;
     public function contentType(string $type): self;
     public function accept(string $type): self;
-    public function bearerToken(string $token): self;
-    public function userAgent(string $userAgent): self;
-    public function basicAuth(string $username, string $password): self;
+    public function withToken(string $token): self;
+    public function withUserAgent(string $userAgent): self;
+    public function withBasicAuth(string $username, string $password): self;
     public function body(string $content): self;
-    public function json(array $data): self;
-    public function form(array $data): self;
-    public function multipart(array $data): self;
+    public function withJson(array $data): self;
+    public function withForm(array $data): self;
+    public function withMultipart(array $data): self;
     public function timeout(int $seconds): self;
     public function connectTimeout(int $seconds): self;
     public function redirects(bool $follow = true, int $max = 5): self;
