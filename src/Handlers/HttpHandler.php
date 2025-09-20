@@ -139,6 +139,40 @@ class HttpHandler
     }
 
     /**
+     * Performs a quick, asynchronous PATCH request.
+     *
+     * @param  string  $url  The target URL.
+     * @param  array<string, mixed>  $data  Data to be JSON-encoded and sent as the request body.
+     * @return PromiseInterface<Response> A promise that resolves with a Response object.
+     */
+    public function patch(string $url, array $data = []): PromiseInterface
+    {
+        return $this->request()->patch($url, $data);
+    }
+
+    /**
+     * Performs a quick, asynchronous OPTIONS request.
+     *
+     * @param  string  $url  The target URL.
+     * @return PromiseInterface<Response> A promise that resolves with a Response object.
+     */
+    public function options(string $url): PromiseInterface
+    {
+        return $this->request()->options($url);
+    }
+
+    /**
+     * Performs a quick, asynchronous HEAD request.
+     *
+     * @param  string  $url  The target URL.
+     * @return PromiseInterface<Response> A promise that resolves with a Response object.
+     */
+    public function head(string $url): PromiseInterface
+    {
+        return $this->request()->head($url);
+    }
+
+    /**
      * Streams an HTTP response, processing it in chunks.
      *
      * Ideal for large responses that should not be fully loaded into memory.

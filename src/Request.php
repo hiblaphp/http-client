@@ -683,6 +683,45 @@ class Request extends Message implements CompleteHttpClientInterface
     }
 
     /**
+     * Performs an asynchronous PATCH request.
+     *
+     * @param  string  $url  The target URL.
+     * @param  array<string, mixed>  $data  If provided, will be JSON-encoded and set as the request body.
+     * @return PromiseInterface<Response> A promise that resolves with a Response object.
+     */
+    public function patch(string $url, array $data = []): PromiseInterface
+    {
+        $new = $this;
+        if (count($data) > 0 && $this->body->getSize() === 0 && ! isset($this->options['multipart'])) {
+            $new = $new->json($data);
+        }
+
+        return $new->send('PATCH', $url);
+    }
+
+    /**
+     * Performs an asynchronous OPTIONS request.
+     *
+     * @param  string  $url  The target URL.
+     * @return PromiseInterface<Response> A promise that resolves with a Response object.
+     */
+    public function options(string $url): PromiseInterface
+    {
+        return $this->send('OPTIONS', $url);
+    }
+
+    /**
+     * Performs an asynchronous HEAD request.
+     *
+     * @param  string  $url  The target URL.
+     * @return PromiseInterface<Response> A promise that resolves with a Response object.
+     */
+    public function head(string $url): PromiseInterface
+    {
+        return $this->send('HEAD', $url);
+    }
+
+    /**
      * Enables caching for this request with a specific Time-To-Live.
      *
      * This enables a zero-config, file-based cache for the request.
