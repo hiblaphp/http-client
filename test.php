@@ -4,151 +4,255 @@ use Hibla\Http\Http;
 
 require __DIR__ . '/vendor/autoload.php';
 
-echo "=== THOROUGH PATCH vs PUT TESTING ===\n\n";
+echo "=== Testing Raw cURL Options for Debugging ===\n\n";
 
-// Test 1: PUT - Should replace entire resource
-echo "1. PUT Test - Full Resource Replacement\n";
-echo "   Sending complete user object...\n";
-$putResponse = Http::request()->put('https://httpbin.org/put', [
-    'id' => 123,
-    'name' => 'John Doe',
-    'email' => 'john@example.com',
-    'phone' => '555-1234',
-    'status' => 'active'
-])->await();
+// Test 1: Basic verbose debugging
+echo "1. Testing CURLOPT_VERBOSE for basic debugging:\n";
+try {
+    // Create a temp file for debug output
+    $debugFile = tmpfile();
+    
+    $response = Http::request()
+        ->withCurlOptions([
+            CURLOPT_VERBOSE => true,
+            CURLOPT_STDERR => $debugFile,
+            CURLOPT_USERAGENT => 'DebugTest/1.0'
+        ])
+        ->get("https://httpbin.org/get")
+        ->await();
 
-$putData = json_decode($putResponse->getBody(), true);
-echo "   Status: " . $putResponse->status() . "\n";
-echo "   Content-Type sent: " . ($putData['headers']['Content-Type'] ?? 'None') . "\n";
-echo "   Data received by server:\n";
-foreach ($putData['json'] as $key => $value) {
-    echo "     {$key}: {$value}\n";
+    // Read the debug output
+    rewind($debugFile);
+    $debugOutput = stream_get_contents($debugFile);
+    fclose($debugFile);
+
+    echo "   Status: " . $response->getStatusCode() . "\n";
+    echo "   Debug Output Length: " . strlen($debugOutput) . " bytes\n";
+    echo "   Debug Output Preview:\n";
+    echo "   " . str_repeat("-", 50) . "\n";
+    
+    // Show first 10 lines of debug output
+    $lines = explode("\n", $debugOutput);
+    foreach (array_slice($lines, 0, 10) as $line) {
+        echo "   " . $line . "\n";
+    }
+    echo "   " . str_repeat("-", 50) . "\n";
+    
+} catch (Exception $e) {
+    echo "   Error: " . $e->getMessage() . "\n";
 }
-echo "   PUT Working: " . ($putResponse->status() === 200 ? 'YES' : 'NO') . "\n\n";
 
-// Test 2: PATCH - Should partially update resource
-echo "2. PATCH Test - Partial Resource Update\n";
-echo "   Sending only email update...\n";
-$patchResponse = Http::request()->patch('https://httpbin.org/patch', [
-    'email' => 'updated@example.com'
-])->await();
+echo "\n";
 
-$patchData = json_decode($patchResponse->getBody(), true);
-echo "   Status: " . $patchResponse->status() . "\n";
-echo "   Content-Type sent: " . ($patchData['headers']['Content-Type'] ?? 'None') . "\n";
-echo "   Data received by server:\n";
-foreach ($patchData['json'] as $key => $value) {
-    echo "     {$key}: {$value}\n";
+// Test 2: Progress tracking for large requests
+echo "2. Testing CURLOPT_PROGRESSFUNCTION for download progress:\n";
+try {
+    $totalBytes = 0;
+    $progressCalls = 0;
+    
+    $response = Http::request()
+        ->withCurlOptions([
+            CURLOPT_NOPROGRESS => false,
+            CURLOPT_PROGRESSFUNCTION => function($resource, $download_size, $downloaded, $upload_size, $uploaded) use (&$totalBytes, &$progressCalls) {
+                $progressCalls++;
+                $totalBytes = $download_size;
+                
+                if ($download_size > 0) {
+                    $percent = round(($downloaded / $download_size) * 100, 2);
+                    // Only show every 10th progress update to avoid spam
+                    if ($progressCalls % 10 === 0) {
+                        echo "   Progress: {$percent}% ({$downloaded}/{$download_size} bytes)\n";
+                    }
+                }
+                return 0; // Continue download
+            },
+            CURLOPT_USERAGENT => 'ProgressTest/1.0'
+        ])
+        ->get("https://httpbin.org/bytes/50000") // Download 50KB
+        ->await();
+
+    echo "   Final Status: " . $response->getStatusCode() . "\n";
+    echo "   Total Progress Callbacks: {$progressCalls}\n";
+    echo "   Final Size: " . strlen($response->getBody()) . " bytes\n";
+    
+} catch (Exception $e) {
+    echo "   Error: " . $e->getMessage() . "\n";
 }
-echo "   PATCH Working: " . ($patchResponse->status() === 200 ? 'YES' : 'NO') . "\n\n";
 
-// Test 3: Verify HTTP methods are correctly set
-echo "3. HTTP Method Verification\n";
-$putUrl = parse_url($putData['url'] ?? '');
-$patchUrl = parse_url($patchData['url'] ?? '');
+echo "\n";
 
-echo "   PUT endpoint: " . ($putUrl['path'] ?? 'Unknown') . "\n";
-echo "   PATCH endpoint: " . ($patchUrl['path'] ?? 'Unknown') . "\n";
-echo "   PUT method correct: " . (($putUrl['path'] ?? '') === '/put' ? 'YES' : 'NO') . "\n";
-echo "   PATCH method correct: " . (($patchUrl['path'] ?? '') === '/patch' ? 'YES' : 'NO') . "\n\n";
+// Test 3: Timing and performance debugging
+echo "3. Testing timing options for performance debugging:\n";
+try {
+    $debugFile = tmpfile();
+    
+    $response = Http::request()
+        ->withCurlOptions([
+            CURLOPT_VERBOSE => true,
+            CURLOPT_STDERR => $debugFile,
+            CURLOPT_CERTINFO => true, // Get certificate info
+            CURLOPT_FILETIME => true, // Get file modification time
+            CURLOPT_USERAGENT => 'TimingTest/1.0'
+        ])
+        ->get("https://httpbin.org/delay/2") // 2 second delay
+        ->await();
 
-// Test 4: Content-Type headers
-echo "4. Content-Type Header Verification\n";
-$putContentType = $putData['headers']['Content-Type'] ?? '';
-$patchContentType = $patchData['headers']['Content-Type'] ?? '';
+    // Read debug output
+    rewind($debugFile);
+    $debugOutput = stream_get_contents($debugFile);
+    fclose($debugFile);
 
-echo "   PUT Content-Type: {$putContentType}\n";
-echo "   PATCH Content-Type: {$patchContentType}\n";
-echo "   Both using JSON: " . (
-    (strpos($putContentType, 'application/json') !== false && 
-     strpos($patchContentType, 'application/json') !== false) ? 'YES' : 'NO'
-) . "\n\n";
+    echo "   Status: " . $response->getStatusCode() . "\n";
+    echo "   Response Size: " . strlen($response->getBody()) . " bytes\n";
+    
+    // Extract timing information from debug output
+    $timingLines = array_filter(explode("\n", $debugOutput), function($line) {
+        return strpos($line, 'Connection') !== false || 
+               strpos($line, 'SSL') !== false || 
+               strpos($line, 'Connected') !== false ||
+               strpos($line, 'TLS') !== false;
+    });
+    
+    echo "   Connection Details:\n";
+    foreach (array_slice($timingLines, 0, 5) as $line) {
+        echo "   " . trim($line) . "\n";
+    }
+    
+} catch (Exception $e) {
+    echo "   Error: " . $e->getMessage() . "\n";
+}
 
-// Test 5: Different data sizes
-echo "5. Data Size Test\n";
-echo "   Testing PUT with large dataset...\n";
-$largePutResponse = Http::request()->put('https://httpbin.org/put', [
-    'user' => [
-        'id' => 456,
-        'profile' => [
-            'firstName' => 'Jane',
-            'lastName' => 'Smith',
-            'email' => 'jane@example.com',
-            'phone' => '555-5678',
-            'address' => [
-                'street' => '123 Main St',
-                'city' => 'Anytown',
-                'state' => 'CA',
-                'zip' => '12345'
-            ]
-        ],
-        'preferences' => [
-            'theme' => 'dark',
-            'language' => 'en',
-            'notifications' => true
-        ]
-    ]
-])->await();
+echo "\n";
 
-echo "   Testing PATCH with minimal dataset...\n";
-$minimalPatchResponse = Http::request()->patch('https://httpbin.org/patch', [
-    'theme' => 'light'
-])->await();
+// Test 4: Header debugging
+echo "4. Testing header debugging with custom options:\n";
+try {
+    $debugFile = tmpfile();
+    
+    $response = Http::request()
+        ->withHeader('X-Debug-Test', 'CustomValue')
+        ->withCurlOptions([
+            CURLOPT_VERBOSE => true,
+            CURLOPT_STDERR => $debugFile,
+            CURLOPT_HEADER => true, // Include headers in output
+            CURLOPT_USERAGENT => 'HeaderDebug/1.0'
+        ])
+        ->get("https://httpbin.org/headers")
+        ->await();
 
-$largePutData = json_decode($largePutResponse->getBody(), true);
-$minimalPatchData = json_decode($minimalPatchResponse->getBody(), true);
+    // Read debug output
+    rewind($debugFile);
+    $debugOutput = stream_get_contents($debugFile);
+    fclose($debugFile);
 
-echo "   PUT data keys count: " . count($largePutData['json'] ?? []) . "\n";
-echo "   PATCH data keys count: " . count($minimalPatchData['json'] ?? []) . "\n";
-echo "   Size difference working: " . (
-    count($largePutData['json'] ?? []) > count($minimalPatchData['json'] ?? []) ? 'YES' : 'NO'
-) . "\n\n";
+    echo "   Status: " . $response->getStatusCode() . "\n";
+    
+    // Extract request headers from debug output
+    $headerLines = array_filter(explode("\n", $debugOutput), function($line) {
+        return strpos($line, '> ') === 0; // Lines starting with > are sent headers
+    });
+    
+    echo "   Sent Headers:\n";
+    foreach (array_slice($headerLines, 0, 8) as $line) {
+        echo "   " . $line . "\n";
+    }
+    
+    // Show response
+    $responseData = json_decode($response->getBody(), true);
+    $receivedHeaders = $responseData['headers'] ?? [];
+    echo "   Received Custom Header: " . ($receivedHeaders['X-Debug-Test'] ?? 'Not found') . "\n";
+    
+} catch (Exception $e) {
+    echo "   Error: " . $e->getMessage() . "\n";
+}
 
-// Test 6: Raw body content verification
-echo "6. Raw Body Content Verification\n";
-$putRawData = $putData['data'] ?? '';
-$patchRawData = $patchData['data'] ?? '';
+echo "\n";
 
-echo "   PUT raw body length: " . strlen($putRawData) . " characters\n";
-echo "   PATCH raw body length: " . strlen($patchRawData) . " characters\n";
-echo "   PUT raw body: " . substr($putRawData, 0, 100) . "...\n";
-echo "   PATCH raw body: {$patchRawData}\n\n";
+// Test 5: SSL/TLS debugging
+echo "5. Testing SSL/TLS debugging:\n";
+try {
+    $debugFile = tmpfile();
+    
+    $response = Http::request()
+        ->withCurlOptions([
+            CURLOPT_VERBOSE => true,
+            CURLOPT_STDERR => $debugFile,
+            CURLOPT_CERTINFO => true,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
+            CURLOPT_USERAGENT => 'SSLDebug/1.0'
+        ])
+        ->get("https://httpbin.org/get")
+        ->await();
 
-// Test 7: Form data vs JSON
-echo "7. Form Data vs JSON Test\n";
-echo "   Testing PUT with form data...\n";
-$formPutResponse = Http::request()
-    ->withForm(['name' => 'FormUser', 'type' => 'form'])
-    ->put('https://httpbin.org/put')
-    ->await();
+    // Read debug output
+    rewind($debugFile);
+    $debugOutput = stream_get_contents($debugFile);
+    fclose($debugFile);
 
-echo "   Testing PATCH with form data...\n";
-$formPatchResponse = Http::request()
-    ->withForm(['status' => 'updated'])
-    ->patch('https://httpbin.org/patch')
-    ->await();
+    echo "   Status: " . $response->getStatusCode() . "\n";
+    
+    // Extract SSL information
+    $sslLines = array_filter(explode("\n", $debugOutput), function($line) {
+        return stripos($line, 'ssl') !== false || 
+               stripos($line, 'tls') !== false || 
+               stripos($line, 'certificate') !== false ||
+               stripos($line, 'cipher') !== false;
+    });
+    
+    echo "   SSL/TLS Information:\n";
+    foreach (array_slice($sslLines, 0, 5) as $line) {
+        echo "   " . trim($line) . "\n";
+    }
+    
+} catch (Exception $e) {
+    echo "   Error: " . $e->getMessage() . "\n";
+}
 
-$formPutData = json_decode($formPutResponse->getBody(), true);
-$formPatchData = json_decode($formPatchResponse->getBody(), true);
+echo "\n";
 
-echo "   PUT form Content-Type: " . ($formPutData['headers']['Content-Type'] ?? 'None') . "\n";
-echo "   PATCH form Content-Type: " . ($formPatchData['headers']['Content-Type'] ?? 'None') . "\n";
-echo "   PUT form data: " . ($formPutData['form']['name'] ?? 'Missing') . "\n";
-echo "   PATCH form data: " . ($formPatchData['form']['status'] ?? 'Missing') . "\n\n";
+// Test 6: Network interface debugging
+echo "6. Testing network and DNS debugging:\n";
+try {
+    $debugFile = tmpfile();
+    
+    $response = Http::request()
+        ->withCurlOptions([
+            CURLOPT_VERBOSE => true,
+            CURLOPT_STDERR => $debugFile,
+            CURLOPT_DNS_CACHE_TIMEOUT => 0, // Disable DNS cache for fresh lookup
+            CURLOPT_FRESH_CONNECT => true,  // Force new connection
+            CURLOPT_USERAGENT => 'NetworkDebug/1.0'
+        ])
+        ->get("https://httpbin.org/ip")
+        ->await();
 
-// Summary
-echo "=== SUMMARY ===\n";
-echo "✅ PUT method: " . ($putResponse->status() === 200 ? 'WORKING' : 'FAILED') . "\n";
-echo "✅ PATCH method: " . ($patchResponse->status() === 200 ? 'WORKING' : 'FAILED') . "\n";
-echo "✅ Correct endpoints: " . (
-    (($putUrl['path'] ?? '') === '/put' && ($patchUrl['path'] ?? '') === '/patch') ? 'YES' : 'NO'
-) . "\n";
-echo "✅ JSON encoding: " . (
-    (strpos($putContentType, 'application/json') !== false && 
-     strpos($patchContentType, 'application/json') !== false) ? 'YES' : 'NO'
-) . "\n";
-echo "✅ Form data support: " . (
-    ($formPutResponse->status() === 200 && $formPatchResponse->status() === 200) ? 'YES' : 'NO'
-) . "\n";
+    // Read debug output
+    rewind($debugFile);
+    $debugOutput = stream_get_contents($debugFile);
+    fclose($debugFile);
 
-echo "\n🎯 Your PATCH and PUT methods are working correctly!\n";
+    echo "   Status: " . $response->getStatusCode() . "\n";
+    
+    // Extract DNS and connection info
+    $networkLines = array_filter(explode("\n", $debugOutput), function($line) {
+        return stripos($line, 'trying') !== false || 
+               stripos($line, 'connected') !== false || 
+               stripos($line, 'host') !== false ||
+               stripos($line, 'resolve') !== false;
+    });
+    
+    echo "   Network Information:\n";
+    foreach (array_slice($networkLines, 0, 5) as $line) {
+        echo "   " . trim($line) . "\n";
+    }
+    
+    // Show our IP
+    $responseData = json_decode($response->getBody(), true);
+    echo "   Our IP: " . ($responseData['origin'] ?? 'Not found') . "\n";
+    
+} catch (Exception $e) {
+    echo "   Error: " . $e->getMessage() . "\n";
+}
+
+echo "\n=== Debugging Tests Complete ===\n";

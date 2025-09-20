@@ -1120,4 +1120,38 @@ class Request extends Message implements CompleteHttpClientInterface
     {
         return $this->withProtocolVersion('3.0');
     }
+
+    /**
+     * Add a raw cURL option for advanced customization.
+     *
+     * This method allows you to set any cURL option directly, providing maximum
+     * flexibility for edge cases not covered by the fluent interface.
+     *
+     * @param  int  $option  The cURL option constant (e.g., CURLOPT_VERBOSE)
+     * @param  mixed  $value  The value for the cURL option
+     * @return self For fluent method chaining.
+     */
+    public function withCurlOption(int $option, $value): self
+    {
+        $new = clone $this;
+        $new->options[$option] = $value;
+        return $new;
+    }
+
+    /**
+     * Add multiple raw cURL options at once.
+     *
+     * @param  array<int, mixed>  $options  Associative array of cURL option constants to values
+     * @return self For fluent method chaining.
+     */
+    public function withCurlOptions(array $options): self
+    {
+        $new = clone $this;
+        foreach ($options as $option => $value) {
+            if (is_int($option)) {
+                $new->options[$option] = $value;
+            }
+        }
+        return $new;
+    }
 }
