@@ -107,13 +107,13 @@ class FetchHandler
         $cookieJar = $options['_cookie_jar'] ?? null;
         unset($options['_cookie_jar']);
 
-        $executeRequest = function () use ($url, $options, $retryConfig, $promise, &$attempt, &$totalAttempts, &$requestId, &$executeRequest, $cookieJar) { 
+        $executeRequest = function () use ($url, $options, $retryConfig, $promise, &$attempt, &$totalAttempts, &$requestId, &$executeRequest, $cookieJar) {
             $totalAttempts++;
 
             $requestId = EventLoop::getInstance()->addHttpRequest(
                 $url,
                 $options,
-                function (?string $error, ?string $responseBody, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($retryConfig, $promise, &$attempt, &$totalAttempts, &$executeRequest, $cookieJar) { 
+                function (?string $error, ?string $responseBody, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($retryConfig, $promise, &$attempt, &$totalAttempts, &$executeRequest, $cookieJar) {
 
                     if ($promise->isCancelled()) {
                         return;
@@ -257,10 +257,13 @@ class FetchHandler
         /** @var CancellablePromise<Response> $promise */
         $promise = new CancellablePromise;
 
+        $cookieJar = $curlOptions['_cookie_jar'] ?? null;
+        unset($curlOptions['_cookie_jar']);
+
         $requestId = EventLoop::getInstance()->addHttpRequest(
             $url,
             $curlOptions,
-            function (?string $error, ?string $response, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($promise) {
+            function (?string $error, ?string $response, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($promise, $cookieJar) {
                 if ($promise->isCancelled()) {
                     return;
                 }
@@ -273,6 +276,10 @@ class FetchHandler
 
                     if ($httpVersion !== null) {
                         $responseObj->setHttpVersion($httpVersion);
+                    }
+
+                    if ($cookieJar !== null) {
+                        $responseObj->applyCookiesToJar($cookieJar);
                     }
 
                     $promise->resolve($responseObj);

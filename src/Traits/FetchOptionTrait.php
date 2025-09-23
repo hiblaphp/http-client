@@ -3,6 +3,7 @@
 namespace Hibla\Http\Traits;
 
 use Hibla\Http\CacheConfig;
+use Hibla\Http\Interfaces\CookieJarInterface;
 use Hibla\Http\ProxyConfig;
 use Hibla\Http\RetryConfig;
 use Symfony\Contracts\Cache\CacheInterface;
@@ -19,6 +20,8 @@ trait FetchOptionTrait
      */
     public function normalizeFetchOptions(string $url, array $options, bool $ensureSSEHeaders = false): array
     {
+        $cookieOptions = $this->extractCookieOptions($options);
+
         $cleanOptions = array_filter($options, function ($key) {
             return ! in_array($key, [
                 'stream',
@@ -37,12 +40,15 @@ trait FetchOptionTrait
                 'on_error',
                 'onError',
                 'reconnect',
+                'cookie_jar',
+                'cookies',
+                'cookie',
             ], true);
         }, ARRAY_FILTER_USE_KEY);
 
         if ($this->isCurlOptionsFormat($cleanOptions)) {
             /** @var array<int, mixed> */
-            $curlOptions = array_filter($cleanOptions, fn ($key) => is_int($key), ARRAY_FILTER_USE_KEY);
+            $curlOptions = array_filter($cleanOptions, fn($key) => is_int($key), ARRAY_FILTER_USE_KEY);
 
             $curlOptions[CURLOPT_URL] = $url;
 
@@ -165,7 +171,7 @@ trait FetchOptionTrait
                 if (isset($curlOptions[CURLOPT_HTTPHEADER]) && is_array($curlOptions[CURLOPT_HTTPHEADER])) {
                     $headers = $curlOptions[CURLOPT_HTTPHEADER];
                 }
-                $headers[] = 'Authorization: Bearer '.$auth['bearer'];
+                $headers[] = 'Authorization: Bearer ' . $auth['bearer'];
                 $curlOptions[CURLOPT_HTTPHEADER] = $headers;
             }
 
@@ -175,13 +181,17 @@ trait FetchOptionTrait
                     isset($basic['username'], $basic['password']) &&
                     is_string($basic['username']) && is_string($basic['password'])
                 ) {
-                    $curlOptions[CURLOPT_USERPWD] = $basic['username'].':'.$basic['password'];
+                    $curlOptions[CURLOPT_USERPWD] = $basic['username'] . ':' . $basic['password'];
                     $curlOptions[CURLOPT_HTTPAUTH] = CURLAUTH_BASIC;
                 }
             }
         }
 
         $this->addProxyOptionsFromArray($curlOptions, $options);
+
+        if ($cookieOptions !== null) {
+            $this->applyCookiesToCurlOptions($curlOptions, $cookieOptions);
+        }
 
         if ($ensureSSEHeaders) {
             $this->ensureSSEHeaders($curlOptions);
@@ -295,13 +305,13 @@ trait FetchOptionTrait
             return;
         }
 
-        $curlOptions[CURLOPT_PROXY] = $proxyConfig->host.':'.$proxyConfig->port;
+        $curlOptions[CURLOPT_PROXY] = $proxyConfig->host . ':' . $proxyConfig->port;
         $curlOptions[CURLOPT_PROXYTYPE] = $proxyConfig->getCurlProxyType();
 
         if ($proxyConfig->username !== null) {
             $proxyAuth = $proxyConfig->username;
             if ($proxyConfig->password !== null) {
-                $proxyAuth .= ':'.$proxyConfig->password;
+                $proxyAuth .= ':' . $proxyConfig->password;
             }
             $curlOptions[CURLOPT_PROXYUSERPWD] = $proxyAuth;
         }
@@ -435,5 +445,88 @@ trait FetchOptionTrait
         }
 
         return null;
+    }
+
+    private function extractCookieOptions(array &$options): ?array
+    {
+        $cookieOptions = [];
+
+        // Extract cookie jar if provided
+        if (isset($options['cookie_jar'])) {
+            $cookieOptions['jar'] = $options['cookie_jar'];
+            unset($options['cookie_jar']);
+        }
+
+        // Extract individual cookies
+        if (isset($options['cookies']) && is_array($options['cookies'])) {
+            $cookieOptions['cookies'] = $options['cookies'];
+            unset($options['cookies']);
+        }
+
+        // Extract single cookie
+        if (isset($options['cookie']) && is_string($options['cookie'])) {
+            $cookieOptions['cookie_header'] = $options['cookie'];
+            unset($options['cookie']);
+        }
+
+        return !empty($cookieOptions) ? $cookieOptions : null;
+    }
+
+    private function applyCookiesToCurlOptions(array &$curlOptions, array $cookieOptions): void
+    {
+        $cookieHeaders = [];
+
+        // Handle cookie jar
+        if (isset($cookieOptions['jar']) && $cookieOptions['jar'] instanceof CookieJarInterface) {
+            $jar = $cookieOptions['jar'];
+            $url = $curlOptions[CURLOPT_URL] ?? '';
+
+            if ($url) {
+                $parsedUrl = parse_url($url);
+                $domain = $parsedUrl['host'] ?? '';
+                $path = $parsedUrl['path'] ?? '/';
+                $isSecure = ($parsedUrl['scheme'] ?? 'http') === 'https';
+
+                $cookieHeader = $jar->getCookieHeader($domain, $path, $isSecure);
+                if ($cookieHeader) {
+                    $cookieHeaders[] = $cookieHeader;
+                }
+            }
+
+            // Store jar reference for response handling
+            $curlOptions['_cookie_jar'] = $jar;
+        }
+
+        // Handle individual cookies array
+        if (isset($cookieOptions['cookies']) && is_array($cookieOptions['cookies'])) {
+            $cookies = [];
+            foreach ($cookieOptions['cookies'] as $name => $value) {
+                if (is_string($name) && is_scalar($value)) {
+                    $cookies[] = $name . '=' . urlencode((string)$value);
+                }
+            }
+            if (!empty($cookies)) {
+                $cookieHeaders[] = implode('; ', $cookies);
+            }
+        }
+
+        // Handle raw cookie header
+        if (isset($cookieOptions['cookie_header']) && is_string($cookieOptions['cookie_header'])) {
+            $cookieHeaders[] = $cookieOptions['cookie_header'];
+        }
+
+        // Apply cookies to headers
+        if (!empty($cookieHeaders)) {
+            $existingHeaders = $curlOptions[CURLOPT_HTTPHEADER] ?? [];
+
+            // Remove any existing Cookie headers
+            $existingHeaders = array_filter($existingHeaders, function ($header) {
+                return stripos($header, 'Cookie:') !== 0;
+            });
+
+            // Add new Cookie header
+            $existingHeaders[] = 'Cookie: ' . implode('; ', $cookieHeaders);
+            $curlOptions[CURLOPT_HTTPHEADER] = $existingHeaders;
+        }
     }
 }
