@@ -2,54 +2,35 @@
 
 namespace Hibla\Http\Traits;
 
-use Hibla\Http\Response;
-use Hibla\Promise\Interfaces\PromiseInterface;
+use Hibla\Http\Handlers\RequestInterceptorHandler;
+use Hibla\Http\Handlers\ResponseInterceptorHandler;
 
 trait InterceptorTrait
 {
+    private ?RequestInterceptorHandler $requestInterceptorHandler = null;
+    private ?ResponseInterceptorHandler $responseInterceptorHandler = null;
+
     /**
-     * Process response interceptors sequentially, handling both sync and async interceptors.
+     * Get or create the request interceptor handler.
      */
-    private function processResponseInterceptorsSequentially(
-        Response $response,
-        array $interceptors,
-        callable $resolve,
-        callable $reject
-    ): void {
-        if (empty($interceptors)) {
-            $resolve($response);
-            return;
+    private function getRequestInterceptorHandler(): RequestInterceptorHandler
+    {
+        if ($this->requestInterceptorHandler === null) {
+            $this->requestInterceptorHandler = new RequestInterceptorHandler();
         }
 
-        $interceptor = array_shift($interceptors);
+        return $this->requestInterceptorHandler;
+    }
 
-        try {
-            $result = $interceptor($response);
-
-            if ($result instanceof PromiseInterface) {
-                // Async interceptor - wait for it to complete before processing next
-                $result->then(
-                    function ($asyncResponse) use ($interceptors, $resolve, $reject) {
-                        $this->processResponseInterceptorsSequentially(
-                            $asyncResponse,
-                            $interceptors,
-                            $resolve,
-                            $reject
-                        );
-                    },
-                    $reject
-                );
-            } else {
-                // Sync interceptor - process immediately and continue
-                $this->processResponseInterceptorsSequentially(
-                    $result,
-                    $interceptors,
-                    $resolve,
-                    $reject
-                );
-            }
-        } catch (\Throwable $e) {
-            $reject($e);
+    /**
+     * Get or create the response interceptor handler.
+     */
+    private function getResponseInterceptorHandler(): ResponseInterceptorHandler
+    {
+        if ($this->responseInterceptorHandler === null) {
+            $this->responseInterceptorHandler = new ResponseInterceptorHandler();
         }
+
+        return $this->responseInterceptorHandler;
     }
 }

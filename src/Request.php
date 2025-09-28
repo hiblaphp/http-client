@@ -442,7 +442,7 @@ class Request extends Message implements CompleteHttpClientInterface
      *                          - 'event': Return full SSEEvent object (default)
      * @return self For fluent method chaining
      */
-    public function sseDataFormat(string $format = 'array'): self
+    public function sseDataFormat(string $format = 'json'): self
     {
         $new = clone $this;
         $new->sseDataFormat = $format;
@@ -818,23 +818,28 @@ class Request extends Message implements CompleteHttpClientInterface
     /**
      * Dispatches the configured request.
      *
-     * This method builds the final cURL options and sends the request via the
-     * HttpHandler, which will apply caching and/or retry logic as configured.
-     *
-     * @param  string  $method  The HTTP method (GET, POST, etc.).
-     * @param  string  $url  The target URL.
+     * @param string $method The HTTP method (GET, POST, etc.).
+     * @param string $url The target URL.
      * @return PromiseInterface<Response> A promise that resolves with the final Response object.
      */
     public function send(string $method, string $url): PromiseInterface
     {
-        $processedRequest = $this->withMethod($method)->withUri(new Uri($url));
+        $initialRequest = $this->withMethod($method)->withUri(new Uri($url));
 
-        // Process request interceptors immediately 
-        foreach ($this->requestInterceptors as $interceptor) {
-            $processedRequest = $interceptor($processedRequest);
-        }
+        // Process request interceptors
+        return $this->getRequestInterceptorHandler()
+            ->processInterceptors($initialRequest, $this->requestInterceptors)
+            ->then(
+                fn($processedRequest) =>
+                $this->executeRequest($processedRequest)
+            );
+    }
 
-        // Build options and send request
+    /**
+     * Execute the actual request after all interceptors have been processed.
+     */
+    private function executeRequest(Request $processedRequest): PromiseInterface
+    {
         $options = $processedRequest->buildCurlOptions(
             $processedRequest->getMethod(),
             (string) $processedRequest->getUri()
@@ -847,37 +852,16 @@ class Request extends Message implements CompleteHttpClientInterface
             $processedRequest->retryConfig
         );
 
-        // If no response interceptors, return the HTTP promise directly
+        // Process response interceptors if any exist
         if (empty($processedRequest->responseInterceptors)) {
             return $httpPromise;
         }
 
-        // Create a new promise to handle response interceptors sequentially
-        $finalPromise = new CancellablePromise(function (callable $resolve, callable $reject) use ($httpPromise, $processedRequest) {
-            $httpPromise->then(
-                function ($response) use ($processedRequest, $resolve, $reject) {
-                    try {
-                        $this->processResponseInterceptorsSequentially(
-                            $response,
-                            $processedRequest->responseInterceptors,
-                            $resolve,
-                            $reject
-                        );
-                    } catch (\Throwable $e) {
-                        $reject($e);
-                    }
-                },
-                $reject
-            );
-        });
-
-        $finalPromise->setCancelHandler(function () use ($httpPromise) {
-            if ($httpPromise instanceof CancellablePromiseInterface) {
-                $httpPromise->cancel();
-            }
-        });
-
-        return $finalPromise;
+        return $httpPromise->then(
+            fn($response) =>
+            $this->getResponseInterceptorHandler()
+                ->processInterceptors($response, $processedRequest->responseInterceptors)
+        );
     }
 
 
