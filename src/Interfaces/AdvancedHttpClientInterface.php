@@ -30,9 +30,9 @@ interface AdvancedHttpClientInterface extends HttpClientBuilderInterface
   public function clearCookies(): self;
   public function getCookieJar(): ?CookieJarInterface;
   public function cookieWithAttributes(string $name, string $value, array $attributes = []): self;
-  public function proxy(string $host, int $port, ?string $username = null, ?string $password = null): self;
-  public function socks4Proxy(string $host, int $port, ?string $username = null): self;
-  public function socks5Proxy(string $host, int $port, ?string $username = null, ?string $password = null): self;
+  public function withProxy(string $host, int $port, ?string $username = null, ?string $password = null): self;
+  public function withSocks4Proxy(string $host, int $port, ?string $username = null): self;
+  public function withSocks5Proxy(string $host, int $port, ?string $username = null, ?string $password = null): self;
   public function proxyWith(ProxyConfig $config): self;
   public function noProxy(): self;
   public function stream(string $url, ?callable $onChunk = null): CancellablePromiseInterface;

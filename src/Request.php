@@ -13,7 +13,6 @@ use Hibla\Http\Traits\InterceptorTrait;
 use Hibla\Http\Traits\SSETrait;
 use Hibla\Http\Traits\StreamTrait;
 use Hibla\Http\Traits\UriTrait;
-use Hibla\Promise\CancellablePromise;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use InvalidArgumentException;
@@ -1011,7 +1010,7 @@ class Request extends Message implements CompleteHttpClientInterface
      * @param  string|null  $password  Optional proxy password
      * @return self For fluent method chaining.
      */
-    public function proxy(string $host, int $port, ?string $username = null, ?string $password = null): self
+    public function withProxy(string $host, int $port, ?string $username = null, ?string $password = null): self
     {
         $new = clone $this;
         $new->proxyConfig = ProxyConfig::http($host, $port, $username, $password);
@@ -1026,7 +1025,7 @@ class Request extends Message implements CompleteHttpClientInterface
      * @param  string|null  $username  Optional proxy username
      * @return self For fluent method chaining.
      */
-    public function socks4Proxy(string $host, int $port, ?string $username = null): self
+    public function withSocks4Proxy(string $host, int $port, ?string $username = null): self
     {
         $new = clone $this;
         $new->proxyConfig = ProxyConfig::socks4($host, $port, $username);
@@ -1042,7 +1041,7 @@ class Request extends Message implements CompleteHttpClientInterface
      * @param  string|null  $password  Optional proxy password
      * @return self For fluent method chaining.
      */
-    public function socks5Proxy(string $host, int $port, ?string $username = null, ?string $password = null): self
+    public function withSocks5Proxy(string $host, int $port, ?string $username = null, ?string $password = null): self
     {
         $new = clone $this;
         $new->proxyConfig = ProxyConfig::socks5($host, $port, $username, $password);
