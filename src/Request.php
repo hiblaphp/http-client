@@ -263,6 +263,20 @@ class Request extends Message implements CompleteHttpClientInterface
     }
 
     /**
+     * Set digest authentication credentials.
+     *
+     * @param  string  $username  The username.
+     * @param  string  $password  The password.
+     * @return self For fluent method chaining.
+     */
+    public function withDigestAuth(string $username, string $password): self
+    {
+        $new = clone $this;
+        $new->auth = ['digest', $username, $password];
+        return $new;
+    }
+
+    /**
      * Set the total request timeout in seconds.
      *
      * @param  int  $seconds  The timeout duration.

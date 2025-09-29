@@ -185,6 +185,17 @@ trait FetchOptionTrait
                     $curlOptions[CURLOPT_HTTPAUTH] = CURLAUTH_BASIC;
                 }
             }
+
+            if (isset($auth['digest']) && is_array($auth['digest'])) {
+                $digest = $auth['digest'];
+                if (
+                    isset($digest['username'], $digest['password']) &&
+                    is_string($digest['username']) && is_string($digest['password'])
+                ) {
+                    $curlOptions[CURLOPT_USERPWD] = $digest['username'] . ':' . $digest['password'];
+                    $curlOptions[CURLOPT_HTTPAUTH] = CURLAUTH_DIGEST;
+                }
+            }
         }
 
         $this->addProxyOptionsFromArray($curlOptions, $options);

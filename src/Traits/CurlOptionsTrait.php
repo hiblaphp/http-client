@@ -114,6 +114,8 @@ trait CurlOptionsTrait
             [$type, $username, $password] = $this->auth;
             if ($type === 'basic') {
                 $options['auth']['basic'] = ['username' => $username, 'password' => $password];
+            } elseif ($type === 'digest') {
+                $options['auth']['digest'] = ['username' => $username, 'password' => $password];
             }
         }
 
@@ -195,6 +197,9 @@ trait CurlOptionsTrait
             if ($type === 'basic') {
                 $options[CURLOPT_USERPWD] = "{$username}:{$password}";
                 $options[CURLOPT_HTTPAUTH] = CURLAUTH_BASIC;
+            } elseif ($type === 'digest') {
+                $options[CURLOPT_USERPWD] = "{$username}:{$password}";
+                $options[CURLOPT_HTTPAUTH] = CURLAUTH_DIGEST;
             }
         }
     }

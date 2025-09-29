@@ -48,6 +48,7 @@ use Hibla\Promise\Interfaces\PromiseInterface;
  * @method static Request asForm() Start building a request with Content-Type: application/x-www-form-urlencoded.
  * @method static Request withToken(string $token) Start building a request with bearer token.
  * @method static Request withBasicAuth(string $username, string $password) Start building a request with basic auth.
+ * @method static Request withDigestAuth(string $username, string $password) Start building a request with digest auth.
  * @method static Request retry(int $maxRetries = 3, float $baseDelay = 1.0, float $backoffMultiplier = 2.0) Start building a request with retry logic.
  * @method static Request retryWith(RetryConfig $config) Start building a request with custom retry configuration.
  * @method static Request noRetry() Start building a request with retries disabled.

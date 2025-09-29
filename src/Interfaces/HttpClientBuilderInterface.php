@@ -19,6 +19,7 @@ interface HttpClientBuilderInterface extends RequestInterface
     public function withToken(string $token): self;
     public function withUserAgent(string $userAgent): self;
     public function withBasicAuth(string $username, string $password): self;
+    public function withDigestAuth(string $username, string $password): self;
     public function body(string $content): self;
     public function withJson(array $data): self;
     public function withForm(array $data): self;
