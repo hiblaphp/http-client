@@ -98,7 +98,7 @@ trait FetchOptionTrait
                     ? CURL_HTTP_VERSION_3
                     : CURL_HTTP_VERSION_1_1,
                 '1.0' => CURL_HTTP_VERSION_1_0,
-                default => CURL_HTTP_VERSION_1_1,
+                default => CURL_HTTP_VERSION_2TLS,
             };
         }
 
@@ -109,7 +109,7 @@ trait FetchOptionTrait
                     ? CURL_HTTP_VERSION_3
                     : CURL_HTTP_VERSION_1_1,
                 '1.0' => CURL_HTTP_VERSION_1_0,
-                default => CURL_HTTP_VERSION_1_1,
+                default => CURL_HTTP_VERSION_2TLS,
             };
         }
 

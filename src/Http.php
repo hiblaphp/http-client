@@ -28,9 +28,12 @@ use Hibla\Promise\Interfaces\PromiseInterface;
  * @method static PromiseInterface<Response> post(string $url, array<string, mixed> $data = []) Performs a POST request.
  * @method static PromiseInterface<Response> put(string $url, array<string, mixed> $data = []) Performs a PUT request.
  * @method static PromiseInterface<Response> delete(string $url) Performs a DELETE request.
+ * @method static PromiseInterface<Response> patch(string $url, array<string, mixed> $data = []) Performs a PATCH request.
+ * @method static PromiseInterface<Response> options(string $url) Performs an OPTIONS request.
+ * @method static PromiseInterface<Response> head(string $url) Performs a HEAD request.
  * @method static PromiseInterface<Response> fetch(string $url, array<int|string, mixed> $options = []) A flexible, fetch-like request method.
  * @method static CancellablePromiseInterface<StreamingResponse> stream(string $url, ?callable $onChunk = null) Streams a response body.
- * @method static CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>}> download(string $url, string $destination, array<int|string, mixed> $options = []) Downloads a file.
+ * @method static CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>}> download(string $url, string $destination) Downloads a file.
  *
  * Request builder methods:
  * @method static Request cache(int $ttlSeconds = 3600, bool $respectServerHeaders = true) Start building a request with caching enabled.
@@ -41,18 +44,62 @@ use Hibla\Promise\Interfaces\PromiseInterface;
  * @method static Request header(string $name, string $value) Start building a request with a single header.
  * @method static Request contentType(string $type) Start building a request with Content-Type header.
  * @method static Request accept(string $type) Start building a request with Accept header.
- * @method static Request bearerToken(string $token) Start building a request with bearer token.
- * @method static Request basicAuth(string $username, string $password) Start building a request with basic auth.
+ * @method static Request asJson() Start building a request with Content-Type: application/json.
+ * @method static Request asForm() Start building a request with Content-Type: application/x-www-form-urlencoded.
+ * @method static Request withToken(string $token) Start building a request with bearer token.
+ * @method static Request withBasicAuth(string $username, string $password) Start building a request with basic auth.
  * @method static Request retry(int $maxRetries = 3, float $baseDelay = 1.0, float $backoffMultiplier = 2.0) Start building a request with retry logic.
  * @method static Request retryWith(RetryConfig $config) Start building a request with custom retry configuration.
  * @method static Request noRetry() Start building a request with retries disabled.
  * @method static Request redirects(bool $follow = true, int $max = 5) Start building a request with redirect configuration.
  * @method static Request verifySSL(bool $verify = true) Start building a request with SSL verification configuration.
- * @method static Request userAgent(string $userAgent) Start building a request with custom User-Agent.
+ * @method static Request withUserAgent(string $userAgent) Start building a request with custom User-Agent.
  * @method static Request body(string $content) Start building a request with string body.
- * @method static Request json(array<string, mixed> $data) Start building a request with JSON body.
- * @method static Request form(array<string, mixed> $data) Start building a request with form data.
- * @method static Request multipart(array<string, mixed> $data) Start building a request with multipart data.
+ * @method static Request withJson(array<string, mixed> $data) Start building a request with JSON body.
+ * @method static Request withForm(array<string, mixed> $data) Start building a request with form data.
+ * @method static Request withMultipart(array<string, mixed> $data) Start building a request with multipart data.
+ * @method static Request withFile(string $name, string|UploadedFileInterface|resource $file, ?string $filename = null, ?string $contentType = null) Start building a request with a file attachment.
+ * @method static Request withFiles(array<string, mixed> $files) Start building a request with multiple file attachments.
+ * @method static Request multipartWithFiles(array<string, mixed> $data = [], array<string, mixed> $files = []) Start building a request with multipart form data and files.
+ *
+ * Cookie management methods:
+ * @method static Request withCookie(string $name, string $value) Start building a request with a single cookie.
+ * @method static Request withCookies(array<string, string> $cookies) Start building a request with multiple cookies.
+ * @method static Request withCookieJar() Start building a request with an in-memory cookie jar.
+ * @method static Request withFileCookieJar(string $filename, bool $includeSessionCookies = false) Start building a request with a file-based cookie jar.
+ * @method static Request useCookieJar(CookieJarInterface $cookieJar) Start building a request with a custom cookie jar.
+ * @method static Request withAllCookiesSaved(string $filename) Start building a request with all cookies saved to file.
+ * @method static Request clearCookies() Start building a request with cookies cleared.
+ * @method static Request cookieWithAttributes(string $name, string $value, array<string, mixed> $attributes = []) Start building a request with a cookie with additional attributes.
+ *
+ * Proxy configuration methods:
+ * @method static Request withProxy(string $host, int $port, ?string $username = null, ?string $password = null) Start building a request with HTTP proxy configuration.
+ * @method static Request withSocks4Proxy(string $host, int $port, ?string $username = null) Start building a request with SOCKS4 proxy configuration.
+ * @method static Request withSocks5Proxy(string $host, int $port, ?string $username = null, ?string $password = null) Start building a request with SOCKS5 proxy configuration.
+ * @method static Request proxyWith(ProxyConfig $config) Start building a request with custom proxy configuration.
+ * @method static Request noProxy() Start building a request with proxy disabled.
+ *
+ * HTTP version negotiation methods:
+ * @method static Request httpVersion(string $version) Start building a request with specific HTTP version.
+ * @method static Request http1() Start building a request with HTTP/1.1 protocol version.
+ * @method static Request http2() Start building a request with HTTP/2 negotiation.
+ * @method static Request http3() Start building a request with HTTP/3 negotiation.
+ *
+ * Interceptor methods:
+ * @method static Request interceptRequest(callable $callback) Start building a request with a request interceptor.
+ * @method static Request interceptResponse(callable $callback) Start building a request with a response interceptor.
+ *
+ * SSE (Server-Sent Events) methods:
+ * @method static CancellablePromiseInterface<SSEResponse> sse(string $url, ?callable $onEvent = null, ?callable $onError = null, ?SSEReconnectConfig $reconnectConfig = null) Start an SSE connection.
+ * @method static Request sseDataFormat(string $format = 'json') Start building a request with SSE data format configuration.
+ * @method static Request sseMap(callable $mapper) Start building a request with custom SSE event mapper.
+ * @method static Request sseReconnect(bool $enabled = true, int $maxAttempts = 10, float $initialDelay = 1.0, float $maxDelay = 30.0, float $backoffMultiplier = 2.0, bool $jitter = true, array $retryableErrors = [], ?callable $onReconnect = null, ?callable $shouldReconnect = null) Start building a request with SSE reconnection configuration.
+ * @method static Request sseReconnectWith(SSEReconnectConfig $config) Start building a request with custom SSE reconnection configuration.
+ * @method static Request noSseReconnect() Start building a request with SSE reconnection disabled.
+ *
+ * Advanced cURL methods:
+ * @method static Request withCurlOption(int $option, mixed $value) Start building a request with a raw cURL option.
+ * @method static Request withCurlOptions(array<int, mixed> $options) Start building a request with multiple raw cURL options.
  *
  * PSR-7 Message interface methods (immutable with* methods):
  * @method static MessageInterface withProtocolVersion(string $version) Return an instance with the specified HTTP protocol version.

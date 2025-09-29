@@ -68,7 +68,7 @@ class Request extends Message implements CompleteHttpClientInterface
      * @param  mixed|null  $body  The request body.
      * @param  string  $version  The HTTP protocol version.
      */
-    public function __construct(HttpHandler $handler, string $method = 'GET', $uri = '', array $headers = [], $body = null, string $version = '1.1')
+    public function __construct(HttpHandler $handler, string $method = 'GET', $uri = '', array $headers = [], $body = null, string $version = '2.0')
     {
         $this->handler = $handler;
         $this->method = strtoupper($method);
@@ -1082,6 +1082,16 @@ class Request extends Message implements CompleteHttpClientInterface
     public function httpVersion(string $version): self
     {
         return $this->withProtocolVersion($version);
+    }
+
+    /**
+     * Force HTTP/1.1 protocol version.
+     *
+     * @return self For fluent method chaining.
+     */
+    public function http1(): self
+    {
+        return $this->withProtocolVersion('1.1');
     }
 
     /**
