@@ -98,15 +98,14 @@ if (! function_exists('http_download')) {
      *
      * @param  string  $url  The URL to download from
      * @param  string  $destination  The local path to save the file
-     * @param  array<int|string, mixed>  $options  Download options
      * @return CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>}> Promise that resolves when download completes
      *
      * @example
      * await(http_download('https://example.com/file.zip', '/local/file.zip'));
      */
-    function http_download(string $url, string $destination, array $options = []): CancellablePromiseInterface
+    function http_download(string $url, string $destination): CancellablePromiseInterface
     {
-        return Http::download($url, $destination, $options);
+        return Http::download($url, $destination);
     }
 }
 
