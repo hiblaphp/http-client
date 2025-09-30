@@ -267,7 +267,7 @@ class TestingHttpHandler extends HttpHandler
             $this->globalSettings,
             $cacheConfig,
             $retryConfig,
-            fn ($url, $curlOptions, $cacheConfig, $retryConfig) => parent::sendRequest($url, $curlOptions, $cacheConfig, $retryConfig)
+            fn($url, $curlOptions, $cacheConfig, $retryConfig) => parent::sendRequest($url, $curlOptions, $cacheConfig, $retryConfig)
         );
     }
 
@@ -278,7 +278,7 @@ class TestingHttpHandler extends HttpHandler
             $options,
             $this->mockedRequests,
             $this->globalSettings,
-            fn ($url, $options) => parent::fetch($url, $options),
+            fn($url, $options) => parent::fetch($url, $options),
             [$this, 'createStream']
         );
     }
@@ -297,7 +297,7 @@ class TestingHttpHandler extends HttpHandler
     {
         if ($destination === null) {
             $destination = $this->fileManager->createTempFile(
-                'download_'.uniqid().'.tmp'
+                'download_' . uniqid() . '.tmp'
             );
         } else {
             $this->fileManager->trackFile($destination);
@@ -338,7 +338,7 @@ class TestingHttpHandler extends HttpHandler
     {
         $history = $this->requestRecorder->getRequestHistory();
         if (! empty($history)) {
-            throw new MockAssertionException('Expected no requests, but '.count($history).' were made');
+            throw new MockAssertionException('Expected no requests, but ' . count($history) . ' were made');
         }
     }
 
@@ -378,6 +378,169 @@ class TestingHttpHandler extends HttpHandler
     public function assertCookieValue(string $name, string $expectedValue): void
     {
         $this->cookieManager->assertCookieValue($name, $expectedValue);
+    }
+
+    /**
+     * Assert that a specific header was sent in a request.
+     */
+    public function assertHeaderSent(string $name, ?string $expectedValue = null, ?int $requestIndex = null): void
+    {
+        $request = $requestIndex === null
+            ? $this->requestRecorder->getLastRequest()
+            : $this->requestRecorder->getRequest($requestIndex);
+
+        if ($request === null) {
+            throw new MockAssertionException('No request found at the specified index');
+        }
+
+        if (!$request->hasHeader($name)) {
+            throw new MockAssertionException("Header '{$name}' was not sent in the request");
+        }
+
+        if ($expectedValue !== null) {
+            $actualValue = $request->getHeaderLine($name);
+            if ($actualValue !== $expectedValue) {
+                throw new MockAssertionException(
+                    "Header '{$name}' value mismatch. Expected: '{$expectedValue}', Got: '{$actualValue}'"
+                );
+            }
+        }
+    }
+
+    /**
+     * Assert that a header was NOT sent.
+     */
+    public function assertHeaderNotSent(string $name, ?int $requestIndex = null): void
+    {
+        $request = $requestIndex === null
+            ? $this->requestRecorder->getLastRequest()
+            : $this->requestRecorder->getRequest($requestIndex);
+
+        if ($request === null) {
+            throw new MockAssertionException('No request found at the specified index');
+        }
+
+        if ($request->hasHeader($name)) {
+            $value = $request->getHeaderLine($name);
+            throw new MockAssertionException(
+                "Header '{$name}' was sent in the request with value: '{$value}'"
+            );
+        }
+    }
+
+    /**
+     * Assert multiple headers were sent.
+     */
+    public function assertHeadersSent(array $expectedHeaders, ?int $requestIndex = null): void
+    {
+        foreach ($expectedHeaders as $name => $value) {
+            $this->assertHeaderSent($name, $value, $requestIndex);
+        }
+    }
+
+    /**
+     * Assert that specific headers match a pattern.
+     */
+    public function assertHeaderMatches(string $name, string $pattern, ?int $requestIndex = null): void
+    {
+        $request = $requestIndex === null
+            ? $this->requestRecorder->getLastRequest()
+            : $this->requestRecorder->getRequest($requestIndex);
+
+        if ($request === null) {
+            throw new MockAssertionException('No request found at the specified index');
+        }
+
+        if (!$request->hasHeader($name)) {
+            throw new MockAssertionException("Header '{$name}' was not sent in the request");
+        }
+
+        $actualValue = $request->getHeaderLine($name);
+        if (!preg_match($pattern, $actualValue)) {
+            throw new MockAssertionException(
+                "Header '{$name}' does not match pattern '{$pattern}'. Got: '{$actualValue}'"
+            );
+        }
+    }
+
+    /**
+     * Assert that Authorization header with Bearer token was sent.
+     */
+    public function assertBearerTokenSent(string $expectedToken, ?int $requestIndex = null): void
+    {
+        $this->assertHeaderSent('authorization', "Bearer {$expectedToken}", $requestIndex);
+    }
+
+    /**
+     * Assert that Content-Type header was sent.
+     */
+    public function assertContentType(string $expectedType, ?int $requestIndex = null): void
+    {
+        $this->assertHeaderSent('content-type', $expectedType, $requestIndex);
+    }
+
+    /**
+     * Assert that Accept header was sent.
+     */
+    public function assertAcceptHeader(string $expectedType, ?int $requestIndex = null): void
+    {
+        $this->assertHeaderSent('accept', $expectedType, $requestIndex);
+    }
+
+    /**
+     * Assert that User-Agent header was sent.
+     */
+    public function assertUserAgent(string $expectedUserAgent, ?int $requestIndex = null): void
+    {
+        $this->assertHeaderSent('user-agent', $expectedUserAgent, $requestIndex);
+    }
+
+    /**
+     * Get the last request for custom assertions.
+     */
+    public function getLastRequest(): ?RecordedRequest
+    {
+        return $this->requestRecorder->getLastRequest();
+    }
+
+    /**
+     * Get a specific request by index.
+     */
+    public function getRequest(int $index): ?RecordedRequest
+    {
+        return $this->requestRecorder->getRequest($index);
+    }
+
+    /**
+     * Dump the last request for debugging.
+     */
+    public function dumpLastRequest(): void
+    {
+        $request = $this->requestRecorder->getLastRequest();
+        if ($request === null) {
+            echo "No requests recorded\n";
+            return;
+        }
+
+        echo "=== Last Request ===\n";
+        echo "Method: {$request->getMethod()}\n";
+        echo "URL: {$request->getUrl()}\n";
+        echo "\nHeaders:\n";
+        foreach ($request->getHeaders() as $name => $value) {
+            $displayValue = is_array($value) ? implode(', ', $value) : $value;
+            echo "  {$name}: {$displayValue}\n";
+        }
+
+        if ($request->getBody()) {
+            echo "\nBody:\n";
+            echo $request->getBody() . "\n";
+        }
+
+        if ($request->getJson()) {
+            echo "\nParsed JSON:\n";
+            print_r($request->getJson());
+        }
+        echo "===================\n";
     }
 
     public function getRequestHistory(): array
