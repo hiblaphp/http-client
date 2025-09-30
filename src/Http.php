@@ -37,6 +37,7 @@ use Hibla\Promise\Interfaces\PromiseInterface;
  *
  * Request builder methods:
  * @method static Request cache(int $ttlSeconds = 3600, bool $respectServerHeaders = true) Start building a request with caching enabled.
+ * @method static Request cacheWithKey(string $cacheKey, int $ttlSeconds = 3600, bool $respectServerHeaders = true) Start building a request with custom cache key.
  * @method static Request cacheWith(CacheConfig $config) Start building a request with custom cache configuration.
  * @method static Request timeout(int $seconds) Start building a request with timeout.
  * @method static Request connectTimeout(int $seconds) Start building a request with connection timeout.

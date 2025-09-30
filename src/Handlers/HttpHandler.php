@@ -4,9 +4,7 @@ namespace Hibla\Http\Handlers;
 
 use Psr\SimpleCache\CacheInterface;
 use Hibla\Http\Config\HttpConfigLoader;
-use Hibla\EventLoop\EventLoop;
 use Hibla\Http\CacheConfig;
-use Hibla\Http\Exceptions\HttpException;
 use Hibla\Http\Interfaces\CookieJarInterface;
 use Hibla\Http\Request;
 use Hibla\Http\Response;
@@ -16,7 +14,6 @@ use Hibla\Http\SSE\SSEReconnectConfig;
 use Hibla\Http\SSE\SSEResponse;
 use Hibla\Http\Stream;
 use Hibla\Http\StreamingResponse;
-use Hibla\Promise\CancellablePromise;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use RuntimeException;
@@ -30,6 +27,9 @@ use function Hibla\async;
  *
  * This class acts as the workhorse for the Http Api, translating high-level
  * requests into low-level operations managed by the event loop.
+ * 
+ * Most methods are marked as @internal and are designed to be overridden
+ * by testing implementations like TestingHttpHandler.
  */
 class HttpHandler
 {
@@ -47,16 +47,6 @@ class HttpHandler
         $this->streamingHandler = $streamingHandler ?? new StreamingHandler;
         $this->fetchHandler = $fetchHandler ?? new FetchHandler($this->streamingHandler);
         $this->sseHandler = $sseHandler ?? new SSEHandler($this->streamingHandler);
-    }
-
-    /**
-     * Get the underlying streaming handler.
-     *
-     * @internal This is for internal use by the Request builder.
-     */
-    public function getStreamingHandler(): StreamingHandler
-    {
-        return $this->streamingHandler;
     }
 
     /**
@@ -78,6 +68,8 @@ class HttpHandler
      * @param  callable(string): void|null  $onError  Optional callback for connection errors
      * @param  SSEReconnectConfig|null  $reconnectConfig  Optional reconnection configuration
      * @return CancellablePromiseInterface<SSEResponse>
+     * 
+     * @internal This method is designed for extension by TestingHttpHandler and internal use.
      */
     public function sse(
         string $url,
@@ -92,95 +84,21 @@ class HttpHandler
     }
 
     /**
-     * Performs a quick, asynchronous GET request.
-     *
-     * @param  string  $url  The target URL.
-     * @param  array<string, mixed>  $query  Optional query parameters.
-     * @return PromiseInterface<Response> A promise that resolves with a Response object.
-     */
-    public function get(string $url, array $query = []): PromiseInterface
-    {
-        return $this->request()->get($url, $query);
-    }
-
-    /**
-     * Performs a quick, asynchronous POST request with a JSON payload.
-     *
-     * @param  string  $url  The target URL.
-     * @param  array<string, mixed>  $data  Data to be JSON-encoded and sent as the request body.
-     * @return PromiseInterface<Response> A promise that resolves with a Response object.
-     */
-    public function post(string $url, array $data = []): PromiseInterface
-    {
-        return $this->request()->post($url, $data);
-    }
-
-    /**
-     * Performs a quick, asynchronous PUT request.
-     *
-     * @param  string  $url  The target URL.
-     * @param  array<string, mixed>  $data  Data to be JSON-encoded and sent as the request body.
-     * @return PromiseInterface<Response> A promise that resolves with a Response object.
-     */
-    public function put(string $url, array $data = []): PromiseInterface
-    {
-        return $this->request()->put($url, $data);
-    }
-
-    /**
-     * Performs a quick, asynchronous DELETE request.
-     *
-     * @param  string  $url  The target URL.
-     * @return PromiseInterface<Response> A promise that resolves with a Response object.
-     */
-    public function delete(string $url): PromiseInterface
-    {
-        return $this->request()->delete($url);
-    }
-
-    /**
-     * Performs a quick, asynchronous PATCH request.
-     *
-     * @param  string  $url  The target URL.
-     * @param  array<string, mixed>  $data  Data to be JSON-encoded and sent as the request body.
-     * @return PromiseInterface<Response> A promise that resolves with a Response object.
-     */
-    public function patch(string $url, array $data = []): PromiseInterface
-    {
-        return $this->request()->patch($url, $data);
-    }
-
-    /**
-     * Performs a quick, asynchronous OPTIONS request.
-     *
-     * @param  string  $url  The target URL.
-     * @return PromiseInterface<Response> A promise that resolves with a Response object.
-     */
-    public function options(string $url): PromiseInterface
-    {
-        return $this->request()->options($url);
-    }
-
-    /**
-     * Performs a quick, asynchronous HEAD request.
-     *
-     * @param  string  $url  The target URL.
-     * @return PromiseInterface<Response> A promise that resolves with a Response object.
-     */
-    public function head(string $url): PromiseInterface
-    {
-        return $this->request()->head($url);
-    }
-
-    /**
      * Streams an HTTP response, processing it in chunks.
+     *
+     * The $options parameter allows TestingHttpHandler to override this method
+     * and provide mocked streaming responses.
      *
      * Ideal for large responses that should not be fully loaded into memory.
      *
      * @param  string  $url  The URL to stream from.
-     * @param  array<int|string, mixed>  $options  Advanced cURL or request options.
+     * @param  array<int|string, mixed>  $options  Request options for internal use and testing extensions.
      * @param  callable(string): void|null  $onChunk  An optional callback to execute for each received data chunk.
      * @return CancellablePromiseInterface<StreamingResponse> A promise that resolves with a StreamingResponse object.
+     * 
+     * @internal This method is designed for extension by TestingHttpHandler. The $options parameter
+     *           allows testing implementations to intercept and mock requests. End users should use
+     *           $http->request()->stream() for configuration instead.
      */
     public function stream(string $url, array $options = [], ?callable $onChunk = null): CancellablePromiseInterface
     {
@@ -192,10 +110,17 @@ class HttpHandler
     /**
      * Asynchronously downloads a file from a URL to a specified destination.
      *
+     * The $options parameter allows TestingHttpHandler to override this method
+     * and provide mocked download responses without actual network calls.
+     *
      * @param  string  $url  The URL of the file to download.
      * @param  string  $destination  The local path to save the file.
-     * @param  array<int|string, mixed>  $options  Advanced cURL or request options.
+     * @param  array<int|string, mixed>  $options  Request options for internal use and testing extensions.
      * @return CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>}> A promise that resolves with download metadata.
+     * 
+     * @internal This method is designed for extension by TestingHttpHandler. The $options parameter
+     *           allows testing implementations to intercept and mock downloads. End users should use
+     *           $http->request()->download() for configuration instead.
      */
     public function download(string $url, string $destination, array $options = []): CancellablePromiseInterface
     {
@@ -211,6 +136,8 @@ class HttpHandler
      * @return Stream A new Stream object.
      *
      * @throws RuntimeException If temporary stream creation fails.
+     * 
+     * @internal This method is designed for extension by TestingHttpHandler for stream mocking.
      */
     public function createStream(string $content = ''): Stream
     {
@@ -228,31 +155,14 @@ class HttpHandler
     }
 
     /**
-     * Creates a new stream from a file path.
-     *
-     * @param  string  $path  The path to the file.
-     * @param  string  $mode  The mode to open the file with (e.g., 'rb', 'w+b').
-     * @return Stream A new Stream object wrapping the file resource.
-     *
-     * @throws RuntimeException if the file cannot be opened.
-     */
-    public function createStreamFromFile(string $path, string $mode = 'rb'): Stream
-    {
-        $resource = @fopen($path, $mode);
-        if ($resource === false) {
-            throw new RuntimeException("Cannot open file: {$path}");
-        }
-
-        return new Stream($resource, $path);
-    }
-
-    /**
      * Generates the unique cache key for a given URL.
      * This method is the single source of truth for cache key generation,
      * ensuring consistency between caching and invalidation logic.
      *
      * @param  string  $url  The URL to generate a cache key for.
      * @return string The unique cache key.
+     * 
+     * @internal This method is for internal cache key generation and may be used by extensions.
      */
     public static function generateCacheKey(string $url): string
     {
@@ -264,8 +174,11 @@ class HttpHandler
      * This enables zero-config caching for the user.
      *
      * @return CacheInterface The default cache instance.
+     * 
+     * @internal This method is for internal cache initialization. TestingHttpHandler may override
+     *           cache behavior through CacheConfig.
      */
-    private static function getDefaultCache(): CacheInterface
+    protected static function getDefaultCache(): CacheInterface
     {
         if (self::$defaultCache === null) {
             $httpConfigLoader = HttpConfigLoader::getInstance();
@@ -277,8 +190,8 @@ class HttpHandler
             if ($cacheDirectory === null) {
                 $rootPath = $httpConfigLoader->getRootPath();
                 $cacheDirectory = $rootPath
-                    ? $rootPath . '/storage/framework/cache/data'
-                    : sys_get_temp_dir() . '/fiber_async_http_cache';
+                    ? $rootPath . '/storage/cache'
+                    : sys_get_temp_dir() . '/hibla_http_cache';
             }
 
             if (!is_dir($cacheDirectory)) {
@@ -287,7 +200,7 @@ class HttpHandler
                 }
             }
 
-            $psr6Cache = new FilesystemAdapter('http_client', 0, $cacheDirectory);
+            $psr6Cache = new FilesystemAdapter('http', 0, $cacheDirectory);
             self::$defaultCache = new Psr16Cache($psr6Cache);
         }
 
@@ -298,11 +211,17 @@ class HttpHandler
      * The main entry point for sending a request from the Request builder.
      * It intelligently applies caching logic before proceeding to dispatch the request.
      *
+     * TestingHttpHandler overrides this method to intercept requests and return mocked responses.
+     *
      * @param  string  $url  The target URL.
      * @param  array<int, mixed>  $curlOptions  cURL options for the request.
      * @param  CacheConfig|null  $cacheConfig  Optional cache configuration.
      * @param  RetryConfig|null  $retryConfig  Optional retry configuration.
      * @return PromiseInterface<Response> A promise that resolves with a Response object.
+     * 
+     * @internal This method is the primary extension point for TestingHttpHandler. It is called by
+     *           the Request builder and can be overridden to intercept all requests made through
+     *           the fluent Request API.
      */
     public function sendRequest(string $url, array $curlOptions, ?CacheConfig $cacheConfig = null, ?RetryConfig $retryConfig = null): PromiseInterface
     {
@@ -311,7 +230,7 @@ class HttpHandler
         }
 
         $cache = $cacheConfig->cache ?? self::getDefaultCache();
-        $cacheKey = self::generateCacheKey($url);
+        $cacheKey = $cacheConfig->cacheKey ?? self::generateCacheKey($url);
 
         /** @var PromiseInterface<Response> */
         return async(function () use ($cache, $cacheKey, $url, $curlOptions, $cacheConfig, $retryConfig): Response {
@@ -376,6 +295,10 @@ class HttpHandler
      * @param  array<int, mixed>  $curlOptions  cURL options for the request.
      * @param  RetryConfig|null  $retryConfig  Optional retry configuration.
      * @return PromiseInterface<Response> A promise that resolves with a Response object.
+     * 
+     * @internal This method handles the actual request dispatching and is part of the internal
+     *           request pipeline. TestingHttpHandler may need to consider this method when
+     *           implementing request interception.
      */
     protected function dispatchRequest(string $url, array $curlOptions, ?RetryConfig $retryConfig): PromiseInterface
     {
@@ -383,16 +306,21 @@ class HttpHandler
             return $this->fetchWithRetry($url, $curlOptions, $retryConfig);
         }
 
-        return $this->executeBasicFetch($url, $curlOptions);
+        return $this->fetchHandler->executeBasicFetch($url, $curlOptions);
     }
 
     /**
      * A flexible, fetch-like method for making HTTP requests with streaming support.
      * This method delegates to the FetchHandler for implementation.
      *
+     * TestingHttpHandler overrides this to provide comprehensive request mocking.
+     *
      * @param  string  $url  The target URL.
      * @param  array<int|string, mixed>  $options  An associative array of request options.
      * @return PromiseInterface<Response>|CancellablePromiseInterface<StreamingResponse>|CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>}> A promise that resolves with a Response, StreamingResponse, or download metadata depending on options.
+     * 
+     * @internal This method is a key extension point for TestingHttpHandler. It handles fetch-style
+     *           requests and can return different response types based on options (streaming, downloads, etc.).
      */
     public function fetch(string $url, array $options = []): PromiseInterface|CancellablePromiseInterface
     {
@@ -407,90 +335,23 @@ class HttpHandler
      * @param  array<int, mixed>  $options  An array of cURL options.
      * @param  RetryConfig  $retryConfig  Configuration object for retry behavior.
      * @return PromiseInterface<Response> A promise that resolves with a Response object or rejects with an HttpException on final failure.
+     * 
+     * @internal This method implements retry logic and is used internally by the request pipeline.
+     *           TestingHttpHandler may want to control retry behavior in tests.
      */
-    public function fetchWithRetry(string $url, array $options, RetryConfig $retryConfig): PromiseInterface
+    protected function fetchWithRetry(string $url, array $options, RetryConfig $retryConfig): PromiseInterface
     {
         return $this->fetchHandler->fetchWithRetry($url, $options, $retryConfig);
     }
 
     /**
-     * Executes basic fetch without advanced features.
-     * This method is kept for backward compatibility with existing sendRequest logic.
-     *
-     * @param  string  $url  The target URL.
-     * @param  array<int, mixed>  $curlOptions  cURL options for the request.
-     * @return PromiseInterface<Response> A promise that resolves with a Response object.
-     */
-    private function executeBasicFetch(string $url, array $curlOptions): PromiseInterface
-    {
-        /** @var CancellablePromise<Response> $promise */
-        $promise = new CancellablePromise;
-
-        $cookieJar = $curlOptions['_cookie_jar'] ?? null;
-        unset($curlOptions['_cookie_jar']);
-
-        $requestId = EventLoop::getInstance()->addHttpRequest(
-            $url,
-            $curlOptions,
-            function (?string $error, ?string $response, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($promise, $cookieJar) {
-                if ($promise->isCancelled()) {
-                    return;
-                }
-
-                if ($error !== null) {
-                    $promise->reject(new HttpException("HTTP Request failed: {$error}"));
-                } else {
-                    $normalizedHeaders = $this->normalizeHeaders($headers);
-                    $responseObj = new Response($response ?? '', $httpCode ?? 0, $normalizedHeaders);
-
-                    if ($httpVersion !== null) {
-                        $responseObj->setHttpVersion($httpVersion);
-                    }
-
-                    if ($cookieJar !== null) {
-                        $responseObj->applyCookiesToJar($cookieJar);
-                    }
-
-                    $promise->resolve($responseObj);
-                }
-            }
-        );
-
-        $promise->setCancelHandler(function () use ($requestId) {
-            EventLoop::getInstance()->cancelHttpRequest($requestId);
-        });
-
-        return $promise;
-    }
-
-    /**
-     * Set a default cookie jar for all requests.
-     */
-    public function setCookieJar(CookieJarInterface $cookieJar): void
-    {
-        $this->defaultCookieJar = $cookieJar;
-    }
-
-    /**
      * Get the default cookie jar.
+     * 
+     * @internal This method is for internal cookie jar access and may be used by extensions.
      */
     public function getCookieJar(): ?CookieJarInterface
     {
         return $this->defaultCookieJar;
-    }
-
-    /**
-     * Process response cookies and update the cookie jar.
-     */
-    protected function processCookies(Response $response, string $url, ?CookieJarInterface $cookieJar): void
-    {
-        if ($cookieJar === null) {
-            $cookieJar = $this->defaultCookieJar;
-        }
-
-        if ($cookieJar !== null) {
-            $response->applyCookiesToJar($cookieJar);
-        }
     }
 
     /**
@@ -499,7 +360,11 @@ class HttpHandler
      *
      * @param  string  $url  The target URL.
      * @param  array<int|string, mixed>  $options  The options to normalize.
+     * @param  bool  $ensureSSEHeaders  Whether to ensure SSE-specific headers are set.
      * @return array<int, mixed> Normalized cURL options.
+     * 
+     * @internal This method converts user-friendly options to cURL options. TestingHttpHandler
+     *           may use this to understand request configuration before mocking.
      */
     protected function normalizeFetchOptions(string $url, array $options, bool $ensureSSEHeaders = false): array
     {
@@ -511,6 +376,9 @@ class HttpHandler
      *
      * @param  array<mixed>  $headers  The headers to normalize.
      * @return array<string, array<string>|string> Normalized headers.
+     * 
+     * @internal This method ensures headers are in a consistent format throughout the system.
+     *           Used by both production and testing implementations.
      */
     protected function normalizeHeaders(array $headers): array
     {
@@ -539,6 +407,9 @@ class HttpHandler
      * @param  Response  $response  The HTTP response.
      * @param  CacheConfig  $cacheConfig  The cache configuration.
      * @return int The expiry timestamp.
+     * 
+     * @internal This method implements HTTP caching logic and may be used by extensions
+     *           that need to respect cache headers.
      */
     protected function calculateExpiry(Response $response, CacheConfig $cacheConfig): int
     {

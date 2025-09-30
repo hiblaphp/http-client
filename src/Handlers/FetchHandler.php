@@ -252,7 +252,7 @@ class FetchHandler
      * @param  array<int, mixed>  $curlOptions
      * @return PromiseInterface<Response>
      */
-    private function executeBasicFetch(string $url, array $curlOptions): PromiseInterface
+    public function executeBasicFetch(string $url, array $curlOptions): PromiseInterface
     {
         /** @var CancellablePromise<Response> $promise */
         $promise = new CancellablePromise;
@@ -310,7 +310,7 @@ class FetchHandler
         }
 
         $cache = $cacheConfig->cache ?? self::getDefaultCache();
-        $cacheKey = $this->generateCacheKey($url);
+        $cacheKey = $cacheConfig->cacheKey ?? self::generateCacheKey($url);
 
         /** @var PromiseInterface<Response> */
         return async(function () use ($cache, $cacheKey, $url, $curlOptions, $cacheConfig, $retryConfig): Response {
@@ -578,8 +578,8 @@ class FetchHandler
             if ($cacheDirectory === null) {
                 $rootPath = $httpConfigLoader->getRootPath();
                 $cacheDirectory = $rootPath
-                    ? $rootPath . '/storage/framework/cache/data'
-                    : sys_get_temp_dir() . '/fiber_async_http_cache';
+                    ? $rootPath . '/storage/cache'
+                    : sys_get_temp_dir() . '/hibla_http_cache';
             }
 
             if (!is_dir($cacheDirectory)) {
@@ -588,7 +588,7 @@ class FetchHandler
                 }
             }
 
-            $psr6Cache = new FilesystemAdapter('http_client', 0, $cacheDirectory);
+            $psr6Cache = new FilesystemAdapter('http', 0, $cacheDirectory);
             self::$defaultCache = new Psr16Cache($psr6Cache);
         }
 

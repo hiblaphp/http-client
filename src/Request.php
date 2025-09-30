@@ -757,6 +757,21 @@ class Request extends Message implements CompleteHttpClientInterface
     }
 
     /**
+     * Enables caching with a custom cache key.
+     *
+     * @param  string  $cacheKey  The custom cache key to use
+     * @param  int  $ttlSeconds  The number of seconds the response should be cached.
+     * @param  bool  $respectServerHeaders  If true, server's Cache-Control will override TTL.
+     * @return self For fluent method chaining.
+     */
+    public function cacheWithKey(string $cacheKey, int $ttlSeconds = 3600, bool $respectServerHeaders = true): self
+    {
+        $new = clone $this;
+        $new->cacheConfig = new CacheConfig($ttlSeconds, $respectServerHeaders, null, $cacheKey);
+        return $new;
+    }
+
+    /**
      * Add a file to the multipart request.
      *
      * @param string $name The form field name
