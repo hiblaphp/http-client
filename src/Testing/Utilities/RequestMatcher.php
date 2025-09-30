@@ -2,8 +2,6 @@
 
 namespace Hibla\Http\Testing\Utilities;
 
-use Hibla\Http\Testing\RecordedRequest;
-
 class RequestMatcher
 {
     public function findMatchingMock(array $mocks, string $method, string $url, array $options): ?array

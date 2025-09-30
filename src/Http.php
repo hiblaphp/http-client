@@ -12,6 +12,7 @@ use Hibla\Http\Response;
 use Hibla\Http\StreamingResponse;
 use Hibla\Http\Testing\MockRequestBuilder;
 use Hibla\Http\Testing\TestingHttpHandler;
+use Hibla\Http\Testing\Utilities\RecordedRequest;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
@@ -129,6 +130,26 @@ use Hibla\Promise\Interfaces\PromiseInterface;
  *
  * Request execution methods:
  * @method static PromiseInterface<Response> send(string $method, string $url) Dispatches the configured request.
+ * 
+ * Testing assertion methods (only available in testing mode):
+ * @method static void assertHeaderSent(string $name, ?string $expectedValue = null, ?int $requestIndex = null) Assert that a specific header was sent.
+ * @method static void assertHeaderNotSent(string $name, ?int $requestIndex = null) Assert that a header was NOT sent.
+ * @method static void assertHeadersSent(array $expectedHeaders, ?int $requestIndex = null) Assert multiple headers were sent.
+ * @method static void assertHeaderMatches(string $name, string $pattern, ?int $requestIndex = null) Assert header matches a pattern.
+ * @method static void assertBearerTokenSent(string $expectedToken, ?int $requestIndex = null) Assert Bearer token was sent.
+ * @method static void assertContentType(string $expectedType, ?int $requestIndex = null) Assert Content-Type header.
+ * @method static void assertAcceptHeader(string $expectedType, ?int $requestIndex = null) Assert Accept header.
+ * @method static void assertUserAgent(string $expectedUserAgent, ?int $requestIndex = null) Assert User-Agent header.
+ * @method static void assertRequestMade(string $method, string $url, array $options = []) Assert a request was made.
+ * @method static void assertNoRequestsMade() Assert no requests were made.
+ * @method static void assertRequestCount(int $expected) Assert request count.
+ * @method static void assertCookieSent(string $name) Assert a cookie was sent.
+ * @method static void assertCookieExists(string $name) Assert a cookie exists in jar.
+ * @method static void assertCookieValue(string $name, string $expectedValue) Assert cookie value.
+ * @method static RecordedRequest|null getLastRequest() Get the last recorded request.
+ * @method static RecordedRequest|null getRequest(int $index) Get a specific request by index.
+ * @method static array getRequestHistory() Get all recorded requests.
+ * @method static void dumpLastRequest() Dump the last request for debugging.
  */
 class Http
 {
@@ -276,13 +297,45 @@ class Http
      */
     public static function __callStatic(string $method, array $arguments)
     {
-        $request = self::request();
+        $assertionMethods = [
+            'assertHeaderSent',
+            'assertHeaderNotSent',
+            'assertHeadersSent',
+            'assertHeaderMatches',
+            'assertBearerTokenSent',
+            'assertContentType',
+            'assertAcceptHeader',
+            'assertUserAgent',
+            'assertRequestMade',
+            'assertNoRequestsMade',
+            'assertRequestCount',
+            'assertCookieSent',
+            'assertCookieExists',
+            'assertCookieValue',
+            'getLastRequest',
+            'getRequest',
+            'getRequestHistory',
+            'dumpLastRequest',
+        ];
+
+        if (in_array($method, $assertionMethods)) {
+            if (!self::$isTesting || self::$testingInstance === null) {
+                throw new \RuntimeException(
+                    "Cannot call assertion method '{$method}' outside of testing mode. " .
+                    "Call Http::startTesting() first."
+                );
+            }
+            
+            return self::$testingInstance->{$method}(...$arguments);
+        }
 
         $directMethods = ['fetch'];
 
         if (in_array($method, $directMethods)) {
             return self::getInstance()->{$method}(...$arguments);
         }
+
+        $request = self::request();
 
         if (method_exists($request, $method)) {
             return $request->{$method}(...$arguments);

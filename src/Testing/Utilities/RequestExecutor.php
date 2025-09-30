@@ -9,6 +9,7 @@ use Hibla\Http\RetryConfig;
 use Hibla\Http\StreamingResponse;
 use Hibla\Http\Testing\Exceptions\MockAssertionException;
 use Hibla\Http\Testing\Exceptions\MockException;
+use Hibla\Http\Testing\Exceptions\UnexpectedRequestException;
 use Hibla\Http\Traits\FetchOptionTrait;
 use Hibla\Promise\CancellablePromise;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
@@ -55,6 +56,36 @@ class RequestExecutor
 
         $method = $curlOptions[CURLOPT_CUSTOMREQUEST] ?? 'GET';
 
+        $matchedMock = $this->requestMatcher->findMatchingMock(
+            $mockedRequests,
+            $method,
+            $url,
+            $curlOptions
+        );
+
+        if ($matchedMock === null) {
+            if ($globalSettings['throw_on_unexpected'] ?? true) {
+                throw UnexpectedRequestException::noMatchFound(
+                    $method,
+                    $url,
+                    $curlOptions,
+                    $mockedRequests
+                );
+            }
+
+            if ($globalSettings['allow_passthrough'] ?? false) {
+                return $parentSendRequest($url, $curlOptions, $cacheConfig, $retryConfig);
+            }
+
+            throw UnexpectedRequestException::noMatchFound(
+                $method,
+                $url,
+                $curlOptions,
+                $mockedRequests
+            );
+        }
+
+
         if ($this->tryServeFromCache($url, $method, $cacheConfig)) {
             return Promise::resolved($this->cacheManager->getCachedResponse($url, $cacheConfig));
         }
@@ -96,6 +127,7 @@ class RequestExecutor
         ?callable $createStream = null
     ): PromiseInterface|CancellablePromiseInterface {
         $method = strtoupper($options['method'] ?? 'GET');
+
         $curlOptions = $this->normalizeFetchOptions($url, $options);
         $retryConfig = $this->extractRetryConfig($options);
         $cacheConfig = $this->extractCacheConfig($options);
@@ -165,7 +197,7 @@ class RequestExecutor
 
         if (isset($options['stream']) && $options['stream'] === true) {
             $onChunk = $options['on_chunk'] ?? $options['onChunk'] ?? null;
-            $createStream ??= fn ($body) => (new HttpHandler)->createStream($body);
+            $createStream ??= fn($body) => (new HttpHandler)->createStream($body);
 
             return $this->responseFactory->createMockedStream($mock, $onChunk, $createStream);
         }
@@ -272,7 +304,7 @@ class RequestExecutor
                     if ($onChunk) {
                         $onChunk($body);
                     }
-                    $createStream ??= fn ($body) => (new HttpHandler)->createStream($body);
+                    $createStream ??= fn($body) => (new HttpHandler)->createStream($body);
                     $finalPromise->resolve(new StreamingResponse(
                         $createStream($body),
                         $successfulResponse->status(),
@@ -282,11 +314,11 @@ class RequestExecutor
                     $finalPromise->resolve($successfulResponse);
                 }
             },
-            fn ($reason) => $finalPromise->reject($reason)
+            fn($reason) => $finalPromise->reject($reason)
         );
 
         if ($retryPromise instanceof CancellablePromiseInterface) {
-            $finalPromise->setCancelHandler(fn () => $retryPromise->cancel());
+            $finalPromise->setCancelHandler(fn() => $retryPromise->cancel());
         }
 
         return $finalPromise;

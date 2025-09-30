@@ -11,6 +11,7 @@ use Hibla\Http\Testing\Utilities\CacheManager;
 use Hibla\Http\Testing\Utilities\CookieManager;
 use Hibla\Http\Testing\Utilities\FileManager;
 use Hibla\Http\Testing\Utilities\NetworkSimulator;
+use Hibla\Http\Testing\Utilities\RecordedRequest;
 use Hibla\Http\Testing\Utilities\RequestExecutor;
 use Hibla\Http\Testing\Utilities\RequestMatcher;
 use Hibla\Http\Testing\Utilities\RequestRecorder;
@@ -35,8 +36,10 @@ class TestingHttpHandler extends HttpHandler
     private array $globalSettings = [
         'record_requests' => true,
         'strict_matching' => false,
-        'allow_passthrough' => true,
+        'allow_passthrough' => false,
+        'throw_on_unexpected' => true,
     ];
+
 
     private FileManager $fileManager;
     private NetworkSimulator $networkSimulator;
@@ -251,6 +254,26 @@ class TestingHttpHandler extends HttpHandler
     {
         $this->globalSettings['allow_passthrough'] = $allow;
 
+        return $this;
+    }
+
+    /**
+     * Configure whether to throw exceptions on unexpected requests.
+     */
+    public function throwOnUnexpected(bool $throw = true): self
+    {
+        $this->globalSettings['throw_on_unexpected'] = $throw;
+        return $this;
+    }
+
+    /**
+     * Allow requests to pass through to real network if no mock matches.
+     * Only use this for integration tests where you want some requests mocked.
+     */
+    public function allowPassthrough(bool $allow = true): self
+    {
+        $this->globalSettings['allow_passthrough'] = $allow;
+        $this->globalSettings['throw_on_unexpected'] = !$allow;
         return $this;
     }
 
