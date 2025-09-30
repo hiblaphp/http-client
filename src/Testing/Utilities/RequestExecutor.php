@@ -148,12 +148,22 @@ class RequestExecutor
             return $this->handleMockedResponse($match, $options, $mockedRequests, $cacheConfig, $url, $method, $createStream);
         }
 
-        if ($globalSettings['strict_matching']) {
-            throw new MockException("No mock found for: {$method} {$url}");
+        if ($globalSettings['strict_matching'] ?? true) {
+            throw UnexpectedRequestException::noMatchFound(
+                $method,
+                $url,
+                $curlOptions,
+                $mockedRequests
+            );
         }
 
-        if (! $globalSettings['allow_passthrough']) {
-            throw new MockException("Passthrough disabled and no mock found for: {$method} {$url}");
+        if (! ($globalSettings['allow_passthrough'] ?? false)) {
+            throw UnexpectedRequestException::noMatchFound(
+                $method,
+                $url,
+                $curlOptions,
+                $mockedRequests
+            );
         }
 
         return $parentFetch ? $parentFetch($url, $options) : Promise::rejected(new \RuntimeException('No parent fetch available'));
