@@ -7,6 +7,7 @@ use Hibla\Http\Handlers\HttpHandler;
 use Hibla\Http\Interfaces\CookieJarInterface;
 use Hibla\Http\RetryConfig;
 use Hibla\Http\Testing\Exceptions\MockAssertionException;
+use Hibla\Http\Testing\Exceptions\UnexpectedRequestException;
 use Hibla\Http\Testing\Utilities\CacheManager;
 use Hibla\Http\Testing\Utilities\CookieManager;
 use Hibla\Http\Testing\Utilities\FileManager;
@@ -331,6 +332,66 @@ class TestingHttpHandler extends HttpHandler
         return $this->fetch($url, $options);
     }
 
+    /**
+     * Override SSE method to support mocking.
+     */
+    public function sse(
+        string $url,
+        array $options = [],
+        ?callable $onEvent = null,
+        ?callable $onError = null,
+        ?\Hibla\Http\SSE\SSEReconnectConfig $reconnectConfig = null
+    ): CancellablePromiseInterface {
+        $curlOptions = $this->normalizeFetchOptions($url, $options, true);
+        $method = 'GET';
+
+        $this->requestRecorder->recordRequest($method, $url, $curlOptions);
+
+        $match = $this->requestMatcher->findMatchingMock(
+            $this->mockedRequests,
+            $method,
+            $url,
+            $curlOptions
+        );
+
+        if ($match !== null) {
+            $mock = $match['mock'];
+
+            if (!$mock->isPersistent()) {
+                array_splice($this->mockedRequests, $match['index'], 1);
+            }
+
+            if ($mock->isSSE()) {
+                return $this->responseFactory->createMockedSSE($mock, $onEvent, $onError);
+            }
+
+            throw new \RuntimeException(
+                "Mock matched for SSE request but is not configured as SSE. " .
+                    "Use ->respondWithSSE() instead of ->respondWith() or ->respondJson()"
+            );
+        }
+
+        if ($this->globalSettings['strict_matching'] ?? true) {
+            throw UnexpectedRequestException::noMatchFound(
+                $method,
+                $url,
+                $curlOptions,
+                $this->mockedRequests
+            );
+        }
+
+        if (!($this->globalSettings['allow_passthrough'] ?? false)) {
+            throw UnexpectedRequestException::noMatchFound(
+                $method,
+                $url,
+                $curlOptions,
+                $this->mockedRequests
+            );
+        }
+
+        return parent::sse($url, $options, $onEvent, $onError, $reconnectConfig);
+    }
+
     public static function getTempPath(?string $filename = null): string
     {
         return FileManager::getTempPath($filename);
@@ -516,6 +577,78 @@ class TestingHttpHandler extends HttpHandler
     public function assertUserAgent(string $expectedUserAgent, ?int $requestIndex = null): void
     {
         $this->assertHeaderSent('user-agent', $expectedUserAgent, $requestIndex);
+    }
+
+    // Add to TestingHttpHandler.php
+
+    /**
+     * Track SSE connections for assertions.
+     */
+    private array $sseConnections = [];
+
+    /**
+     * Assert that an SSE connection was established to a URL.
+     */
+    public function assertSSEConnectionMade(string $url): void
+    {
+        foreach ($this->requestRecorder->getRequestHistory() as $request) {
+            if ($request->getUrl() === $url || fnmatch($url, $request->getUrl())) {
+                // Check if it has SSE headers
+                $accept = $request->getHeader('accept');
+                if ($accept && (
+                    (is_string($accept) && str_contains($accept, 'text/event-stream')) ||
+                    (is_array($accept) && in_array('text/event-stream', $accept))
+                )) {
+                    return;
+                }
+            }
+        }
+
+        throw new MockAssertionException("Expected SSE connection to {$url} was not made");
+    }
+
+    /**
+     * Assert that no SSE connections were made.
+     */
+    public function assertNoSSEConnections(): void
+    {
+        foreach ($this->requestRecorder->getRequestHistory() as $request) {
+            $accept = $request->getHeader('accept');
+            if ($accept && (
+                (is_string($accept) && str_contains($accept, 'text/event-stream')) ||
+                (is_array($accept) && in_array('text/event-stream', $accept))
+            )) {
+                throw new MockAssertionException(
+                    "Expected no SSE connections, but found connection to: {$request->getUrl()}"
+                );
+            }
+        }
+    }
+
+    /**
+     * Assert that SSE connection has specific Last-Event-ID header.
+     */
+    public function assertSSELastEventId(string $expectedId, ?int $requestIndex = null): void
+    {
+        $request = $requestIndex === null
+            ? $this->requestRecorder->getLastRequest()
+            : $this->requestRecorder->getRequest($requestIndex);
+
+        if ($request === null) {
+            throw new MockAssertionException('No request found at the specified index');
+        }
+
+        $lastEventId = $request->getHeader('last-event-id');
+        if ($lastEventId === null) {
+            throw new MockAssertionException('Last-Event-ID header was not sent in the request');
+        }
+
+        $actualId = is_array($lastEventId) ? $lastEventId[0] : $lastEventId;
+        if ($actualId !== $expectedId) {
+            throw new MockAssertionException(
+                "Last-Event-ID mismatch. Expected: '{$expectedId}', Got: '{$actualId}'"
+            );
+        }
     }
 
     /**

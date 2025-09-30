@@ -52,6 +52,12 @@ class RequestExecutor
         ?RetryConfig $retryConfig = null,
         ?callable $parentSendRequest = null
     ): PromiseInterface {
+        if ($this->isSSERequest($curlOptions)) {
+            throw new \InvalidArgumentException(
+                'SSE requests should use $http->request()->sse() or $http->sse() directly, not send() or get()/post() methods'
+            );
+        }
+
         $this->cookieManager->applyCookiesForRequestOptions($curlOptions, $url);
 
         $method = $curlOptions[CURLOPT_CUSTOMREQUEST] ?? 'GET';
@@ -85,7 +91,6 @@ class RequestExecutor
             );
         }
 
-
         if ($this->tryServeFromCache($url, $method, $cacheConfig)) {
             return Promise::resolved($this->cacheManager->getCachedResponse($url, $cacheConfig));
         }
@@ -118,6 +123,22 @@ class RequestExecutor
         return $promise;
     }
 
+    /**
+     * Check if the request is configured for SSE.
+     */
+    private function isSSERequest(array $curlOptions): bool
+    {
+        if (isset($curlOptions[CURLOPT_HTTPHEADER])) {
+            foreach ($curlOptions[CURLOPT_HTTPHEADER] as $header) {
+                if (stripos($header, 'Accept: text/event-stream') !== false) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     public function executeFetch(
         string $url,
         array $options,
@@ -131,6 +152,26 @@ class RequestExecutor
         $curlOptions = $this->normalizeFetchOptions($url, $options);
         $retryConfig = $this->extractRetryConfig($options);
         $cacheConfig = $this->extractCacheConfig($options);
+
+        if ($this->isSSERequested($options)) {
+            $match = $this->requestMatcher->findMatchingMock($mockedRequests, $method, $url, $curlOptions);
+
+            if ($match !== null) {
+                $mock = $match['mock'];
+
+                if (!$mock->isPersistent()) {
+                    array_splice($mockedRequests, $match['index'], 1);
+                }
+
+                if ($mock->isSSE()) {
+                    $onEvent = $options['on_event'] ?? $options['onEvent'] ?? null;
+                    $onError = $options['on_error'] ?? $options['onError'] ?? null;
+
+                    return $this->responseFactory->createMockedSSE($mock, $onEvent, $onError);
+                }
+            }
+        }
+
 
         if ($this->tryServeFromCache($url, $method, $cacheConfig)) {
             return Promise::resolved($this->cacheManager->getCachedResponse($url, $cacheConfig));
@@ -167,6 +208,11 @@ class RequestExecutor
         }
 
         return $parentFetch ? $parentFetch($url, $options) : Promise::rejected(new \RuntimeException('No parent fetch available'));
+    }
+
+    private function isSSERequested(array $options): bool
+    {
+        return isset($options['sse']) && $options['sse'] === true;
     }
 
     private function tryServeFromCache(string $url, string $method, ?CacheConfig $cacheConfig): bool

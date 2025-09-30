@@ -7,12 +7,15 @@ use Hibla\EventLoop\EventLoop;
 use Hibla\Http\Exceptions\HttpException;
 use Hibla\Http\Response;
 use Hibla\Http\RetryConfig;
+use Hibla\Http\SSE\SSEEvent;
 use Hibla\Http\StreamingResponse;
 use Hibla\Http\Testing\MockedRequest;
 use Hibla\Http\Testing\TestingHttpHandler;
 use Hibla\Promise\CancellablePromise;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
+use Hibla\Http\SSE\SSEResponse;
+use Throwable;
 
 class ResponseFactory
 {
@@ -75,7 +78,7 @@ class ResponseFactory
                     throw new Exception('Mock provider must return a MockedRequest instance');
                 }
             } catch (Exception $e) {
-                $promise->reject(new HttpException('Mock provider error: '.$e->getMessage()));
+                $promise->reject(new HttpException('Mock provider error: ' . $e->getMessage()));
 
                 return;
             }
@@ -92,7 +95,6 @@ class ResponseFactory
                 $isRetryable = false;
                 $errorMessage = '';
 
-                // Determine if there is a failure condition
                 if ($networkConditions['should_fail']) {
                     $shouldFail = true;
                     $errorMessage = $networkConditions['error_message'] ?? 'Network failure';
@@ -101,9 +103,9 @@ class ResponseFactory
                     $shouldFail = true;
                     $errorMessage = $mock->getError() ?? 'Mocked request failure';
                     $isRetryable = $retryConfig->isRetryableError($errorMessage) || $mock->isRetryableFailure();
-                } elseif ($mock->getStatusCode() >= 400) { // ** THIS IS THE CRITICAL FIX **
+                } elseif ($mock->getStatusCode() >= 400) { 
                     $shouldFail = true;
-                    $errorMessage = 'Mock responded with status '.$mock->getStatusCode();
+                    $errorMessage = 'Mock responded with status ' . $mock->getStatusCode();
                     $isRetryable = in_array($mock->getStatusCode(), $retryConfig->retryableStatusCodes);
                 }
 
@@ -116,7 +118,6 @@ class ResponseFactory
                         $promise->reject(new HttpException("HTTP Request failed after {$attempt} attempts: {$errorMessage}"));
                     }
                 } else {
-                    // Success
                     $response = new Response($mock->getBody(), $mock->getStatusCode(), $mock->getHeaders());
                     $promise->resolve($response);
                 }
@@ -198,6 +199,11 @@ class ResponseFactory
         return $promise;
     }
 
+    private function isSSERequested(array $options): bool
+    {
+        return isset($options['sse']) && $options['sse'] === true;
+    }
+
     private function executeWithNetworkSimulation(CancellablePromise $promise, MockedRequest $mock, callable $callback): void
     {
         $networkConditions = $this->networkSimulator->simulate();
@@ -244,6 +250,190 @@ class ResponseFactory
             } catch (Exception $e) {
                 $promise->reject($e);
             }
+        });
+    }
+
+    /**
+     * Create a mocked SSE response with event streaming.
+     */
+    public function createMockedSSE(
+        MockedRequest $mock,
+        ?callable $onEvent,
+        ?callable $onError
+    ): CancellablePromiseInterface {
+        /** @var CancellablePromise<\Hibla\Http\SSE\SSEResponse> $promise */
+        $promise = new CancellablePromise;
+
+        $networkConditions = $this->networkSimulator->simulate();
+        $mockDelay = $mock->getDelay();
+        $globalDelay = 0.0;
+
+        if ($this->handler !== null) {
+            $globalDelay = $this->handler->generateGlobalRandomDelay();
+        }
+
+        $totalDelay = max($mockDelay, $globalDelay, $networkConditions['delay'] ?? 0);
+
+        /** @var string|null $timerId */
+        $timerId = null;
+
+        $promise->setCancelHandler(function () use (&$timerId) {
+            if ($timerId !== null) {
+                EventLoop::getInstance()->cancelTimer($timerId);
+            }
+        });
+
+        // Check for network simulation failure
+        if ($networkConditions['should_fail']) {
+            $timerId = EventLoop::getInstance()->addTimer($totalDelay, function () use ($promise, $networkConditions, $onError) {
+                if ($promise->isCancelled()) {
+                    return;
+                }
+
+                $error = $networkConditions['error_message'] ?? 'Network failure';
+                if ($onError !== null) {
+                    $onError($error);
+                }
+                $promise->reject(new HttpException($error));
+            });
+
+            return $promise;
+        }
+
+        $timerId = EventLoop::getInstance()->addTimer($totalDelay, function () use ($promise, $mock, $onEvent, $onError) {
+            if ($promise->isCancelled()) {
+                return;
+            }
+
+            try {
+                if ($mock->shouldFail()) {
+                    $error = $mock->getError() ?? 'Mocked SSE failure';
+                    if ($onError !== null) {
+                        $onError($error);
+                    }
+                    throw new HttpException($error);
+                }
+
+                // Create SSE formatted content
+                $sseContent = $this->formatSSEEvents($mock->getSSEEvents());
+
+                $resource = fopen('php://temp', 'w+b');
+                if ($resource === false) {
+                    throw new \RuntimeException('Failed to create temporary stream');
+                }
+
+                fwrite($resource, $sseContent);
+                rewind($resource);
+                $stream = new \Hibla\Http\Stream($resource);
+
+                $sseResponse = new SSEResponse(
+                    $stream,
+                    $mock->getStatusCode(),
+                    $mock->getHeaders()
+                );
+
+                if ($onEvent !== null) {
+                    $this->emitSSEEvents($mock, $onEvent, $onError);
+                }
+
+                $promise->resolve($sseResponse);
+            } catch (Throwable $e) {
+                $promise->reject($e);
+            }
+        });
+
+        return $promise;
+    }
+
+    /**
+     * Format SSE events into proper SSE protocol format.
+     */
+    private function formatSSEEvents(array $events): string
+    {
+        $formatted = [];
+
+        foreach ($events as $event) {
+            $lines = [];
+
+            if (isset($event['id'])) {
+                $lines[] = "id: {$event['id']}";
+            }
+
+            if (isset($event['event'])) {
+                $lines[] = "event: {$event['event']}";
+            }
+
+            if (isset($event['retry'])) {
+                $lines[] = "retry: {$event['retry']}";
+            }
+
+            if (isset($event['data'])) {
+                // Handle multi-line data
+                $dataLines = explode("\n", $event['data']);
+                foreach ($dataLines as $line) {
+                    $lines[] = "data: {$line}";
+                }
+            }
+
+            $formatted[] = implode("\n", $lines) . "\n\n";
+        }
+
+        return implode('', $formatted);
+    }
+
+    /**
+     * Emit SSE events with optional delays.
+     */
+    private function emitSSEEvents(MockedRequest $mock, callable $onEvent, ?callable $onError): void
+    {
+        $events = $mock->getSSEEvents();
+        $delay = $mock->getSSEEventDelay() ?? 0.0;
+
+        if ($delay > 0) {
+
+            $this->emitDelayedSSEEvents($events, $onEvent, $delay, 0);
+        } else {
+            // Emit all events immediately
+            foreach ($events as $eventData) {
+                $event = new SSEEvent(
+                    id: $eventData['id'] ?? null,
+                    event: $eventData['event'] ?? null,
+                    data: $eventData['data'] ?? null,
+                    retry: $eventData['retry'] ?? null,
+                    rawFields: $eventData
+                );
+
+                $onEvent($event);
+            }
+        }
+
+        // Emit error if mock should fail
+        if ($mock->shouldFail() && $onError !== null) {
+            $onError($mock->getError() ?? 'SSE connection failed');
+        }
+    }
+
+    /**
+     * Emit SSE events with delays between them.
+     */
+    private function emitDelayedSSEEvents(array $events, callable $onEvent, float $delay, int $index): void
+    {
+        if ($index >= count($events)) {
+            return;
+        }
+
+        $eventData = $events[$index];
+        $event = new SSEEvent(
+            id: $eventData['id'] ?? null,
+            event: $eventData['event'] ?? null,
+            data: $eventData['data'] ?? null,
+            retry: $eventData['retry'] ?? null,
+            rawFields: $eventData
+        );
+
+        EventLoop::getInstance()->addTimer($delay * $index, function () use ($onEvent, $event, $events, $delay, $index) {
+            $onEvent($event);
+            $this->emitDelayedSSEEvents($events, $onEvent, $delay, $index + 1);
         });
     }
 }

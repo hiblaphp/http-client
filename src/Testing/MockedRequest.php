@@ -25,6 +25,10 @@ class MockedRequest
     private bool $persistent = false;
     private ?float $timeoutAfter = null;
     private bool $isRetryable = false;
+    private bool $isSSE = false;
+    /** @var array<array{id?: string, event?: string, data?: string, retry?: int}> */
+    private array $sseEvents = [];
+    private ?float $sseEventDelay = null;
 
     public function __construct(string $method = '*')
     {
@@ -173,7 +177,7 @@ class MockedRequest
             return true;
         }
 
-        if (fnmatch($normalizedPattern.'/', $normalizedUrl.'/')) {
+        if (fnmatch($normalizedPattern . '/', $normalizedUrl . '/')) {
             return true;
         }
 
@@ -289,6 +293,56 @@ class MockedRequest
         return $this->isRetryable;
     }
 
+    /**
+     * Mark this mock as an SSE response.
+     */
+    public function asSSE(): void
+    {
+        $this->isSSE = true;
+    }
+
+    /**
+     * Check if this is an SSE mock.
+     */
+    public function isSSE(): bool
+    {
+        return $this->isSSE;
+    }
+
+    /**
+     * Set SSE events to emit.
+     *
+     * @param array<array{id?: string, event?: string, data?: string, retry?: int}> $events
+     */
+    public function setSSEEvents(array $events): void
+    {
+        $this->sseEvents = $events;
+    }
+
+    /**
+     * Get SSE events.
+     */
+    public function getSSEEvents(): array
+    {
+        return $this->sseEvents;
+    }
+
+    /**
+     * Set delay between SSE events.
+     */
+    public function setSSEEventDelay(?float $delay): void
+    {
+        $this->sseEventDelay = $delay;
+    }
+
+    /**
+     * Get delay between SSE events.
+     */
+    public function getSSEEventDelay(): ?float
+    {
+        return $this->sseEventDelay;
+    }
+
     private function extractHeaders(array $options): array
     {
         $headers = [];
@@ -322,6 +376,9 @@ class MockedRequest
             'persistent' => $this->persistent,
             'timeoutAfter' => $this->timeoutAfter,
             'isRetryable' => $this->isRetryable,
+            'isSSE' => $this->isSSE,
+            'sseEvents' => $this->sseEvents,
+            'sseEventDelay' => $this->sseEventDelay,
         ];
     }
 
@@ -342,6 +399,9 @@ class MockedRequest
         $request->persistent = $data['persistent'] ?? false;
         $request->timeoutAfter = $data['timeoutAfter'] ?? null;
         $request->isRetryable = $data['isRetryable'] ?? false;
+        $request->isSSE = $data['isSSE'] ?? false;
+        $request->sseEvents = $data['sseEvents'] ?? [];
+        $request->sseEventDelay = $data['sseEventDelay'] ?? null;
 
         return $request;
     }

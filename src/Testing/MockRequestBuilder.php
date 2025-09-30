@@ -81,7 +81,7 @@ class MockRequestBuilder
     public function expectCookies(array $expectedCookies): self
     {
         foreach ($expectedCookies as $name => $value) {
-            $this->request->addHeaderMatcher('cookie', $name.'='.$value);
+            $this->request->addHeaderMatcher('cookie', $name . '=' . $value);
         }
         return $this;
     }
@@ -307,7 +307,7 @@ class MockRequestBuilder
 
         for ($i = 1; $i < $successAttempt; $i++) {
             $this->handler->addMockedRequest(
-                $this->createFailureMock($failureError." (attempt {$i})", true)
+                $this->createFailureMock($failureError . " (attempt {$i})", true)
             );
         }
 
@@ -336,7 +336,7 @@ class MockRequestBuilder
             }
 
             if (is_string($failure)) {
-                $mock->setError($failure." (attempt {$attemptNumber})");
+                $mock->setError($failure . " (attempt {$attemptNumber})");
                 $mock->setRetryable(true);
             } elseif (is_array($failure)) {
                 $error = $failure['error'] ?? 'Request failed';
@@ -349,7 +349,7 @@ class MockRequestBuilder
                     $mock->setBody(json_encode(['error' => $error]));
                     $mock->addResponseHeader('Content-Type', 'application/json');
                 } else {
-                    $mock->setError($error." (attempt {$attemptNumber})");
+                    $mock->setError($error . " (attempt {$attemptNumber})");
                 }
                 $mock->setRetryable($retryable);
                 $mock->setDelay($delay);
@@ -472,6 +472,145 @@ class MockRequestBuilder
         }
 
         return $this;
+    }
+
+    /**
+     * Configure this mock as an SSE response.
+     *
+     * @param array<array{id?: string, event?: string, data?: string, retry?: int}> $events SSE events to emit
+     * @param float|null $eventDelay Optional delay between events in seconds
+     */
+    public function respondWithSSE(array $events, ?float $eventDelay = null): self
+    {
+        $this->request->asSSE();
+        $this->request->setSSEEvents($events);
+        if ($eventDelay !== null) {
+            $this->request->setSSEEventDelay($eventDelay);
+        }
+
+        $this->respondWithHeader('Content-Type', 'text/event-stream');
+        $this->respondWithHeader('Cache-Control', 'no-cache');
+        $this->respondWithHeader('Connection', 'keep-alive');
+
+        return $this;
+    }
+
+    /**
+     * Add a single SSE event to the mock.
+     */
+    public function addSSEEvent(
+        ?string $data = null,
+        ?string $event = null,
+        ?string $id = null,
+        ?int $retry = null
+    ): self {
+        $currentEvents = $this->request->getSSEEvents();
+        $eventData = array_filter([
+            'data' => $data,
+            'event' => $event,
+            'id' => $id,
+            'retry' => $retry,
+        ], fn($v) => $v !== null);
+
+        $currentEvents[] = $eventData;
+        $this->request->setSSEEvents($currentEvents);
+
+        return $this;
+    }
+
+    /**
+     * Mock a continuous SSE stream with periodic events.
+     *
+     * @param int $eventCount Number of events to send
+     * @param callable $eventGenerator Function to generate event data: function(int $index): array
+     * @param float $delayBetweenEvents Delay between events in seconds
+     */
+    public function continuousSSE(
+        int $eventCount,
+        callable $eventGenerator,
+        float $delayBetweenEvents = 0.1
+    ): self {
+        $events = [];
+        for ($i = 0; $i < $eventCount; $i++) {
+            $events[] = $eventGenerator($i);
+        }
+
+        return $this->respondWithSSE($events, $delayBetweenEvents);
+    }
+
+    /**
+     * Mock an SSE stream that sends keepalive events.
+     *
+     * @param array<array> $dataEvents Actual data events
+     * @param int $keepaliveCount Number of keepalive events between data events
+     */
+    public function sseWithKeepalive(array $dataEvents, int $keepaliveCount = 3): self
+    {
+        $events = [];
+        foreach ($dataEvents as $index => $event) {
+            $events[] = $event;
+
+            if ($index < count($dataEvents) - 1) {
+                for ($i = 0; $i < $keepaliveCount; $i++) {
+                    $events[] = ['data' => ''];
+                }
+            }
+        }
+
+        return $this->respondWithSSE($events);
+    }
+
+    /**
+     * Mock an SSE stream that reconnects after a certain number of events.
+     *
+     * @param int $eventsBeforeDisconnect Number of events before connection drops
+     * @param string $disconnectError Error message for the disconnect
+     */
+    public function sseDisconnectAfter(int $eventsBeforeDisconnect, string $disconnectError = 'Connection reset'): self
+    {
+        $events = [];
+        for ($i = 0; $i < $eventsBeforeDisconnect; $i++) {
+            $events[] = [
+                'data' => json_encode(['index' => $i]),
+                'id' => (string)$i,
+            ];
+        }
+
+        $this->respondWithSSE($events);
+        $this->request->setError($disconnectError);
+        $this->request->setRetryable(true);
+
+        return $this;
+    }
+
+    /**
+     * Mock an SSE stream with custom retry interval.
+     */
+    public function sseWithRetry(array $events, int $retryMs = 3000): self
+    {
+        if (!empty($events)) {
+            $events[0]['retry'] = $retryMs;
+        }
+
+        return $this->respondWithSSE($events);
+    }
+
+    /**
+     * Mock an SSE stream with multiple event types.
+     */
+    public function sseMultipleTypes(array $eventsByType): self
+    {
+        $events = [];
+        foreach ($eventsByType as $type => $typeEvents) {
+            foreach ($typeEvents as $data) {
+                $events[] = [
+                    'event' => $type,
+                    'data' => is_array($data) ? json_encode($data) : $data,
+                ];
+            }
+        }
+
+        return $this->respondWithSSE($events);
     }
 
     /**
@@ -632,7 +771,7 @@ class MockRequestBuilder
         ?string $sameSite = null
     ): self {
         $config = compact('value', 'path', 'domain', 'expires', 'secure', 'httpOnly', 'sameSite');
-        $config = array_filter($config, fn ($v) => $v !== null);
+        $config = array_filter($config, fn($v) => $v !== null);
 
         return $this->setCookies([$name => $config]);
     }
