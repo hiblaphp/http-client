@@ -579,13 +579,6 @@ class TestingHttpHandler extends HttpHandler
         $this->assertHeaderSent('user-agent', $expectedUserAgent, $requestIndex);
     }
 
-    // Add to TestingHttpHandler.php
-
-    /**
-     * Track SSE connections for assertions.
-     */
-    private array $sseConnections = [];
-
     /**
      * Assert that an SSE connection was established to a URL.
      */
@@ -593,7 +586,6 @@ class TestingHttpHandler extends HttpHandler
     {
         foreach ($this->requestRecorder->getRequestHistory() as $request) {
             if ($request->getUrl() === $url || fnmatch($url, $request->getUrl())) {
-                // Check if it has SSE headers
                 $accept = $request->getHeader('accept');
                 if ($accept && (
                     (is_string($accept) && str_contains($accept, 'text/event-stream')) ||

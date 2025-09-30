@@ -519,26 +519,6 @@ class MockRequestBuilder
     }
 
     /**
-     * Mock a continuous SSE stream with periodic events.
-     *
-     * @param int $eventCount Number of events to send
-     * @param callable $eventGenerator Function to generate event data: function(int $index): array
-     * @param float $delayBetweenEvents Delay between events in seconds
-     */
-    public function continuousSSE(
-        int $eventCount,
-        callable $eventGenerator,
-        float $delayBetweenEvents = 0.1
-    ): self {
-        $events = [];
-        for ($i = 0; $i < $eventCount; $i++) {
-            $events[] = $eventGenerator($i);
-        }
-
-        return $this->respondWithSSE($events, $delayBetweenEvents);
-    }
-
-    /**
      * Mock an SSE stream that sends keepalive events.
      *
      * @param array<array> $dataEvents Actual data events

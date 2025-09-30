@@ -1,29 +1,49 @@
 <?php
 
 use Hibla\Http\Http;
+use Hibla\Http\SSE\SSEEvent;
 use function Hibla\await;
-use function Hibla\Http\fetch;
 
 require 'vendor/autoload.php';
 
 Http::startTesting();
 
 Http::mock()
-    ->url('https://api.example.com/events')
-    ->respondWithSSE([
-        ['data' => json_encode(['type' => 'welcome', 'message' => 'Connected'])],
-        ['data' => json_encode(['type' => 'update', 'value' => 42]), 'id' => '1'],
-        ['event' => 'notification', 'data' => 'New message'],
-    ])
+    ->url('https://chat.example.com/messages')
+    ->sseWithKeepalive([
+        [
+            'id' => '1',
+            'event' => 'message',
+            'data' => json_encode(['user' => 'Alice', 'text' => 'Hello'])
+        ],
+        [
+            'id' => '2',
+            'event' => 'message',
+            'data' => json_encode(['user' => 'Bob', 'text' => 'Hi there'])
+        ],
+        [
+            'id' => '3',
+            'event' => 'message',
+            'data' => json_encode(['user' => 'Charlie', 'text' => 'Hey'])
+        ]
+    ], 9)
     ->register();
 
-$promise = Http::request()
-    ->sseDataFormat('object')
-    ->sse(
-        'https://api.example.com/events',
-        onEvent: function ($event) {
-            print_r($event);
-        }
-    );
+$messages = [];
 
-$response = await($promise);
+$promise = Http::sse(
+    'https://chat.example.com/messages',
+    onEvent: function (SSEEvent $event) use (&$messages) {
+       print_r($event);
+    },
+    onError: fn($error) => print "Error: {$error}\n"
+);
+
+await($promise);
+
+echo "\n✓ Total messages received: " . count($messages) . "\n";
+
+Http::assertSSEConnectionMade('https://chat.example.com/messages');
+Http::assertRequestCount(1);
+
+echo "✓ All tests passed!\n";

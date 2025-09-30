@@ -146,6 +146,9 @@ use Hibla\Promise\Interfaces\PromiseInterface;
  * @method static void assertCookieSent(string $name) Assert a cookie was sent.
  * @method static void assertCookieExists(string $name) Assert a cookie exists in jar.
  * @method static void assertCookieValue(string $name, string $expectedValue) Assert cookie value.
+ * @method static void assertSSEConnectionMade(string $url) Assert that an SSE connection was made.
+ * @method static void assertSSEEventReceived(string $url, array $expectedEvent) Assert that a specific SSE event was received.
+ * @method static void assertSSEEventNotReceived(string $url, array $unexpectedEvent) Assert that a specific SSE event was NOT received.
  * @method static RecordedRequest|null getLastRequest() Get the last recorded request.
  * @method static RecordedRequest|null getRequest(int $index) Get a specific request by index.
  * @method static array getRequestHistory() Get all recorded requests.
@@ -312,6 +315,9 @@ class Http
             'assertCookieSent',
             'assertCookieExists',
             'assertCookieValue',
+            'assertSSEConnectionMade',
+            'assertSSEEventReceived',
+            'assertSSEEventNotReceived',
             'getLastRequest',
             'getRequest',
             'getRequestHistory',

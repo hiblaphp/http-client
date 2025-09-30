@@ -15,6 +15,7 @@ use Hibla\Promise\CancellablePromise;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Hibla\Http\SSE\SSEResponse;
+use Hibla\Http\Stream;
 use Throwable;
 
 class ResponseFactory
@@ -103,7 +104,7 @@ class ResponseFactory
                     $shouldFail = true;
                     $errorMessage = $mock->getError() ?? 'Mocked request failure';
                     $isRetryable = $retryConfig->isRetryableError($errorMessage) || $mock->isRetryableFailure();
-                } elseif ($mock->getStatusCode() >= 400) { 
+                } elseif ($mock->getStatusCode() >= 400) {
                     $shouldFail = true;
                     $errorMessage = 'Mock responded with status ' . $mock->getStatusCode();
                     $isRetryable = in_array($mock->getStatusCode(), $retryConfig->retryableStatusCodes);
@@ -324,7 +325,7 @@ class ResponseFactory
 
                 fwrite($resource, $sseContent);
                 rewind($resource);
-                $stream = new \Hibla\Http\Stream($resource);
+                $stream = new Stream($resource);
 
                 $sseResponse = new SSEResponse(
                     $stream,
@@ -333,7 +334,20 @@ class ResponseFactory
                 );
 
                 if ($onEvent !== null) {
-                    $this->emitSSEEvents($mock, $onEvent, $onError);
+                    foreach ($mock->getSSEEvents() as $eventData) {
+                        $event = new SSEEvent(
+                            id: $eventData['id'] ?? null,
+                            event: $eventData['event'] ?? null,
+                            data: $eventData['data'] ?? null,
+                            retry: $eventData['retry'] ?? null,
+                            rawFields: $eventData
+                        );
+                        $onEvent($event);
+                    }
+                }
+
+                if ($mock->shouldFail() && $onError !== null) {
+                    $onError($mock->getError() ?? 'SSE connection failed');
                 }
 
                 $promise->resolve($sseResponse);
@@ -379,61 +393,5 @@ class ResponseFactory
         }
 
         return implode('', $formatted);
-    }
-
-    /**
-     * Emit SSE events with optional delays.
-     */
-    private function emitSSEEvents(MockedRequest $mock, callable $onEvent, ?callable $onError): void
-    {
-        $events = $mock->getSSEEvents();
-        $delay = $mock->getSSEEventDelay() ?? 0.0;
-
-        if ($delay > 0) {
-
-            $this->emitDelayedSSEEvents($events, $onEvent, $delay, 0);
-        } else {
-            // Emit all events immediately
-            foreach ($events as $eventData) {
-                $event = new SSEEvent(
-                    id: $eventData['id'] ?? null,
-                    event: $eventData['event'] ?? null,
-                    data: $eventData['data'] ?? null,
-                    retry: $eventData['retry'] ?? null,
-                    rawFields: $eventData
-                );
-
-                $onEvent($event);
-            }
-        }
-
-        // Emit error if mock should fail
-        if ($mock->shouldFail() && $onError !== null) {
-            $onError($mock->getError() ?? 'SSE connection failed');
-        }
-    }
-
-    /**
-     * Emit SSE events with delays between them.
-     */
-    private function emitDelayedSSEEvents(array $events, callable $onEvent, float $delay, int $index): void
-    {
-        if ($index >= count($events)) {
-            return;
-        }
-
-        $eventData = $events[$index];
-        $event = new SSEEvent(
-            id: $eventData['id'] ?? null,
-            event: $eventData['event'] ?? null,
-            data: $eventData['data'] ?? null,
-            retry: $eventData['retry'] ?? null,
-            rawFields: $eventData
-        );
-
-        EventLoop::getInstance()->addTimer($delay * $index, function () use ($onEvent, $event, $events, $delay, $index) {
-            $onEvent($event);
-            $this->emitDelayedSSEEvents($events, $onEvent, $delay, $index + 1);
-        });
     }
 }

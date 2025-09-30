@@ -28,7 +28,6 @@ class MockedRequest
     private bool $isSSE = false;
     /** @var array<array{id?: string, event?: string, data?: string, retry?: int}> */
     private array $sseEvents = [];
-    private ?float $sseEventDelay = null;
 
     public function __construct(string $method = '*')
     {
@@ -335,14 +334,6 @@ class MockedRequest
         $this->sseEventDelay = $delay;
     }
 
-    /**
-     * Get delay between SSE events.
-     */
-    public function getSSEEventDelay(): ?float
-    {
-        return $this->sseEventDelay;
-    }
-
     private function extractHeaders(array $options): array
     {
         $headers = [];
@@ -378,7 +369,6 @@ class MockedRequest
             'isRetryable' => $this->isRetryable,
             'isSSE' => $this->isSSE,
             'sseEvents' => $this->sseEvents,
-            'sseEventDelay' => $this->sseEventDelay,
         ];
     }
 
@@ -401,7 +391,6 @@ class MockedRequest
         $request->isRetryable = $data['isRetryable'] ?? false;
         $request->isSSE = $data['isSSE'] ?? false;
         $request->sseEvents = $data['sseEvents'] ?? [];
-        $request->sseEventDelay = $data['sseEventDelay'] ?? null;
 
         return $request;
     }
