@@ -6,6 +6,7 @@ use Hibla\Http\CacheConfig;
 use Hibla\Http\Handlers\HttpHandler;
 use Hibla\Http\Interfaces\CookieJarInterface;
 use Hibla\Http\RetryConfig;
+use Hibla\Http\SSE\SSEReconnectConfig;
 use Hibla\Http\Testing\Exceptions\MockAssertionException;
 use Hibla\Http\Testing\Exceptions\UnexpectedRequestException;
 use Hibla\Http\Testing\Utilities\CacheManager;
@@ -340,7 +341,7 @@ class TestingHttpHandler extends HttpHandler
         array $options = [],
         ?callable $onEvent = null,
         ?callable $onError = null,
-        ?\Hibla\Http\SSE\SSEReconnectConfig $reconnectConfig = null
+        ?SSEReconnectConfig $reconnectConfig = null
     ): CancellablePromiseInterface {
         $curlOptions = $this->normalizeFetchOptions($url, $options, true);
         $method = 'GET';
