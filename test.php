@@ -15,7 +15,6 @@ $http->mock('GET')
         ['event' => 'error', 'data' => 'Connection failed'],
         ['event' => 'retry', 'data' => '1'],
     ])
-    ->fail('Connection failed')
     ->register();
 
 // Second attempt: SSE connection succeeds
