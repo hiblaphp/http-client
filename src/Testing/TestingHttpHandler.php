@@ -344,53 +344,17 @@ class TestingHttpHandler extends HttpHandler
         ?SSEReconnectConfig $reconnectConfig = null
     ): CancellablePromiseInterface {
         $curlOptions = $this->normalizeFetchOptions($url, $options, true);
-        $method = 'GET';
 
-        $this->requestRecorder->recordRequest($method, $url, $curlOptions);
-
-        $match = $this->requestMatcher->findMatchingMock(
-            $this->mockedRequests,
-            $method,
+        return $this->requestExecutor->executeSSE(
             $url,
-            $curlOptions
+            $curlOptions,
+            $this->mockedRequests,
+            $this->globalSettings,
+            $onEvent,
+            $onError,
+            fn($url, $options, $onEvent, $onError, $reconnectConfig) => parent::sse($url, $options, $onEvent, $onError, $reconnectConfig),
+            $reconnectConfig  
         );
-
-        if ($match !== null) {
-            $mock = $match['mock'];
-
-            if (!$mock->isPersistent()) {
-                array_splice($this->mockedRequests, $match['index'], 1);
-            }
-
-            if ($mock->isSSE()) {
-                return $this->responseFactory->createMockedSSE($mock, $onEvent, $onError);
-            }
-
-            throw new \RuntimeException(
-                "Mock matched for SSE request but is not configured as SSE. " .
-                    "Use ->respondWithSSE() instead of ->respondWith() or ->respondJson()"
-            );
-        }
-
-        if ($this->globalSettings['strict_matching'] ?? true) {
-            throw UnexpectedRequestException::noMatchFound(
-                $method,
-                $url,
-                $curlOptions,
-                $this->mockedRequests
-            );
-        }
-
-        if (!($this->globalSettings['allow_passthrough'] ?? false)) {
-            throw UnexpectedRequestException::noMatchFound(
-                $method,
-                $url,
-                $curlOptions,
-                $this->mockedRequests
-            );
-        }
-
-        return parent::sse($url, $options, $onEvent, $onError, $reconnectConfig);
     }
 
     public static function getTempPath(?string $filename = null): string

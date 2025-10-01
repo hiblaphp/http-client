@@ -123,6 +123,67 @@ class RequestExecutor
         return $promise;
     }
 
+    public function executeSSE(
+        string $url,
+        array $curlOptions,
+        array &$mockedRequests,
+        array $globalSettings,
+        ?callable $onEvent = null,
+        ?callable $onError = null,
+        ?callable $parentSSE = null,
+        $reconnectConfig = null
+    ): CancellablePromiseInterface {
+        $method = 'GET';
+
+        $this->requestRecorder->recordRequest($method, $url, $curlOptions);
+
+        $match = $this->requestMatcher->findMatchingMock(
+            $mockedRequests,
+            $method,
+            $url,
+            $curlOptions
+        );
+
+        if ($match !== null) {
+            $mock = $match['mock'];
+
+            if (!$mock->isPersistent()) {
+                array_splice($mockedRequests, $match['index'], 1);
+            }
+
+            if ($mock->isSSE()) {
+                return $this->responseFactory->createMockedSSE($mock, $onEvent, $onError);
+            }
+
+            throw new \RuntimeException(
+                "Mock matched for SSE request but is not configured as SSE. " .
+                    "Use ->respondWithSSE() instead of ->respondWith() or ->respondJson()"
+            );
+        }
+
+        if ($globalSettings['strict_matching'] ?? true) {
+            throw UnexpectedRequestException::noMatchFound(
+                $method,
+                $url,
+                $curlOptions,
+                $mockedRequests
+            );
+        }
+
+        if (!($globalSettings['allow_passthrough'] ?? false)) {
+            throw UnexpectedRequestException::noMatchFound(
+                $method,
+                $url,
+                $curlOptions,
+                $mockedRequests
+            );
+        }
+
+        return $parentSSE
+            ? $parentSSE($url, [], $onEvent, $onError, $reconnectConfig)
+            : throw new \RuntimeException('No parent SSE handler available');
+    }
+
     /**
      * Check if the request is configured for SSE.
      */

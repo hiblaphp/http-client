@@ -2,44 +2,56 @@
 
 use Hibla\Http\Http;
 use Hibla\Http\SSE\SSEEvent;
-use function Hibla\await;
+use Hibla\Http\SSE\SSEReconnectConfig;
 
 require 'vendor/autoload.php';
 
-Http::startTesting();
+$http = Http::startTesting();
 
-Http::mock()
-    ->url('https://chat.example.com/messages')
+// First attempt: SSE connection fails
+$http->mock('GET')
+    ->url('https://api.example.com/events')
     ->respondWithSSE([
-        [
-            'id' => '1',
-            'event' => 'message',
-            'data' => json_encode(['user' => 'Alice', 'text' => 'Hello'])
-        ],
-        [
-            'id' => '2',
-            'event' => 'message',
-            'data' => json_encode(['user' => 'Bob', 'text' => 'Hi there'])
-        ],
-        [
-            'id' => '3',
-            'event' => 'message',
-            'data' => json_encode(['user' => 'Charlie', 'text' => 'Hey'])
-        ]
+        ['event' => 'error', 'data' => 'Connection failed'],
+        ['event' => 'retry', 'data' => '1'],
+    ])
+    ->fail('Connection failed')
+    ->register();
+
+// Second attempt: SSE connection succeeds
+$http->mock('GET')
+    ->url('https://api.example.com/events')
+    ->respondWithSSE([
+        ['data' => 'Hello World', 'id' => '1'],
     ])
     ->register();
 
-$promise = Http::sseDataFormat('json')->sse(
-    'https://chat.example.com/messages',
-    onEvent: function ($event) use (&$messages) {
-       print_r($event);
-    },
-    onError: fn($error) => print "Error: {$error}\n"
+$events = [];
+$errors = [];
+
+$reconnectConfig = new SSEReconnectConfig(
+    enabled: true,
+    maxAttempts: 3,
+    initialDelay: 0.1
 );
 
-await($promise);
+echo "Starting SSE test...\n";
 
-Http::assertSSEConnectionMade('https://chat.example.com/messages');
-Http::assertRequestCount(1);
+Http::sse(
+    'https://api.example.com/events',
+    onEvent: function (SSEEvent $event) use (&$events) {
+        echo "✓ Event: {$event->data}\n";
+        $events[] = $event->data;
+    },
+    onError: function (string $error) use (&$errors) {
+        echo "✗ Error: {$error}\n";
+        $errors[] = $error;
+    },
+    reconnectConfig: $reconnectConfig
+)->await();
 
-echo "✓ All tests passed!\n";
+echo "\nTest completed!\n";
+echo "Errors: " . count($errors) . " (expected: 1)\n";
+echo "Events: " . count($events) . " (expected: 1)\n";
+
+Http::stopTesting();
