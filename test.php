@@ -10,7 +10,7 @@ Http::startTesting();
 
 Http::mock()
     ->url('https://chat.example.com/messages')
-    ->sseWithKeepalive([
+    ->respondWithSSE([
         [
             'id' => '1',
             'event' => 'message',
@@ -26,22 +26,18 @@ Http::mock()
             'event' => 'message',
             'data' => json_encode(['user' => 'Charlie', 'text' => 'Hey'])
         ]
-    ], 9)
+    ])
     ->register();
 
-$messages = [];
-
-$promise = Http::sse(
+$promise = Http::sseDataFormat('json')->sse(
     'https://chat.example.com/messages',
-    onEvent: function (SSEEvent $event) use (&$messages) {
+    onEvent: function ($event) use (&$messages) {
        print_r($event);
     },
     onError: fn($error) => print "Error: {$error}\n"
 );
 
 await($promise);
-
-echo "\n✓ Total messages received: " . count($messages) . "\n";
 
 Http::assertSSEConnectionMade('https://chat.example.com/messages');
 Http::assertRequestCount(1);

@@ -326,14 +326,6 @@ class MockedRequest
         return $this->sseEvents;
     }
 
-    /**
-     * Set delay between SSE events.
-     */
-    public function setSSEEventDelay(?float $delay): void
-    {
-        $this->sseEventDelay = $delay;
-    }
-
     private function extractHeaders(array $options): array
     {
         $headers = [];

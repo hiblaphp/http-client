@@ -478,15 +478,11 @@ class MockRequestBuilder
      * Configure this mock as an SSE response.
      *
      * @param array<array{id?: string, event?: string, data?: string, retry?: int}> $events SSE events to emit
-     * @param float|null $eventDelay Optional delay between events in seconds
      */
-    public function respondWithSSE(array $events, ?float $eventDelay = null): self
+    public function respondWithSSE(array $events): self
     {
         $this->request->asSSE();
         $this->request->setSSEEvents($events);
-        if ($eventDelay !== null) {
-            $this->request->setSSEEventDelay($eventDelay);
-        }
 
         $this->respondWithHeader('Content-Type', 'text/event-stream');
         $this->respondWithHeader('Cache-Control', 'no-cache');
