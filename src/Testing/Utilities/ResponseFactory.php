@@ -207,7 +207,7 @@ class ResponseFactory
             });
         };
 
-        $executeAttempt();
+        EventLoop::getInstance()->nextTick($executeAttempt);
 
         return $promise;
     }
