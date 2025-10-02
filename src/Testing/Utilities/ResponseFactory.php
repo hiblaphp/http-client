@@ -52,11 +52,18 @@ class ResponseFactory
     /**
      * Create a retryable mocked response with proper mock consumption
      */
+    /**
+     * Create a retryable mocked response with proper mock consumption
+     */
     public function createRetryableMockedResponse(RetryConfig $retryConfig, callable $mockProvider): PromiseInterface
     {
+        echo "\n=== Starting Retryable Mock Response ===\n";
+        echo "MaxRetries configured: {$retryConfig->maxRetries}\n";
+
         /** @var CancellablePromise<Response> $promise */
         $promise = new CancellablePromise;
         $attempt = 0;
+        $totalAttempts = 0;
         /** @var string|null $timerId */
         $timerId = null;
 
@@ -66,62 +73,137 @@ class ResponseFactory
             }
         });
 
-        $executeAttempt = function () use ($retryConfig, $promise, $mockProvider, &$attempt, &$timerId, &$executeAttempt) {
+        $executeAttempt = function () use ($retryConfig, $promise, $mockProvider, &$attempt, &$totalAttempts, &$timerId, &$executeAttempt) {
             if ($promise->isCancelled()) {
+                echo "Promise was cancelled, stopping execution\n";
                 return;
             }
 
-            $attempt++;
+            $totalAttempts++;
+            $currentAttemptNumber = $totalAttempts;
+
+            echo "\n--- Executing Attempt #{$currentAttemptNumber} (Retry #{$attempt}) ---\n";
 
             try {
-                $mock = $mockProvider($attempt);
+                echo "Calling mockProvider with attempt number: {$currentAttemptNumber}\n";
+                $mock = $mockProvider($currentAttemptNumber);
                 if (! $mock instanceof MockedRequest) {
                     throw new Exception('Mock provider must return a MockedRequest instance');
                 }
+                echo "Mock retrieved successfully\n";
+                echo "Mock should fail: " . ($mock->shouldFail() ? 'YES' : 'NO') . "\n";
+                if ($mock->shouldFail()) {
+                    echo "Mock error: " . $mock->getError() . "\n";
+                    echo "Mock is retryable: " . ($mock->isRetryableFailure() ? 'YES' : 'NO') . "\n";
+                } else {
+                    echo "Mock status code: " . $mock->getStatusCode() . "\n";
+                    echo "Mock body preview: " . substr($mock->getBody(), 0, 50) . "...\n";
+                }
             } catch (Exception $e) {
+                echo "ERROR: Mock provider failed: " . $e->getMessage() . "\n";
                 $promise->reject(new HttpException('Mock provider error: ' . $e->getMessage()));
-
                 return;
             }
 
             $networkConditions = $this->networkSimulator->simulate();
-            $delay = max($networkConditions['delay'] ?? 0, $mock->getDelay());
+            echo "Network simulation - should_fail: " . ($networkConditions['should_fail'] ? 'YES' : 'NO') . "\n";
 
-            $timerId = EventLoop::getInstance()->addTimer($delay, function () use ($retryConfig, $promise, $mock, $networkConditions, $attempt, &$executeAttempt) {
+            // Get mock delay (which might be random for persistent mocks)
+            $mockDelay = $mock->getDelay();
+
+            // Add global random delay if the handler has it enabled
+            $globalDelay = 0.0;
+            if ($this->handler !== null) {
+                $globalDelay = $this->handler->generateGlobalRandomDelay();
+            }
+
+            // Use the maximum of all delays
+            $delay = max($mockDelay, $globalDelay, $networkConditions['delay'] ?? 0);
+            echo "Total delay for this attempt: {$delay}s (mock: {$mockDelay}s, global: {$globalDelay}s)\n";
+
+            $timerId = EventLoop::getInstance()->addTimer($delay, function () use (
+                $retryConfig,
+                $promise,
+                $mock,
+                $networkConditions,
+                &$attempt,
+                $totalAttempts,
+                &$executeAttempt
+            ) {
                 if ($promise->isCancelled()) {
+                    echo "Promise was cancelled in timer callback\n";
                     return;
                 }
+
+                echo "\nTimer fired for attempt #{$totalAttempts}\n";
 
                 $shouldFail = false;
                 $isRetryable = false;
                 $errorMessage = '';
 
+                // Check network simulation failure first
                 if ($networkConditions['should_fail']) {
+                    echo "Network simulation caused failure\n";
                     $shouldFail = true;
                     $errorMessage = $networkConditions['error_message'] ?? 'Network failure';
                     $isRetryable = $retryConfig->isRetryableError($errorMessage);
-                } elseif ($mock->shouldFail()) {
+                    echo "Network error is retryable: " . ($isRetryable ? 'YES' : 'NO') . "\n";
+                }
+                // Check if mock should fail
+                elseif ($mock->shouldFail()) {
+                    echo "Mock is configured to fail\n";
                     $shouldFail = true;
                     $errorMessage = $mock->getError() ?? 'Mocked request failure';
                     $isRetryable = $retryConfig->isRetryableError($errorMessage) || $mock->isRetryableFailure();
-                } elseif ($mock->getStatusCode() >= 400) {
+                    echo "Error message: {$errorMessage}\n";
+                    echo "Error is retryable: " . ($isRetryable ? 'YES' : 'NO') . "\n";
+                }
+                // Check for failure status codes
+                elseif ($mock->getStatusCode() >= 400) {
+                    echo "Mock has failure status code: " . $mock->getStatusCode() . "\n";
                     $shouldFail = true;
                     $errorMessage = 'Mock responded with status ' . $mock->getStatusCode();
                     $isRetryable = in_array($mock->getStatusCode(), $retryConfig->retryableStatusCodes);
+                    echo "Status code is retryable: " . ($isRetryable ? 'YES' : 'NO') . "\n";
+                } else {
+                    echo "Mock represents a successful response\n";
                 }
 
+                echo "Decision - shouldFail: " . ($shouldFail ? 'YES' : 'NO') . ", isRetryable: " . ($isRetryable ? 'YES' : 'NO') . "\n";
+                echo "Current retry count: {$attempt}, Max retries: {$retryConfig->maxRetries}\n";
+
                 // Decide what to do based on failure status
-                if ($shouldFail) {
-                    if ($isRetryable && $attempt <= $retryConfig->maxRetries) {
+                if ($shouldFail && $isRetryable) {
+                    // Check if we can still retry
+                    if ($attempt < $retryConfig->maxRetries) {
+                        $attempt++;
+                        echo "Will retry - incrementing attempt to {$attempt}\n";
                         $retryDelay = $retryConfig->getDelay($attempt);
+                        echo "Scheduling retry with delay: {$retryDelay}s\n";
                         EventLoop::getInstance()->addTimer($retryDelay, $executeAttempt);
+                        return;
                     } else {
-                        $promise->reject(new HttpException("HTTP Request failed after {$attempt} attempts: {$errorMessage}"));
+                        // Exhausted all retries
+                        echo "EXHAUSTED all retries - REJECTING\n";
+                        $promise->reject(new HttpException(
+                            "HTTP Request failed after {$totalAttempts} attempts: {$errorMessage}"
+                        ));
+                        return;
                     }
-                } else {
-                    $response = new Response($mock->getBody(), $mock->getStatusCode(), $mock->getHeaders());
-                    $promise->resolve($response);
+                } elseif ($shouldFail) {
+                    // Non-retryable failure
+                    echo "Non-retryable failure - REJECTING immediately\n";
+                    $promise->reject(new HttpException(
+                        "HTTP Request failed after {$totalAttempts} attempts: {$errorMessage}"
+                    ));
+                    return;
                 }
+
+                // Success!
+                echo "SUCCESS - RESOLVING with response\n";
+                echo "Response body: " . $mock->getBody() . "\n";
+                $response = new Response($mock->getBody(), $mock->getStatusCode(), $mock->getHeaders());
+                $promise->resolve($response);
             });
         };
 
