@@ -34,6 +34,16 @@ class MockedRequest
         $this->method = $method;
     }
 
+    /**
+     * Add a single SSE event to the existing events array.
+     *
+     * @param array{id?: string, event?: string, data?: string, retry?: int} $event
+     */
+    public function addSSEEvent(array $event): void
+    {
+        $this->sseEvents[] = $event;
+    }
+
     public function setUrlPattern(string $pattern): void
     {
         $this->urlPattern = $pattern;

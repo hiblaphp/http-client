@@ -11,6 +11,7 @@ use Hibla\Http\Testing\Traits\RequestBuilder\BuildsAdvancedScenarios;
 use Hibla\Http\Testing\Traits\RequestBuilder\BuildsSSEMocks;
 use Hibla\Http\Testing\Traits\RequestBuilder\BuildsFileMocks;
 use Hibla\Http\Testing\Traits\RequestBuilder\BuildsCookieMocks;
+use Hibla\Http\Testing\Traits\RequestBuilder\BuildsSSERetrySequences;
 
 class MockRequestBuilder
 {
@@ -21,6 +22,7 @@ class MockRequestBuilder
     use BuildsRetrySequences;
     use BuildsAdvancedScenarios;
     use BuildsSSEMocks;
+    use BuildsSSERetrySequences;
     use BuildsFileMocks;
     use BuildsCookieMocks;
 

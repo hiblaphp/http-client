@@ -31,7 +31,6 @@ trait BuildsSSEMocks
         ?string $id = null,
         ?int $retry = null
     ): self {
-        $currentEvents = $this->getRequest()->getSSEEvents();
         $eventData = array_filter([
             'data' => $data,
             'event' => $event,
@@ -39,8 +38,7 @@ trait BuildsSSEMocks
             'retry' => $retry,
         ], fn($v) => $v !== null);
 
-        $currentEvents[] = $eventData;
-        $this->getRequest()->setSSEEvents($currentEvents);
+        $this->getRequest()->addSSEEvent($eventData);
 
         return $this;
     }
@@ -54,9 +52,10 @@ trait BuildsSSEMocks
         foreach ($dataEvents as $index => $event) {
             $events[] = $event;
 
+            // Add keepalive events between data events (but not after the last one)
             if ($index < count($dataEvents) - 1) {
                 for ($i = 0; $i < $keepaliveCount; $i++) {
-                    $events[] = ['data' => ''];
+                    $events[] = ['data' => '']; // Empty data = keepalive
                 }
             }
         }
@@ -65,7 +64,7 @@ trait BuildsSSEMocks
     }
 
     /**
-     * Mock an SSE stream that reconnects after a certain number of events.
+     * Mock an SSE stream that disconnects after a certain number of events.
      */
     public function sseDisconnectAfter(int $eventsBeforeDisconnect, string $disconnectError = 'Connection reset'): self
     {
@@ -109,6 +108,85 @@ trait BuildsSSEMocks
                     'data' => is_array($data) ? json_encode($data) : $data,
                 ];
             }
+        }
+
+        return $this->respondWithSSE($events);
+    }
+
+    /**
+     * Mock an SSE stream with event IDs (useful for reconnection scenarios).
+     */
+    public function sseWithEventIds(array $eventsWithIds): self
+    {
+        $this->getRequest()->asSSE();
+        $this->respondWithHeader('Content-Type', 'text/event-stream');
+        $this->respondWithHeader('Cache-Control', 'no-cache');
+        $this->respondWithHeader('Connection', 'keep-alive');
+        
+        foreach ($eventsWithIds as $event) {
+            if (!isset($event['id'])) {
+                throw new \InvalidArgumentException('All events must have an id field when using sseWithEventIds()');
+            }
+            $this->getRequest()->addSSEEvent($event);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Mock an SSE stream that expects Last-Event-ID header (for resumption).
+     */
+    public function sseExpectLastEventId(string $lastEventId, array $eventsAfterResume): self
+    {
+        $this->getRequest()->expectHeader('Last-Event-ID', $lastEventId);
+        return $this->respondWithSSE($eventsAfterResume);
+    }
+
+    /**
+     * Mock an SSE stream with server-sent retry directive.
+     */
+    public function sseWithRetryDirective(int $retryMs, array $events = []): self
+    {
+        $this->getRequest()->asSSE();
+        $this->respondWithHeader('Content-Type', 'text/event-stream');
+        $this->respondWithHeader('Cache-Control', 'no-cache');
+        $this->respondWithHeader('Connection', 'keep-alive');
+        
+        // Add retry directive as first event
+        $retryEvent = ['retry' => $retryMs];
+        $allEvents = array_merge([$retryEvent], $events);
+        
+        $this->getRequest()->setSSEEvents($allEvents);
+
+        return $this;
+    }
+
+    /**
+     * Mock an SSE stream with comment lines (for testing parser).
+     */
+    public function sseWithComments(array $events, array $comments = []): self
+    {
+        $eventsWithComments = [];
+        
+        foreach ($events as $index => $event) {
+            // Add comment before event if provided
+            if (isset($comments[$index])) {
+                $eventsWithComments[] = ['comment' => $comments[$index]];
+            }
+            $eventsWithComments[] = $event;
+        }
+
+        return $this->respondWithSSE($eventsWithComments);
+    }
+
+    /**
+     * Mock an SSE stream that sends only keepalive (heartbeat) events.
+     */
+    public function sseHeartbeatOnly(int $heartbeatCount = 10): self
+    {
+        $events = [];
+        for ($i = 0; $i < $heartbeatCount; $i++) {
+            $events[] = ['data' => ''];
         }
 
         return $this->respondWithSSE($events);
