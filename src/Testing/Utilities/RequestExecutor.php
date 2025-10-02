@@ -384,94 +384,43 @@ class RequestExecutor
         array &$mockedRequests,
         ?callable $createStream = null
     ): PromiseInterface {
-        echo "\n=== Execute With Mock Retry ===\n";
-        echo "URL: {$url}\n";
-        echo "Method: {$method}\n";
-        echo "MaxRetries: {$retryConfig->maxRetries}\n";
-
         $finalPromise = new CancellablePromise;
         $curlOptions = $this->normalizeFetchOptions($url, $options);
 
-        // Collect all mocks upfront for the retry sequence
-        $collectedMocks = [];
-        $maxAttempts = $retryConfig->maxRetries + 1; // +1 for initial attempt
-
-        echo "Collecting mocks - need up to {$maxAttempts} mocks\n";
-
-        for ($i = 0; $i < $maxAttempts; $i++) {
+        $mockProvider = function (int $attemptNumber) use ($method, $url, $curlOptions, &$mockedRequests) {
             $match = $this->requestMatcher->findMatchingMock($mockedRequests, $method, $url, $curlOptions);
 
             if ($match === null) {
-                echo "No more mocks found after collecting " . count($collectedMocks) . " mocks\n";
-                break; // No more mocks available
+                throw new MockAssertionException("No mock found for attempt #{$attemptNumber}: {$method} {$url}");
             }
 
-            echo "Collected mock #" . ($i + 1) . "\n";
-            echo "  - Should fail: " . ($match['mock']->shouldFail() ? 'YES' : 'NO') . "\n";
-            echo "  - Is persistent: " . ($match['mock']->isPersistent() ? 'YES' : 'NO') . "\n";
+            $mock = $match['mock'];
 
-            $collectedMocks[] = $match['mock'];
+            $this->requestRecorder->recordRequest($method, $url, $curlOptions);
 
-            // Remove the mock if it's not persistent
-            if (!$match['mock']->isPersistent()) {
+            if (!$mock->isPersistent()) {
                 array_splice($mockedRequests, $match['index'], 1);
-                echo "  - Removed from queue (non-persistent)\n";
-            } else {
-                // For persistent mocks, we can reuse the same one
-                // So we don't need to collect more
-                echo "  - Keeping in queue (persistent) - stopping collection\n";
-                break;
             }
-        }
 
-        if (empty($collectedMocks)) {
-            echo "ERROR: No mocks collected!\n";
-            throw new MockAssertionException("No mock found for: {$method} {$url}");
-        }
-
-        echo "Total mocks collected: " . count($collectedMocks) . "\n";
+            return $mock;
+        };
 
         $retryPromise = $this->responseFactory->createRetryableMockedResponse(
             $retryConfig,
-            function (int $attemptNumber) use ($method, $url, $curlOptions, $collectedMocks) {
-                echo "\nMock provider called for attempt #{$attemptNumber}\n";
-
-                $this->requestRecorder->recordRequest($method, $url, $curlOptions);
-
-                // Use the collected mocks by index
-                // If we've exhausted the collected mocks, reuse the last one (for persistent mocks)
-                $mockIndex = min($attemptNumber - 1, count($collectedMocks) - 1);
-
-                echo "Using mock at index {$mockIndex} (0-based)\n";
-
-                $mock = $collectedMocks[$mockIndex];
-
-                if ($mock === null) {
-                    echo "ERROR: Mock at index {$mockIndex} is null!\n";
-                    throw new MockAssertionException("No mock for attempt #{$attemptNumber}: {$method} {$url}");
-                }
-
-                return $mock;
-            }
+            $mockProvider
         );
 
         $retryPromise->then(
             function ($successfulResponse) use ($options, $finalPromise, $createStream) {
-                echo "\n=== Retry Promise Resolved Successfully ===\n";
-
                 if (isset($options['download'])) {
-                    $destPath = $options['download'];
-                    if (!is_string($destPath)) {
-                        $destPath = $this->fileManager->createTempFile();
-                    }
+                    $destPath = is_string($options['download']) ? $options['download'] : $this->fileManager->createTempFile();
                     file_put_contents($destPath, $successfulResponse->body());
-                    $result = [
+                    $finalPromise->resolve([
                         'file' => $destPath,
                         'status' => $successfulResponse->status(),
                         'headers' => $successfulResponse->headers(),
                         'size' => strlen($successfulResponse->body()),
-                    ];
-                    $finalPromise->resolve($result);
+                    ]);
                 } elseif (isset($options['stream']) && $options['stream'] === true) {
                     $onChunk = $options['on_chunk'] ?? $options['onChunk'] ?? null;
                     $body = $successfulResponse->body();
@@ -485,13 +434,10 @@ class RequestExecutor
                         $successfulResponse->headers()
                     ));
                 } else {
-                    echo "Resolving final promise with response\n";
                     $finalPromise->resolve($successfulResponse);
                 }
             },
             function ($reason) use ($finalPromise) {
-                echo "\n=== Retry Promise REJECTED ===\n";
-                echo "Reason: " . $reason->getMessage() . "\n";
                 $finalPromise->reject($reason);
             }
         );

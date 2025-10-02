@@ -18,6 +18,8 @@ use Hibla\Http\SSE\SSEResponse;
 use Hibla\Http\Stream;
 use Throwable;
 
+use function Hibla\delay;
+
 class ResponseFactory
 {
     private NetworkSimulator $networkSimulator;
@@ -49,165 +51,95 @@ class ResponseFactory
         return $promise;
     }
 
-    /**
-     * Create a retryable mocked response with proper mock consumption
-     */
-    /**
-     * Create a retryable mocked response with proper mock consumption
-     */
     public function createRetryableMockedResponse(RetryConfig $retryConfig, callable $mockProvider): PromiseInterface
     {
-        echo "\n=== Starting Retryable Mock Response ===\n";
-        echo "MaxRetries configured: {$retryConfig->maxRetries}\n";
-
         /** @var CancellablePromise<Response> $promise */
         $promise = new CancellablePromise;
         $attempt = 0;
-        $totalAttempts = 0;
-        /** @var string|null $timerId */
-        $timerId = null;
+        $activeDelayPromise = null;
 
-        $promise->setCancelHandler(function () use (&$timerId) {
-            if ($timerId !== null) {
-                EventLoop::getInstance()->cancelTimer($timerId);
+        $promise->setCancelHandler(function () use (&$activeDelayPromise) {
+            if ($activeDelayPromise instanceof CancellablePromiseInterface) {
+                $activeDelayPromise->cancel();
             }
         });
 
-        $executeAttempt = function () use ($retryConfig, $promise, $mockProvider, &$attempt, &$totalAttempts, &$timerId, &$executeAttempt) {
+        $executeAttempt = null;
+        $executeAttempt = function () use ($retryConfig, $promise, $mockProvider, &$attempt, &$activeDelayPromise, &$executeAttempt) {
             if ($promise->isCancelled()) {
-                echo "Promise was cancelled, stopping execution\n";
                 return;
             }
 
-            $totalAttempts++;
-            $currentAttemptNumber = $totalAttempts;
-
-            echo "\n--- Executing Attempt #{$currentAttemptNumber} (Retry #{$attempt}) ---\n";
+            $currentAttempt = $attempt + 1;
 
             try {
-                echo "Calling mockProvider with attempt number: {$currentAttemptNumber}\n";
-                $mock = $mockProvider($currentAttemptNumber);
-                if (! $mock instanceof MockedRequest) {
+                $mock = $mockProvider($currentAttempt);
+                if (!$mock instanceof MockedRequest) {
                     throw new Exception('Mock provider must return a MockedRequest instance');
                 }
-                echo "Mock retrieved successfully\n";
-                echo "Mock should fail: " . ($mock->shouldFail() ? 'YES' : 'NO') . "\n";
-                if ($mock->shouldFail()) {
-                    echo "Mock error: " . $mock->getError() . "\n";
-                    echo "Mock is retryable: " . ($mock->isRetryableFailure() ? 'YES' : 'NO') . "\n";
-                } else {
-                    echo "Mock status code: " . $mock->getStatusCode() . "\n";
-                    echo "Mock body preview: " . substr($mock->getBody(), 0, 50) . "...\n";
-                }
             } catch (Exception $e) {
-                echo "ERROR: Mock provider failed: " . $e->getMessage() . "\n";
                 $promise->reject(new HttpException('Mock provider error: ' . $e->getMessage()));
                 return;
             }
 
             $networkConditions = $this->networkSimulator->simulate();
-            echo "Network simulation - should_fail: " . ($networkConditions['should_fail'] ? 'YES' : 'NO') . "\n";
-
-            // Get mock delay (which might be random for persistent mocks)
             $mockDelay = $mock->getDelay();
-
-            // Add global random delay if the handler has it enabled
-            $globalDelay = 0.0;
-            if ($this->handler !== null) {
-                $globalDelay = $this->handler->generateGlobalRandomDelay();
-            }
-
-            // Use the maximum of all delays
+            $globalDelay = $this->handler !== null ? $this->handler->generateGlobalRandomDelay() : 0.0;
             $delay = max($mockDelay, $globalDelay, $networkConditions['delay'] ?? 0);
-            echo "Total delay for this attempt: {$delay}s (mock: {$mockDelay}s, global: {$globalDelay}s)\n";
 
-            $timerId = EventLoop::getInstance()->addTimer($delay, function () use (
+            $activeDelayPromise = delay($delay);
+
+            $activeDelayPromise->then(function () use (
                 $retryConfig,
                 $promise,
                 $mock,
                 $networkConditions,
                 &$attempt,
-                $totalAttempts,
+                $currentAttempt,
+                &$activeDelayPromise,
                 &$executeAttempt
             ) {
                 if ($promise->isCancelled()) {
-                    echo "Promise was cancelled in timer callback\n";
                     return;
                 }
-
-                echo "\nTimer fired for attempt #{$totalAttempts}\n";
 
                 $shouldFail = false;
                 $isRetryable = false;
                 $errorMessage = '';
 
-                // Check network simulation failure first
                 if ($networkConditions['should_fail']) {
-                    echo "Network simulation caused failure\n";
                     $shouldFail = true;
                     $errorMessage = $networkConditions['error_message'] ?? 'Network failure';
                     $isRetryable = $retryConfig->isRetryableError($errorMessage);
-                    echo "Network error is retryable: " . ($isRetryable ? 'YES' : 'NO') . "\n";
-                }
-                // Check if mock should fail
-                elseif ($mock->shouldFail()) {
-                    echo "Mock is configured to fail\n";
+                } elseif ($mock->shouldFail()) {
                     $shouldFail = true;
                     $errorMessage = $mock->getError() ?? 'Mocked request failure';
                     $isRetryable = $retryConfig->isRetryableError($errorMessage) || $mock->isRetryableFailure();
-                    echo "Error message: {$errorMessage}\n";
-                    echo "Error is retryable: " . ($isRetryable ? 'YES' : 'NO') . "\n";
-                }
-                // Check for failure status codes
-                elseif ($mock->getStatusCode() >= 400) {
-                    echo "Mock has failure status code: " . $mock->getStatusCode() . "\n";
+                } elseif ($mock->getStatusCode() >= 400) {
                     $shouldFail = true;
                     $errorMessage = 'Mock responded with status ' . $mock->getStatusCode();
-                    $isRetryable = in_array($mock->getStatusCode(), $retryConfig->retryableStatusCodes);
-                    echo "Status code is retryable: " . ($isRetryable ? 'YES' : 'NO') . "\n";
-                } else {
-                    echo "Mock represents a successful response\n";
+                    $isRetryable = in_array($mock->getStatusCode(), $retryConfig->retryableStatusCodes, true);
                 }
 
-                echo "Decision - shouldFail: " . ($shouldFail ? 'YES' : 'NO') . ", isRetryable: " . ($isRetryable ? 'YES' : 'NO') . "\n";
-                echo "Current retry count: {$attempt}, Max retries: {$retryConfig->maxRetries}\n";
+                if ($shouldFail && $isRetryable && $attempt < $retryConfig->maxRetries) {
+                    $attempt++;
+                    $retryDelay = $retryConfig->getDelay($attempt);
 
-                // Decide what to do based on failure status
-                if ($shouldFail && $isRetryable) {
-                    // Check if we can still retry
-                    if ($attempt < $retryConfig->maxRetries) {
-                        $attempt++;
-                        echo "Will retry - incrementing attempt to {$attempt}\n";
-                        $retryDelay = $retryConfig->getDelay($attempt);
-                        echo "Scheduling retry with delay: {$retryDelay}s\n";
-                        EventLoop::getInstance()->addTimer($retryDelay, $executeAttempt);
-                        return;
-                    } else {
-                        // Exhausted all retries
-                        echo "EXHAUSTED all retries - REJECTING\n";
-                        $promise->reject(new HttpException(
-                            "HTTP Request failed after {$totalAttempts} attempts: {$errorMessage}"
-                        ));
-                        return;
-                    }
+                    $activeDelayPromise = delay($retryDelay);
+                    $activeDelayPromise->then($executeAttempt);
                 } elseif ($shouldFail) {
-                    // Non-retryable failure
-                    echo "Non-retryable failure - REJECTING immediately\n";
                     $promise->reject(new HttpException(
-                        "HTTP Request failed after {$totalAttempts} attempts: {$errorMessage}"
+                        "HTTP Request failed after {$currentAttempt} attempt(s): {$errorMessage}"
                     ));
-                    return;
+                } else {
+                    $response = new Response($mock->getBody(), $mock->getStatusCode(), $mock->getHeaders());
+                    $promise->resolve($response);
                 }
-
-                // Success!
-                echo "SUCCESS - RESOLVING with response\n";
-                echo "Response body: " . $mock->getBody() . "\n";
-                $response = new Response($mock->getBody(), $mock->getStatusCode(), $mock->getHeaders());
-                $promise->resolve($response);
             });
         };
 
-        EventLoop::getInstance()->nextTick($executeAttempt);
+        $activeDelayPromise = delay(0);
+        $activeDelayPromise->then($executeAttempt);
 
         return $promise;
     }
@@ -290,40 +222,29 @@ class ResponseFactory
     private function executeWithNetworkSimulation(CancellablePromise $promise, MockedRequest $mock, callable $callback): void
     {
         $networkConditions = $this->networkSimulator->simulate();
-
-        // Get mock delay (which might be random for persistent mocks)
         $mockDelay = $mock->getDelay();
-
-        // Add global random delay if the handler has it enabled
-        $globalDelay = 0.0;
-        if ($this->handler !== null) {
-            $globalDelay = $this->handler->generateGlobalRandomDelay();
-        }
-
-        // Use the maximum of all delays, not sum
+        $globalDelay = $this->handler !== null ? $this->handler->generateGlobalRandomDelay() : 0.0;
         $totalDelay = max($mockDelay, $globalDelay, $networkConditions['delay'] ?? 0);
 
-        /** @var string|null $timerId */
-        $timerId = null;
+        $delayPromise = delay($totalDelay);
 
-        $promise->setCancelHandler(function () use (&$timerId) {
-            if ($timerId !== null) {
-                EventLoop::getInstance()->cancelTimer($timerId);
+        $promise->setCancelHandler(function () use ($delayPromise) {
+            if ($delayPromise instanceof CancellablePromiseInterface) {
+                $delayPromise->cancel();
             }
         });
 
         if ($networkConditions['should_fail']) {
-            $timerId = EventLoop::getInstance()->addTimer($totalDelay, function () use ($promise, $networkConditions) {
+            $delayPromise->then(function () use ($promise, $networkConditions) {
                 if ($promise->isCancelled()) {
                     return;
                 }
                 $promise->reject(new HttpException($networkConditions['error_message'] ?? 'Network failure'));
             });
-
             return;
         }
 
-        $timerId = EventLoop::getInstance()->addTimer($totalDelay, function () use ($promise, $callback) {
+        $delayPromise->then(function () use ($promise, $callback) {
             if ($promise->isCancelled()) {
                 return;
             }
@@ -366,7 +287,6 @@ class ResponseFactory
             }
         });
 
-        // Check for network simulation failure
         if ($networkConditions['should_fail']) {
             $timerId = EventLoop::getInstance()->addTimer($totalDelay, function () use ($promise, $networkConditions, $onError) {
                 if ($promise->isCancelled()) {

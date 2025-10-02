@@ -215,7 +215,6 @@ class TestingHttpHandler extends HttpHandler
         ]);
     }
 
-    // Configuration methods
     public function setAutoTempFileManagement(bool $enabled): self
     {
         $this->fileManager->setAutoManagement($enabled);
