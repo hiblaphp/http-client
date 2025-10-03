@@ -3,12 +3,12 @@
 namespace Hibla\Http;
 
 use Hibla\Http\Handlers\HttpHandler;
+use Hibla\Http\Handlers\OptionsBuilderHandler;
 use Hibla\Http\Interfaces\CompleteHttpClientInterface;
 use Hibla\Http\Interfaces\CookieJarInterface;
 use Hibla\Http\SSE\SSEEvent;
 use Hibla\Http\SSE\SSEReconnectConfig;
 use Hibla\Http\SSE\SSEResponse;
-use Hibla\Http\Traits\CurlOptionsTrait;
 use Hibla\Http\Traits\InterceptorTrait;
 use Hibla\Http\Traits\SSETrait;
 use Hibla\Http\Traits\StreamTrait;
@@ -29,9 +29,10 @@ use Psr\Http\Message\UriInterface;
  */
 class Request extends Message implements CompleteHttpClientInterface
 {
-    use StreamTrait, CurlOptionsTrait, SSETrait, InterceptorTrait, UriTrait;
+    use StreamTrait, SSETrait, InterceptorTrait, UriTrait;
 
     private HttpHandler $handler;
+    private OptionsBuilderHandler $optionsBuilder;
     private ?CookieJarInterface $cookieJar = null;
     private string $method = 'GET';
     private ?string $requestTarget = null;
@@ -71,6 +72,7 @@ class Request extends Message implements CompleteHttpClientInterface
     public function __construct(HttpHandler $handler, string $method = 'GET', $uri = '', array $headers = [], $body = null, string $version = '2.0')
     {
         $this->handler = $handler;
+        $this->optionsBuilder = new OptionsBuilderHandler();
         $this->method = strtoupper($method);
         $this->uri = $uri instanceof UriInterface ? $uri : new Uri($uri);
         $this->setHeaders($headers);
@@ -227,11 +229,21 @@ class Request extends Message implements CompleteHttpClientInterface
         return $this->withHeader('Accept', $type);
     }
 
+    /**
+     * Set Content-Type to application/json.
+     *
+     * @return self For fluent method chaining.
+     */
     public function asJson()
     {
         return $this->contentType('application/json');
     }
 
+    /**
+     * Set Content-Type to application/x-www-form-urlencoded.
+     *
+     * @return self For fluent method chaining.
+     */
     public function asForm()
     {
         return $this->contentType('application/x-www-form-urlencoded');
@@ -448,7 +460,7 @@ class Request extends Message implements CompleteHttpClientInterface
     /**
      * Configure what type of data SSE events should return.
      *
-     * @param string $dataFormat The data format to return:
+     * @param string $format The data format to return:
      *                          - 'json': Parse event data as JSON (fallback to raw string)
      *                          - 'array': Convert entire event to array using toArray()
      *                          - 'raw': Return raw event data string
@@ -511,6 +523,7 @@ class Request extends Message implements CompleteHttpClientInterface
      * @param  array  $retryableErrors  List of retryable error messages
      * @param  callable|null  $onReconnect  Callback called before each reconnection attempt
      * @param  callable|null  $shouldReconnect  Custom logic to determine if reconnection should occur
+     * @return self For fluent method chaining.
      */
     public function sseReconnect(
         bool $enabled = true,
@@ -551,6 +564,7 @@ class Request extends Message implements CompleteHttpClientInterface
      * Configure SSE reconnection using a custom configuration object.
      *
      * @param  SSEReconnectConfig  $config  The reconnection configuration
+     * @return self For fluent method chaining.
      */
     public function sseReconnectWith(SSEReconnectConfig $config): self
     {
@@ -561,6 +575,8 @@ class Request extends Message implements CompleteHttpClientInterface
 
     /**
      * Disable SSE reconnection.
+     *
+     * @return self For fluent method chaining.
      */
     public function noSseReconnect(): self
     {
@@ -864,36 +880,6 @@ class Request extends Message implements CompleteHttpClientInterface
     }
 
     /**
-     * Execute the actual request after all interceptors have been processed.
-     */
-    private function executeRequest(Request $processedRequest): PromiseInterface
-    {
-        $options = $processedRequest->buildCurlOptions(
-            $processedRequest->getMethod(),
-            (string) $processedRequest->getUri()
-        );
-
-        $httpPromise = $this->handler->sendRequest(
-            (string) $processedRequest->getUri(),
-            $options,
-            $processedRequest->cacheConfig,
-            $processedRequest->retryConfig
-        );
-
-        // Process response interceptors if any exist
-        if (empty($processedRequest->responseInterceptors)) {
-            return $httpPromise;
-        }
-
-        return $httpPromise->then(
-            fn($response) =>
-            $this->getResponseInterceptorHandler()
-                ->processInterceptors($response, $processedRequest->responseInterceptors)
-        );
-    }
-
-
-    /**
      * Add a single cookie to this request (sent as Cookie header).
      *
      * @param  string  $name  Cookie name
@@ -1175,5 +1161,89 @@ class Request extends Message implements CompleteHttpClientInterface
             }
         }
         return $new;
+    }
+
+    /**
+     * Execute the actual request after all interceptors have been processed.
+     *
+     * @param Request $processedRequest The request after interceptor processing.
+     * @return PromiseInterface<Response> A promise that resolves with the response.
+     */
+    private function executeRequest(Request $processedRequest): PromiseInterface
+    {
+        $options = $processedRequest->buildCurlOptions(
+            $processedRequest->getMethod(),
+            (string) $processedRequest->getUri()
+        );
+
+        $httpPromise = $this->handler->sendRequest(
+            (string) $processedRequest->getUri(),
+            $options,
+            $processedRequest->cacheConfig,
+            $processedRequest->retryConfig
+        );
+
+        // Process response interceptors if any exist
+        if (empty($processedRequest->responseInterceptors)) {
+            return $httpPromise;
+        }
+
+        return $httpPromise->then(
+            fn($response) =>
+            $this->getResponseInterceptorHandler()
+                ->processInterceptors($response, $processedRequest->responseInterceptors)
+        );
+    }
+
+    /**
+     * Build cURL options using the OptionsBuilder.
+     *
+     * @param  string  $method  The HTTP method.
+     * @param  string  $url  The target URL.
+     * @return array<int|string, mixed> The final cURL options array.
+     */
+    private function buildCurlOptions(string $method, string $url): array
+    {
+        return $this->optionsBuilder->buildCurlOptions(
+            method: $method,
+            url: $url,
+            headers: $this->headers,
+            body: $this->body,
+            timeout: $this->timeout,
+            connectTimeout: $this->connectTimeout,
+            followRedirects: $this->followRedirects,
+            maxRedirects: $this->maxRedirects,
+            verifySSL: $this->verifySSL,
+            userAgent: $this->userAgent,
+            protocol: $this->protocol,
+            cookieJar: $this->cookieJar,
+            handlerCookieJar: $this->handler->getCookieJar(),
+            proxyConfig: $this->proxyConfig,
+            auth: $this->auth,
+            additionalOptions: $this->options
+        );
+    }
+
+    /**
+     * Build fetch options using the OptionsBuilder.
+     *
+     * @param  string  $method  The HTTP method.
+     * @return array<string, mixed> The fetch options array.
+     */
+    private function buildFetchOptions(string $method): array
+    {
+        return $this->optionsBuilder->buildFetchOptions(
+            method: $method,
+            headers: $this->headers,
+            body: $this->body,
+            timeout: $this->timeout,
+            connectTimeout: $this->connectTimeout,
+            followRedirects: $this->followRedirects,
+            maxRedirects: $this->maxRedirects,
+            verifySSL: $this->verifySSL,
+            userAgent: $this->userAgent,
+            auth: $this->auth,
+            retryConfig: $this->retryConfig
+        );
     }
 }
