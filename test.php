@@ -1,10 +1,23 @@
 <?php
 
 use Hibla\Http\Http;
-use Hibla\Http\Request;
 
 require 'vendor/autoload.php';
 
-$baseClient = Http::interceptRequest(fn(Request $request) => $request->withHeader('X-Test', 'test'));
-$response = $baseClient->get("https://httpbin.org/headers")->await();
-echo $response->getBody()->getContents();
+Http::startTesting();
+
+Http::mock()
+    ->url('*')
+    ->respondJson(["success" => true])
+    ->persistent()
+    ->register();
+
+try {
+    $response = await(Http::get("https://test.com"));
+    Http::assertRequestMade("GET", "https://test.com");
+    echo "Test passed" . PHP_EOL;
+} catch (Throwable $e) {
+    echo $e->getMessage() . PHP_EOL;
+}
+
+Http::dumpLastRequest();

@@ -21,10 +21,33 @@ class RequestMatcher
             return false;
         }
 
-        if (! fnmatch($url, $request->url) && $request->url !== $url) {
+        if (!$this->urlMatches($url, $request->url)) {
             return false;
         }
 
         return true;
+    }
+
+    /**
+     * Check if URL matches the pattern, with lenient trailing slash handling
+     */
+    private function urlMatches(string $pattern, string $url): bool
+    {
+        if (fnmatch($pattern, $url)) {
+            return true;
+        }
+
+        $normalizedPattern = rtrim($pattern, '/');
+        $normalizedUrl = rtrim($url, '/');
+
+        if (fnmatch($normalizedPattern, $normalizedUrl)) {
+            return true;
+        }
+
+        if (fnmatch($normalizedPattern . '/', $normalizedUrl . '/')) {
+            return true;
+        }
+
+        return false;
     }
 }

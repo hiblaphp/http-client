@@ -27,7 +27,21 @@
         "psr/http-message": "^2.0"
     }
     ,
-    "require-dev": {
-        "hiblaphp/task": "dev-main"
+      "require-dev": {
+        "pestphp/pest": "^4.0",
+        "phpstan/phpstan": "^2.1",
+        "phpstan/phpstan-strict-rules": "^2.0",
+        "laravel/pint": "^1.25"
+    },
+     "scripts": {
+        "analyze": "./vendor/bin/phpstan analyse",
+        "format": "./vendor/bin/pint",
+        "format-test": "./vendor/bin/pint --test",
+        "test": "./vendor/bin/pest"
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
     }
 }

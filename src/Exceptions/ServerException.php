@@ -10,8 +10,15 @@ use Hibla\Http\Interfaces\ServerExceptionInterface;
 class ServerException extends HttpException implements ServerExceptionInterface
 {
     private ?int $statusCode = null;
+
+    /**
+     * @var array<string, mixed> The response headers, e.g., ['Content-Type' => ['application/json']]
+     */
     private array $responseHeaders = [];
 
+    /**
+     * @param array<string, mixed> $responseHeaders
+     */
     public function __construct(
         string $message = '',
         int $code = 0,
@@ -35,11 +42,17 @@ class ServerException extends HttpException implements ServerExceptionInterface
         $this->statusCode = $statusCode;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function getResponseHeaders(): array
     {
         return $this->responseHeaders;
     }
 
+    /**
+     * @param array<string, mixed> $headers
+     */
     public function setResponseHeaders(array $headers): void
     {
         $this->responseHeaders = $headers;
