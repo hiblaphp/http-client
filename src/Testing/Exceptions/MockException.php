@@ -2,4 +2,11 @@
 
 namespace Hibla\Http\Testing\Exceptions;
 
-class MockException extends \Exception {}
+use Hibla\Http\Exceptions\HttpException;
+
+/**
+ * Base exception for all mocking-related errors.
+ */
+class MockException extends HttpException
+{
+}

@@ -2,21 +2,21 @@
 
 namespace Hibla\Http\Testing\Exceptions;
 
-use RuntimeException;
-
 /**
  * Thrown when a request doesn't match any mocked expectations.
  */
-class UnexpectedRequestException extends RuntimeException
+class UnexpectedRequestException extends MockException
 {
     public function __construct(
         string $message = 'No mock matched the request',
+        int $code = 0,
+        ?\Throwable $previous = null,
+        ?string $url = null,
         public readonly string $method = '',
-        public readonly string $url = '',
         public readonly array $options = [],
         public readonly array $availableMocks = []
     ) {
-        parent::__construct($message);
+        parent::__construct($message, $code, $previous, $url);
     }
 
     /**
@@ -30,7 +30,7 @@ class UnexpectedRequestException extends RuntimeException
     ): self {
         $message = self::buildDetailedMessage($method, $url, $options, $availableMocks);
 
-        return new self($message, $method, $url, $options, $availableMocks);
+        return new self($message, 0, null, $url, $method, $options, $availableMocks);
     }
 
     private static function buildDetailedMessage(

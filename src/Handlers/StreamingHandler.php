@@ -2,9 +2,9 @@
 
 namespace Hibla\Http\Handlers;
 
-use Exception;
 use Hibla\EventLoop\EventLoop;
 use Hibla\Http\Exceptions\HttpStreamException;
+use Hibla\Http\Exceptions\NetworkException;
 use Hibla\Http\Stream;
 use Hibla\Http\StreamingResponse;
 use Hibla\Promise\CancellablePromise;
@@ -25,7 +25,9 @@ final readonly class StreamingHandler
 
         $responseStream = fopen('php://temp', 'w+b');
         if ($responseStream === false) {
-            $promise->reject(new HttpStreamException('Failed to create response stream'));
+            $exception = new HttpStreamException('Failed to create response stream', 0, null, $url);
+            $exception->setStreamState('stream_creation_failed');
+            $promise->reject($exception);
 
             return $promise;
         }
@@ -58,7 +60,7 @@ final readonly class StreamingHandler
         $requestId = EventLoop::getInstance()->addHttpRequest(
             $url,
             $streamingOptions,
-            function (?string $error, $response, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($promise, $responseStream, &$headerAccumulator): void {
+            function (?string $error, $response, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $promise, $responseStream, &$headerAccumulator): void {
                 if ($promise->isCancelled()) {
                     fclose($responseStream);
 
@@ -67,7 +69,16 @@ final readonly class StreamingHandler
 
                 if ($error !== null) {
                     fclose($responseStream);
-                    $promise->reject(new HttpStreamException("Streaming request failed: {$error}"));
+                    
+                    // Use NetworkException for network-level errors
+                    $exception = new NetworkException(
+                        "Streaming request failed: {$error}",
+                        0,
+                        null,
+                        $url,
+                        $error
+                    );
+                    $promise->reject($exception);
                 } else {
                     rewind($responseStream);
                     $stream = new Stream($responseStream);
@@ -121,7 +132,9 @@ final readonly class StreamingHandler
 
         $file = fopen($destination, 'wb');
         if ($file === false) {
-            $promise->reject(new HttpStreamException("Cannot open file for writing: {$destination}"));
+            $exception = new HttpStreamException("Cannot open file for writing: {$destination}", 0, null, $url);
+            $exception->setStreamState('file_open_failed');
+            $promise->reject($exception);
 
             return $promise;
         }
@@ -145,8 +158,8 @@ final readonly class StreamingHandler
 
         $requestId = EventLoop::getInstance()->addHttpRequest(
             $url,
-            $downloadOptions, // Pass the sanitized options
-            function (?string $error, $response, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($promise, $file, $destination): void {
+            $downloadOptions,
+            function (?string $error, $response, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $promise, $file, $destination): void {
                 fclose($file);
 
                 if ($promise->isCancelled()) {
@@ -161,7 +174,15 @@ final readonly class StreamingHandler
                     if (file_exists($destination)) {
                         unlink($destination);
                     }
-                    $promise->reject(new Exception("Download failed: {$error}"));
+                    
+                    $exception = new NetworkException(
+                        "Download failed: {$error}",
+                        0,
+                        null,
+                        $url,
+                        $error
+                    );
+                    $promise->reject($exception);
                 } else {
                     $fileSize = file_exists($destination) ? filesize($destination) : 0;
                     $promise->resolve([

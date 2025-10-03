@@ -6,7 +6,7 @@ use Psr\SimpleCache\CacheInterface;
 use Hibla\Http\Config\HttpConfigLoader;
 use Hibla\EventLoop\EventLoop;
 use Hibla\Http\CacheConfig;
-use Hibla\Http\Exceptions\HttpException;
+use Hibla\Http\Exceptions\NetworkException;
 use Hibla\Http\Response;
 use Hibla\Http\RetryConfig;
 use Hibla\Http\SSE\SSEReconnectConfig;
@@ -113,7 +113,7 @@ class FetchHandler
             $requestId = EventLoop::getInstance()->addHttpRequest(
                 $url,
                 $options,
-                function (?string $error, ?string $responseBody, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($retryConfig, $promise, &$attempt, &$totalAttempts, &$executeRequest, $cookieJar) {
+                function (?string $error, ?string $responseBody, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $retryConfig, $promise, &$attempt, &$totalAttempts, &$executeRequest, $cookieJar) {
 
                     if ($promise->isCancelled()) {
                         return;
@@ -132,24 +132,29 @@ class FetchHandler
                     }
 
                     if ($error !== null) {
-                        $promise->reject(new HttpException("HTTP Request failed after {$totalAttempts} attempts: {$error}"));
-                    } elseif ($isRetryable) {
-                        $promise->reject(new HttpException("HTTP Request failed with status {$httpCode} after {$totalAttempts} attempts."));
-                    } else {
-                        /** @var array<string, array<string>|string> $normalizedHeaders */
-                        $normalizedHeaders = $this->normalizeHeaders($headers);
-                        $responseObj = new Response($responseBody ?? '', $httpCode ?? 0, $normalizedHeaders);
-
-                        if ($httpVersion !== null) {
-                            $responseObj->setHttpVersion($httpVersion);
-                        }
-
-                        if ($cookieJar !== null) {
-                            $responseObj->applyCookiesToJar($cookieJar);
-                        }
-
-                        $promise->resolve($responseObj);
+                        $promise->reject(new NetworkException(
+                            "HTTP Request failed after {$totalAttempts} attempts: {$error}",
+                            0,
+                            null,
+                            $url,
+                            $error
+                        ));
+                        return;
                     }
+
+                    /** @var array<string, array<string>|string> $normalizedHeaders */
+                    $normalizedHeaders = $this->normalizeHeaders($headers);
+                    $responseObj = new Response($responseBody ?? '', $httpCode ?? 0, $normalizedHeaders);
+
+                    if ($httpVersion !== null) {
+                        $responseObj->setHttpVersion($httpVersion);
+                    }
+
+                    if ($cookieJar !== null) {
+                        $responseObj->applyCookiesToJar($cookieJar);
+                    }
+
+                    $promise->resolve($responseObj);
                 }
             );
         };
@@ -263,13 +268,19 @@ class FetchHandler
         $requestId = EventLoop::getInstance()->addHttpRequest(
             $url,
             $curlOptions,
-            function (?string $error, ?string $response, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($promise, $cookieJar) {
+            function (?string $error, ?string $response, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $promise, $cookieJar) {
                 if ($promise->isCancelled()) {
                     return;
                 }
 
                 if ($error !== null) {
-                    $promise->reject(new HttpException("HTTP Request failed: {$error}"));
+                    $promise->reject(new NetworkException(
+                        "HTTP Request failed: {$error}",
+                        0,
+                        null,
+                        $url,
+                        $error
+                    ));
                 } else {
                     $normalizedHeaders = $this->normalizeHeaders($headers);
                     $responseObj = new Response($response ?? '', $httpCode ?? 0, $normalizedHeaders);

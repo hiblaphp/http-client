@@ -2,9 +2,10 @@
 
 namespace Hibla\Http\Handlers;
 
-use Exception;
 use Hibla\EventLoop\EventLoop;
 use Hibla\Http\Exceptions\HttpStreamException;
+use Hibla\Http\Exceptions\NetworkException;
+use Hibla\Http\Exceptions\RequestException;
 use Hibla\Http\SSE\SSEConnectionState;
 use Hibla\Http\SSE\SSEEvent;
 use Hibla\Http\SSE\SSEReconnectConfig;
@@ -86,10 +87,15 @@ class SSEHandler
         ?callable $onError,
         CancellablePromise $mainPromise
     ): void {
-        // Guard against starting a new attempt if the session has been cancelled.
         if ($connectionState->isCancelled()) {
             if (! $mainPromise->isSettled()) {
-                $mainPromise->reject(new Exception('SSE connection cancelled before attempt.'));
+                $exception = new RequestException(
+                    'SSE connection cancelled before attempt.',
+                    0,
+                    null,
+                    $connectionState->getUrl()
+                );
+                $mainPromise->reject($exception);
             }
 
             return;
@@ -120,11 +126,17 @@ class SSEHandler
                 }
                 $connectionState->onConnected();
             },
-            function (Exception $error) use ($mainPromise, $connectionState, $onEvent, $onError) {
+            function (\Throwable $error) use ($mainPromise, $connectionState, $onEvent, $onError) {
                 // When a connection fails, check the master cancellation flag first.
                 if ($connectionState->isCancelled()) {
                     if (! $mainPromise->isSettled()) {
-                        $mainPromise->reject(new Exception('SSE connection cancelled during failure handling.'));
+                        $exception = new RequestException(
+                            'SSE connection cancelled during failure handling.',
+                            0,
+                            $error,
+                            $connectionState->getUrl()
+                        );
+                        $mainPromise->reject($exception);
                     }
 
                     return;
@@ -179,14 +191,14 @@ class SSEHandler
                         foreach ($events as $event) {
                             $onEvent($event);
                         }
-                    } catch (Exception $e) {
+                    } catch (\Throwable $e) {
                         error_log('SSE event parsing error: '.$e->getMessage());
                     }
                 }
 
                 return strlen($data);
             },
-            CURLOPT_HEADERFUNCTION => function ($ch, string $header) use ($promise, &$sseResponse, &$headersProcessed) {
+            CURLOPT_HEADERFUNCTION => function ($ch, string $header) use ($url, $promise, &$sseResponse, &$headersProcessed) {
                 if ($promise->isSettled()) {
                     return strlen($header);
                 }
@@ -197,7 +209,14 @@ class SSEHandler
                         $sseResponse = new SSEResponse(new Stream(fopen('php://temp', 'r+')), $httpCode, []);
                         $promise->resolve($sseResponse);
                     } else {
-                        $promise->reject(new HttpStreamException("SSE connection failed with status: {$httpCode}"));
+                        $exception = new HttpStreamException(
+                            "SSE connection failed with status: {$httpCode}",
+                            0,
+                            null,
+                            $url
+                        );
+                        $exception->setStreamState('invalid_status_code');
+                        $promise->reject($exception);
                     }
                     $headersProcessed = true;
                 }
@@ -209,7 +228,7 @@ class SSEHandler
         $requestId = EventLoop::getInstance()->addHttpRequest(
             $url,
             $sseOptions,
-            function (?string $error) use ($promise, $onError) {
+            function (?string $error) use ($url, $promise, $onError) {
                 if ($promise->isSettled()) {
                     if ($onError !== null && $error !== null) {
                         $onError($error);
@@ -217,7 +236,15 @@ class SSEHandler
 
                     return;
                 }
-                $promise->reject(new HttpStreamException("SSE connection failed: {$error}"));
+                
+                $exception = new NetworkException(
+                    "SSE connection failed: {$error}",
+                    0,
+                    null,
+                    $url,
+                    $error
+                );
+                $promise->reject($exception);
             }
         );
 
@@ -255,7 +282,16 @@ class SSEHandler
             if ($onError !== null) {
                 $onError($error);
             }
-            $state->onConnectionFailed(new Exception($error));
+            
+            $exception = new NetworkException(
+                $error,
+                0,
+                null,
+                $state->getUrl(),
+                $error
+            );
+            
+            $state->onConnectionFailed($exception);
         };
     }
 }

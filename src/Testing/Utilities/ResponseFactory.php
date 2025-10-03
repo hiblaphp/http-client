@@ -5,6 +5,8 @@ namespace Hibla\Http\Testing\Utilities;
 use Exception;
 use Hibla\EventLoop\EventLoop;
 use Hibla\Http\Exceptions\HttpException;
+use Hibla\Http\Exceptions\HttpStreamException;
+use Hibla\Http\Exceptions\NetworkException;
 use Hibla\Http\Response;
 use Hibla\Http\RetryConfig;
 use Hibla\Http\SSE\SSEEvent;
@@ -16,6 +18,7 @@ use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Hibla\Http\SSE\SSEResponse;
 use Hibla\Http\Stream;
+use Hibla\Http\Testing\Exceptions\MockException;
 use Throwable;
 
 use function Hibla\delay;
@@ -38,7 +41,7 @@ class ResponseFactory
 
         $this->executeWithNetworkSimulation($promise, $mock, function () use ($mock) {
             if ($mock->shouldFail()) {
-                throw new HttpException($mock->getError() ?? 'Mocked failure');
+                throw new NetworkException($mock->getError() ?? 'Mocked failure');
             }
 
             return new Response(
@@ -75,10 +78,10 @@ class ResponseFactory
             try {
                 $mock = $mockProvider($currentAttempt);
                 if (!$mock instanceof MockedRequest) {
-                    throw new Exception('Mock provider must return a MockedRequest instance');
+                    throw new MockException('Mock provider must return a MockedRequest instance');
                 }
             } catch (Exception $e) {
-                $promise->reject(new HttpException('Mock provider error: ' . $e->getMessage()));
+                $promise->reject(new MockException('Mock provider error: ' . $e->getMessage()));
                 return;
             }
 
@@ -128,7 +131,7 @@ class ResponseFactory
                     $activeDelayPromise = delay($retryDelay);
                     $activeDelayPromise->then($executeAttempt);
                 } elseif ($shouldFail) {
-                    $promise->reject(new HttpException(
+                    $promise->reject(new NetworkException(
                         "HTTP Request failed after {$currentAttempt} attempt(s): {$errorMessage}"
                     ));
                 } else {
@@ -185,19 +188,24 @@ class ResponseFactory
 
         $this->executeWithNetworkSimulation($promise, $mock, function () use ($mock, $destination, $fileManager) {
             if ($mock->shouldFail()) {
-                throw new Exception($mock->getError() ?? 'Mocked failure');
+                $error = $mock->getError() ?? 'Mocked failure';
+                throw new NetworkException($error, 0, null, null, $error);
             }
 
             $directory = dirname($destination);
             if (! is_dir($directory)) {
                 if (! mkdir($directory, 0755, true) && ! is_dir($directory)) {
-                    throw new Exception("Cannot create directory: {$directory}");
+                    $exception = new HttpStreamException("Cannot create directory: {$directory}");
+                    $exception->setStreamState('directory_creation_failed');
+                    throw $exception;
                 }
                 $fileManager->trackDirectory($directory);
             }
 
             if (file_put_contents($destination, $mock->getBody()) === false) {
-                throw new Exception("Cannot write to file: {$destination}");
+                $exception = new HttpStreamException("Cannot write to file: {$destination}");
+                $exception->setStreamState('file_write_failed');
+                throw $exception;
             }
 
             $fileManager->trackFile($destination);
@@ -239,7 +247,7 @@ class ResponseFactory
                 if ($promise->isCancelled()) {
                     return;
                 }
-                $promise->reject(new HttpException($networkConditions['error_message'] ?? 'Network failure'));
+                $promise->reject(new NetworkException($networkConditions['error_message'] ?? 'Network failure'));
             });
             return;
         }
@@ -297,7 +305,7 @@ class ResponseFactory
                 if ($onError !== null) {
                     $onError($error);
                 }
-                $promise->reject(new HttpException($error));
+                $promise->reject(new NetworkException($error));
             });
 
             return $promise;
@@ -314,7 +322,7 @@ class ResponseFactory
                     if ($onError !== null) {
                         $onError($error);
                     }
-                    throw new HttpException($error);
+                    throw new NetworkException($error);
                 }
 
                 // Create SSE formatted content
@@ -322,7 +330,7 @@ class ResponseFactory
 
                 $resource = fopen('php://temp', 'w+b');
                 if ($resource === false) {
-                    throw new \RuntimeException('Failed to create temporary stream');
+                    throw new HttpStreamException('Failed to create temporary stream');
                 }
 
                 fwrite($resource, $sseContent);
@@ -407,10 +415,10 @@ class ResponseFactory
             try {
                 $mock = $mockProvider($currentAttempt, $lastEventId);
                 if (!$mock instanceof MockedRequest) {
-                    throw new Exception('Mock provider must return a MockedRequest instance');
+                    throw new MockException('Mock provider must return a MockedRequest instance');
                 }
             } catch (Exception $e) {
-                $promise->reject(new HttpException('Mock provider error: ' . $e->getMessage()));
+                $promise->reject(new MockException('Mock provider error: ' . $e->getMessage()));
                 return;
             }
 
@@ -448,9 +456,7 @@ class ResponseFactory
                     $shouldFail = true;
                     $errorMessage = $networkConditions['error_message'] ?? 'Network failure';
                     $isRetryable = $reconnectConfig->isRetryableError(new Exception($errorMessage));
-                }
-
-                elseif ($mock->shouldFail()) {
+                } elseif ($mock->shouldFail()) {
                     $shouldFail = true;
                     $errorMessage = $mock->getError() ?? 'SSE connection failed';
                     $isRetryable = $reconnectConfig->isRetryableError(new Exception($errorMessage)) || $mock->isRetryableFailure();
@@ -474,22 +480,20 @@ class ResponseFactory
 
                     $activeDelayPromise = delay($retryDelay);
                     $activeDelayPromise->then($executeAttempt);
-                }
-                elseif ($shouldFail) {
+                } elseif ($shouldFail) {
                     if ($onError !== null) {
                         $onError($errorMessage);
                     }
-                    $promise->reject(new HttpException(
+                    $promise->reject(new NetworkException(
                         "SSE connection failed after {$currentAttempt} attempt(s): {$errorMessage}"
                     ));
-                }
-                else {
+                } else {
                     try {
                         $sseContent = $this->formatSSEEvents($mock->getSSEEvents());
 
                         $resource = fopen('php://temp', 'w+b');
                         if ($resource === false) {
-                            throw new \RuntimeException('Failed to create temporary stream');
+                            throw new HttpStreamException('Failed to create temporary stream');
                         }
 
                         fwrite($resource, $sseContent);
