@@ -7,6 +7,15 @@ namespace Hibla\Http\SSE;
  */
 class SSEEvent
 {
+    /**
+     * Constructs a new SSEEvent instance.
+     *
+     * @param string|null $id The event ID.
+     * @param string|null $event The event type.
+     * @param string|null $data The event payload.
+     * @param int|null $retry The server-advised reconnection time in milliseconds.
+     * @param array<string, list<string>> $rawFields All raw fields parsed from the event.
+     */
     public function __construct(
         public readonly ?string $id = null,
         public readonly ?string $event = null,
@@ -16,7 +25,7 @@ class SSEEvent
     ) {}
 
     /**
-     * Check if this is a connection keep-alive event (empty data).
+     * Checks if this is a comment or an empty keep-alive event.
      */
     public function isKeepAlive(): bool
     {
@@ -24,7 +33,7 @@ class SSEEvent
     }
 
     /**
-     * Get the event type, defaulting to 'message' if not specified.
+     * Gets the event type, defaulting to 'message' if not specified.
      */
     public function getType(): string
     {
@@ -32,7 +41,9 @@ class SSEEvent
     }
 
     /**
-     * Convert to array representation.
+     * Converts the event to an array representation.
+     *
+     * @return array{id: string|null, event: string|null, data: string|null, retry: int|null, raw_fields: array<string, list<string>>}
      */
     public function toArray(): array
     {

@@ -11,11 +11,19 @@ class SSEResponse
 {
     private Stream $stream;
     private int $statusCode;
+    /**
+     * @var array<string, mixed>
+     */
     private array $headers;
     private ?string $httpVersion = null;
     private string $buffer = '';
     private ?string $lastEventId = null;
 
+    /**
+     * Constructs the SSEResponse.
+     *
+     * @param array<string, mixed> $headers
+     */
     public function __construct(Stream $stream, int $statusCode = 200, array $headers = [])
     {
         $this->stream = $stream;
@@ -23,50 +31,72 @@ class SSEResponse
         $this->headers = $headers;
     }
 
+    /**
+     * Gets the underlying stream.
+     */
     public function getStream(): Stream
     {
         return $this->stream;
     }
 
+    /**
+     * Gets the HTTP status code.
+     */
     public function getStatusCode(): int
     {
         return $this->statusCode;
     }
 
+    /**
+     * Gets the response headers.
+     *
+     * @return array<string, mixed>
+     */
     public function getHeaders(): array
     {
         return $this->headers;
     }
 
+    /**
+     * Gets the HTTP protocol version.
+     */
     public function getHttpVersion(): ?string
     {
         return $this->httpVersion;
     }
 
+    /**
+     * Sets the HTTP protocol version.
+     */
     public function setHttpVersion(?string $httpVersion): void
     {
         $this->httpVersion = $httpVersion;
     }
 
+    /**
+     * Gets the ID of the last processed event.
+     */
     public function getLastEventId(): ?string
     {
         return $this->lastEventId;
     }
 
     /**
-     * Parse incoming SSE data and yield events.
+     * Parses incoming SSE data chunks and yields events.
      *
-     * @param  string  $chunk  Raw SSE data chunk
+     * @param  string  $chunk  Raw SSE data chunk.
      * @return \Generator<SSEEvent>
      */
     public function parseEvents(string $chunk): \Generator
     {
         $this->buffer .= $chunk;
 
-        // Split on double newlines (event boundaries)
         $parts = preg_split('/\r?\n\r?\n/', $this->buffer, -1, PREG_SPLIT_NO_EMPTY);
+        if ($parts === false) { 
+            $this->buffer = ''; 
+            return;
+        }
 
-        // Keep the last part in buffer if it doesn't end with double newline
         if (! str_ends_with($this->buffer, "\n\n") && ! str_ends_with($this->buffer, "\r\n\r\n")) {
             $this->buffer = array_pop($parts) ?? '';
         } else {
@@ -85,62 +115,62 @@ class SSEResponse
     }
 
     /**
-     * Parse a single SSE event from raw data.
+     * Parses a single SSE event from a raw data block.
      */
     private function parseEvent(string $eventData): ?SSEEvent
     {
         $lines = preg_split('/\r?\n/', trim($eventData));
+        if ($lines === false) {
+            return null; 
+        }
+        
+        /** @var array<string, list<string>> $fields */
         $fields = [];
 
         foreach ($lines as $line) {
             if (str_starts_with($line, ':')) {
-                // Comment line, skip
                 continue;
             }
 
             if (str_contains($line, ':')) {
                 [$field, $value] = explode(':', $line, 2);
-                $field = trim($field);
-                $value = ltrim($value, ' '); // Only left trim spaces after colon
+                $value = ltrim($value); 
             } else {
-                $field = trim($line);
+                $field = $line;
                 $value = '';
             }
-
+            
+            $field = trim($field);
             if ($field === '') {
                 continue;
             }
-
-            // Handle multiple data fields (concatenated with newlines)
-            if ($field === 'data') {
-                if (isset($fields['data'])) {
-                    $fields['data'] .= "\n".$value;
-                } else {
-                    $fields['data'] = $value;
-                }
-            } else {
-                $fields[$field] = $value;
-            }
+            
+            $fields[$field][] = $value;
         }
-
-        // Skip empty events
-        if (empty($fields)) {
+        
+        if ($fields === []) {
             return null;
         }
+        
+        $idValues = $fields['id'] ?? [];
+        $eventValues = $fields['event'] ?? [];
+        $retryValues = $fields['retry'] ?? [];
 
+        $id = end($idValues) !== false ? end($idValues) : null;
+        $event = end($eventValues) !== false ? end($eventValues) : null;
+        $retryValue = end($retryValues) !== false ? end($retryValues) : null;
+        
         return new SSEEvent(
-            id: $fields['id'] ?? null,
-            event: $fields['event'] ?? null,
-            data: $fields['data'] ?? null,
-            retry: isset($fields['retry']) && is_numeric($fields['retry'])
-                ? (int) $fields['retry']
-                : null,
+            id: $id,
+            event: $event,
+            data: implode("\n", $fields['data'] ?? []),
+            retry: is_numeric($retryValue) ? (int) $retryValue : null,
             rawFields: $fields
         );
     }
 
     /**
-     * Get the next available events from the stream.
+     * Gets a generator that yields all available events from the stream.
      *
      * @return \Generator<SSEEvent>
      */
@@ -155,7 +185,6 @@ class SSEResponse
             yield from $this->parseEvents($chunk);
         }
 
-        // Process any remaining buffer
         if ($this->buffer !== '') {
             $event = $this->parseEvent($this->buffer);
             if ($event !== null) {

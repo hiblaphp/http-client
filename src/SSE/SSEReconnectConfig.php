@@ -9,6 +9,19 @@ use Exception;
  */
 class SSEReconnectConfig
 {
+    /**
+     * Constructs the reconnection configuration.
+     *
+     * @param bool $enabled Toggles reconnection on or off.
+     * @param int $maxAttempts The maximum number of times to try reconnecting.
+     * @param float $initialDelay The initial delay in seconds before the first reconnect attempt.
+     * @param float $maxDelay The maximum delay in seconds between reconnection attempts.
+     * @param float $backoffMultiplier The multiplier for exponential backoff.
+     * @param bool $jitter Toggles random jitter to prevent stampeding herd issues.
+     * @param list<string> $retryableErrors A list of error message substrings that are considered retryable.
+     * @param callable|null $onReconnect A callback to execute when a reconnection attempt is about to be made.
+     * @param callable(Exception):bool|null $shouldReconnect A custom callback to decide if a reconnection should be attempted for a given error.
+     */
     public function __construct(
         public readonly bool $enabled = true,
         public readonly int $maxAttempts = 10,
@@ -31,7 +44,7 @@ class SSEReconnectConfig
     ) {}
 
     /**
-     * Calculate reconnection delay with exponential backoff and optional jitter.
+     * Calculates the reconnection delay with exponential backoff and optional jitter.
      */
     public function calculateDelay(int $attempt): float
     {
@@ -41,19 +54,19 @@ class SSEReconnectConfig
         );
 
         if ($this->jitter) {
-            $delay *= 0.5 + mt_rand() / mt_getrandmax() * 0.5;
+            $delay *= 1.0 - mt_rand() / mt_getrandmax() * 0.5;
         }
 
         return $delay;
     }
 
     /**
-     * Determine if an error is retryable.
+     * Determines if an error is retryable based on configuration.
      */
     public function isRetryableError(Exception $error): bool
     {
-        if ($this->shouldReconnect !== null) {
-            return call_user_func($this->shouldReconnect, $error);
+        if (is_callable($this->shouldReconnect)) {
+            return (bool) call_user_func($this->shouldReconnect, $error);
         }
 
         $message = $error->getMessage();
