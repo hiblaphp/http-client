@@ -362,6 +362,213 @@ class ResponseFactory
     }
 
     /**
+     * Create a retryable mocked SSE response with reconnection support.
+     */
+    public function createRetryableMockedSSE(
+        \Hibla\Http\SSE\SSEReconnectConfig $reconnectConfig,
+        callable $mockProvider,
+        ?callable $onEvent,
+        ?callable $onError,
+        ?callable $onReconnect = null
+    ): CancellablePromiseInterface {
+        /** @var CancellablePromise<\Hibla\Http\SSE\SSEResponse> $promise */
+        $promise = new CancellablePromise;
+        $attempt = 0;
+        $activeDelayPromise = null;
+        $lastEventId = null;
+        $retryInterval = null;
+
+        $promise->setCancelHandler(function () use (&$activeDelayPromise) {
+            if ($activeDelayPromise instanceof CancellablePromiseInterface) {
+                $activeDelayPromise->cancel();
+            }
+        });
+
+        $executeAttempt = null;
+        $executeAttempt = function () use (
+            $reconnectConfig,
+            $promise,
+            $mockProvider,
+            $onEvent,
+            $onError,
+            $onReconnect,
+            &$attempt,
+            &$activeDelayPromise,
+            &$executeAttempt,
+            &$lastEventId,
+            &$retryInterval
+        ) {
+            if ($promise->isCancelled()) {
+                return;
+            }
+
+            $currentAttempt = $attempt + 1;
+
+            try {
+                $mock = $mockProvider($currentAttempt, $lastEventId);
+                if (!$mock instanceof MockedRequest) {
+                    throw new Exception('Mock provider must return a MockedRequest instance');
+                }
+            } catch (Exception $e) {
+                $promise->reject(new HttpException('Mock provider error: ' . $e->getMessage()));
+                return;
+            }
+
+            $networkConditions = $this->networkSimulator->simulate();
+            $mockDelay = $mock->getDelay();
+            $globalDelay = $this->handler !== null ? $this->handler->generateGlobalRandomDelay() : 0.0;
+            $delay = max($mockDelay, $globalDelay, $networkConditions['delay'] ?? 0);
+
+            $activeDelayPromise = delay($delay);
+
+            $activeDelayPromise->then(function () use (
+                $reconnectConfig,
+                $promise,
+                $mock,
+                $networkConditions,
+                $onEvent,
+                $onError,
+                $onReconnect,
+                &$attempt,
+                $currentAttempt,
+                &$activeDelayPromise,
+                &$executeAttempt,
+                &$lastEventId,
+                &$retryInterval
+            ) {
+                if ($promise->isCancelled()) {
+                    return;
+                }
+
+                $shouldFail = false;
+                $isRetryable = false;
+                $errorMessage = '';
+
+                if ($networkConditions['should_fail']) {
+                    $shouldFail = true;
+                    $errorMessage = $networkConditions['error_message'] ?? 'Network failure';
+                    $isRetryable = $reconnectConfig->isRetryableError(new Exception($errorMessage));
+                }
+
+                elseif ($mock->shouldFail()) {
+                    $shouldFail = true;
+                    $errorMessage = $mock->getError() ?? 'SSE connection failed';
+                    $isRetryable = $reconnectConfig->isRetryableError(new Exception($errorMessage)) || $mock->isRetryableFailure();
+                }
+
+                if ($shouldFail && $isRetryable && $attempt < $reconnectConfig->maxAttempts) {
+                    $attempt++;
+
+                    $retryDelay = $retryInterval !== null
+                        ? ($retryInterval / 1000.0)
+                        : $reconnectConfig->calculateDelay($attempt);
+
+                    // Notify about reconnection attempt
+                    if ($onReconnect !== null) {
+                        $onReconnect($attempt, $retryDelay, $errorMessage);
+                    }
+
+                    if ($onError !== null) {
+                        $onError($errorMessage);
+                    }
+
+                    $activeDelayPromise = delay($retryDelay);
+                    $activeDelayPromise->then($executeAttempt);
+                }
+                elseif ($shouldFail) {
+                    if ($onError !== null) {
+                        $onError($errorMessage);
+                    }
+                    $promise->reject(new HttpException(
+                        "SSE connection failed after {$currentAttempt} attempt(s): {$errorMessage}"
+                    ));
+                }
+                else {
+                    try {
+                        $sseContent = $this->formatSSEEvents($mock->getSSEEvents());
+
+                        $resource = fopen('php://temp', 'w+b');
+                        if ($resource === false) {
+                            throw new \RuntimeException('Failed to create temporary stream');
+                        }
+
+                        fwrite($resource, $sseContent);
+                        rewind($resource);
+                        $stream = new Stream($resource);
+
+                        $sseResponse = new SSEResponse(
+                            $stream,
+                            $mock->getStatusCode(),
+                            $mock->getHeaders()
+                        );
+
+                        // Process events and track last event ID
+                        if ($onEvent !== null) {
+                            foreach ($mock->getSSEEvents() as $eventData) {
+                                $event = new SSEEvent(
+                                    id: $eventData['id'] ?? null,
+                                    event: $eventData['event'] ?? null,
+                                    data: $eventData['data'] ?? null,
+                                    retry: $eventData['retry'] ?? null,
+                                    rawFields: $eventData
+                                );
+
+                                if ($event->id !== null) {
+                                    $lastEventId = $event->id;
+                                }
+
+                                if ($event->retry !== null) {
+                                    $retryInterval = $event->retry;
+                                }
+
+                                $onEvent($event);
+                            }
+                        }
+
+                        $attempt = 0;
+
+                        if ($mock->shouldFail()) {
+                            $errorMessage = $mock->getError() ?? 'SSE connection dropped';
+                            $isRetryable = $reconnectConfig->isRetryableError(new Exception($errorMessage)) || $mock->isRetryableFailure();
+
+                            if ($isRetryable && $attempt < $reconnectConfig->maxAttempts) {
+                                $attempt++;
+                                $retryDelay = $retryInterval !== null
+                                    ? ($retryInterval / 1000.0)
+                                    : $reconnectConfig->calculateDelay($attempt);
+
+                                if ($onReconnect !== null) {
+                                    $onReconnect($attempt, $retryDelay, $errorMessage);
+                                }
+
+                                if ($onError !== null) {
+                                    $onError($errorMessage);
+                                }
+
+                                $activeDelayPromise = delay($retryDelay);
+                                $activeDelayPromise->then($executeAttempt);
+                                return;
+                            }
+                        }
+
+                        $promise->resolve($sseResponse);
+                    } catch (Throwable $e) {
+                        if ($onError !== null) {
+                            $onError($e->getMessage());
+                        }
+                        $promise->reject($e);
+                    }
+                }
+            });
+        };
+
+        $activeDelayPromise = delay(0);
+        $activeDelayPromise->then($executeAttempt);
+
+        return $promise;
+    }
+
+    /**
      * Format SSE events into proper SSE protocol format.
      */
     private function formatSSEEvents(array $events): string
@@ -384,7 +591,6 @@ class ResponseFactory
             }
 
             if (isset($event['data'])) {
-                // Handle multi-line data
                 $dataLines = explode("\n", $event['data']);
                 foreach ($dataLines as $line) {
                     $lines[] = "data: {$line}";

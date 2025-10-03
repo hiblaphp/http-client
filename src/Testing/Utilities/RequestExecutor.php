@@ -135,6 +135,19 @@ class RequestExecutor
     ): CancellablePromiseInterface {
         $method = 'GET';
 
+        if ($reconnectConfig !== null && $reconnectConfig->enabled) {
+            return $this->executeSSEWithRetry(
+                $url,
+                $curlOptions,
+                $mockedRequests,
+                $globalSettings,
+                $onEvent,
+                $onError,
+                $reconnectConfig,
+                $parentSSE
+            );
+        }
+
         $this->requestRecorder->recordRequest($method, $url, $curlOptions);
 
         $match = $this->requestMatcher->findMatchingMock(
@@ -182,6 +195,74 @@ class RequestExecutor
         return $parentSSE
             ? $parentSSE($url, [], $onEvent, $onError, $reconnectConfig)
             : throw new \RuntimeException('No parent SSE handler available');
+    }
+
+    /**
+     * Execute SSE with retry/reconnection logic.
+     */
+    private function executeSSEWithRetry(
+        string $url,
+        array $curlOptions,
+        array &$mockedRequests,
+        array $globalSettings,
+        ?callable $onEvent,
+        ?callable $onError,
+        $reconnectConfig,
+        ?callable $parentSSE
+    ): CancellablePromiseInterface {
+        $method = 'GET';
+
+        $mockProvider = function (int $attemptNumber, ?string $lastEventId = null) use (
+            $method,
+            $url,
+            $curlOptions,
+            &$mockedRequests
+        ) {
+            // Add Last-Event-ID header if we have one (for reconnection)
+            $modifiedOptions = $curlOptions;
+            if ($lastEventId !== null) {
+                $modifiedOptions[CURLOPT_HTTPHEADER] = $modifiedOptions[CURLOPT_HTTPHEADER] ?? [];
+                $modifiedOptions[CURLOPT_HTTPHEADER][] = "Last-Event-ID: {$lastEventId}";
+            }
+
+            $match = $this->requestMatcher->findMatchingMock(
+                $mockedRequests,
+                $method,
+                $url,
+                $modifiedOptions
+            );
+
+            if ($match === null) {
+                throw new MockAssertionException(
+                    "No SSE mock found for attempt #{$attemptNumber}: {$method} {$url}"
+                );
+            }
+
+            $mock = $match['mock'];
+
+            $this->requestRecorder->recordRequest($method, $url, $modifiedOptions);
+
+            if (!$mock->isPersistent()) {
+                array_splice($mockedRequests, $match['index'], 1);
+            }
+
+            if (!$mock->isSSE()) {
+                throw new \RuntimeException(
+                    "Mock matched for SSE request but is not configured as SSE. " .
+                        "Use ->respondWithSSE() instead of ->respondWith() or ->respondJson()"
+                );
+            }
+
+            return $mock;
+        };
+
+        return $this->responseFactory->createRetryableMockedSSE(
+            $reconnectConfig,
+            $mockProvider,
+            $onEvent,
+            $onError,
+            $reconnectConfig->onReconnect
+        );
     }
 
     /**

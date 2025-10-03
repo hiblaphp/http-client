@@ -1,24 +1,29 @@
 <?php
 
 use Hibla\Http\Http;
-use Hibla\EventLoop\EventLoop;
+use Hibla\Promise\Promise;
 
 require 'vendor/autoload.php';
 
-Http::startTesting();
+Http::startTesting()->withGlobalRandomDelay(0.3, 0.5);
 
-Http::mock('GET')
-    ->url('https://api.example.com/complex')
-    ->sseFailUntilAttempt(4)
-    ->respondWithSSE([
-        ['id' => 1, 'data' => 'First message'],
-        ['id' => 2, 'data' => 'Second message'],
-        ['id' => 3, 'data' => 'Third message'],
-    ])
+Http::mock()->url("*")
+    ->respondJson(["message" => "success"])
     ->persistent()
     ->register();
 
-$response = await(Http::sseReconnect()->sseDataFormat("object")
-    ->sse("https://api.example.com/complex", function ($data) {
-        print_r($data);
-    }));
+
+for ($i = 0; $i < 10; $i++) {
+    $startTime = microtime(true);
+    await(Promise::all([
+    Http::get("https://jsonplaceholder.typicode.com/posts"),
+    Http::get("https://jsonplaceholder.typicode.com/posts"),
+    Http::get("https://jsonplaceholder.typicode.com/posts"),
+    Http::get("https://jsonplaceholder.typicode.com/posts"),
+    Http::get("https://jsonplaceholder.typicode.com/posts"),
+]));
+
+    $endTime = microtime(true);
+    $executionTime = $endTime - $startTime;
+    echo "Execution time: " . $executionTime . " seconds\n";
+}
