@@ -300,7 +300,7 @@ trait BuildsSSERetrySequences
         string $lastEventId,
         array $eventsAfterResume
     ): self {
-        $this->getRequest()->expectHeader('Last-Event-ID', $lastEventId);
+        $this->getRequest()->addHeaderMatcher('Last-Event-ID', $lastEventId); 
         $this->respondWithSSE($eventsAfterResume);
 
         return $this;
@@ -367,7 +367,7 @@ trait BuildsSSERetrySequences
     ): self {
         for ($i = 1; $i < $successAttempt; $i++) {
             $retryAfter = pow(2, $i - 1); // Exponential backoff
-            
+
             $mock = new MockedRequest($this->getRequest()->getMethod());
             $mock->setUrlPattern($this->getRequest()->getUrlPattern());
             $mock->asSSE();
