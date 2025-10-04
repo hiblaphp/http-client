@@ -20,6 +20,7 @@ use Hibla\Http\SSE\SSEResponse;
 use Hibla\Http\Stream;
 use Hibla\Http\Testing\Exceptions\MockException;
 use Throwable;
+use Psr\Http\Message\StreamInterface;
 
 use function Hibla\delay;
 
@@ -34,6 +35,9 @@ class ResponseFactory
         $this->handler = $handler;
     }
 
+    /**
+     * @return PromiseInterface<Response>
+     */
     public function createMockedResponse(MockedRequest $mock): PromiseInterface
     {
         /** @var CancellablePromise<Response> $promise */
@@ -54,15 +58,20 @@ class ResponseFactory
         return $promise;
     }
 
+    /**
+     * @return PromiseInterface<Response>
+     */
     public function createRetryableMockedResponse(RetryConfig $retryConfig, callable $mockProvider): PromiseInterface
     {
         /** @var CancellablePromise<Response> $promise */
         $promise = new CancellablePromise;
         $attempt = 0;
+
+        /** @var CancellablePromiseInterface<mixed>|null $activeDelayPromise */
         $activeDelayPromise = null;
 
         $promise->setCancelHandler(function () use (&$activeDelayPromise) {
-            if ($activeDelayPromise instanceof CancellablePromiseInterface) {
+            if ($activeDelayPromise !== null) {
                 $activeDelayPromise->cancel();
             }
         });
@@ -147,6 +156,9 @@ class ResponseFactory
         return $promise;
     }
 
+    /**
+     * @return CancellablePromiseInterface<StreamingResponse>
+     */
     public function createMockedStream(MockedRequest $mock, ?callable $onChunk, callable $createStream): CancellablePromiseInterface
     {
         /** @var CancellablePromise<StreamingResponse> $promise */
@@ -160,7 +172,7 @@ class ResponseFactory
             $bodySequence = $mock->getBodySequence();
 
             if ($onChunk !== null) {
-                if (! empty($bodySequence)) {
+                if ($bodySequence !== []) {
                     foreach ($bodySequence as $chunk) {
                         $onChunk($chunk);
                     }
@@ -170,6 +182,10 @@ class ResponseFactory
             }
 
             $stream = $createStream($mock->getBody());
+
+            if (!$stream instanceof StreamInterface) {
+                throw new HttpStreamException('Stream creator must return a StreamInterface instance');
+            }
 
             return new StreamingResponse(
                 $stream,
@@ -181,9 +197,12 @@ class ResponseFactory
         return $promise;
     }
 
+    /**
+     * @return CancellablePromiseInterface<array{file: string, status: int, headers: array<string, string>, size: int, protocol_version: string}>
+     */
     public function createMockedDownload(MockedRequest $mock, string $destination, FileManager $fileManager): CancellablePromiseInterface
     {
-        /** @var CancellablePromise<array> $promise */
+        /** @var CancellablePromise<array{file: string, status: int, headers: array<string, string>, size: int, protocol_version: string}> $promise */
         $promise = new CancellablePromise;
 
         $this->executeWithNetworkSimulation($promise, $mock, function () use ($mock, $destination, $fileManager) {
@@ -222,11 +241,10 @@ class ResponseFactory
         return $promise;
     }
 
-    private function isSSERequested(array $options): bool
-    {
-        return isset($options['sse']) && $options['sse'] === true;
-    }
-
+    /**
+     * @template TValue
+     * @param CancellablePromise<TValue> $promise
+     */
     private function executeWithNetworkSimulation(CancellablePromise $promise, MockedRequest $mock, callable $callback): void
     {
         $networkConditions = $this->networkSimulator->simulate();
@@ -237,9 +255,7 @@ class ResponseFactory
         $delayPromise = delay($totalDelay);
 
         $promise->setCancelHandler(function () use ($delayPromise) {
-            if ($delayPromise instanceof CancellablePromiseInterface) {
-                $delayPromise->cancel();
-            }
+            $delayPromise->cancel();
         });
 
         if ($networkConditions['should_fail']) {
@@ -266,14 +282,14 @@ class ResponseFactory
     }
 
     /**
-     * Create a mocked SSE response with event streaming.
+     * @return CancellablePromiseInterface<SSEResponse>
      */
     public function createMockedSSE(
         MockedRequest $mock,
         ?callable $onEvent,
         ?callable $onError
     ): CancellablePromiseInterface {
-        /** @var CancellablePromise<\Hibla\Http\SSE\SSEResponse> $promise */
+        /** @var CancellablePromise<SSEResponse> $promise */
         $promise = new CancellablePromise;
 
         $networkConditions = $this->networkSimulator->simulate();
@@ -325,7 +341,6 @@ class ResponseFactory
                     throw new NetworkException($error);
                 }
 
-                // Create SSE formatted content
                 $sseContent = $this->formatSSEEvents($mock->getSSEEvents());
 
                 $resource = fopen('php://temp', 'w+b');
@@ -345,19 +360,30 @@ class ResponseFactory
 
                 if ($onEvent !== null) {
                     foreach ($mock->getSSEEvents() as $eventData) {
+                        // Convert to the format SSEEvent expects
+                        $rawFields = [];
+                        if (isset($eventData['id'])) {
+                            $rawFields['id'] = [$eventData['id']];
+                        }
+                        if (isset($eventData['event'])) {
+                            $rawFields['event'] = [$eventData['event']];
+                        }
+                        if (isset($eventData['data'])) {
+                            $rawFields['data'] = [$eventData['data']];
+                        }
+                        if (isset($eventData['retry'])) {
+                            $rawFields['retry'] = [(string)$eventData['retry']];
+                        }
+
                         $event = new SSEEvent(
                             id: $eventData['id'] ?? null,
                             event: $eventData['event'] ?? null,
                             data: $eventData['data'] ?? null,
                             retry: $eventData['retry'] ?? null,
-                            rawFields: $eventData
+                            rawFields: $rawFields
                         );
                         $onEvent($event);
                     }
-                }
-
-                if ($mock->shouldFail() && $onError !== null) {
-                    $onError($mock->getError() ?? 'SSE connection failed');
                 }
 
                 $promise->resolve($sseResponse);
@@ -370,7 +396,7 @@ class ResponseFactory
     }
 
     /**
-     * Create a retryable mocked SSE response with reconnection support.
+     * @return CancellablePromiseInterface<SSEResponse>
      */
     public function createRetryableMockedSSE(
         \Hibla\Http\SSE\SSEReconnectConfig $reconnectConfig,
@@ -379,15 +405,17 @@ class ResponseFactory
         ?callable $onError,
         ?callable $onReconnect = null
     ): CancellablePromiseInterface {
-        /** @var CancellablePromise<\Hibla\Http\SSE\SSEResponse> $promise */
+        /** @var CancellablePromise<SSEResponse> $promise */
         $promise = new CancellablePromise;
         $attempt = 0;
+
+        /** @var CancellablePromiseInterface<mixed>|null $activeDelayPromise */
         $activeDelayPromise = null;
         $lastEventId = null;
         $retryInterval = null;
 
         $promise->setCancelHandler(function () use (&$activeDelayPromise) {
-            if ($activeDelayPromise instanceof CancellablePromiseInterface) {
+            if ($activeDelayPromise !== null) {
                 $activeDelayPromise->cancel();
             }
         });
@@ -469,7 +497,6 @@ class ResponseFactory
                         ? ($retryInterval / 1000.0)
                         : $reconnectConfig->calculateDelay($attempt);
 
-                    // Notify about reconnection attempt
                     if ($onReconnect !== null) {
                         $onReconnect($attempt, $retryDelay, $errorMessage);
                     }
@@ -506,15 +533,28 @@ class ResponseFactory
                             $mock->getHeaders()
                         );
 
-                        // Process events and track last event ID
                         if ($onEvent !== null) {
                             foreach ($mock->getSSEEvents() as $eventData) {
+                                $rawFields = [];
+                                if (isset($eventData['id'])) {
+                                    $rawFields['id'] = [$eventData['id']];
+                                }
+                                if (isset($eventData['event'])) {
+                                    $rawFields['event'] = [$eventData['event']];
+                                }
+                                if (isset($eventData['data'])) {
+                                    $rawFields['data'] = [$eventData['data']];
+                                }
+                                if (isset($eventData['retry'])) {
+                                    $rawFields['retry'] = [(string)$eventData['retry']];
+                                }
+
                                 $event = new SSEEvent(
                                     id: $eventData['id'] ?? null,
                                     event: $eventData['event'] ?? null,
                                     data: $eventData['data'] ?? null,
                                     retry: $eventData['retry'] ?? null,
-                                    rawFields: $eventData
+                                    rawFields: $rawFields
                                 );
 
                                 if ($event->id !== null) {
@@ -573,7 +613,7 @@ class ResponseFactory
     }
 
     /**
-     * Format SSE events into proper SSE protocol format.
+     * @param array<array{id?: string, event?: string, data?: string, retry?: int}> $events
      */
     private function formatSSEEvents(array $events): string
     {
@@ -582,19 +622,19 @@ class ResponseFactory
         foreach ($events as $event) {
             $lines = [];
 
-            if (isset($event['id'])) {
+            if (isset($event['id']) && is_string($event['id'])) {
                 $lines[] = "id: {$event['id']}";
             }
 
-            if (isset($event['event'])) {
+            if (isset($event['event']) && is_string($event['event'])) {
                 $lines[] = "event: {$event['event']}";
             }
 
-            if (isset($event['retry'])) {
-                $lines[] = "retry: {$event['retry']}";
+            if (isset($event['retry']) && is_int($event['retry'])) {
+                $lines[] = "retry: " . (string)$event['retry'];
             }
 
-            if (isset($event['data'])) {
+            if (isset($event['data']) && is_string($event['data'])) {
                 $dataLines = explode("\n", $event['data']);
                 foreach ($dataLines as $line) {
                     $lines[] = "data: {$line}";

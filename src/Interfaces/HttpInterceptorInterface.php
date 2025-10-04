@@ -2,6 +2,9 @@
 
 namespace Hibla\Http\Interfaces;
 
+use Hibla\Http\Request;
+use Hibla\Http\Response;
+
 /**
  * HTTP request/response interceptor interface.
  * 
@@ -15,6 +18,7 @@ interface HttpInterceptorInterface
      * 
      * The callback will receive the Request object before it is sent. It MUST
      * return a Request object, allowing for immutable modifications.
+     * @param  callable(Request): Request  $callback
      */
     public function interceptRequest(callable $callback): self;
 
@@ -23,6 +27,7 @@ interface HttpInterceptorInterface
      * 
      * The callback will receive the final Response object. It MUST return a
      * Response object, allowing for inspection or modification.
+     * @param  callable(Response): Response  $callback
      */
     public function interceptResponse(callable $callback): self;
 }

@@ -6,7 +6,9 @@ use Hibla\Http\CacheConfig;
 use Hibla\Http\Interfaces\CookieJarInterface;
 use Hibla\Http\ProxyConfig;
 use Hibla\Http\RetryConfig;
-use Symfony\Contracts\Cache\CacheInterface;
+use Psr\Cache\CacheItemPoolInterface;
+use Psr\SimpleCache\CacheInterface as PsrCacheInterface;
+use Symfony\Component\Cache\Psr16Cache;
 
 trait FetchOptionTrait
 {
@@ -16,7 +18,7 @@ trait FetchOptionTrait
      * @param  string  $url  The target URL.
      * @param  array<int|string, mixed>  $options  The options to normalize.
      * @param  bool  $ensureSSEHeaders  Whether to ensure SSE-specific headers are set.
-     * @return array<int, mixed> Normalized cURL options.
+     * @return array<int|string, mixed> Normalized cURL options.
      */
     public function normalizeFetchOptions(string $url, array $options, bool $ensureSSEHeaders = false): array
     {
@@ -47,7 +49,7 @@ trait FetchOptionTrait
         }, ARRAY_FILTER_USE_KEY);
 
         if ($this->isCurlOptionsFormat($cleanOptions)) {
-            /** @var array<int, mixed> */
+            /** @var array<int|string, mixed> $curlOptions */
             $curlOptions = array_filter($cleanOptions, fn($key) => is_int($key), ARRAY_FILTER_USE_KEY);
 
             $curlOptions[CURLOPT_URL] = $url;
@@ -69,7 +71,7 @@ trait FetchOptionTrait
             return $curlOptions;
         }
 
-        /** @var array<int, mixed> $curlOptions */
+        /** @var array<int|string, mixed> $curlOptions */
         $curlOptions = [
             CURLOPT_URL => $url,
             CURLOPT_RETURNTRANSFER => true,
@@ -214,15 +216,23 @@ trait FetchOptionTrait
     /**
      * Ensures proper headers are set for SSE connections.
      *
-     * @param  array<int, mixed>  &$curlOptions  cURL options array passed by reference
+     * @param  array<int|string, mixed>  &$curlOptions  cURL options array passed by reference
      */
     protected function ensureSSEHeaders(array &$curlOptions): void
     {
         $headers = $curlOptions[CURLOPT_HTTPHEADER] ?? [];
+        
+        if (!is_array($headers)) {
+            $headers = [];
+        }
+        
         $hasAccept = false;
         $hasCache = false;
 
         foreach ($headers as $header) {
+            if (!is_string($header)) {
+                continue;
+            }
             if (stripos($header, 'Accept:') === 0) {
                 $hasAccept = true;
             }
@@ -267,16 +277,20 @@ trait FetchOptionTrait
             $host = $proxy['host'] ?? $proxy['server'] ?? '';
             $port = $proxy['port'] ?? 8080;
 
-            if (empty($host) || ! is_numeric($port)) {
+            if (!is_string($host) || $host === '' || !is_numeric($port)) {
                 return null;
             }
+
+            $username = $proxy['username'] ?? $proxy['user'] ?? null;
+            $password = $proxy['password'] ?? $proxy['pass'] ?? null;
+            $type = $proxy['type'] ?? 'http';
 
             return new ProxyConfig(
                 host: $host,
                 port: (int) $port,
-                username: $proxy['username'] ?? $proxy['user'] ?? null,
-                password: $proxy['password'] ?? $proxy['pass'] ?? null,
-                type: $proxy['type'] ?? 'http'
+                username: is_string($username) ? $username : null,
+                password: is_string($password) ? $password : null,
+                type: is_string($type) ? $type : 'http'
             );
         }
 
@@ -289,23 +303,28 @@ trait FetchOptionTrait
     private function parseProxyUrl(string $proxyUrl): ?ProxyConfig
     {
         $parsed = parse_url($proxyUrl);
-        if (! $parsed || ! isset($parsed['host'])) {
+        if (!is_array($parsed) || !isset($parsed['host']) || !is_string($parsed['host'])) {
             return null;
         }
 
+        $port = isset($parsed['port']) && is_int($parsed['port']) ? $parsed['port'] : 8080;
+        $username = isset($parsed['user']) && is_string($parsed['user']) ? $parsed['user'] : null;
+        $password = isset($parsed['pass']) && is_string($parsed['pass']) ? $parsed['pass'] : null;
+        $scheme = isset($parsed['scheme']) && is_string($parsed['scheme']) ? $parsed['scheme'] : 'http';
+
         return new ProxyConfig(
             host: $parsed['host'],
-            port: $parsed['port'] ?? 8080,
-            username: $parsed['user'] ?? null,
-            password: $parsed['pass'] ?? null,
-            type: $parsed['scheme'] ?? 'http'
+            port: $port,
+            username: $username,
+            password: $password,
+            type: $scheme
         );
     }
 
     /**
      * Add proxy options to cURL options array.
      *
-     * @param  array<int, mixed>  &$curlOptions
+     * @param  array<int|string, mixed>  &$curlOptions
      * @param  array<int|string, mixed>  $options
      */
     private function addProxyOptionsFromArray(array &$curlOptions, array $options): void
@@ -328,13 +347,16 @@ trait FetchOptionTrait
         }
 
         // Configure tunneling based on proxy type
-        if (in_array($proxyConfig->type, ['socks4', 'socks5'])) {
-            $curlOptions[CURLOPT_HTTPPROXYTUNNEL] = false; // Usually not needed for SOCKS
+        if (in_array($proxyConfig->type, ['socks4', 'socks5'], true)) {
+            $curlOptions[CURLOPT_HTTPPROXYTUNNEL] = false; 
         } else {
-            $curlOptions[CURLOPT_HTTPPROXYTUNNEL] = true; // Usually needed for HTTP proxies with HTTPS
+            $curlOptions[CURLOPT_HTTPPROXYTUNNEL] = true; 
         }
     }
 
+    /**
+     * @param array<int|string, mixed> $options
+     */
     private function isCurlOptionsFormat(array $options): bool
     {
         foreach (array_keys($options) as $key) {
@@ -346,6 +368,9 @@ trait FetchOptionTrait
         return false;
     }
 
+    /**
+     * @param array<int|string, mixed> $options
+     */
     private function extractCacheConfig(array $options): ?CacheConfig
     {
         if (! isset($options['cache'])) {
@@ -358,16 +383,18 @@ trait FetchOptionTrait
             return new CacheConfig;
         }
 
-        // Handle CacheConfig object
         if ($cache instanceof CacheConfig) {
             return $cache;
         }
 
-        // Handle array configuration
         if (is_array($cache)) {
             $cacheInstance = null;
-            if (isset($cache['cache_instance']) && $cache['cache_instance'] instanceof CacheInterface) {
-                $cacheInstance = $cache['cache_instance'];
+            if (isset($cache['cache_instance'])) {
+                if ($cache['cache_instance'] instanceof PsrCacheInterface) {
+                    $cacheInstance = $cache['cache_instance'];
+                } elseif ($cache['cache_instance'] instanceof CacheItemPoolInterface) {
+                    $cacheInstance = new Psr16Cache($cache['cache_instance']);
+                }
             }
 
             $ttl = $cache['ttl'] ?? 3600;
@@ -379,7 +406,6 @@ trait FetchOptionTrait
             );
         }
 
-        // Handle integer as TTL
         if (is_int($cache)) {
             return new CacheConfig($cache);
         }
@@ -458,6 +484,10 @@ trait FetchOptionTrait
         return null;
     }
 
+    /**
+     * @param array<int|string, mixed> &$options
+     * @return array<string, mixed>|null
+     */
     private function extractCookieOptions(array &$options): ?array
     {
         $cookieOptions = [];
@@ -480,9 +510,13 @@ trait FetchOptionTrait
             unset($options['cookie']);
         }
 
-        return !empty($cookieOptions) ? $cookieOptions : null;
+        return count($cookieOptions) > 0 ? $cookieOptions : null;
     }
 
+    /**
+     * @param array<int|string, mixed> &$curlOptions
+     * @param array<string, mixed> $cookieOptions
+     */
     private function applyCookiesToCurlOptions(array &$curlOptions, array $cookieOptions): void
     {
         $cookieHeaders = [];
@@ -492,15 +526,18 @@ trait FetchOptionTrait
             $jar = $cookieOptions['jar'];
             $url = $curlOptions[CURLOPT_URL] ?? '';
 
-            if ($url) {
+            if (is_string($url) && $url !== '') {
                 $parsedUrl = parse_url($url);
-                $domain = $parsedUrl['host'] ?? '';
-                $path = $parsedUrl['path'] ?? '/';
-                $isSecure = ($parsedUrl['scheme'] ?? 'http') === 'https';
+                if (is_array($parsedUrl)) {
+                    $domain = isset($parsedUrl['host']) && is_string($parsedUrl['host']) ? $parsedUrl['host'] : '';
+                    $path = isset($parsedUrl['path']) && is_string($parsedUrl['path']) ? $parsedUrl['path'] : '/';
+                    $scheme = isset($parsedUrl['scheme']) && is_string($parsedUrl['scheme']) ? $parsedUrl['scheme'] : 'http';
+                    $isSecure = $scheme === 'https';
 
-                $cookieHeader = $jar->getCookieHeader($domain, $path, $isSecure);
-                if ($cookieHeader) {
-                    $cookieHeaders[] = $cookieHeader;
+                    $cookieHeader = $jar->getCookieHeader($domain, $path, $isSecure);
+                    if ($cookieHeader !== '') {
+                        $cookieHeaders[] = $cookieHeader;
+                    }
                 }
             }
 
@@ -516,7 +553,7 @@ trait FetchOptionTrait
                     $cookies[] = $name . '=' . urlencode((string)$value);
                 }
             }
-            if (!empty($cookies)) {
+            if (count($cookies) > 0) {
                 $cookieHeaders[] = implode('; ', $cookies);
             }
         }
@@ -527,12 +564,16 @@ trait FetchOptionTrait
         }
 
         // Apply cookies to headers
-        if (!empty($cookieHeaders)) {
+        if (count($cookieHeaders) > 0) {
             $existingHeaders = $curlOptions[CURLOPT_HTTPHEADER] ?? [];
+            
+            if (!is_array($existingHeaders)) {
+                $existingHeaders = [];
+            }
 
             // Remove any existing Cookie headers
             $existingHeaders = array_filter($existingHeaders, function ($header) {
-                return stripos($header, 'Cookie:') !== 0;
+                return !is_string($header) || stripos($header, 'Cookie:') !== 0;
             });
 
             // Add new Cookie header

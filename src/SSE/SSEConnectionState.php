@@ -9,6 +9,8 @@ use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 
 /**
  * Manages the state of an SSE connection including reconnection attempts.
+ * 
+ * @template TResponse of StreamingResponse
  */
 class SSEConnectionState
 {
@@ -17,7 +19,7 @@ class SSEConnectionState
     private ?int $retryInterval = null;
 
     /**
-     * @var CancellablePromiseInterface<StreamingResponse>|null
+     * @var CancellablePromiseInterface<TResponse>|null
      */
     private ?CancellablePromiseInterface $currentConnection = null;
     private ?Exception $lastError = null;
@@ -151,7 +153,7 @@ class SSEConnectionState
     /**
      * Sets the promise for the current active connection.
      *
-     * @param CancellablePromiseInterface<StreamingResponse> $connection
+     * @param CancellablePromiseInterface<TResponse> $connection
      */
     public function setCurrentConnection(CancellablePromiseInterface $connection): void
     {

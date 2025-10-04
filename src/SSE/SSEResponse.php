@@ -3,74 +3,35 @@
 namespace Hibla\Http\SSE;
 
 use Hibla\Http\Stream;
+use Hibla\Http\StreamingResponse;
+use Psr\Http\Message\StreamInterface;
 
 /**
  * Represents an SSE streaming response with event parsing capabilities.
  */
-class SSEResponse
+class SSEResponse extends StreamingResponse
 {
-    private Stream $stream;
-    private int $statusCode;
-    /**
-     * @var array<string, mixed>
-     */
-    private array $headers;
-    private ?string $httpVersion = null;
     private string $buffer = '';
     private ?string $lastEventId = null;
 
     /**
      * Constructs the SSEResponse.
      *
-     * @param array<string, mixed> $headers
+     * @param Stream $stream
+     * @param int $statusCode
+     * @param array<string, string|string[]> $headers
      */
     public function __construct(Stream $stream, int $statusCode = 200, array $headers = [])
     {
-        $this->stream = $stream;
-        $this->statusCode = $statusCode;
-        $this->headers = $headers;
+        parent::__construct($stream, $statusCode, $headers);
     }
 
     /**
      * Gets the underlying stream.
      */
-    public function getStream(): Stream
+    public function getStream(): StreamInterface
     {
-        return $this->stream;
-    }
-
-    /**
-     * Gets the HTTP status code.
-     */
-    public function getStatusCode(): int
-    {
-        return $this->statusCode;
-    }
-
-    /**
-     * Gets the response headers.
-     *
-     * @return array<string, mixed>
-     */
-    public function getHeaders(): array
-    {
-        return $this->headers;
-    }
-
-    /**
-     * Gets the HTTP protocol version.
-     */
-    public function getHttpVersion(): ?string
-    {
-        return $this->httpVersion;
-    }
-
-    /**
-     * Sets the HTTP protocol version.
-     */
-    public function setHttpVersion(?string $httpVersion): void
-    {
-        $this->httpVersion = $httpVersion;
+        return parent::getStream();
     }
 
     /**
@@ -176,8 +137,10 @@ class SSEResponse
      */
     public function getEvents(): \Generator
     {
-        while (! $this->stream->eof()) {
-            $chunk = $this->stream->read(8192);
+        $stream = $this->getStream();
+        
+        while (! $stream->eof()) {
+            $chunk = $stream->read(8192);
             if ($chunk === '') {
                 break;
             }

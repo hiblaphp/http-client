@@ -2,11 +2,17 @@
 
 namespace Hibla\Http\Testing\Exceptions;
 
+use Hibla\Http\Testing\MockedRequest;
+
 /**
  * Thrown when a request doesn't match any mocked expectations.
  */
 class UnexpectedRequestException extends MockException
 {
+    /**
+     * @param array<int|string, mixed> $options
+     * @param array<MockedRequest> $availableMocks
+     */
     public function __construct(
         string $message = 'No mock matched the request',
         int $code = 0,
@@ -21,6 +27,8 @@ class UnexpectedRequestException extends MockException
 
     /**
      * Create exception with detailed mismatch information.
+     * @param array<int|string, mixed> $options
+     * @param array<MockedRequest> $availableMocks
      */
     public static function noMatchFound(
         string $method,
@@ -33,6 +41,10 @@ class UnexpectedRequestException extends MockException
         return new self($message, 0, null, $url, $method, $options, $availableMocks);
     }
 
+    /**
+     * @param array<int|string, mixed> $options
+     * @param array<MockedRequest> $availableMocks
+     */
     private static function buildDetailedMessage(
         string $method,
         string $url,
@@ -45,7 +57,20 @@ class UnexpectedRequestException extends MockException
         $lines[] = "  Method: {$method}";
         $lines[] = "  URL: {$url}";
 
-        // Show request body if present
+        self::addRequestBodyLines($lines, $options);
+        self::addRequestHeadersLines($lines, $options);
+        self::addAvailableMocksLines($lines, $availableMocks);
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * Adds lines detailing the request body (if present) to the message lines.
+     * @param string[] $lines
+     * @param array<int|string, mixed> $options
+     */
+    private static function addRequestBodyLines(array &$lines, array $options): void
+    {
         if (isset($options[CURLOPT_POSTFIELDS])) {
             $body = $options[CURLOPT_POSTFIELDS];
             if (is_string($body)) {
@@ -57,17 +82,33 @@ class UnexpectedRequestException extends MockException
                 }
             }
         }
+    }
 
-        // Show request headers
-        if (isset($options[CURLOPT_HTTPHEADER]) && !empty($options[CURLOPT_HTTPHEADER])) {
+    /**
+     * Adds lines detailing the request headers (if present) to the message lines.
+     * @param string[] $lines
+     * @param array<int|string, mixed> $options
+     */
+    private static function addRequestHeadersLines(array &$lines, array $options): void
+    {
+        if (isset($options[CURLOPT_HTTPHEADER]) && is_array($options[CURLOPT_HTTPHEADER]) && $options[CURLOPT_HTTPHEADER] !== []) {
             $lines[] = "  Request Headers:";
             foreach ($options[CURLOPT_HTTPHEADER] as $header) {
-                $lines[] = "    - {$header}";
+                if (is_string($header)) {
+                    $lines[] = "    - {$header}";
+                }
             }
         }
+    }
 
-        // Show available mocks
-        if (!empty($availableMocks)) {
+    /**
+     * Adds lines detailing the available mocks and their expectations to the message lines.
+     * @param string[] $lines
+     * @param array<MockedRequest> $availableMocks
+     */
+    private static function addAvailableMocksLines(array &$lines, array $availableMocks): void
+    {
+        if ($availableMocks !== []) {
             $lines[] = "";
             $lines[] = "Available mocks:";
             foreach ($availableMocks as $index => $mock) {
@@ -75,20 +116,28 @@ class UnexpectedRequestException extends MockException
                 $lines[] = "    URL Pattern: " . ($mock->getUrlPattern() ?? '*');
                 $lines[] = "    Method: " . $mock->getMethod();
 
-                // Show expectations
-                $mockArray = $mock->toArray();
-                if (!empty($mockArray['jsonMatcher'])) {
-                    $lines[] = "    Expected JSON: " . json_encode($mockArray['jsonMatcher']);
-                }
-                if (!empty($mockArray['headerMatchers'])) {
-                    $lines[] = "    Expected Headers:";
-                    foreach ($mockArray['headerMatchers'] as $name => $value) {
-                        $lines[] = "      - {$name}: {$value}";
-                    }
-                }
+                self::addMockExpectationsLines($lines, $mock);
             }
         }
+    }
 
-        return implode("\n", $lines);
+    /**
+     * Adds lines detailing a single mock's expectations to the message lines.
+     * @param string[] $lines
+     * @param MockedRequest $mock
+     */
+    private static function addMockExpectationsLines(array &$lines, MockedRequest $mock): void
+    {
+        $mockArray = $mock->toArray();
+        if (isset($mockArray['jsonMatcher']) && is_array($mockArray['jsonMatcher']) && $mockArray['jsonMatcher'] !== []) {
+            $lines[] = "    Expected JSON: " . json_encode($mockArray['jsonMatcher']);
+        }
+        if (isset($mockArray['headerMatchers']) && is_array($mockArray['headerMatchers']) && $mockArray['headerMatchers'] !== []) {
+            $lines[] = "    Expected Headers:";
+            foreach ($mockArray['headerMatchers'] as $name => $value) {
+                $displayValue = is_scalar($value) ? (string)$value : '(non-scalar value)';
+                $lines[] = "      - {$name}: {$displayValue}";
+            }
+        }
     }
 }

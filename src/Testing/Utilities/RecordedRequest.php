@@ -6,11 +6,27 @@ class RecordedRequest
 {
     public string $method;
     public string $url;
+    
+    /**
+     * @var array<int, mixed>
+     */
     public array $options;
+    
+    /**
+     * @var array<string, string|array<int, string>>
+     */
     private array $parsedHeaders = [];
+    
     private ?string $body = null;
+    
+    /**
+     * @var array<mixed>|null
+     */
     private ?array $parsedJson = null;
 
+    /**
+     * @param array<int, mixed> $options
+     */
     public function __construct(string $method, string $url, array $options)
     {
         $this->method = strtoupper($method);
@@ -29,21 +45,32 @@ class RecordedRequest
             return;
         }
 
-        foreach ($this->options[CURLOPT_HTTPHEADER] as $header) {
-            if (strpos($header, ':') !== false) {
-                [$name, $value] = explode(':', $header, 2);
-                $name = strtolower(trim($name));
-                $value = trim($value);
+        $headers = $this->options[CURLOPT_HTTPHEADER];
+        if (!is_array($headers)) {
+            return;
+        }
 
-                if (isset($this->parsedHeaders[$name])) {
-                    // Handle multiple headers with same name
-                    if (!is_array($this->parsedHeaders[$name])) {
-                        $this->parsedHeaders[$name] = [$this->parsedHeaders[$name]];
-                    }
-                    $this->parsedHeaders[$name][] = $value;
-                } else {
-                    $this->parsedHeaders[$name] = $value;
+        foreach ($headers as $header) {
+            if (!is_string($header) || strpos($header, ':') === false) {
+                continue;
+            }
+
+            [$name, $value] = explode(':', $header, 2);
+            $name = strtolower(trim($name));
+            $value = trim($value);
+
+            if (isset($this->parsedHeaders[$name])) {
+                // Handle multiple headers with same name
+                $existing = $this->parsedHeaders[$name];
+                if (!is_array($existing)) {
+                    $this->parsedHeaders[$name] = [$existing];
                 }
+                
+                if (is_array($this->parsedHeaders[$name])) {
+                    $this->parsedHeaders[$name][] = $value;
+                }
+            } else {
+                $this->parsedHeaders[$name] = $value;
             }
         }
     }
@@ -53,21 +80,29 @@ class RecordedRequest
      */
     private function parseBody(): void
     {
-        if (isset($this->options[CURLOPT_POSTFIELDS])) {
-            $this->body = $this->options[CURLOPT_POSTFIELDS];
+        if (!isset($this->options[CURLOPT_POSTFIELDS])) {
+            return;
+        }
 
-            // Try to parse as JSON
-            if (is_string($this->body)) {
-                $decoded = json_decode($this->body, true);
-                if (json_last_error() === JSON_ERROR_NONE) {
-                    $this->parsedJson = $decoded;
-                }
-            }
+        $postFields = $this->options[CURLOPT_POSTFIELDS];
+        
+        if (!is_string($postFields)) {
+            return;
+        }
+
+        $this->body = $postFields;
+
+        // Try to parse as JSON
+        $decoded = json_decode($this->body, true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+            $this->parsedJson = $decoded;
         }
     }
 
     /**
      * Get all headers as associative array.
+     * 
+     * @return array<string, string|array<int, string>>
      */
     public function getHeaders(): array
     {
@@ -84,6 +119,8 @@ class RecordedRequest
 
     /**
      * Get a specific header value (case-insensitive).
+     * 
+     * @return string|array<int, string>|null
      */
     public function getHeader(string $name): string|array|null
     {
@@ -118,6 +155,8 @@ class RecordedRequest
 
     /**
      * Get parsed JSON body.
+     * 
+     * @return array<mixed>|null
      */
     public function getJson(): ?array
     {
@@ -150,6 +189,8 @@ class RecordedRequest
 
     /**
      * Get raw cURL options.
+     * 
+     * @return array<int, mixed>
      */
     public function getOptions(): array
     {
@@ -158,6 +199,8 @@ class RecordedRequest
 
     /**
      * Convert to array for debugging.
+     * 
+     * @return array{method: string, url: string, headers: array<string, string|array<int, string>>, body: string|null, json: array<mixed>|null}
      */
     public function toArray(): array
     {

@@ -18,11 +18,24 @@ class CacheManager
         $cacheKey = $this->generateCacheKey($url);
         $cachedItem = $cache->get($cacheKey);
 
-        if ($cachedItem !== null && is_array($cachedItem) && time() < ($cachedItem['expires_at'] ?? 0)) {
+        if (
+            is_array($cachedItem) &&
+            isset($cachedItem['expires_at'], $cachedItem['body'], $cachedItem['status'], $cachedItem['headers']) &&
+            is_int($cachedItem['expires_at']) &&
+            time() < $cachedItem['expires_at'] &&
+            is_string($cachedItem['body']) &&
+            is_int($cachedItem['status']) &&
+            is_array($cachedItem['headers'])
+        ) {
+            /**
+             * @var array<string, string|string[]> $headers
+             */
+            $headers = $cachedItem['headers'];
+
             return new Response(
                 $cachedItem['body'],
                 $cachedItem['status'],
-                $cachedItem['headers']
+                $headers
             );
         }
 
@@ -53,6 +66,6 @@ class CacheManager
 
     private function generateCacheKey(string $url): string
     {
-        return 'http_cache_'.md5($url);
+        return 'http_cache_' . md5($url);
     }
 }

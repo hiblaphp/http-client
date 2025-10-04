@@ -10,9 +10,7 @@ use Hibla\Http\SSE\SSEEvent;
 use Hibla\Http\SSE\SSEReconnectConfig;
 use Hibla\Http\SSE\SSEResponse;
 use Hibla\Http\Traits\InterceptorTrait;
-use Hibla\Http\Traits\SSETrait;
 use Hibla\Http\Traits\StreamTrait;
-use Hibla\Http\Traits\UriTrait;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use InvalidArgumentException;
@@ -32,7 +30,7 @@ use Psr\Http\Message\UriInterface;
  */
 class Request extends Message implements CompleteHttpClientInterface
 {
-    use StreamTrait, SSETrait, InterceptorTrait, UriTrait;
+    use StreamTrait, InterceptorTrait;
 
     private HttpHandler $handler;
     private OptionsBuilderHandler $optionsBuilder;
@@ -193,9 +191,8 @@ class Request extends Message implements CompleteHttpClientInterface
 
     /**
      * {@inheritdoc}
-     * @return static
      */
-    public function withUri(UriInterface $uri, bool $preserveHost = false): RequestInterface
+    public function withUri(UriInterface $uri, bool $preserveHost = false): static
     {
         if ($uri === $this->uri) {
             return $this;
@@ -613,7 +610,7 @@ class Request extends Message implements CompleteHttpClientInterface
 
     /**
      * {@inheritdoc}
-     * @return CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>}>
+     * @return CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}> A promise that resolves with download metadata.
      */
     public function download(string $url, string $destination): CancellablePromiseInterface
     {
@@ -807,8 +804,13 @@ class Request extends Message implements CompleteHttpClientInterface
             $new->options['multipart'] = [];
         }
 
+        $multipart = $new->options['multipart'];
+        if (!is_array($multipart)) {
+            $multipart = [];
+        }
+
         if ($file instanceof UploadedFileInterface) {
-            $new->options['multipart'][$name] = [
+            $multipart[$name] = [
                 'name' => $name,
                 'contents' => $file->getStream(),
                 'filename' => $filename ?? $file->getClientFilename(),
@@ -820,14 +822,14 @@ class Request extends Message implements CompleteHttpClientInterface
                 throw new InvalidArgumentException("Unable to open file: {$file}");
             }
             $mimeType = mime_content_type($file);
-            $new->options['multipart'][$name] = [
+            $multipart[$name] = [
                 'name' => $name,
                 'contents' => $resource,
                 'filename' => $filename ?? basename($file),
                 'Content-Type' => $contentType ?? ($mimeType !== false ? $mimeType : 'application/octet-stream'),
             ];
         } elseif (is_resource($file)) {
-            $new->options['multipart'][$name] = [
+            $multipart[$name] = [
                 'name' => $name,
                 'contents' => $file,
                 'filename' => $filename ?? 'file',
@@ -837,6 +839,7 @@ class Request extends Message implements CompleteHttpClientInterface
             throw new InvalidArgumentException('File must be a file path, UploadedFileInterface, or resource');
         }
 
+        $new->options['multipart'] = $multipart;
         $new = $new->withoutHeader('Content-Type');
         return $new;
     }
@@ -852,13 +855,13 @@ class Request extends Message implements CompleteHttpClientInterface
         $new = $this;
         foreach ($files as $name => $file) {
             if (is_array($file)) {
-                $filePath = $file['path'] ?? null;
-                if (!is_string($filePath)) {
+                if (!isset($file['path']) || !is_string($file['path'])) {
                     throw new InvalidArgumentException("File array for '{$name}' must contain a string 'path' key.");
                 }
-                
-                $fileName = isset($file['name']) && is_string($file['name']) ? $file['name'] : null;
-                $fileType = isset($file['type']) && is_string($file['type']) ? $file['type'] : null;
+
+                $filePath = $file['path'];
+                $fileName = (isset($file['name']) && is_string($file['name'])) ? $file['name'] : null;
+                $fileType = (isset($file['type']) && is_string($file['type'])) ? $file['type'] : null;
 
                 $new = $new->withFile($name, $filePath, $fileName, $fileType);
             } else {
@@ -1185,6 +1188,23 @@ class Request extends Message implements CompleteHttpClientInterface
     }
 
     /**
+     * Updates the Host header from the URI if necessary.
+     */
+    private function updateHostFromUri(): static
+    {
+        $host = $this->uri->getHost();
+        if ($host === '') {
+            return $this;
+        }
+
+        if (($port = $this->uri->getPort()) !== null) {
+            $host .= ':' . $port;
+        }
+
+        return $this->withHeader('Host', $host);
+    }
+
+    /**
      * Execute the actual request after all interceptors have been processed.
      *
      * @param Request $processedRequest The request after interceptor processing.
@@ -1226,7 +1246,7 @@ class Request extends Message implements CompleteHttpClientInterface
     {
         // Cast body to Stream for type safety
         $body = $this->body instanceof Stream ? $this->body : $this->createTempStream();
-        
+
         return $this->optionsBuilder->buildCurlOptions(
             method: $method,
             url: $url,
@@ -1256,7 +1276,7 @@ class Request extends Message implements CompleteHttpClientInterface
     private function buildFetchOptions(string $method): array
     {
         $body = $this->body instanceof Stream ? $this->body : $this->createTempStream();
-        
+
         return $this->optionsBuilder->buildFetchOptions(
             method: $method,
             headers: $this->headers,
@@ -1270,5 +1290,67 @@ class Request extends Message implements CompleteHttpClientInterface
             auth: $this->auth,
             retryConfig: $this->retryConfig
         );
+    }
+
+    /**
+     * Wrap the SSE event callback to return data in the configured format.
+     *
+     * @param callable(mixed): void|null $originalCallback
+     * @return callable(SSEEvent): void|null
+     */
+    private function wrapSSECallback(?callable $originalCallback): ?callable
+    {
+        if ($originalCallback === null || $this->sseDataFormat === null) {
+            return $originalCallback;
+        }
+
+        return function (SSEEvent $event) use ($originalCallback): void {
+            $processedData = match ($this->sseDataFormat) {
+                'json' => $this->parseEventDataAsJson($event),
+                'array' => $this->eventToArrayWithParsedData($event),
+                'raw' => $event->data,
+                'event' => $event,
+                default => $event
+            };
+
+            if ($this->sseMapper !== null) {
+                $processedData = ($this->sseMapper)($processedData);
+            }
+
+            $originalCallback($processedData);
+        };
+    }
+
+    /**
+     * Convert event to array with automatically parsed JSON data.
+     * If not valid JSON, keep original string
+     *
+     * @return array<string, mixed>
+     */
+    private function eventToArrayWithParsedData(SSEEvent $event): array
+    {
+        $array = $event->toArray();
+
+        if ($array['data'] !== null && is_string($array['data'])) {
+            $parsed = json_decode($array['data'], true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($parsed)) {
+                $array['data'] = $parsed;
+            }
+        }
+
+        return $array;
+    }
+
+    /**
+     * Parse event data as JSON, fallback to raw data.
+     */
+    private function parseEventDataAsJson(SSEEvent $event): mixed
+    {
+        if ($event->data === null) {
+            return null;
+        }
+
+        $parsed = json_decode($event->data, true);
+        return json_last_error() === JSON_ERROR_NONE ? $parsed : $event->data;
     }
 }

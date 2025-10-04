@@ -17,6 +17,8 @@ final readonly class StreamingHandler
 {
     /**
      * Creates a streaming HTTP request with optional real-time chunk processing.
+     * @param array<int|string, mixed> $options
+     * @return CancellablePromiseInterface<StreamingResponse>
      */
     public function streamRequest(string $url, array $options, ?callable $onChunk = null): CancellablePromiseInterface
     {
@@ -69,8 +71,7 @@ final readonly class StreamingHandler
 
                 if ($error !== null) {
                     fclose($responseStream);
-                    
-                    // Use NetworkException for network-level errors
+
                     $exception = new NetworkException(
                         "Streaming request failed: {$error}",
                         0,
@@ -83,6 +84,7 @@ final readonly class StreamingHandler
                     rewind($responseStream);
                     $stream = new Stream($responseStream);
 
+                    /** @var array<string, string|list<string>> $formattedHeaders */
                     $formattedHeaders = [];
                     foreach ($headerAccumulator as $header) {
                         if (str_contains($header, ':')) {
@@ -124,10 +126,12 @@ final readonly class StreamingHandler
 
     /**
      * Downloads a file asynchronously to a specified destination with cancellation support.
+     * @param array<int|string, mixed> $options
+     * @return CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}>
      */
     public function downloadFile(string $url, string $destination, array $options = []): CancellablePromiseInterface
     {
-        /** @var CancellablePromise<array{file: string, status: int, headers: array<mixed>}> $promise */
+        /** @var CancellablePromise<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}> $promise */
         $promise = new CancellablePromise;
 
         $file = fopen($destination, 'wb');
@@ -174,7 +178,7 @@ final readonly class StreamingHandler
                     if (file_exists($destination)) {
                         unlink($destination);
                     }
-                    
+
                     $exception = new NetworkException(
                         "Download failed: {$error}",
                         0,

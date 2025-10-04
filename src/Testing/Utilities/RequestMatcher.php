@@ -2,8 +2,15 @@
 
 namespace Hibla\Http\Testing\Utilities;
 
+use Hibla\Http\Testing\MockedRequest;
+
 class RequestMatcher
 {
+    /**
+     * @param array<int, MockedRequest> $mocks
+     * @param array<int, mixed> $options
+     * @return array{mock: MockedRequest, index: int}|null
+     */
     public function findMatchingMock(array $mocks, string $method, string $url, array $options): ?array
     {
         foreach ($mocks as $index => $mock) {
@@ -15,6 +22,9 @@ class RequestMatcher
         return null;
     }
 
+    /**
+     * @param array<int, mixed> $options
+     */
     public function matchesRequest(RecordedRequest $request, string $method, string $url, array $options = []): bool
     {
         if ($request->method !== $method && $method !== '*') {

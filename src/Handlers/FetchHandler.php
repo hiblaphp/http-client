@@ -10,6 +10,7 @@ use Hibla\Http\Exceptions\NetworkException;
 use Hibla\Http\Response;
 use Hibla\Http\RetryConfig;
 use Hibla\Http\SSE\SSEReconnectConfig;
+use Hibla\Http\SSE\SSEResponse;
 use Hibla\Http\StreamingResponse;
 use Hibla\Http\Traits\FetchOptionTrait;
 use Hibla\Promise\CancellablePromise;
@@ -38,7 +39,7 @@ class FetchHandler
     public function __construct(?StreamingHandler $streamingHandler = null, ?SSEHandler $sseHandler = null)
     {
         $this->streamingHandler = $streamingHandler ?? new StreamingHandler;
-        $this->sseHandler = $sseHandler ?? new SSEHandler($this->streamingHandler);
+        $this->sseHandler = $sseHandler ?? new SSEHandler();
     }
 
     /**
@@ -46,7 +47,7 @@ class FetchHandler
      *
      * @param  string  $url  The target URL.
      * @param  array<int|string, mixed>  $options  An associative array of request options.
-     * @return PromiseInterface<Response>|CancellablePromiseInterface<StreamingResponse>|CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>}> A promise that resolves with a Response, StreamingResponse, or download metadata.
+     * @return PromiseInterface<Response>|CancellablePromiseInterface<StreamingResponse>|CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}>|CancellablePromiseInterface<SSEResponse> A promise that resolves with a Response, StreamingResponse, download metadata, or SSEResponse.
      */
     public function fetch(string $url, array $options = []): PromiseInterface|CancellablePromiseInterface
     {
@@ -57,12 +58,16 @@ class FetchHandler
         if ($this->isSSERequested($options)) {
             $sseConfig = $this->extractSSEConfig($options);
 
+            $onEvent = $sseConfig['onEvent'];
+            $onError = $sseConfig['onError'];
+            $reconnectConfig = $sseConfig['reconnectConfig'];
+
             return $this->fetchSSE(
                 $url,
                 $options,
-                $sseConfig['onEvent'],
-                $sseConfig['onError'],
-                $sseConfig['reconnectConfig']
+                $onEvent,
+                $onError,
+                $reconnectConfig
             );
         }
 
@@ -80,7 +85,9 @@ class FetchHandler
 
         if ($cacheConfig !== null) {
             return $this->sendRequestWithCache($url, $curlOptions, $cacheConfig, $retryConfig);
-        } elseif ($retryConfig !== null) {
+        }
+
+        if ($retryConfig !== null) {
             return $this->fetchWithRetry($url, $curlOptions, $retryConfig);
         }
 
@@ -91,7 +98,7 @@ class FetchHandler
      * Sends a request with automatic retry logic on failure.
      *
      * @param  string  $url  The target URL.
-     * @param  array<int, mixed>  $options  An array of cURL options.
+     * @param  array<int|string, mixed>  $options  An array of cURL options.
      * @param  RetryConfig  $retryConfig  Configuration object for retry behavior.
      * @return PromiseInterface<Response> A promise that resolves with a Response object or rejects with an HttpException on final failure.
      */
@@ -107,12 +114,15 @@ class FetchHandler
         $cookieJar = $options['_cookie_jar'] ?? null;
         unset($options['_cookie_jar']);
 
-        $executeRequest = function () use ($url, $options, $retryConfig, $promise, &$attempt, &$totalAttempts, &$requestId, &$executeRequest, $cookieJar) {
+        /** @var array<int, mixed> $curlOnlyOptions */
+        $curlOnlyOptions = array_filter($options, 'is_int', ARRAY_FILTER_USE_KEY);
+
+        $executeRequest = function () use ($url, $curlOnlyOptions, $retryConfig, $promise, &$attempt, &$totalAttempts, &$requestId, &$executeRequest, $cookieJar) {
             $totalAttempts++;
 
             $requestId = EventLoop::getInstance()->addHttpRequest(
                 $url,
-                $options,
+                $curlOnlyOptions,
                 function (?string $error, ?string $responseBody, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $retryConfig, $promise, &$attempt, &$totalAttempts, &$executeRequest, $cookieJar) {
 
                     if ($promise->isCancelled()) {
@@ -150,7 +160,7 @@ class FetchHandler
                         $responseObj->setHttpVersion($httpVersion);
                     }
 
-                    if ($cookieJar !== null) {
+                    if ($cookieJar instanceof \Hibla\Http\Interfaces\CookieJarInterface) {
                         $responseObj->applyCookiesToJar($cookieJar);
                     }
 
@@ -175,7 +185,7 @@ class FetchHandler
      *
      * @param  string  $url  The target URL.
      * @param  array<int|string, mixed>  $options  Request options.
-     * @return CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>}> A promise that resolves with download metadata.
+     * @return CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}> A promise that resolves with download metadata.
      */
     private function fetchDownload(string $url, array $options): CancellablePromiseInterface
     {
@@ -254,7 +264,7 @@ class FetchHandler
     /**
      * Executes basic fetch without advanced features
      *
-     * @param  array<int, mixed>  $curlOptions
+     * @param  array<int|string, mixed>  $curlOptions
      * @return PromiseInterface<Response>
      */
     public function executeBasicFetch(string $url, array $curlOptions): PromiseInterface
@@ -265,9 +275,12 @@ class FetchHandler
         $cookieJar = $curlOptions['_cookie_jar'] ?? null;
         unset($curlOptions['_cookie_jar']);
 
+        /** @var array<int, mixed> $curlOnlyOptions */
+        $curlOnlyOptions = array_filter($curlOptions, 'is_int', ARRAY_FILTER_USE_KEY);
+
         $requestId = EventLoop::getInstance()->addHttpRequest(
             $url,
-            $curlOptions,
+            $curlOnlyOptions,
             function (?string $error, ?string $response, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $promise, $cookieJar) {
                 if ($promise->isCancelled()) {
                     return;
@@ -289,7 +302,7 @@ class FetchHandler
                         $responseObj->setHttpVersion($httpVersion);
                     }
 
-                    if ($cookieJar !== null) {
+                    if ($cookieJar instanceof \Hibla\Http\Interfaces\CookieJarInterface) {
                         $responseObj->applyCookiesToJar($cookieJar);
                     }
 
@@ -309,7 +322,7 @@ class FetchHandler
      * Sends a request with caching support.
      *
      * @param  string  $url  The target URL.
-     * @param  array<int, mixed>  $curlOptions  cURL options for the request.
+     * @param  array<int|string, mixed>  $curlOptions  cURL options for the request.
      * @param  CacheConfig  $cacheConfig  Cache configuration.
      * @param  RetryConfig|null  $retryConfig  Optional retry configuration.
      * @return PromiseInterface<Response> A promise that resolves with a Response object.
@@ -444,6 +457,8 @@ class FetchHandler
 
     /**
      * Handles SSE requests through fetch.
+     * @param array<int|string, mixed> $options
+     * @return CancellablePromiseInterface<SSEResponse>
      */
     private function fetchSSE(
         string $url,
@@ -454,11 +469,16 @@ class FetchHandler
     ): CancellablePromiseInterface {
         $curlOptions = $this->normalizeFetchOptions($url, $options);
 
-        return $this->sseHandler->connect($url, $curlOptions, $onEvent, $onError, $reconnectConfig);
+        /** @var array<int, mixed> $curlOnlyOptions */
+        $curlOnlyOptions = array_filter($curlOptions, 'is_int', ARRAY_FILTER_USE_KEY);
+
+        return $this->sseHandler->connect($url, $curlOnlyOptions, $onEvent, $onError, $reconnectConfig);
     }
 
     /**
      * Extract SSE configuration from options.
+     * @param array<int|string, mixed> $options
+     * @return array{onEvent: callable|null, onError: callable|null, reconnectConfig: SSEReconnectConfig|null}
      */
     private function extractSSEConfig(array $options): array
     {
@@ -474,6 +494,7 @@ class FetchHandler
 
     /**
      * Extract SSE reconnection config from options.
+     * @param array<int|string, mixed> $options
      */
     private function extractSSEReconnectConfig(array $options): ?SSEReconnectConfig
     {
@@ -492,25 +513,39 @@ class FetchHandler
         }
 
         if (is_array($reconnect)) {
+            $enabled = isset($reconnect['enabled']) ? (bool)$reconnect['enabled'] : true;
+            $maxAttempts = (isset($reconnect['max_attempts']) && is_numeric($reconnect['max_attempts'])) ? (int)$reconnect['max_attempts'] : 10;
+            $initialDelay = (isset($reconnect['initial_delay']) && is_numeric($reconnect['initial_delay'])) ? (float)$reconnect['initial_delay'] : 1.0;
+            $maxDelay = (isset($reconnect['max_delay']) && is_numeric($reconnect['max_delay'])) ? (float)$reconnect['max_delay'] : 30.0;
+            $backoffMultiplier = (isset($reconnect['backoff_multiplier']) && is_numeric($reconnect['backoff_multiplier'])) ? (float)$reconnect['backoff_multiplier'] : 2.0;
+            $jitter = isset($reconnect['jitter']) ? (bool)$reconnect['jitter'] : true;
+            $onReconnect = (isset($reconnect['on_reconnect']) && is_callable($reconnect['on_reconnect'])) ? $reconnect['on_reconnect'] : null;
+            $shouldReconnect = (isset($reconnect['should_reconnect']) && is_callable($reconnect['should_reconnect'])) ? $reconnect['should_reconnect'] : null;
+
+            $defaultErrors = [
+                'Connection refused',
+                'Connection reset',
+                'Connection timed out',
+                'Could not resolve host',
+                'Resolving timed out',
+                'SSL connection timeout',
+                'Operation timed out',
+                'Network is unreachable',
+            ];
+            $retryableErrors = (isset($reconnect['retryable_errors']) && is_array($reconnect['retryable_errors']))
+                ? $reconnect['retryable_errors']
+                : $defaultErrors;
+
             return new SSEReconnectConfig(
-                enabled: $reconnect['enabled'] ?? true,
-                maxAttempts: $reconnect['max_attempts'] ?? 10,
-                initialDelay: $reconnect['initial_delay'] ?? 1.0,
-                maxDelay: $reconnect['max_delay'] ?? 30.0,
-                backoffMultiplier: $reconnect['backoff_multiplier'] ?? 2.0,
-                jitter: $reconnect['jitter'] ?? true,
-                retryableErrors: $reconnect['retryable_errors'] ?? [
-                    'Connection refused',
-                    'Connection reset',
-                    'Connection timed out',
-                    'Could not resolve host',
-                    'Resolving timed out',
-                    'SSL connection timeout',
-                    'Operation timed out',
-                    'Network is unreachable',
-                ],
-                onReconnect: $reconnect['on_reconnect'] ?? null,
-                shouldReconnect: $reconnect['should_reconnect'] ?? null,
+                enabled: $enabled,
+                maxAttempts: $maxAttempts,
+                initialDelay: $initialDelay,
+                maxDelay: $maxDelay,
+                backoffMultiplier: $backoffMultiplier,
+                jitter: $jitter,
+                retryableErrors: array_values(array_filter($retryableErrors, 'is_string')),
+                onReconnect: $onReconnect,
+                shouldReconnect: $shouldReconnect
             );
         }
 
@@ -521,7 +556,7 @@ class FetchHandler
      * Dispatches the request to the network, applying retry logic if configured.
      *
      * @param  string  $url  The target URL.
-     * @param  array<int, mixed>  $curlOptions  cURL options for the request.
+     * @param  array<int|string, mixed>  $curlOptions  cURL options for the request.
      * @param  RetryConfig|null  $retryConfig  Optional retry configuration.
      * @return PromiseInterface<Response> A promise that resolves with a Response object.
      */
@@ -582,13 +617,17 @@ class FetchHandler
         if (self::$defaultCache === null) {
             $httpConfigLoader = HttpConfigLoader::getInstance();
 
+            /** @var mixed $httpConfig */
             $httpConfig = $httpConfigLoader->get('client', []);
 
-            $cacheDirectory = $httpConfig['cache']['path'] ?? null;
+            $cacheDirectory = null;
+            if (is_array($httpConfig) && isset($httpConfig['cache']) && is_array($httpConfig['cache']) && isset($httpConfig['cache']['path']) && is_string($httpConfig['cache']['path'])) {
+                $cacheDirectory = $httpConfig['cache']['path'];
+            }
 
             if ($cacheDirectory === null) {
                 $rootPath = $httpConfigLoader->getRootPath();
-                $cacheDirectory = $rootPath
+                $cacheDirectory = is_string($rootPath)
                     ? $rootPath . '/storage/cache'
                     : sys_get_temp_dir() . '/hibla_http_cache';
             }

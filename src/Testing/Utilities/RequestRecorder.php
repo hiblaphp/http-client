@@ -4,9 +4,16 @@ namespace Hibla\Http\Testing\Utilities;
 
 class RequestRecorder
 {
+    /**
+     * @var array<int, RecordedRequest>
+     */
     private array $requestHistory = [];
+
     private bool $recordRequests = true;
 
+    /**
+     * @param array<int, mixed> $options
+     */
     public function recordRequest(string $method, string $url, array $options): void
     {
         if (!$this->recordRequests) {
@@ -16,6 +23,9 @@ class RequestRecorder
         $this->requestHistory[] = new RecordedRequest($method, $url, $options);
     }
 
+    /**
+     * @return array<int, RecordedRequest>
+     */
     public function getRequestHistory(): array
     {
         return $this->requestHistory;
@@ -36,11 +46,13 @@ class RequestRecorder
      */
     public function getLastRequest(): ?RecordedRequest
     {
-        if (empty($this->requestHistory)) {
+        $count = count($this->requestHistory);
+
+        if ($count === 0) {
             return null;
         }
 
-        return end($this->requestHistory);
+        return $this->requestHistory[$count - 1];
     }
 
     /**
@@ -48,7 +60,9 @@ class RequestRecorder
      */
     public function getFirstRequest(): ?RecordedRequest
     {
-        return $this->requestHistory[0] ?? null;
+        $firstRequest = $this->requestHistory[0] ?? null;
+
+        return $firstRequest instanceof RecordedRequest ? $firstRequest : null;
     }
 
     /**
@@ -56,6 +70,8 @@ class RequestRecorder
      */
     public function getRequest(int $index): ?RecordedRequest
     {
-        return $this->requestHistory[$index] ?? null;
+        $request = $this->requestHistory[$index] ?? null;
+
+        return $request instanceof RecordedRequest ? $request : null;
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Hibla\Http\Handlers;
 
+use Hibla\Http\Exceptions\RequestException;
 use Hibla\Http\Request;
 use Hibla\Promise\CancellablePromise;
 use Hibla\Promise\Interfaces\PromiseInterface;
@@ -15,15 +16,16 @@ class RequestInterceptorHandler
      * Process request interceptors sequentially, handling both sync and async interceptors.
      *
      * @param Request $request The initial request
-     * @param array $interceptors Array of interceptor callbacks
+     * @param array<callable(Request): (Request|PromiseInterface<Request>)> $interceptors Array of interceptor callbacks
      * @return PromiseInterface<Request> A promise that resolves with the processed request
      */
     public function processInterceptors(Request $request, array $interceptors): PromiseInterface
     {
-        if (empty($interceptors)) {
+        if ($interceptors === []) {
             return $this->createResolvedPromise($request);
         }
 
+        /** @var CancellablePromise<Request> $promise */
         $promise = new CancellablePromise(function (callable $resolve, callable $reject) use ($request, $interceptors) {
             $this->processSequentially($request, $interceptors, $resolve, $reject);
         });
@@ -33,6 +35,7 @@ class RequestInterceptorHandler
 
     /**
      * Process interceptors sequentially, handling both sync and async interceptors.
+     * @param array<callable(Request): (Request|PromiseInterface<Request>)> $interceptors
      */
     private function processSequentially(
         Request $request,
@@ -40,7 +43,7 @@ class RequestInterceptorHandler
         callable $resolve,
         callable $reject
     ): void {
-        if (empty($interceptors)) {
+        if ($interceptors === []) {
             $resolve($request);
             return;
         }
@@ -53,7 +56,7 @@ class RequestInterceptorHandler
             if ($result instanceof PromiseInterface) {
                 // Async interceptor - wait for it to complete before processing next
                 $result->then(
-                    function ($asyncRequest) use ($interceptors, $resolve, $reject) {
+                    function (Request $asyncRequest) use ($interceptors, $resolve, $reject) {
                         $this->processSequentially(
                             $asyncRequest,
                             $interceptors,
@@ -63,7 +66,7 @@ class RequestInterceptorHandler
                     },
                     $reject
                 );
-            } else {
+            } elseif ($result instanceof Request) {
                 // Sync interceptor - process immediately and continue
                 $this->processSequentially(
                     $result,
@@ -71,6 +74,8 @@ class RequestInterceptorHandler
                     $resolve,
                     $reject
                 );
+            } else {
+                throw new RequestException('InterceptRequest() must return a Request or a PromiseInterface that resolves with a Request.');
             }
         } catch (\Throwable $e) {
             $reject($e);
@@ -79,9 +84,11 @@ class RequestInterceptorHandler
 
     /**
      * Create a resolved promise with the given request.
+     * @return PromiseInterface<Request>
      */
     private function createResolvedPromise(Request $request): PromiseInterface
     {
+        /** @var CancellablePromise<Request> $promise */
         $promise = new CancellablePromise(function (callable $resolve) use ($request) {
             $resolve($request);
         });

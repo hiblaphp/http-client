@@ -15,23 +15,45 @@ use Hibla\Http\Uri;
  */
 class CookieManager
 {
-    /** @var array<string, CookieJarInterface> */
+    /**
+     * Named cookie jars.
+     *
+     * @var array<string, CookieJarInterface>
+     */
     private array $cookieJars = [];
 
-    /** @var array<string> */
+    /**
+     * Paths to created cookie files for cleanup.
+     *
+     * @var array<string>
+     */
     private array $createdCookieFiles = [];
 
+    /**
+     * The default cookie jar.
+     */
     private ?CookieJarInterface $defaultCookieJar = null;
 
+    /**
+     * Whether to automatically manage cookie file cleanup.
+     */
     private bool $autoManage;
 
+    /**
+     * Creates a new cookie manager.
+     *
+     * @param bool $autoManage Whether to automatically clean up created files
+     */
     public function __construct(bool $autoManage = true)
     {
         $this->autoManage = $autoManage;
     }
 
     /**
-     * Create a new in-memory cookie jar.
+     * Creates a new in-memory cookie jar.
+     *
+     * @param string $name Name for the jar
+     * @return CookieJarInterface The created jar
      */
     public function createCookieJar(string $name = 'default'): CookieJarInterface
     {
@@ -46,7 +68,12 @@ class CookieManager
     }
 
     /**
-     * Create a new file-based cookie jar.
+     * Creates a new file-based cookie jar.
+     *
+     * @param string $filename Path to cookie file
+     * @param bool $includeSessionCookies Whether to include session cookies
+     * @param string $name Name for the jar
+     * @return FileCookieJar The created jar
      */
     public function createFileCookieJar(string $filename, bool $includeSessionCookies = true, string $name = 'default'): FileCookieJar
     {
@@ -65,7 +92,10 @@ class CookieManager
     }
 
     /**
-     * Get a cookie jar by name.
+     * Gets a cookie jar by name.
+     *
+     * @param string $name Jar name
+     * @return CookieJarInterface|null The jar or null if not found
      */
     public function getCookieJar(string $name = 'default'): ?CookieJarInterface
     {
@@ -73,7 +103,10 @@ class CookieManager
     }
 
     /**
-     * Set the default cookie jar.
+     * Sets the default cookie jar.
+     *
+     * @param CookieJarInterface $jar The jar to set as default
+     * @return self
      */
     public function setDefaultCookieJar(CookieJarInterface $jar): self
     {
@@ -83,7 +116,9 @@ class CookieManager
     }
 
     /**
-     * Get the default cookie jar, creating one if none exists.
+     * Gets the default cookie jar, creating one if none exists.
+     *
+     * @return CookieJarInterface The default jar
      */
     public function getDefaultCookieJar(): CookieJarInterface
     {
@@ -95,7 +130,18 @@ class CookieManager
     }
 
     /**
-     * Add a cookie to a specific jar or the default jar.
+     * Adds a cookie to a specific jar or the default jar.
+     *
+     * @param string $name Cookie name
+     * @param string $value Cookie value
+     * @param string|null $domain Cookie domain
+     * @param string|null $path Cookie path
+     * @param int|null $expires Expiration timestamp
+     * @param bool $secure Whether cookie is secure
+     * @param bool $httpOnly Whether cookie is HTTP only
+     * @param string|null $sameSite SameSite attribute
+     * @param string $jarName Name of jar to add to
+     * @return self
      */
     public function addCookie(
         string $name,
@@ -128,7 +174,11 @@ class CookieManager
     }
 
     /**
-     * Add multiple cookies at once.
+     * Adds multiple cookies at once.
+     *
+     * @param array<string, string|array{value?: string, domain?: string, path?: string, expires?: int, secure?: bool, httpOnly?: bool, sameSite?: string}> $cookies Cookies to add
+     * @param string $jarName Name of jar to add to
+     * @return self
      */
     public function addCookies(array $cookies, string $jarName = 'default'): self
     {
@@ -136,15 +186,23 @@ class CookieManager
             if (is_string($config)) {
                 $this->addCookie($name, $config, null, '/', null, false, false, null, $jarName);
             } elseif (is_array($config)) {
+                $value = $config['value'] ?? '';
+                $domain = $config['domain'] ?? null;
+                $path = $config['path'] ?? '/';
+                $expires = $config['expires'] ?? null;
+                $secure = $config['secure'] ?? false;
+                $httpOnly = $config['httpOnly'] ?? false;
+                $sameSite = $config['sameSite'] ?? null;
+                
                 $this->addCookie(
                     $name,
-                    $config['value'] ?? '',
-                    $config['domain'] ?? null,
-                    $config['path'] ?? '/',
-                    $config['expires'] ?? null,
-                    $config['secure'] ?? false,
-                    $config['httpOnly'] ?? false,
-                    $config['sameSite'] ?? null,
+                    is_string($value) ? $value : '',
+                    is_string($domain) ? $domain : null,
+                    is_string($path) ? $path : '/',
+                    is_int($expires) ? $expires : null,
+                    is_bool($secure) ? $secure : false,
+                    is_bool($httpOnly) ? $httpOnly : false,
+                    is_string($sameSite) ? $sameSite : null,
                     $jarName
                 );
             }
@@ -154,7 +212,10 @@ class CookieManager
     }
 
     /**
-     * Configure a mock to set cookies via Set-Cookie headers.
+     * Configures a mock to set cookies via Set-Cookie headers.
+     *
+     * @param MockedRequest $mock The mock to configure
+     * @param array<string, string|array{value?: string, domain?: string, path?: string, expires?: int, secure?: bool, httpOnly?: bool, sameSite?: string}> $cookies Cookies to set
      */
     public function mockSetCookies(MockedRequest $mock, array $cookies): void
     {
@@ -162,25 +223,26 @@ class CookieManager
             if (is_string($config)) {
                 $mock->addResponseHeader('Set-Cookie', "{$name}={$config}; Path=/");
             } elseif (is_array($config)) {
-                $setCookieValue = $name.'='.($config['value'] ?? '');
+                $value = $config['value'] ?? '';
+                $setCookieValue = $name . '=' . (is_string($value) ? $value : '');
 
-                if (isset($config['path'])) {
-                    $setCookieValue .= '; Path='.$config['path'];
+                if (isset($config['path']) && is_string($config['path'])) {
+                    $setCookieValue .= '; Path=' . $config['path'];
                 }
-                if (isset($config['domain'])) {
-                    $setCookieValue .= '; Domain='.$config['domain'];
+                if (isset($config['domain']) && is_string($config['domain'])) {
+                    $setCookieValue .= '; Domain=' . $config['domain'];
                 }
-                if (isset($config['expires'])) {
-                    $setCookieValue .= '; Expires='.gmdate('D, d M Y H:i:s T', $config['expires']);
+                if (isset($config['expires']) && is_int($config['expires'])) {
+                    $setCookieValue .= '; Expires=' . gmdate('D, d M Y H:i:s T', $config['expires']);
                 }
-                if ($config['secure'] ?? false) {
+                if (($config['secure'] ?? false) === true) {
                     $setCookieValue .= '; Secure';
                 }
-                if ($config['httpOnly'] ?? false) {
+                if (($config['httpOnly'] ?? false) === true) {
                     $setCookieValue .= '; HttpOnly';
                 }
-                if (isset($config['sameSite'])) {
-                    $setCookieValue .= '; SameSite='.$config['sameSite'];
+                if (isset($config['sameSite']) && is_string($config['sameSite'])) {
+                    $setCookieValue .= '; SameSite=' . $config['sameSite'];
                 }
 
                 $mock->addResponseHeader('Set-Cookie', $setCookieValue);
@@ -189,7 +251,11 @@ class CookieManager
     }
 
     /**
-     * Assert that a cookie exists in a jar.
+     * Asserts that a cookie exists in a jar.
+     *
+     * @param string $name Cookie name
+     * @param string $jarName Jar name
+     * @throws MockAssertionException If assertion fails
      */
     public function assertCookieExists(string $name, string $jarName = 'default'): void
     {
@@ -208,7 +274,12 @@ class CookieManager
     }
 
     /**
-     * Assert that a cookie has a specific value.
+     * Asserts that a cookie has a specific value.
+     *
+     * @param string $name Cookie name
+     * @param string $expectedValue Expected value
+     * @param string $jarName Jar name
+     * @throws MockAssertionException If assertion fails
      */
     public function assertCookieValue(string $name, string $expectedValue, string $jarName = 'default'): void
     {
@@ -231,23 +302,30 @@ class CookieManager
     }
 
     /**
-     * Assert that a cookie was sent in a request.
+     * Asserts that a cookie was sent in a request.
+     *
+     * @param string $name Cookie name
+     * @param array<int|string, mixed> $curlOptions cURL options from the request
+     * @throws MockAssertionException If assertion fails
      */
     public function assertCookieSent(string $name, array $curlOptions): void
     {
         $cookieHeader = '';
 
-        if (isset($curlOptions[CURLOPT_HTTPHEADER])) {
-            foreach ($curlOptions[CURLOPT_HTTPHEADER] as $header) {
+        $httpHeaders = $curlOptions[CURLOPT_HTTPHEADER] ?? null;
+        if (is_array($httpHeaders)) {
+            foreach ($httpHeaders as $header) {
+                if (!is_string($header)) {
+                    continue;
+                }
                 if (str_starts_with(strtolower($header), 'cookie:')) {
                     $cookieHeader = substr($header, 7);
-
                     break;
                 }
             }
         }
 
-        if (empty($cookieHeader)) {
+        if ($cookieHeader === '') {
             throw new MockAssertionException('No Cookie header found in request');
         }
 
@@ -265,22 +343,28 @@ class CookieManager
     }
 
     /**
-     * Get cookie count in a jar.
+     * Gets cookie count in a jar.
+     *
+     * @param string $jarName Jar name
+     * @return int Cookie count
      */
     public function getCookieCount(string $jarName = 'default'): int
     {
         $jar = $this->getCookieJar($jarName);
 
-        return $jar ? count($jar->getAllCookies()) : 0;
+        return $jar !== null ? count($jar->getAllCookies()) : 0;
     }
 
     /**
-     * Clear all cookies from a jar.
+     * Clears all cookies from a jar.
+     *
+     * @param string $jarName Jar name
+     * @return self
      */
     public function clearCookies(string $jarName = 'default'): self
     {
         $jar = $this->getCookieJar($jarName);
-        if ($jar) {
+        if ($jar !== null) {
             $jar->clear();
         }
 
@@ -288,7 +372,11 @@ class CookieManager
     }
 
     /**
-     * Apply cookies from a jar to curl options.
+     * Applies cookies from a jar to curl options.
+     *
+     * @param array<int|string, mixed> $curlOptions cURL options to modify
+     * @param string $url Request URL
+     * @param string $jarName Jar name
      */
     public function applyCookiesToCurlOptions(array &$curlOptions, string $url, string $jarName = 'default'): void
     {
@@ -307,25 +395,36 @@ class CookieManager
         if ($cookieHeader !== '') {
             $curlOptions[CURLOPT_HTTPHEADER] = $curlOptions[CURLOPT_HTTPHEADER] ?? [];
 
-            // Check if Cookie header already exists and append
             $cookieHeaderExists = false;
-            foreach ($curlOptions[CURLOPT_HTTPHEADER] as &$header) {
-                if (str_starts_with(strtolower($header), 'cookie:')) {
-                    $header .= '; '.$cookieHeader;
-                    $cookieHeaderExists = true;
-
-                    break;
+            $httpHeaders = $curlOptions[CURLOPT_HTTPHEADER];
+            if (is_array($httpHeaders)) {
+                foreach ($httpHeaders as $key => $header) {
+                    if (!is_string($header)) {
+                        continue;
+                    }
+                    if (str_starts_with(strtolower($header), 'cookie:')) {
+                        $httpHeaders[$key] = $header . '; ' . $cookieHeader;
+                        $curlOptions[CURLOPT_HTTPHEADER] = $httpHeaders;
+                        $cookieHeaderExists = true;
+                        break;
+                    }
                 }
             }
 
-            if (! $cookieHeaderExists) {
-                $curlOptions[CURLOPT_HTTPHEADER][] = 'Cookie: '.$cookieHeader;
+            if (!$cookieHeaderExists) {
+                if (!is_array($curlOptions[CURLOPT_HTTPHEADER])) {
+                    $curlOptions[CURLOPT_HTTPHEADER] = [];
+                }
+                $curlOptions[CURLOPT_HTTPHEADER][] = 'Cookie: ' . $cookieHeader;
             }
         }
     }
 
     /**
-     * Process Set-Cookie headers from a response and update the jar.
+     * Processes Set-Cookie headers from a response and updates the jar.
+     *
+     * @param array<string, string|array<string>> $headers Response headers
+     * @param string $jarName Jar name
      */
     public function processSetCookieHeaders(array $headers, string $jarName = 'default'): void
     {
@@ -346,6 +445,9 @@ class CookieManager
         }
 
         foreach ($setCookieHeaders as $setCookieHeader) {
+            if (!is_string($setCookieHeader)) {
+                continue;
+            }
             $cookie = Cookie::fromSetCookieHeader($setCookieHeader);
             if ($cookie !== null) {
                 $jar->setCookie($cookie);
@@ -354,7 +456,10 @@ class CookieManager
     }
 
     /**
-     * Create a temporary cookie file.
+     * Creates a temporary cookie file.
+     *
+     * @param string $prefix Filename prefix
+     * @return string Path to created file
      */
     public function createTempCookieFile(string $prefix = 'test_cookies_'): string
     {
@@ -368,7 +473,7 @@ class CookieManager
     }
 
     /**
-     * Clean up all managed cookie files.
+     * Cleans up all managed cookie files.
      */
     public function cleanup(): void
     {
@@ -384,7 +489,9 @@ class CookieManager
     }
 
     /**
-     * Get debug information about all cookie jars.
+     * Gets debug information about all cookie jars.
+     *
+     * @return array<string, array{type: string, cookie_count: int, cookies: array<array{name: string, value: string, domain: string|null, path: string, expires: int|null, secure: bool, httpOnly: bool, sameSite: string|null, expired: bool}>}> Debug info
      */
     public function getDebugInfo(): array
     {
@@ -417,7 +524,10 @@ class CookieManager
     }
 
     /**
-     * Apply cookies to curl options, honoring a custom jar in $curlOptions['_cookie_jar'] or falling back to the default jar.
+     * Applies cookies to curl options, honoring a custom jar or falling back to default.
+     *
+     * @param array<int|string, mixed> $curlOptions cURL options to modify
+     * @param string $url Request URL
      */
     public function applyCookiesForRequestOptions(array &$curlOptions, string $url): void
     {
@@ -437,20 +547,28 @@ class CookieManager
 
             $curlOptions[CURLOPT_HTTPHEADER] = $curlOptions[CURLOPT_HTTPHEADER] ?? [];
 
-            foreach ($curlOptions[CURLOPT_HTTPHEADER] as &$header) {
-                if (str_starts_with(strtolower($header), 'cookie:')) {
-                    $header .= '; '.$cookieHeader;
-
-                    return;
+            $httpHeaders = $curlOptions[CURLOPT_HTTPHEADER];
+            if (is_array($httpHeaders)) {
+                foreach ($httpHeaders as $key => $header) {
+                    if (!is_string($header)) {
+                        continue;
+                    }
+                    if (str_starts_with(strtolower($header), 'cookie:')) {
+                        $httpHeaders[$key] = $header . '; ' . $cookieHeader;
+                        $curlOptions[CURLOPT_HTTPHEADER] = $httpHeaders;
+                        return;
+                    }
                 }
             }
 
-            $curlOptions[CURLOPT_HTTPHEADER][] = 'Cookie: '.$cookieHeader;
+            if (!is_array($curlOptions[CURLOPT_HTTPHEADER])) {
+                $curlOptions[CURLOPT_HTTPHEADER] = [];
+            }
+            $curlOptions[CURLOPT_HTTPHEADER][] = 'Cookie: ' . $cookieHeader;
 
             return;
         }
 
-        // If jar name provided, use stored jar if available
         if (is_string($jarOption)) {
             $jar = $this->getCookieJar($jarOption);
             if ($jar === null) {
@@ -470,15 +588,24 @@ class CookieManager
 
             $curlOptions[CURLOPT_HTTPHEADER] = $curlOptions[CURLOPT_HTTPHEADER] ?? [];
 
-            foreach ($curlOptions[CURLOPT_HTTPHEADER] as &$header) {
-                if (str_starts_with(strtolower($header), 'cookie:')) {
-                    $header .= '; '.$cookieHeader;
-
-                    return;
+            $httpHeaders = $curlOptions[CURLOPT_HTTPHEADER];
+            if (is_array($httpHeaders)) {
+                foreach ($httpHeaders as $key => $header) {
+                    if (!is_string($header)) {
+                        continue;
+                    }
+                    if (str_starts_with(strtolower($header), 'cookie:')) {
+                        $httpHeaders[$key] = $header . '; ' . $cookieHeader;
+                        $curlOptions[CURLOPT_HTTPHEADER] = $httpHeaders;
+                        return;
+                    }
                 }
             }
 
-            $curlOptions[CURLOPT_HTTPHEADER][] = 'Cookie: '.$cookieHeader;
+            if (!is_array($curlOptions[CURLOPT_HTTPHEADER])) {
+                $curlOptions[CURLOPT_HTTPHEADER] = [];
+            }
+            $curlOptions[CURLOPT_HTTPHEADER][] = 'Cookie: ' . $cookieHeader;
 
             return;
         }
@@ -487,11 +614,11 @@ class CookieManager
     }
 
     /**
-     * Process Set-Cookie headers and apply them to both the shared manager (default jar)
-     * and to a custom jar passed in $curlOptions['_cookie_jar'] (instance or jar name).
+     * Processes Set-Cookie headers and applies them to both default and custom jars.
      *
-     * Keeps the same domain-inference behavior as before: if the parsed cookie lacks a domain,
-     * it will be set to the request host (if available).
+     * @param array<string, string|array<string>> $headers Response headers
+     * @param array<int|string, mixed> $curlOptions cURL options
+     * @param string $url Request URL
      */
     public function processResponseCookiesForOptions(array $headers, array $curlOptions, string $url): void
     {
@@ -520,26 +647,28 @@ class CookieManager
             }
             if (is_array($value)) {
                 $setCookieHeaders = array_merge($setCookieHeaders, $value);
-
                 continue;
             }
             $setCookieHeaders[] = $value;
         }
 
-        if (empty($setCookieHeaders)) {
+        if ($setCookieHeaders === []) {
             return;
         }
 
         $uri = new Uri($url);
-        $requestDomain = $uri->getHost() ?? '';
+        $requestDomain = $uri->getHost();
 
         foreach ($setCookieHeaders as $setCookieHeader) {
+            if (!is_string($setCookieHeader)) {
+                continue;
+            }
             $cookie = Cookie::fromSetCookieHeader($setCookieHeader);
             if ($cookie === null) {
                 continue;
             }
 
-            if (empty($cookie->getDomain()) && $requestDomain !== '') {
+            if ($cookie->getDomain() === null && $requestDomain !== '') {
                 $cookie = new Cookie(
                     $cookie->getName(),
                     $cookie->getValue(),

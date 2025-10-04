@@ -69,7 +69,6 @@ function http_post(string $url, array $data = []): PromiseInterface
  * calling the provided callback for each chunk of data received.
  *
  * @param  string  $url  The URL to stream from
- * @param  array<int|string, mixed>  $options  Request options
  * @param  callable|null  $onChunk  Callback to handle each chunk
  * @return CancellablePromiseInterface<StreamingResponse> Promise that resolves when streaming completes
  *

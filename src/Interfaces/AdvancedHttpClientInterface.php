@@ -138,7 +138,7 @@ interface AdvancedHttpClientInterface extends HttpClientBuilderInterface
     /**
      * Download a file to a destination path.
      * 
-     * @return CancellablePromiseInterface<Response>
+     * @return CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}> A promise that resolves with download metadata.
      */
     public function download(string $url, string $destination): CancellablePromiseInterface;
 

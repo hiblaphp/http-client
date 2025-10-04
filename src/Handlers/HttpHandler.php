@@ -5,6 +5,7 @@ namespace Hibla\Http\Handlers;
 use Psr\SimpleCache\CacheInterface;
 use Hibla\Http\Config\HttpConfigLoader;
 use Hibla\Http\CacheConfig;
+use Hibla\Http\Exceptions\HttpStreamException;
 use Hibla\Http\Interfaces\CookieJarInterface;
 use Hibla\Http\Request;
 use Hibla\Http\Response;
@@ -46,7 +47,7 @@ class HttpHandler
     {
         $this->streamingHandler = $streamingHandler ?? new StreamingHandler;
         $this->fetchHandler = $fetchHandler ?? new FetchHandler($this->streamingHandler);
-        $this->sseHandler = $sseHandler ?? new SSEHandler($this->streamingHandler);
+        $this->sseHandler = $sseHandler ?? new SSEHandler();
     }
 
     /**
@@ -80,7 +81,10 @@ class HttpHandler
     ): CancellablePromiseInterface {
         $curlOptions = $this->normalizeFetchOptions($url, $options, true);
 
-        return $this->sseHandler->connect($url, $curlOptions, $onEvent, $onError, $reconnectConfig);
+        /** @var array<int, mixed> $curlOnlyOptions */
+        $curlOnlyOptions = array_filter($curlOptions, 'is_int', ARRAY_FILTER_USE_KEY);
+
+        return $this->sseHandler->connect($url, $curlOnlyOptions, $onEvent, $onError, $reconnectConfig);
     }
 
     /**
@@ -104,29 +108,30 @@ class HttpHandler
     {
         $curlOptions = $this->normalizeFetchOptions($url, $options);
 
-        return $this->streamingHandler->streamRequest($url, $curlOptions, $onChunk);
+        /** @var array<int, mixed> $curlOnlyOptions */
+        $curlOnlyOptions = array_filter($curlOptions, 'is_int', ARRAY_FILTER_USE_KEY);
+
+        return $this->streamingHandler->streamRequest($url, $curlOnlyOptions, $onChunk);
     }
 
     /**
      * Asynchronously downloads a file from a URL to a specified destination.
      *
-     * The $options parameter allows TestingHttpHandler to override this method
-     * and provide mocked download responses without actual network calls.
-     *
      * @param  string  $url  The URL of the file to download.
      * @param  string  $destination  The local path to save the file.
      * @param  array<int|string, mixed>  $options  Request options for internal use and testing extensions.
-     * @return CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>}> A promise that resolves with download metadata.
+     * @return CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}> A promise that resolves with download metadata.
      * 
-     * @internal This method is designed for extension by TestingHttpHandler. The $options parameter
-     *           allows testing implementations to intercept and mock downloads. End users should use
-     *           $http->request()->download() for configuration instead.
+     * @internal This method is designed for extension by TestingHttpHandler.
      */
     public function download(string $url, string $destination, array $options = []): CancellablePromiseInterface
     {
         $curlOptions = $this->normalizeFetchOptions($url, $options);
 
-        return $this->streamingHandler->downloadFile($url, $destination, $curlOptions);
+        /** @var array<int, mixed> $curlOnlyOptions */
+        $curlOnlyOptions = array_filter($curlOptions, 'is_int', ARRAY_FILTER_USE_KEY);
+
+        return $this->streamingHandler->downloadFile($url, $destination, $curlOnlyOptions);
     }
 
     /**
@@ -135,7 +140,7 @@ class HttpHandler
      * @param  string  $content  The initial content of the stream.
      * @return Stream A new Stream object.
      *
-     * @throws RuntimeException If temporary stream creation fails.
+     * @throws HttpStreamException If temporary stream creation fails.
      * 
      * @internal This method is designed for extension by TestingHttpHandler for stream mocking.
      */
@@ -143,7 +148,7 @@ class HttpHandler
     {
         $resource = fopen('php://temp', 'w+b');
         if ($resource === false) {
-            throw new RuntimeException('Failed to create temporary stream');
+            throw new HttpStreamException('Failed to create temporary stream');
         }
 
         if ($content !== '') {
@@ -183,13 +188,17 @@ class HttpHandler
         if (self::$defaultCache === null) {
             $httpConfigLoader = HttpConfigLoader::getInstance();
 
+            /** @var mixed $httpConfig */
             $httpConfig = $httpConfigLoader->get('client', []);
 
-            $cacheDirectory = $httpConfig['cache']['path'] ?? null;
+            $cacheDirectory = null;
+            if (is_array($httpConfig) && isset($httpConfig['cache']) && is_array($httpConfig['cache']) && isset($httpConfig['cache']['path']) && is_string($httpConfig['cache']['path'])) {
+                $cacheDirectory = $httpConfig['cache']['path'];
+            }
 
             if ($cacheDirectory === null) {
                 $rootPath = $httpConfigLoader->getRootPath();
-                $cacheDirectory = $rootPath
+                $cacheDirectory = is_string($rootPath)
                     ? $rootPath . '/storage/cache'
                     : sys_get_temp_dir() . '/hibla_http_cache';
             }
@@ -214,7 +223,7 @@ class HttpHandler
      * TestingHttpHandler overrides this method to intercept requests and return mocked responses.
      *
      * @param  string  $url  The target URL.
-     * @param  array<int, mixed>  $curlOptions  cURL options for the request.
+     * @param  array<int|string, mixed>  $curlOptions  cURL options for the request.
      * @param  CacheConfig|null  $cacheConfig  Optional cache configuration.
      * @param  RetryConfig|null  $retryConfig  Optional retry configuration.
      * @return PromiseInterface<Response> A promise that resolves with a Response object.
@@ -237,7 +246,7 @@ class HttpHandler
             /** @var array{body: string, status: int, headers: array<string, array<string>|string>, expires_at: int}|null $cachedItem */
             $cachedItem = $cache->get($cacheKey);
 
-            if ($cachedItem !== null && time() < $cachedItem['expires_at']) {
+            if ($cachedItem !== null && isset($cachedItem['expires_at']) && time() < $cachedItem['expires_at']) {
                 return new Response($cachedItem['body'], $cachedItem['status'], $cachedItem['headers']);
             }
 
@@ -250,12 +259,16 @@ class HttpHandler
 
                 if (isset($cachedItem['headers']['etag'])) {
                     $etag = is_array($cachedItem['headers']['etag']) ? $cachedItem['headers']['etag'][0] : $cachedItem['headers']['etag'];
-                    $httpHeaders[] = 'If-None-Match: ' . $etag;
+                    if (is_string($etag)) {
+                        $httpHeaders[] = 'If-None-Match: ' . $etag;
+                    }
                 }
 
                 if (isset($cachedItem['headers']['last-modified'])) {
                     $lastModified = is_array($cachedItem['headers']['last-modified']) ? $cachedItem['headers']['last-modified'][0] : $cachedItem['headers']['last-modified'];
-                    $httpHeaders[] = 'If-Modified-Since: ' . $lastModified;
+                    if (is_string($lastModified)) {
+                        $httpHeaders[] = 'If-Modified-Since: ' . $lastModified;
+                    }
                 }
 
                 $curlOptions[CURLOPT_HTTPHEADER] = $httpHeaders;
@@ -292,7 +305,7 @@ class HttpHandler
      * Dispatches the request to the network, applying retry logic if configured.
      *
      * @param  string  $url  The target URL.
-     * @param  array<int, mixed>  $curlOptions  cURL options for the request.
+     * @param  array<int|string, mixed>  $curlOptions  cURL options for the request.
      * @param  RetryConfig|null  $retryConfig  Optional retry configuration.
      * @return PromiseInterface<Response> A promise that resolves with a Response object.
      * 
@@ -317,7 +330,7 @@ class HttpHandler
      *
      * @param  string  $url  The target URL.
      * @param  array<int|string, mixed>  $options  An associative array of request options.
-     * @return PromiseInterface<Response>|CancellablePromiseInterface<StreamingResponse>|CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>}> A promise that resolves with a Response, StreamingResponse, or download metadata depending on options.
+     * @return PromiseInterface<Response>|CancellablePromiseInterface<StreamingResponse>|CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}>|CancellablePromiseInterface<SSEResponse> A promise that resolves with a Response, StreamingResponse, download metadata, or SSEResponse.
      * 
      * @internal This method is a key extension point for TestingHttpHandler. It handles fetch-style
      *           requests and can return different response types based on options (streaming, downloads, etc.).
@@ -332,7 +345,7 @@ class HttpHandler
      * This method delegates to the FetchHandler for implementation.
      *
      * @param  string  $url  The target URL.
-     * @param  array<int, mixed>  $options  An array of cURL options.
+     * @param  array<int|string, mixed>  $options  An array of cURL options.
      * @param  RetryConfig  $retryConfig  Configuration object for retry behavior.
      * @return PromiseInterface<Response> A promise that resolves with a Response object or rejects with an HttpException on final failure.
      * 
@@ -361,7 +374,7 @@ class HttpHandler
      * @param  string  $url  The target URL.
      * @param  array<int|string, mixed>  $options  The options to normalize.
      * @param  bool  $ensureSSEHeaders  Whether to ensure SSE-specific headers are set.
-     * @return array<int, mixed> Normalized cURL options.
+     * @return array<int|string, mixed> Normalized cURL options.
      * 
      * @internal This method converts user-friendly options to cURL options. TestingHttpHandler
      *           may use this to understand request configuration before mocking.
