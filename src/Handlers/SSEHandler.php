@@ -107,8 +107,8 @@ class SSEHandler
         if ($connectionState->getLastEventId() !== null) {
             $headers = $options[CURLOPT_HTTPHEADER] ?? [];
             // Remove previous Last-Event-ID header if it exists to avoid duplicates
-            $headers = array_filter($headers, fn ($h) => ! str_starts_with(strtolower($h), 'last-event-id:'));
-            $headers[] = 'Last-Event-ID: '.$connectionState->getLastEventId();
+            $headers = array_filter($headers, fn($h) => ! str_starts_with(strtolower($h), 'last-event-id:'));
+            $headers[] = 'Last-Event-ID: ' . $connectionState->getLastEventId();
             $options[CURLOPT_HTTPHEADER] = $headers;
         }
 
@@ -151,7 +151,11 @@ class SSEHandler
                 }
 
                 $delay = $connectionState->getReconnectDelay();
-                $connectionState->getConfig()->onReconnect?->call($this, $connectionState->getAttemptCount(), $delay, $error);
+                
+                $onReconnect = $connectionState->getConfig()->onReconnect;
+                if ($onReconnect !== null) {
+                    $onReconnect($connectionState->getAttemptCount(), $delay, $error);
+                }
 
                 // When we schedule the timer, we get its ID and store it in the state object.
                 $timerId = EventLoop::getInstance()->addTimer($delay, function () use ($connectionState, $onEvent, $onError, $mainPromise) {
@@ -192,7 +196,7 @@ class SSEHandler
                             $onEvent($event);
                         }
                     } catch (\Throwable $e) {
-                        error_log('SSE event parsing error: '.$e->getMessage());
+                        error_log('SSE event parsing error: ' . $e->getMessage());
                     }
                 }
 
@@ -236,7 +240,7 @@ class SSEHandler
 
                     return;
                 }
-                
+
                 $exception = new NetworkException(
                     "SSE connection failed: {$error}",
                     0,
@@ -248,7 +252,7 @@ class SSEHandler
             }
         );
 
-        $promise->setCancelHandler(fn () => EventLoop::getInstance()->cancelHttpRequest($requestId));
+        $promise->setCancelHandler(fn() => EventLoop::getInstance()->cancelHttpRequest($requestId));
 
         return $promise;
     }
@@ -282,7 +286,7 @@ class SSEHandler
             if ($onError !== null) {
                 $onError($error);
             }
-            
+
             $exception = new NetworkException(
                 $error,
                 0,
@@ -290,7 +294,7 @@ class SSEHandler
                 $state->getUrl(),
                 $error
             );
-            
+
             $state->onConnectionFailed($exception);
         };
     }
