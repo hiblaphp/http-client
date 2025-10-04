@@ -2,6 +2,7 @@
 
 namespace Hibla\Http\Traits;
 
+use Hibla\Http\Exceptions\HttpStreamException;
 use Hibla\Http\Stream;
 
 trait StreamTrait
@@ -13,7 +14,7 @@ trait StreamTrait
     {
         $resource = fopen('php://temp', 'r+');
         if ($resource === false) {
-            throw new \RuntimeException('Unable to create temporary stream');
+            throw new HttpStreamException('Unable to create temporary stream');
         }
 
         return new Stream($resource, null);

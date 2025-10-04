@@ -121,7 +121,7 @@ interface AdvancedHttpClientInterface extends HttpClientBuilderInterface
     /**
      * Stream a GET request with chunk callbacks.
      * 
-     * @param callable(string): void|null $onChunk Callback invoked for each data chunk
+     * @param (callable(string): void)|null $onChunk Callback invoked for each data chunk
      * @return CancellablePromiseInterface<StreamingResponse>
      */
     public function stream(string $url, ?callable $onChunk = null): CancellablePromiseInterface;
@@ -130,7 +130,7 @@ interface AdvancedHttpClientInterface extends HttpClientBuilderInterface
      * Stream a POST request with chunk callbacks.
      * 
      * @param string|resource|array<string, mixed>|null $body Request body
-     * @param callable(string): void|null $onChunk Callback invoked for each data chunk
+     * @param (callable(string): void)|null $onChunk Callback invoked for each data chunk
      * @return CancellablePromiseInterface<StreamingResponse>
      */
     public function streamPost(string $url, $body = null, ?callable $onChunk = null): CancellablePromiseInterface;
@@ -150,8 +150,8 @@ interface AdvancedHttpClientInterface extends HttpClientBuilderInterface
     /**
      * Establish a Server-Sent Events connection.
      * 
-     * @param callable(\Hibla\Http\SSE\SSEEvent): void|null $onEvent Callback for each event
-     * @param callable(string): void|null $onError Callback for connection errors
+     * @param (callable(mixed): void)|null $onEvent Callback for each event
+     * @param (callable(string): void)|null $onError Callback for connection errors
      * @return CancellablePromiseInterface<SSEResponse>
      */
     public function sse(string $url, ?callable $onEvent = null, ?callable $onError = null, ?SSEReconnectConfig $reconnectConfig = null): CancellablePromiseInterface;
@@ -159,7 +159,7 @@ interface AdvancedHttpClientInterface extends HttpClientBuilderInterface
     /**
      * Map/transform SSE event data before invoking callbacks.
      * 
-     * @param callable(\Hibla\Http\SSE\SSEEvent): mixed $mapper Event transformation function
+     * @param callable(mixed): mixed $mapper Event transformation function
      */
     public function sseMap(callable $mapper): self;
 
@@ -167,8 +167,8 @@ interface AdvancedHttpClientInterface extends HttpClientBuilderInterface
      * Configure SSE reconnection behavior with simple parameters.
      * 
      * @param list<string> $retryableErrors Error message substrings that trigger reconnection
-     * @param callable(int, float, \Throwable): void|null $onReconnect Callback before each reconnection attempt
-     * @param callable(\Exception): bool|null $shouldReconnect Custom logic to determine if reconnection should occur
+     * @param (callable(int, float, \Throwable): void)|null $onReconnect Callback before each reconnection attempt
+     * @param (callable(\Exception): bool)|null $shouldReconnect Custom logic to determine if reconnection should occur
      */
     public function sseReconnect(
         bool $enabled = true,
@@ -194,13 +194,15 @@ interface AdvancedHttpClientInterface extends HttpClientBuilderInterface
 
     /**
      * Add a single file to a multipart request.
+     * 
+     * @param string|resource|\Psr\Http\Message\UploadedFileInterface $file
      */
-    public function withFile(string $name, string $filePath, ?string $fileName = null, ?string $contentType = null): self;
+    public function withFile(string $name, $file, ?string $fileName = null, ?string $contentType = null): self;
 
     /**
      * Add multiple files to a multipart request.
      * 
-     * @param array<string, string|array{path: string, name?: string, type?: string}> $files Files to upload
+     * @param array<string, string|resource|\Psr\Http\Message\UploadedFileInterface|array{path: string, name?: string, type?: string}> $files Files to upload
      */
     public function withFiles(array $files): self;
 
@@ -208,7 +210,7 @@ interface AdvancedHttpClientInterface extends HttpClientBuilderInterface
      * Create a multipart request with both data and files.
      * 
      * @param array<string, mixed> $data Form data fields
-     * @param array<string, string|array{path: string, name?: string, type?: string}> $files Files to upload
+     * @param array<string, string|resource|\Psr\Http\Message\UploadedFileInterface|array{path: string, name?: string, type?: string}> $files Files to upload
      */
     public function multipartWithFiles(array $data = [], array $files = []): self;
 }

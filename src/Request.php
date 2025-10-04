@@ -45,18 +45,18 @@ class Request extends Message implements CompleteHttpClientInterface
     private int $maxRedirects = 5;
     private bool $verifySSL = true;
     private ?string $userAgent = null;
-    /** @var array{string, string, string}|null */
+    /** @var array{0: string, 1: string, 2: string}|null */
     private ?array $auth = null;
     private ?RetryConfig $retryConfig = null;
     private ?CacheConfig $cacheConfig = null;
-    /** @var callable[] Callbacks to intercept the request before it is sent. */
+    /** @var array<int, callable(Request): Request> Callbacks to intercept the request before it is sent. */
     private array $requestInterceptors = [];
-    /** @var callable[] Callbacks to intercept the response after it is received. */
+    /** @var array<int, callable(Response): Response> Callbacks to intercept the response after it is received. */
     private array $responseInterceptors = [];
     private ?ProxyConfig $proxyConfig = null;
     private ?SSEReconnectConfig $sseReconnectConfig = null;
     private ?string $sseDataFormat = null;
-    /** @var callable(SSEEvent): array|string|null */
+    /** @var (callable(SSEEvent): mixed)|null */
     private $sseMapper = null;
 
     /**
@@ -190,6 +190,7 @@ class Request extends Message implements CompleteHttpClientInterface
 
     /**
      * {@inheritdoc}
+     * @return static
      */
     public function withUri(UriInterface $uri, bool $preserveHost = false): RequestInterface
     {
@@ -478,7 +479,7 @@ class Request extends Message implements CompleteHttpClientInterface
      * Create an SSE connection with configured data format.
      *
      * @param string $url The SSE endpoint URL
-     * @param callable $onEvent Callback for each event (receives data in configured format)
+     * @param (callable(mixed): void)|null $onEvent Callback for each event (receives data in configured format)
      * @param callable(string): void|null $onError Optional callback for connection errors
      * @param SSEReconnectConfig|null $reconnectConfig Optional reconnection configuration
      * @return CancellablePromiseInterface<SSEResponse>
@@ -501,7 +502,7 @@ class Request extends Message implements CompleteHttpClientInterface
     /**
      * Add a custom mapper function to transform SSE event data.
      *
-     * @param callable $mapper Function to transform the event data: function($data): mixed
+     * @param callable(mixed): mixed $mapper Function to transform the event data
      * @return self For fluent method chaining
      */
     public function sseMap(callable $mapper): self
@@ -520,9 +521,9 @@ class Request extends Message implements CompleteHttpClientInterface
      * @param  float  $maxDelay  Maximum delay between attempts
      * @param  float  $backoffMultiplier  Exponential backoff multiplier
      * @param  bool  $jitter  Add random jitter to delays
-     * @param  array  $retryableErrors  List of retryable error messages
-     * @param  callable|null  $onReconnect  Callback called before each reconnection attempt
-     * @param  callable|null  $shouldReconnect  Custom logic to determine if reconnection should occur
+     * @param  list<string>  $retryableErrors  List of retryable error messages
+     * @param  (callable(int, float, \Throwable): void)|null  $onReconnect  Callback called before each reconnection attempt
+     * @param  (callable(\Exception): bool)|null  $shouldReconnect  Custom logic to determine if reconnection should occur
      * @return self For fluent method chaining.
      */
     public function sseReconnect(
@@ -546,6 +547,8 @@ class Request extends Message implements CompleteHttpClientInterface
         ?callable $shouldReconnect = null
     ): self {
         $new = clone $this;
+        // Ensure $retryableErrors is a list
+        $retryableErrorsList = array_values($retryableErrors);
         $new->sseReconnectConfig = new SSEReconnectConfig(
             enabled: $enabled,
             maxAttempts: $maxAttempts,
@@ -553,7 +556,7 @@ class Request extends Message implements CompleteHttpClientInterface
             maxDelay: $maxDelay,
             backoffMultiplier: $backoffMultiplier,
             jitter: $jitter,
-            retryableErrors: $retryableErrors,
+            retryableErrors: $retryableErrorsList,
             onReconnect: $onReconnect,
             shouldReconnect: $shouldReconnect
         );
@@ -589,7 +592,7 @@ class Request extends Message implements CompleteHttpClientInterface
      * Streams the response body of a GET request.
      *
      * @param  string  $url  The URL to stream from.
-     * @param  callable|null  $onChunk  An optional callback for each data chunk. `function(string $chunk): void`
+     * @param  (callable(string): void)|null  $onChunk  An optional callback for each data chunk.
      * @return CancellablePromiseInterface<StreamingResponse> A promise that resolves with a StreamingResponse.
      */
     public function stream(string $url, ?callable $onChunk = null): CancellablePromiseInterface
@@ -597,7 +600,7 @@ class Request extends Message implements CompleteHttpClientInterface
         $options = $this->buildFetchOptions('GET');
         $options['stream'] = true;
 
-        if ($onChunk) {
+        if ($onChunk !== null) {
             $options['on_chunk'] = $onChunk;
         }
 
@@ -609,7 +612,7 @@ class Request extends Message implements CompleteHttpClientInterface
      *
      * @param  string  $url  The URL of the file to download.
      * @param  string  $destination  The local file path to save to.
-     * @return CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>}> A promise that resolves with download metadata.
+     * @return CancellablePromiseInterface<Response> A promise that resolves with a Response.
      */
     public function download(string $url, string $destination): CancellablePromiseInterface
     {
@@ -624,7 +627,7 @@ class Request extends Message implements CompleteHttpClientInterface
      *
      * @param  string  $url  The target URL.
      * @param  mixed|null  $body  The request body.
-     * @param  callable|null  $onChunk  An optional callback for each data chunk. `function(string $chunk): void`
+     * @param  (callable(string): void)|null  $onChunk  An optional callback for each data chunk.
      * @return CancellablePromiseInterface<StreamingResponse> A promise that resolves with a StreamingResponse.
      */
     public function streamPost(string $url, $body = null, ?callable $onChunk = null): CancellablePromiseInterface
@@ -811,11 +814,15 @@ class Request extends Message implements CompleteHttpClientInterface
                 'Content-Type' => $contentType ?? $file->getClientMediaType(),
             ];
         } elseif (is_string($file) && file_exists($file)) {
+            $resource = fopen($file, 'r');
+            if ($resource === false) {
+                throw new InvalidArgumentException("Unable to open file: {$file}");
+            }
             $new->options['multipart'][$name] = [
                 'name' => $name,
-                'contents' => fopen($file, 'r'),
+                'contents' => $resource,
                 'filename' => $filename ?? basename($file),
-                'Content-Type' => $contentType ?? mime_content_type($file) ?: 'application/octet-stream',
+                'Content-Type' => $contentType ?? (mime_content_type($file) ?: 'application/octet-stream'),
             ];
         } elseif (is_resource($file)) {
             $new->options['multipart'][$name] = [
@@ -835,14 +842,26 @@ class Request extends Message implements CompleteHttpClientInterface
     /**
      * Add multiple files to the multipart request.
      *
-     * @param array<string, mixed> $files Associative array of field names to files
+     * @param array<string, string|UploadedFileInterface|resource|array{path: string, name?: string, type?: string}> $files Associative array of field names to files
      * @return self For fluent method chaining.
      */
     public function withFiles(array $files): self
     {
         $new = $this;
         foreach ($files as $name => $file) {
-            $new = $new->withFile($name, $file);
+            if (is_array($file)) {
+                $filePath = $file['path'] ?? null;
+                $fileName = $file['name'] ?? null;
+                $fileType = $file['type'] ?? null;
+                
+                if ($filePath === null) {
+                    throw new InvalidArgumentException("File array must contain 'path' key");
+                }
+                
+                $new = $new->withFile($name, $filePath, $fileName, $fileType);
+            } else {
+                $new = $new->withFile($name, $file);
+            }
         }
         return $new;
     }
@@ -851,7 +870,7 @@ class Request extends Message implements CompleteHttpClientInterface
      * Create a multipart form with both data and files.
      *
      * @param array<string, mixed> $data Form data
-     * @param array<string, mixed> $files File data
+     * @param array<string, string|UploadedFileInterface|resource|array{path: string, name?: string, type?: string}> $files File data
      * @return self For fluent method chaining.
      */
     public function multipartWithFiles(array $data = [], array $files = []): self
@@ -1003,13 +1022,13 @@ class Request extends Message implements CompleteHttpClientInterface
         $cookie = new Cookie(
             $name,
             $value,
-            $attributes['expires'] ?? null,
-            $attributes['domain'] ?? null,
-            $attributes['path'] ?? null,
-            $attributes['secure'] ?? false,
-            $attributes['httpOnly'] ?? false,
-            $attributes['maxAge'] ?? null,
-            $attributes['sameSite'] ?? null
+            isset($attributes['expires']) ? (int) $attributes['expires'] : null,
+            isset($attributes['domain']) ? (string) $attributes['domain'] : null,
+            isset($attributes['path']) ? (string) $attributes['path'] : null,
+            isset($attributes['secure']) ? (bool) $attributes['secure'] : false,
+            isset($attributes['httpOnly']) ? (bool) $attributes['httpOnly'] : false,
+            isset($attributes['maxAge']) ? (int) $attributes['maxAge'] : null,
+            isset($attributes['sameSite']) ? (string) $attributes['sameSite'] : null
         );
 
         $new->cookieJar->setCookie($cookie);
@@ -1184,7 +1203,7 @@ class Request extends Message implements CompleteHttpClientInterface
         );
 
         // Process response interceptors if any exist
-        if (empty($processedRequest->responseInterceptors)) {
+        if (count($processedRequest->responseInterceptors) === 0) {
             return $httpPromise;
         }
 
@@ -1204,11 +1223,14 @@ class Request extends Message implements CompleteHttpClientInterface
      */
     private function buildCurlOptions(string $method, string $url): array
     {
+        // Cast body to Stream for type safety
+        $body = $this->body instanceof Stream ? $this->body : $this->createTempStream();
+        
         return $this->optionsBuilder->buildCurlOptions(
             method: $method,
             url: $url,
             headers: $this->headers,
-            body: $this->body,
+            body: $body,
             timeout: $this->timeout,
             connectTimeout: $this->connectTimeout,
             followRedirects: $this->followRedirects,
@@ -1232,10 +1254,12 @@ class Request extends Message implements CompleteHttpClientInterface
      */
     private function buildFetchOptions(string $method): array
     {
+        $body = $this->body instanceof Stream ? $this->body : $this->createTempStream();
+        
         return $this->optionsBuilder->buildFetchOptions(
             method: $method,
             headers: $this->headers,
-            body: $this->body,
+            body: $body,
             timeout: $this->timeout,
             connectTimeout: $this->connectTimeout,
             followRedirects: $this->followRedirects,
