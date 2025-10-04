@@ -81,7 +81,15 @@ class OptionsBuilderHandler
         }
 
         $this->addHeaderOptions($options, $headers);
-        $this->addBodyOptions($options, $body, $additionalOptions);
+        
+        $stringKeyOptions = array_filter(
+            $additionalOptions,
+            fn($key) => is_string($key),
+            ARRAY_FILTER_USE_KEY
+        );
+        
+        $this->addBodyOptions($options, $body, $stringKeyOptions);
+        
         $this->addAuthenticationOptions($options, $auth);
 
         if ($effectiveCookieJar !== null) {
@@ -241,7 +249,7 @@ class OptionsBuilderHandler
             $options[CURLOPT_PROXYUSERPWD] = $proxyAuth;
         }
 
-        if (in_array($proxyConfig->type, ['socks4', 'socks5'])) {
+        if (in_array($proxyConfig->type, ['socks4', 'socks5'], true)) {
             $options[CURLOPT_HTTPPROXYTUNNEL] = false;
         } else {
             $options[CURLOPT_HTTPPROXYTUNNEL] = true;
