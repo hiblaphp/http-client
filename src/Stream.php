@@ -2,8 +2,8 @@
 
 namespace Hibla\Http;
 
+use Hibla\Http\Exceptions\HttpStreamException;
 use Psr\Http\Message\StreamInterface;
-use RuntimeException;
 
 /**
  * A PSR-7 compliant stream representation of a PHP resource.
@@ -64,12 +64,12 @@ class Stream implements StreamInterface
      * @param  resource  $resource  The PHP stream resource.
      * @param  string|null  $uri  The URI associated with the stream, if any.
      *
-     * @throws RuntimeException if the provided argument is not a resource.
+     * @throws HttpStreamException if the provided argument is not a resource.
      */
     public function __construct($resource, ?string $uri = null)
     {
         if (! is_resource($resource)) {
-            throw new RuntimeException('Stream must be a resource');
+            throw new HttpStreamException('Stream must be a resource');
         }
 
         $this->resource = $resource;
@@ -87,13 +87,13 @@ class Stream implements StreamInterface
      * @param  string  $content  The content for the stream
      * @return self A new stream instance
      *
-     * @throws RuntimeException If stream creation fails
+     * @throws HttpStreamException If stream creation fails
      */
     public static function fromString(string $content): self
     {
         $resource = fopen('php://temp', 'r+');
         if ($resource === false) {
-            throw new RuntimeException('Unable to create temporary stream');
+            throw new HttpStreamException('Unable to create temporary stream');
         }
 
         if ($content !== '') {
@@ -188,12 +188,12 @@ class Stream implements StreamInterface
     public function tell(): int
     {
         if (! is_resource($this->resource)) {
-            throw new RuntimeException('Stream is detached');
+            throw new HttpStreamException('Stream is detached');
         }
 
         $result = ftell($this->resource);
         if ($result === false) {
-            throw new RuntimeException('Unable to determine stream position');
+            throw new HttpStreamException('Unable to determine stream position');
         }
 
         return $result;
@@ -225,15 +225,15 @@ class Stream implements StreamInterface
     public function seek(int $offset, int $whence = SEEK_SET): void
     {
         if (! $this->isSeekable()) {
-            throw new RuntimeException('Stream is not seekable');
+            throw new HttpStreamException('Stream is not seekable');
         }
 
         if (! is_resource($this->resource)) {
-            throw new RuntimeException('Stream is detached');
+            throw new HttpStreamException('Stream is detached');
         }
 
         if (fseek($this->resource, $offset, $whence) === -1) {
-            throw new RuntimeException('Unable to seek to stream position '.$offset.' with whence '.var_export($whence, true));
+            throw new HttpStreamException('Unable to seek to stream position '.$offset.' with whence '.var_export($whence, true));
         }
     }
 
@@ -259,18 +259,18 @@ class Stream implements StreamInterface
     public function write(string $string): int
     {
         if (! $this->isWritable()) {
-            throw new RuntimeException('Cannot write to a non-writable stream');
+            throw new HttpStreamException('Cannot write to a non-writable stream');
         }
 
         if (! is_resource($this->resource)) {
-            throw new RuntimeException('Stream is detached');
+            throw new HttpStreamException('Stream is detached');
         }
 
         $this->size = null; // Invalidate cached size
 
         $result = fwrite($this->resource, $string);
         if ($result === false) {
-            throw new RuntimeException('Unable to write to stream');
+            throw new HttpStreamException('Unable to write to stream');
         }
 
         return $result;
@@ -290,11 +290,11 @@ class Stream implements StreamInterface
     public function read(int $length): string
     {
         if (! $this->isReadable()) {
-            throw new RuntimeException('Cannot read from non-readable stream');
+            throw new HttpStreamException('Cannot read from non-readable stream');
         }
 
         if ($length < 0) {
-            throw new RuntimeException('Length parameter cannot be negative');
+            throw new HttpStreamException('Length parameter cannot be negative');
         }
 
         if ($length === 0) {
@@ -302,12 +302,12 @@ class Stream implements StreamInterface
         }
 
         if (! is_resource($this->resource)) {
-            throw new RuntimeException('Stream is detached');
+            throw new HttpStreamException('Stream is detached');
         }
 
         $result = fread($this->resource, $length);
         if ($result === false) {
-            throw new RuntimeException('Unable to read from stream');
+            throw new HttpStreamException('Unable to read from stream');
         }
 
         return $result;
@@ -319,16 +319,16 @@ class Stream implements StreamInterface
     public function getContents(): string
     {
         if (! $this->isReadable()) {
-            throw new RuntimeException('Cannot read from non-readable stream');
+            throw new HttpStreamException('Cannot read from non-readable stream');
         }
 
         if (! is_resource($this->resource)) {
-            throw new RuntimeException('Stream is detached');
+            throw new HttpStreamException('Stream is detached');
         }
 
         $contents = stream_get_contents($this->resource);
         if ($contents === false) {
-            throw new RuntimeException('Unable to read stream contents');
+            throw new HttpStreamException('Unable to read stream contents');
         }
 
         return $contents;
