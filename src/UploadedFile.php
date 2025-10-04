@@ -2,9 +2,9 @@
 
 namespace Hibla\Http;
 
+use Hibla\Http\Exceptions\HttpStreamException;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UploadedFileInterface;
-use RuntimeException;
 use InvalidArgumentException;
 
 /**
@@ -64,17 +64,23 @@ class UploadedFile implements UploadedFileInterface
     /**
      * Create an UploadedFile instance from a $_FILES array entry.
      *
-     * @param array $fileSpec A single file specification from $_FILES
+     * @param array{tmp_name?: string, size?: int, error?: int, name?: string, type?: string} $fileSpec A single file specification from $_FILES
      * @return self
      */
     public static function fromArray(array $fileSpec): self
     {
+        $tmpName = $fileSpec['tmp_name'] ?? '';
+        $size = isset($fileSpec['size']) ? (int)$fileSpec['size'] : null;
+        $error = isset($fileSpec['error']) ? (int)$fileSpec['error'] : UPLOAD_ERR_OK;
+        $name = isset($fileSpec['name']) ? (string)$fileSpec['name'] : null;
+        $type = isset($fileSpec['type']) ? (string)$fileSpec['type'] : null;
+
         return new self(
-            $fileSpec['tmp_name'] ?? '',
-            $fileSpec['size'] ?? null,
-            $fileSpec['error'] ?? UPLOAD_ERR_OK,
-            $fileSpec['name'] ?? null,
-            $fileSpec['type'] ?? null
+            $tmpName,
+            $size,
+            $error,
+            $name,
+            $type
         );
     }
 
@@ -84,26 +90,26 @@ class UploadedFile implements UploadedFileInterface
     public function getStream(): StreamInterface
     {
         if ($this->error !== UPLOAD_ERR_OK) {
-            throw new RuntimeException('Cannot retrieve stream due to upload error');
+            throw new HttpStreamException('Cannot retrieve stream due to upload error');
         }
 
         if ($this->moved) {
-            throw new RuntimeException('Cannot retrieve stream after it has been moved');
+            throw new HttpStreamException('Cannot retrieve stream after it has been moved');
         }
 
         if ($this->stream instanceof StreamInterface) {
             return $this->stream;
         }
 
-        if ($this->file && is_readable($this->file)) {
+        if ($this->file !== null && $this->file !== '' && is_readable($this->file)) {
             $resource = fopen($this->file, 'r');
             if ($resource === false) {
-                throw new RuntimeException('Unable to open uploaded file for reading');
+                throw new HttpStreamException('Unable to open uploaded file for reading');
             }
             return new Stream($resource);
         }
 
-        throw new RuntimeException('No stream available');
+        throw new HttpStreamException('No stream available');
     }
 
     /**
@@ -112,11 +118,11 @@ class UploadedFile implements UploadedFileInterface
     public function moveTo(string $targetPath): void
     {
         if ($this->moved) {
-            throw new RuntimeException('File has already been moved');
+            throw new HttpStreamException('File has already been moved');
         }
 
         if ($this->error !== UPLOAD_ERR_OK) {
-            throw new RuntimeException('Cannot move file due to upload error');
+            throw new HttpStreamException('Cannot move file due to upload error');
         }
 
         if ($targetPath === '') {
@@ -125,23 +131,23 @@ class UploadedFile implements UploadedFileInterface
 
         $targetDirectory = dirname($targetPath);
         if (!is_dir($targetDirectory) || !is_writable($targetDirectory)) {
-            throw new RuntimeException('Target directory is not writable');
+            throw new HttpStreamException('Target directory is not writable');
         }
 
-        if ($this->file) {
+        if ($this->file !== null) {
             if (PHP_SAPI === 'cli') {
                 if (!rename($this->file, $targetPath)) {
-                    throw new RuntimeException('Unable to move uploaded file');
+                    throw new HttpStreamException('Unable to move uploaded file');
                 }
             } else {
                 if (!move_uploaded_file($this->file, $targetPath)) {
-                    throw new RuntimeException('Unable to move uploaded file');
+                    throw new HttpStreamException('Unable to move uploaded file');
                 }
             }
-        } elseif ($this->stream) {
+        } elseif ($this->stream !== null) {
             $dest = fopen($targetPath, 'wb');
             if ($dest === false) {
-                throw new RuntimeException('Unable to open target file for writing');
+                throw new HttpStreamException('Unable to open target file for writing');
             }
 
             try {
@@ -157,7 +163,7 @@ class UploadedFile implements UploadedFileInterface
                 fclose($dest);
             }
         } else {
-            throw new RuntimeException('No stream or file available to move');
+            throw new HttpStreamException('No stream or file available to move');
         }
 
         $this->moved = true;

@@ -85,7 +85,7 @@ class Stream implements StreamInterface
      * Create a new stream from string content.
      *
      * @param  string  $content  The content for the stream
-     * @return static A new stream instance
+     * @return self A new stream instance
      *
      * @throws RuntimeException If stream creation fails
      */
