@@ -26,6 +26,9 @@ use Psr\Http\Message\UriInterface;
  * This class provides a rich interface for constructing and sending HTTP requests
  * asynchronously. It supports setting headers, body, timeouts, authentication,
  * and retry logic in a clean, readable way.
+ *
+ * @property-read string|null $sseDataFormat
+ * @property-read (callable(SSEEvent): mixed)|null $sseMapper
  */
 class Request extends Message implements CompleteHttpClientInterface
 {
@@ -37,7 +40,7 @@ class Request extends Message implements CompleteHttpClientInterface
     private string $method = 'GET';
     private ?string $requestTarget = null;
     private UriInterface $uri;
-    /** @var array<string, mixed> */
+    /** @var array<int|string, mixed> */
     private array $options = [];
     private int $timeout = 30;
     private int $connectTimeout = 10;
@@ -56,7 +59,7 @@ class Request extends Message implements CompleteHttpClientInterface
     private ?ProxyConfig $proxyConfig = null;
     private ?SSEReconnectConfig $sseReconnectConfig = null;
     private ?string $sseDataFormat = null;
-    /** @var (callable(SSEEvent): mixed)|null */
+    /** @var (callable(mixed): mixed)|null */
     private $sseMapper = null;
 
     /**
@@ -604,15 +607,13 @@ class Request extends Message implements CompleteHttpClientInterface
             $options['on_chunk'] = $onChunk;
         }
 
+        /** @var CancellablePromiseInterface<StreamingResponse> */
         return $this->handler->fetch($url, $options);
     }
 
     /**
-     * Downloads a file from a URL to a local destination.
-     *
-     * @param  string  $url  The URL of the file to download.
-     * @param  string  $destination  The local file path to save to.
-     * @return CancellablePromiseInterface<Response> A promise that resolves with a Response.
+     * {@inheritdoc}
+     * @return CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>}>
      */
     public function download(string $url, string $destination): CancellablePromiseInterface
     {
@@ -818,11 +819,12 @@ class Request extends Message implements CompleteHttpClientInterface
             if ($resource === false) {
                 throw new InvalidArgumentException("Unable to open file: {$file}");
             }
+            $mimeType = mime_content_type($file);
             $new->options['multipart'][$name] = [
                 'name' => $name,
                 'contents' => $resource,
                 'filename' => $filename ?? basename($file),
-                'Content-Type' => $contentType ?? (mime_content_type($file) ?: 'application/octet-stream'),
+                'Content-Type' => $contentType ?? ($mimeType !== false ? $mimeType : 'application/octet-stream'),
             ];
         } elseif (is_resource($file)) {
             $new->options['multipart'][$name] = [
@@ -851,13 +853,13 @@ class Request extends Message implements CompleteHttpClientInterface
         foreach ($files as $name => $file) {
             if (is_array($file)) {
                 $filePath = $file['path'] ?? null;
-                $fileName = $file['name'] ?? null;
-                $fileType = $file['type'] ?? null;
-                
-                if ($filePath === null) {
-                    throw new InvalidArgumentException("File array must contain 'path' key");
+                if (!is_string($filePath)) {
+                    throw new InvalidArgumentException("File array for '{$name}' must contain a string 'path' key.");
                 }
                 
+                $fileName = isset($file['name']) && is_string($file['name']) ? $file['name'] : null;
+                $fileType = isset($file['type']) && is_string($file['type']) ? $file['type'] : null;
+
                 $new = $new->withFile($name, $filePath, $fileName, $fileType);
             } else {
                 $new = $new->withFile($name, $file);
@@ -1022,13 +1024,13 @@ class Request extends Message implements CompleteHttpClientInterface
         $cookie = new Cookie(
             $name,
             $value,
-            isset($attributes['expires']) ? (int) $attributes['expires'] : null,
-            isset($attributes['domain']) ? (string) $attributes['domain'] : null,
-            isset($attributes['path']) ? (string) $attributes['path'] : null,
-            isset($attributes['secure']) ? (bool) $attributes['secure'] : false,
-            isset($attributes['httpOnly']) ? (bool) $attributes['httpOnly'] : false,
-            isset($attributes['maxAge']) ? (int) $attributes['maxAge'] : null,
-            isset($attributes['sameSite']) ? (string) $attributes['sameSite'] : null
+            isset($attributes['expires']) && is_numeric($attributes['expires']) ? (int)$attributes['expires'] : null,
+            isset($attributes['domain']) && is_string($attributes['domain']) ? $attributes['domain'] : null,
+            isset($attributes['path']) && is_string($attributes['path']) ? $attributes['path'] : null,
+            isset($attributes['secure']) ? (bool)$attributes['secure'] : false,
+            isset($attributes['httpOnly']) ? (bool)$attributes['httpOnly'] : false,
+            isset($attributes['maxAge']) && is_numeric($attributes['maxAge']) ? (int)$attributes['maxAge'] : null,
+            isset($attributes['sameSite']) && is_string($attributes['sameSite']) ? $attributes['sameSite'] : null
         );
 
         $new->cookieJar->setCookie($cookie);
@@ -1202,7 +1204,6 @@ class Request extends Message implements CompleteHttpClientInterface
             $processedRequest->retryConfig
         );
 
-        // Process response interceptors if any exist
         if (count($processedRequest->responseInterceptors) === 0) {
             return $httpPromise;
         }
