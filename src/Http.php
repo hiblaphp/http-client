@@ -3,12 +3,15 @@
 namespace Hibla\Http;
 
 use Hibla\Http\Handlers\HttpHandler;
+use Hibla\Http\Interfaces\CookieJarInterface;
+use Hibla\Http\SSE\SSEReconnectConfig;
 use Hibla\Http\SSE\SSEResponse;
 use Hibla\Http\Testing\MockRequestBuilder;
 use Hibla\Http\Testing\TestingHttpHandler;
 use Hibla\Http\Testing\Utilities\RecordedRequest;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
+use Psr\Http\Message\UploadedFileInterface;
 
 /**
  * A static API for clean, expressive, and asynchronous HTTP operations.
