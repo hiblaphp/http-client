@@ -10,7 +10,9 @@ trait AssertsSSE
      * @return array<int, \Hibla\Http\Testing\Utilities\RecordedRequest>
      */
     abstract public function getRequestHistory(): array;
+
     abstract public function getLastRequest();
+
     abstract public function getRequest(int $index);
 
     /**

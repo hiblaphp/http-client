@@ -52,8 +52,8 @@ class UnexpectedRequestException extends MockException
         array $availableMocks
     ): string {
         $lines = [];
-        $lines[] = "No mock matched the request:";
-        $lines[] = "";
+        $lines[] = 'No mock matched the request:';
+        $lines[] = '';
         $lines[] = "  Method: {$method}";
         $lines[] = "  URL: {$url}";
 
@@ -76,9 +76,9 @@ class UnexpectedRequestException extends MockException
             if (is_string($body)) {
                 $decoded = json_decode($body, true);
                 if ($decoded !== null) {
-                    $lines[] = "  Request JSON: " . json_encode($decoded, JSON_PRETTY_PRINT);
+                    $lines[] = '  Request JSON: ' . json_encode($decoded, JSON_PRETTY_PRINT);
                 } else {
-                    $lines[] = "  Request Body: " . substr($body, 0, 200);
+                    $lines[] = '  Request Body: ' . substr($body, 0, 200);
                 }
             }
         }
@@ -92,7 +92,7 @@ class UnexpectedRequestException extends MockException
     private static function addRequestHeadersLines(array &$lines, array $options): void
     {
         if (isset($options[CURLOPT_HTTPHEADER]) && is_array($options[CURLOPT_HTTPHEADER]) && $options[CURLOPT_HTTPHEADER] !== []) {
-            $lines[] = "  Request Headers:";
+            $lines[] = '  Request Headers:';
             foreach ($options[CURLOPT_HTTPHEADER] as $header) {
                 if (is_string($header)) {
                     $lines[] = "    - {$header}";
@@ -109,12 +109,12 @@ class UnexpectedRequestException extends MockException
     private static function addAvailableMocksLines(array &$lines, array $availableMocks): void
     {
         if ($availableMocks !== []) {
-            $lines[] = "";
-            $lines[] = "Available mocks:";
+            $lines[] = '';
+            $lines[] = 'Available mocks:';
             foreach ($availableMocks as $index => $mock) {
                 $lines[] = "  Mock #{$index}:";
-                $lines[] = "    URL Pattern: " . ($mock->getUrlPattern() ?? '*');
-                $lines[] = "    Method: " . $mock->getMethod();
+                $lines[] = '    URL Pattern: ' . ($mock->getUrlPattern() ?? '*');
+                $lines[] = '    Method: ' . $mock->getMethod();
 
                 self::addMockExpectationsLines($lines, $mock);
             }
@@ -130,10 +130,10 @@ class UnexpectedRequestException extends MockException
     {
         $mockArray = $mock->toArray();
         if (isset($mockArray['jsonMatcher']) && is_array($mockArray['jsonMatcher']) && $mockArray['jsonMatcher'] !== []) {
-            $lines[] = "    Expected JSON: " . json_encode($mockArray['jsonMatcher']);
+            $lines[] = '    Expected JSON: ' . json_encode($mockArray['jsonMatcher']);
         }
         if (isset($mockArray['headerMatchers']) && is_array($mockArray['headerMatchers']) && $mockArray['headerMatchers'] !== []) {
-            $lines[] = "    Expected Headers:";
+            $lines[] = '    Expected Headers:';
             foreach ($mockArray['headerMatchers'] as $name => $value) {
                 $displayValue = is_scalar($value) ? (string)$value : '(non-scalar value)';
                 $lines[] = "      - {$name}: {$displayValue}";

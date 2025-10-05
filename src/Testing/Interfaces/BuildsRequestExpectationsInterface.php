@@ -11,7 +11,7 @@ interface BuildsRequestExpectationsInterface
 
     /**
      * Expect multiple headers in the request.
-     * 
+     *
      * @param array<string, string> $headers
      */
     public function expectHeaders(array $headers): static;
@@ -23,14 +23,14 @@ interface BuildsRequestExpectationsInterface
 
     /**
      * Expect specific JSON data in the request body.
-     * 
+     *
      * @param array<string, mixed> $data
      */
     public function expectJson(array $data): static;
 
     /**
      * Expect specific cookies to be present in the request.
-     * 
+     *
      * @param array<string, string> $expectedCookies
      */
     public function expectCookies(array $expectedCookies): static;

@@ -16,7 +16,7 @@ class RequestRecorder
      */
     public function recordRequest(string $method, string $url, array $options): void
     {
-        if (!$this->recordRequests) {
+        if (! $this->recordRequests) {
             return;
         }
 

@@ -1,4 +1,5 @@
 <?php
+
 namespace Hibla\Http\Testing\Traits\Assertions;
 
 use Hibla\Http\Testing\Exceptions\MockAssertionException;
@@ -6,6 +7,7 @@ use Hibla\Http\Testing\Exceptions\MockAssertionException;
 trait AssertsCookies
 {
     abstract protected function getCookieManager();
+
     abstract protected function getRequestRecorder();
 
     /**
@@ -22,10 +24,10 @@ trait AssertsCookies
         if ($lastRequest === false) {
             throw new MockAssertionException('No requests have been made');
         }
-        
+
         $this->getCookieManager()->assertCookieSent($name, $lastRequest->options);
     }
-    
+
     /**
      * Assert that a specific cookie exists in the request.
      */
@@ -33,7 +35,7 @@ trait AssertsCookies
     {
         $this->getCookieManager()->assertCookieExists($name);
     }
-    
+
     /**
      * Assert that a specific cookie has a specific value.
      */

@@ -2,9 +2,10 @@
 
 namespace Hibla\Http\Handlers;
 
-use Psr\SimpleCache\CacheInterface;
-use Hibla\Http\Config\HttpConfigLoader;
+use function Hibla\async;
+
 use Hibla\Http\CacheConfig;
+use Hibla\Http\Config\HttpConfigLoader;
 use Hibla\Http\Exceptions\HttpStreamException;
 use Hibla\Http\Interfaces\CookieJarInterface;
 use Hibla\Http\Request;
@@ -17,18 +18,18 @@ use Hibla\Http\Stream;
 use Hibla\Http\StreamingResponse;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
+use Psr\SimpleCache\CacheInterface;
 use RuntimeException;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
-use Symfony\Component\Cache\Psr16Cache;
 
-use function Hibla\async;
+use Symfony\Component\Cache\Psr16Cache;
 
 /**
  * Core handler for creating and dispatching asynchronous HTTP requests.
  *
  * This class acts as the workhorse for the Http Api, translating high-level
  * requests into low-level operations managed by the event loop.
- * 
+ *
  * Most methods are marked as @internal and are designed to be overridden
  * by testing implementations like TestingHttpHandler.
  */
@@ -45,7 +46,7 @@ class HttpHandler
      */
     public function __construct(?StreamingHandler $streamingHandler = null, ?FetchHandler $fetchHandler = null, ?SSEHandler $sseHandler = null)
     {
-        $this->streamingHandler = $streamingHandler ?? new StreamingHandler;
+        $this->streamingHandler = $streamingHandler ?? new StreamingHandler();
         $this->fetchHandler = $fetchHandler ?? new FetchHandler($this->streamingHandler);
         $this->sseHandler = $sseHandler ?? new SSEHandler();
     }
@@ -69,7 +70,7 @@ class HttpHandler
      * @param  callable(string): void|null  $onError  Optional callback for connection errors
      * @param  SSEReconnectConfig|null  $reconnectConfig  Optional reconnection configuration
      * @return CancellablePromiseInterface<SSEResponse>
-     * 
+     *
      * @internal This method is designed for extension by TestingHttpHandler and internal use.
      */
     public function sse(
@@ -99,7 +100,7 @@ class HttpHandler
      * @param  array<int|string, mixed>  $options  Request options for internal use and testing extensions.
      * @param  callable(string): void|null  $onChunk  An optional callback to execute for each received data chunk.
      * @return CancellablePromiseInterface<StreamingResponse> A promise that resolves with a StreamingResponse object.
-     * 
+     *
      * @internal This method is designed for extension by TestingHttpHandler. The $options parameter
      *           allows testing implementations to intercept and mock requests. End users should use
      *           $http->request()->stream() for configuration instead.
@@ -121,7 +122,7 @@ class HttpHandler
      * @param  string  $destination  The local path to save the file.
      * @param  array<int|string, mixed>  $options  Request options for internal use and testing extensions.
      * @return CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}> A promise that resolves with download metadata.
-     * 
+     *
      * @internal This method is designed for extension by TestingHttpHandler.
      */
     public function download(string $url, string $destination, array $options = []): CancellablePromiseInterface
@@ -141,7 +142,7 @@ class HttpHandler
      * @return Stream A new Stream object.
      *
      * @throws HttpStreamException If temporary stream creation fails.
-     * 
+     *
      * @internal This method is designed for extension by TestingHttpHandler for stream mocking.
      */
     public function createStream(string $content = ''): Stream
@@ -166,7 +167,7 @@ class HttpHandler
      *
      * @param  string  $url  The URL to generate a cache key for.
      * @return string The unique cache key.
-     * 
+     *
      * @internal This method is for internal cache key generation and may be used by extensions.
      */
     public static function generateCacheKey(string $url): string
@@ -179,7 +180,7 @@ class HttpHandler
      * This enables zero-config caching for the user.
      *
      * @return CacheInterface The default cache instance.
-     * 
+     *
      * @internal This method is for internal cache initialization. TestingHttpHandler may override
      *           cache behavior through CacheConfig.
      */
@@ -203,8 +204,8 @@ class HttpHandler
                     : sys_get_temp_dir() . '/hibla_http_cache';
             }
 
-            if (!is_dir($cacheDirectory)) {
-                if (!mkdir($cacheDirectory, 0775, true) && !is_dir($cacheDirectory)) {
+            if (! is_dir($cacheDirectory)) {
+                if (! mkdir($cacheDirectory, 0775, true) && ! is_dir($cacheDirectory)) {
                     throw new RuntimeException(sprintf('Cache directory "%s" could not be created', $cacheDirectory));
                 }
             }
@@ -227,7 +228,7 @@ class HttpHandler
      * @param  CacheConfig|null  $cacheConfig  Optional cache configuration.
      * @param  RetryConfig|null  $retryConfig  Optional retry configuration.
      * @return PromiseInterface<Response> A promise that resolves with a Response object.
-     * 
+     *
      * @internal This method is the primary extension point for TestingHttpHandler. It is called by
      *           the Request builder and can be overridden to intercept all requests made through
      *           the fluent Request API.
@@ -308,7 +309,7 @@ class HttpHandler
      * @param  array<int|string, mixed>  $curlOptions  cURL options for the request.
      * @param  RetryConfig|null  $retryConfig  Optional retry configuration.
      * @return PromiseInterface<Response> A promise that resolves with a Response object.
-     * 
+     *
      * @internal This method handles the actual request dispatching and is part of the internal
      *           request pipeline. TestingHttpHandler may need to consider this method when
      *           implementing request interception.
@@ -331,7 +332,7 @@ class HttpHandler
      * @param  string  $url  The target URL.
      * @param  array<int|string, mixed>  $options  An associative array of request options.
      * @return PromiseInterface<Response>|CancellablePromiseInterface<StreamingResponse>|CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}>|CancellablePromiseInterface<SSEResponse> A promise that resolves with a Response, StreamingResponse, download metadata, or SSEResponse.
-     * 
+     *
      * @internal This method is a key extension point for TestingHttpHandler. It handles fetch-style
      *           requests and can return different response types based on options (streaming, downloads, etc.).
      */
@@ -348,7 +349,7 @@ class HttpHandler
      * @param  array<int|string, mixed>  $options  An array of cURL options.
      * @param  RetryConfig  $retryConfig  Configuration object for retry behavior.
      * @return PromiseInterface<Response> A promise that resolves with a Response object or rejects with an HttpException on final failure.
-     * 
+     *
      * @internal This method implements retry logic and is used internally by the request pipeline.
      *           TestingHttpHandler may want to control retry behavior in tests.
      */
@@ -359,7 +360,7 @@ class HttpHandler
 
     /**
      * Get the default cookie jar.
-     * 
+     *
      * @internal This method is for internal cookie jar access and may be used by extensions.
      */
     public function getCookieJar(): ?CookieJarInterface
@@ -375,7 +376,7 @@ class HttpHandler
      * @param  array<int|string, mixed>  $options  The options to normalize.
      * @param  bool  $ensureSSEHeaders  Whether to ensure SSE-specific headers are set.
      * @return array<int|string, mixed> Normalized cURL options.
-     * 
+     *
      * @internal This method converts user-friendly options to cURL options. TestingHttpHandler
      *           may use this to understand request configuration before mocking.
      */
@@ -389,7 +390,7 @@ class HttpHandler
      *
      * @param  array<mixed>  $headers  The headers to normalize.
      * @return array<string, array<string>|string> Normalized headers.
-     * 
+     *
      * @internal This method ensures headers are in a consistent format throughout the system.
      *           Used by both production and testing implementations.
      */
@@ -420,7 +421,7 @@ class HttpHandler
      * @param  Response  $response  The HTTP response.
      * @param  CacheConfig  $cacheConfig  The cache configuration.
      * @return int The expiry timestamp.
-     * 
+     *
      * @internal This method implements HTTP caching logic and may be used by extensions
      *           that need to respect cache headers.
      */

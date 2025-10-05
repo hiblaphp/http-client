@@ -3,6 +3,9 @@
 namespace Hibla\Http\Testing\Utilities;
 
 use Exception;
+
+use function Hibla\delay;
+
 use Hibla\EventLoop\EventLoop;
 use Hibla\Http\Exceptions\HttpException;
 use Hibla\Http\Exceptions\HttpStreamException;
@@ -10,19 +13,18 @@ use Hibla\Http\Exceptions\NetworkException;
 use Hibla\Http\Response;
 use Hibla\Http\RetryConfig;
 use Hibla\Http\SSE\SSEEvent;
+use Hibla\Http\SSE\SSEResponse;
+use Hibla\Http\Stream;
 use Hibla\Http\StreamingResponse;
+use Hibla\Http\Testing\Exceptions\MockException;
 use Hibla\Http\Testing\MockedRequest;
 use Hibla\Http\Testing\TestingHttpHandler;
 use Hibla\Promise\CancellablePromise;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
-use Hibla\Http\SSE\SSEResponse;
-use Hibla\Http\Stream;
-use Hibla\Http\Testing\Exceptions\MockException;
-use Throwable;
 use Psr\Http\Message\StreamInterface;
 
-use function Hibla\delay;
+use Throwable;
 
 class ResponseFactory
 {
@@ -41,7 +43,7 @@ class ResponseFactory
     public function createMockedResponse(MockedRequest $mock): PromiseInterface
     {
         /** @var CancellablePromise<Response> $promise */
-        $promise = new CancellablePromise;
+        $promise = new CancellablePromise();
 
         $this->executeWithNetworkSimulation($promise, $mock, function () use ($mock) {
             if ($mock->shouldFail()) {
@@ -64,7 +66,7 @@ class ResponseFactory
     public function createRetryableMockedResponse(RetryConfig $retryConfig, callable $mockProvider): PromiseInterface
     {
         /** @var CancellablePromise<Response> $promise */
-        $promise = new CancellablePromise;
+        $promise = new CancellablePromise();
         $attempt = 0;
 
         /** @var CancellablePromiseInterface<mixed>|null $activeDelayPromise */
@@ -86,11 +88,12 @@ class ResponseFactory
 
             try {
                 $mock = $mockProvider($currentAttempt);
-                if (!$mock instanceof MockedRequest) {
+                if (! $mock instanceof MockedRequest) {
                     throw new MockException('Mock provider must return a MockedRequest instance');
                 }
             } catch (Exception $e) {
                 $promise->reject(new MockException('Mock provider error: ' . $e->getMessage()));
+
                 return;
             }
 
@@ -162,7 +165,7 @@ class ResponseFactory
     public function createMockedStream(MockedRequest $mock, ?callable $onChunk, callable $createStream): CancellablePromiseInterface
     {
         /** @var CancellablePromise<StreamingResponse> $promise */
-        $promise = new CancellablePromise;
+        $promise = new CancellablePromise();
 
         $this->executeWithNetworkSimulation($promise, $mock, function () use ($mock, $onChunk, $createStream) {
             if ($mock->shouldFail()) {
@@ -183,7 +186,7 @@ class ResponseFactory
 
             $stream = $createStream($mock->getBody());
 
-            if (!$stream instanceof StreamInterface) {
+            if (! $stream instanceof StreamInterface) {
                 throw new HttpStreamException('Stream creator must return a StreamInterface instance');
             }
 
@@ -203,11 +206,12 @@ class ResponseFactory
     public function createMockedDownload(MockedRequest $mock, string $destination, FileManager $fileManager): CancellablePromiseInterface
     {
         /** @var CancellablePromise<array{file: string, status: int, headers: array<string, string>, size: int, protocol_version: string}> $promise */
-        $promise = new CancellablePromise;
+        $promise = new CancellablePromise();
 
         $this->executeWithNetworkSimulation($promise, $mock, function () use ($mock, $destination, $fileManager) {
             if ($mock->shouldFail()) {
                 $error = $mock->getError() ?? 'Mocked failure';
+
                 throw new NetworkException($error, 0, null, null, $error);
             }
 
@@ -216,6 +220,7 @@ class ResponseFactory
                 if (! mkdir($directory, 0755, true) && ! is_dir($directory)) {
                     $exception = new HttpStreamException("Cannot create directory: {$directory}");
                     $exception->setStreamState('directory_creation_failed');
+
                     throw $exception;
                 }
                 $fileManager->trackDirectory($directory);
@@ -224,6 +229,7 @@ class ResponseFactory
             if (file_put_contents($destination, $mock->getBody()) === false) {
                 $exception = new HttpStreamException("Cannot write to file: {$destination}");
                 $exception->setStreamState('file_write_failed');
+
                 throw $exception;
             }
 
@@ -265,6 +271,7 @@ class ResponseFactory
                 }
                 $promise->reject(new NetworkException($networkConditions['error_message'] ?? 'Network failure'));
             });
+
             return;
         }
 
@@ -290,7 +297,7 @@ class ResponseFactory
         ?callable $onError
     ): CancellablePromiseInterface {
         /** @var CancellablePromise<SSEResponse> $promise */
-        $promise = new CancellablePromise;
+        $promise = new CancellablePromise();
 
         $networkConditions = $this->networkSimulator->simulate();
         $mockDelay = $mock->getDelay();
@@ -338,6 +345,7 @@ class ResponseFactory
                     if ($onError !== null) {
                         $onError($error);
                     }
+
                     throw new NetworkException($error);
                 }
 
@@ -406,7 +414,7 @@ class ResponseFactory
         ?callable $onReconnect = null
     ): CancellablePromiseInterface {
         /** @var CancellablePromise<SSEResponse> $promise */
-        $promise = new CancellablePromise;
+        $promise = new CancellablePromise();
         $attempt = 0;
 
         /** @var CancellablePromiseInterface<mixed>|null $activeDelayPromise */
@@ -442,11 +450,12 @@ class ResponseFactory
 
             try {
                 $mock = $mockProvider($currentAttempt, $lastEventId);
-                if (!$mock instanceof MockedRequest) {
+                if (! $mock instanceof MockedRequest) {
                     throw new MockException('Mock provider must return a MockedRequest instance');
                 }
             } catch (Exception $e) {
                 $promise->reject(new MockException('Mock provider error: ' . $e->getMessage()));
+
                 return;
             }
 
@@ -591,6 +600,7 @@ class ResponseFactory
 
                                 $activeDelayPromise = delay($retryDelay);
                                 $activeDelayPromise->then($executeAttempt);
+
                                 return;
                             }
                         }
@@ -631,7 +641,7 @@ class ResponseFactory
             }
 
             if (isset($event['retry']) && is_int($event['retry'])) {
-                $lines[] = "retry: " . (string)$event['retry'];
+                $lines[] = 'retry: ' . (string)$event['retry'];
             }
 
             if (isset($event['data']) && is_string($event['data'])) {

@@ -4,7 +4,7 @@ namespace Hibla\Http\Testing\Interfaces;
 
 /**
  * Complete contract for MockRequestBuilder.
- * 
+ *
  * This interface combines all builder capabilities and ensures
  * that the MockRequestBuilder class implements all required methods.
  */

@@ -7,8 +7,11 @@ use Hibla\Http\Testing\MockedRequest;
 trait BuildsAdvancedScenarios
 {
     abstract protected function getRequest();
+
     abstract protected function getHandler();
+
     abstract public function respondWithStatus(int $status): static;
+
     abstract public function respondJson(array $data): static;
 
     /**

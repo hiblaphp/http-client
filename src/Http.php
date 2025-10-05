@@ -3,13 +3,7 @@
 namespace Hibla\Http;
 
 use Hibla\Http\Handlers\HttpHandler;
-use Hibla\Http\Interfaces\MessageInterface;
-use Hibla\Http\Interfaces\RequestInterface;
-use Hibla\Http\Interfaces\StreamInterface;
-use Hibla\Http\Interfaces\UriInterface;
-use Hibla\Http\Request;
-use Hibla\Http\Response;
-use Hibla\Http\StreamingResponse;
+use Hibla\Http\SSE\SSEResponse;
 use Hibla\Http\Testing\MockRequestBuilder;
 use Hibla\Http\Testing\TestingHttpHandler;
 use Hibla\Http\Testing\Utilities\RecordedRequest;
@@ -96,7 +90,7 @@ use Hibla\Promise\Interfaces\PromiseInterface;
  * @method static CancellablePromiseInterface<SSEResponse> sse(string $url, ?callable $onEvent = null, ?callable $onError = null, ?SSEReconnectConfig $reconnectConfig = null) Start an SSE connection.
  * @method static Request sseDataFormat(string $format = 'json') Start building a request with SSE data format configuration.
  * @method static Request sseMap(callable $mapper) Start building a request with custom SSE event mapper.
- * @method static Request sseReconnect(bool $enabled = true, int $maxAttempts = 10, float $initialDelay = 1.0, float $maxDelay = 30.0, float $backoffMultiplier = 2.0, bool $jitter = true, array $retryableErrors = [], ?callable $onReconnect = null, ?callable $shouldReconnect = null) Start building a request with SSE reconnection configuration.
+ * @method static Request sseReconnect(bool $enabled = true, int $maxAttempts = 10, float $initialDelay = 1.0, float $maxDelay = 30.0, float $backoffMultiplier = 2.0, bool $jitter = true, list<string> $retryableErrors = [], ?callable $onReconnect = null, ?callable $shouldReconnect = null) Start building a request with SSE reconnection configuration.
  * @method static Request sseReconnectWith(SSEReconnectConfig $config) Start building a request with custom SSE reconnection configuration.
  * @method static Request noSseReconnect() Start building a request with SSE reconnection disabled.
  *
@@ -105,69 +99,69 @@ use Hibla\Promise\Interfaces\PromiseInterface;
  * @method static Request withCurlOptions(array<int, mixed> $options) Start building a request with multiple raw cURL options.
  *
  * PSR-7 Message interface methods (immutable with* methods):
- * @method static MessageInterface withProtocolVersion(string $version) Return an instance with the specified HTTP protocol version.
+ * @method static Request withProtocolVersion(string $version) Return an instance with the specified HTTP protocol version.
  * @method static array<string, string[]> getHeaders() Retrieves all message header values.
  * @method static bool hasHeader(string $name) Checks if a header exists by the given case-insensitive name.
  * @method static string[] getHeader(string $name) Retrieves a message header value by the given case-insensitive name.
  * @method static string getHeaderLine(string $name) Retrieves a comma-separated string of the values for a single header.
- * @method static MessageInterface withHeader(string $name, string|string[] $value) Return an instance with the provided value replacing the specified header.
- * @method static MessageInterface withAddedHeader(string $name, string|string[] $value) Return an instance with the specified header appended with the given value.
- * @method static MessageInterface withoutHeader(string $name) Return an instance without the specified header.
- * @method static StreamInterface getBody() Gets the body of the message.
- * @method static MessageInterface withBody(StreamInterface $body) Return an instance with the specified message body.
+ * @method static Request withHeader(string $name, string|string[] $value) Return an instance with the provided value replacing the specified header.
+ * @method static Request withAddedHeader(string $name, string|string[] $value) Return an instance with the specified header appended with the given value.
+ * @method static Request withoutHeader(string $name) Return an instance without the specified header.
+ * @method static Stream getBody() Gets the body of the message.
+ * @method static Request withBody(Stream $body) Return an instance with the specified message body.
  * @method static string getProtocolVersion() Retrieves the HTTP protocol version as a string.
  *
  * PSR-7 Request interface methods:
  * @method static string getRequestTarget() Retrieves the message's request target.
- * @method static RequestInterface withRequestTarget(string $requestTarget) Return an instance with the specific request-target.
+ * @method static Request withRequestTarget(string $requestTarget) Return an instance with the specific request-target.
  * @method static string getMethod() Retrieves the HTTP method of the request.
- * @method static RequestInterface withMethod(string $method) Return an instance with the provided HTTP method.
- * @method static UriInterface getUri() Retrieves the URI instance.
- * @method static RequestInterface withUri(UriInterface $uri, bool $preserveHost = false) Returns an instance with the provided URI.
+ * @method static Request withMethod(string $method) Return an instance with the provided HTTP method.
+ * @method static Uri getUri() Retrieves the URI instance.
+ * @method static Request withUri(Uri $uri, bool $preserveHost = false) Returns an instance with the provided URI.
  *
  * Request streaming methods:
  * @method static CancellablePromiseInterface<StreamingResponse> streamPost(string $url, mixed $body = null, ?callable $onChunk = null) Streams the response body of a POST request.
  *
  * Request execution methods:
  * @method static PromiseInterface<Response> send(string $method, string $url) Dispatches the configured request.
- * 
+ *
  * Testing assertion methods (only available in testing mode):
  * @method static void assertHeaderSent(string $name, ?string $expectedValue = null, ?int $requestIndex = null) Assert that a specific header was sent.
  * @method static void assertHeaderNotSent(string $name, ?int $requestIndex = null) Assert that a header was NOT sent.
- * @method static void assertHeadersSent(array $expectedHeaders, ?int $requestIndex = null) Assert multiple headers were sent.
+ * @method static void assertHeadersSent(array<string, string> $expectedHeaders, ?int $requestIndex = null) Assert multiple headers were sent.
  * @method static void assertHeaderMatches(string $name, string $pattern, ?int $requestIndex = null) Assert header matches a pattern.
  * @method static void assertBearerTokenSent(string $expectedToken, ?int $requestIndex = null) Assert Bearer token was sent.
  * @method static void assertContentType(string $expectedType, ?int $requestIndex = null) Assert Content-Type header.
  * @method static void assertAcceptHeader(string $expectedType, ?int $requestIndex = null) Assert Accept header.
  * @method static void assertUserAgent(string $expectedUserAgent, ?int $requestIndex = null) Assert User-Agent header.
- * @method static void assertRequestMade(string $method, string $url, array $options = []) Assert a request was made.
+ * @method static void assertRequestMade(string $method, string $url, array<string, mixed> $options = []) Assert a request was made.
  * @method static void assertNoRequestsMade() Assert no requests were made.
  * @method static void assertRequestCount(int $expected) Assert request count.
  * @method static void assertCookieSent(string $name) Assert a cookie was sent.
  * @method static void assertCookieExists(string $name) Assert a cookie exists in jar.
  * @method static void assertCookieValue(string $name, string $expectedValue) Assert cookie value.
  * @method static void assertSSEConnectionMade(string $url) Assert that an SSE connection was made.
- * @method static void assertSSEEventReceived(string $url, array $expectedEvent) Assert that a specific SSE event was received.
- * @method static void assertSSEEventNotReceived(string $url, array $unexpectedEvent) Assert that a specific SSE event was NOT received.
+ * @method static void assertSSEEventReceived(string $url, array<string, mixed> $expectedEvent) Assert that a specific SSE event was received.
+ * @method static void assertSSEEventNotReceived(string $url, array<string, mixed> $unexpectedEvent) Assert that a specific SSE event was NOT received.
  * @method static RecordedRequest|null getLastRequest() Get the last recorded request.
  * @method static RecordedRequest|null getRequest(int $index) Get a specific request by index.
- * @method static array getRequestHistory() Get all recorded requests.
+ * @method static list<RecordedRequest> getRequestHistory() Get all recorded requests.
  * @method static void dumpLastRequest() Dump the last request for debugging.
  */
 class Http
 {
-    /** 
-     * @var HttpHandler|null Singleton instance of the core HTTP handler. 
+    /**
+     * @var HttpHandler|null Singleton instance of the core HTTP handler.
      */
     private static ?HttpHandler $instance = null;
 
-    /** 
-     * @var TestingHttpHandler|null Testing handler instance when in testing mode. 
+    /**
+     * @var TestingHttpHandler|null Testing handler instance when in testing mode.
      */
     private static ?TestingHttpHandler $testingInstance = null;
 
     /**
-     *  @var bool Flag to track if we're in testing mode. 
+     *  @var bool Flag to track if we're in testing mode.
      */
     private static bool $isTesting = false;
 
@@ -181,7 +175,7 @@ class Http
         }
 
         if (self::$instance === null) {
-            self::$instance = new HttpHandler;
+            self::$instance = new HttpHandler();
         }
 
         return self::$instance;
@@ -211,7 +205,7 @@ class Http
         self::$isTesting = true;
 
         if (self::$testingInstance === null) {
-            self::$testingInstance = new TestingHttpHandler;
+            self::$testingInstance = new TestingHttpHandler();
         }
 
         return self::$testingInstance;
@@ -220,7 +214,7 @@ class Http
     /**
      * Get the current testing handler instance.
      *
-     * @return TestingHttpHandler|null The testing handler if in testing mode, null otherwise
+     * @return TestingHttpHandler The testing handler
      *
      * @throws \RuntimeException If not in testing mode
      */
@@ -300,6 +294,7 @@ class Http
      */
     public static function __callStatic(string $method, array $arguments)
     {
+        /** @var list<string> */
         $assertionMethods = [
             'assertHeaderSent',
             'assertHeaderNotSent',
@@ -324,26 +319,30 @@ class Http
             'dumpLastRequest',
         ];
 
-        if (in_array($method, $assertionMethods)) {
-            if (!self::$isTesting || self::$testingInstance === null) {
+        if (in_array($method, $assertionMethods, true)) {
+            if (! self::$isTesting || self::$testingInstance === null) {
                 throw new \RuntimeException(
                     "Cannot call assertion method '{$method}' outside of testing mode. " .
-                    "Call Http::startTesting() first."
+                    'Call Http::startTesting() first.'
                 );
             }
-            
+
+            /** @phpstan-ignore-next-line */
             return self::$testingInstance->{$method}(...$arguments);
         }
 
+        /** @var list<string> */
         $directMethods = ['fetch'];
 
-        if (in_array($method, $directMethods)) {
+        if (in_array($method, $directMethods, true)) {
+            /** @phpstan-ignore-next-line */
             return self::getInstance()->{$method}(...$arguments);
         }
 
         $request = self::request();
 
         if (method_exists($request, $method)) {
+            /** @phpstan-ignore-next-line */
             return $request->{$method}(...$arguments);
         }
 

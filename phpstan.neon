@@ -4,8 +4,5 @@ includes:
 parameters:
     level: 10
     paths:
-        - src/Testing
+        - src/  
     treatPhpDocTypesAsCertain: false
-    excludePaths:
-        - tests/
-        - src/Http.php

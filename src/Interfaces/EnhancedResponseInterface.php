@@ -6,7 +6,7 @@ use Psr\Http\Message\ResponseInterface;
 
 /**
  * Enhanced HTTP response interface with convenient helper methods.
- * 
+ *
  * This interface extends the basic PSR-7 ResponseInterface with additional
  * methods for easier response handling and content access.
  */
@@ -19,7 +19,7 @@ interface EnhancedResponseInterface extends ResponseInterface
 
     /**
      * Get the response body decoded from JSON.
-     * 
+     *
      * @return array<string|int, mixed> The decoded JSON data. Returns an empty array on failure.
      */
     public function json(): array;
@@ -31,7 +31,7 @@ interface EnhancedResponseInterface extends ResponseInterface
 
     /**
      * Get all response headers as a flattened array.
-     * 
+     *
      * @return array<string, string> An associative array of header names to values.
      */
     public function headers(): array;

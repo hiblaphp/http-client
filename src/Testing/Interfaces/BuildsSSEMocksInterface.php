@@ -6,7 +6,7 @@ interface BuildsSSEMocksInterface
 {
     /**
      * Configure this mock as an SSE response.
-     * 
+     *
      * @param array<int, array{data?: string, event?: string, id?: string, retry?: int, comment?: string}> $events
      */
     public function respondWithSSE(array $events): static;
@@ -23,7 +23,7 @@ interface BuildsSSEMocksInterface
 
     /**
      * Mock an SSE stream that sends keepalive events.
-     * 
+     *
      * @param array<int, array{data?: string, event?: string, id?: string, retry?: int}> $dataEvents
      */
     public function sseWithKeepalive(array $dataEvents, int $keepaliveCount = 3): static;
@@ -35,42 +35,42 @@ interface BuildsSSEMocksInterface
 
     /**
      * Mock an SSE stream with custom retry interval.
-     * 
+     *
      * @param array<int, array{data?: string, event?: string, id?: string, retry?: int}> $events
      */
     public function sseWithRetry(array $events, int $retryMs = 3000): static;
 
     /**
      * Mock an SSE stream with multiple event types.
-     * 
+     *
      * @param array<string, array<int, string|array<string, mixed>>> $eventsByType
      */
     public function sseMultipleTypes(array $eventsByType): static;
 
     /**
      * Mock an SSE stream with event IDs (useful for reconnection scenarios).
-     * 
+     *
      * @param array<int, array{data?: string, event?: string, id: string, retry?: int}> $eventsWithIds
      */
     public function sseWithEventIds(array $eventsWithIds): static;
 
     /**
      * Mock an SSE stream that expects Last-Event-ID header (for resumption).
-     * 
+     *
      * @param array<int, array{data?: string, event?: string, id?: string, retry?: int}> $eventsAfterResume
      */
     public function sseExpectLastEventId(string $lastEventId, array $eventsAfterResume): static;
 
     /**
      * Mock an SSE stream with server-sent retry directive.
-     * 
+     *
      * @param array<int, array{data?: string, event?: string, id?: string, retry?: int}> $events
      */
     public function sseWithRetryDirective(int $retryMs, array $events = []): static;
 
     /**
      * Mock an SSE stream with comment lines (for testing parser).
-     * 
+     *
      * @param array<int, array{data?: string, event?: string, id?: string, retry?: int}> $events
      * @param array<int, string> $comments
      */

@@ -57,7 +57,7 @@ class CookieManager
      */
     public function createCookieJar(string $name = 'default'): CookieJarInterface
     {
-        $jar = new CookieJar;
+        $jar = new CookieJar();
         $this->cookieJars[$name] = $jar;
 
         if ($name === 'default' || $this->defaultCookieJar === null) {
@@ -193,7 +193,7 @@ class CookieManager
                 $secure = $config['secure'] ?? false;
                 $httpOnly = $config['httpOnly'] ?? false;
                 $sameSite = $config['sameSite'] ?? null;
-                
+
                 $this->addCookie(
                     $name,
                     is_string($value) ? $value : '',
@@ -315,11 +315,12 @@ class CookieManager
         $httpHeaders = $curlOptions[CURLOPT_HTTPHEADER] ?? null;
         if (is_array($httpHeaders)) {
             foreach ($httpHeaders as $header) {
-                if (!is_string($header)) {
+                if (! is_string($header)) {
                     continue;
                 }
                 if (str_starts_with(strtolower($header), 'cookie:')) {
                     $cookieHeader = substr($header, 7);
+
                     break;
                 }
             }
@@ -399,20 +400,21 @@ class CookieManager
             $httpHeaders = $curlOptions[CURLOPT_HTTPHEADER];
             if (is_array($httpHeaders)) {
                 foreach ($httpHeaders as $key => $header) {
-                    if (!is_string($header)) {
+                    if (! is_string($header)) {
                         continue;
                     }
                     if (str_starts_with(strtolower($header), 'cookie:')) {
                         $httpHeaders[$key] = $header . '; ' . $cookieHeader;
                         $curlOptions[CURLOPT_HTTPHEADER] = $httpHeaders;
                         $cookieHeaderExists = true;
+
                         break;
                     }
                 }
             }
 
-            if (!$cookieHeaderExists) {
-                if (!is_array($curlOptions[CURLOPT_HTTPHEADER])) {
+            if (! $cookieHeaderExists) {
+                if (! is_array($curlOptions[CURLOPT_HTTPHEADER])) {
                     $curlOptions[CURLOPT_HTTPHEADER] = [];
                 }
                 $curlOptions[CURLOPT_HTTPHEADER][] = 'Cookie: ' . $cookieHeader;
@@ -445,7 +447,7 @@ class CookieManager
         }
 
         foreach ($setCookieHeaders as $setCookieHeader) {
-            if (!is_string($setCookieHeader)) {
+            if (! is_string($setCookieHeader)) {
                 continue;
             }
             $cookie = Cookie::fromSetCookieHeader($setCookieHeader);
@@ -550,18 +552,19 @@ class CookieManager
             $httpHeaders = $curlOptions[CURLOPT_HTTPHEADER];
             if (is_array($httpHeaders)) {
                 foreach ($httpHeaders as $key => $header) {
-                    if (!is_string($header)) {
+                    if (! is_string($header)) {
                         continue;
                     }
                     if (str_starts_with(strtolower($header), 'cookie:')) {
                         $httpHeaders[$key] = $header . '; ' . $cookieHeader;
                         $curlOptions[CURLOPT_HTTPHEADER] = $httpHeaders;
+
                         return;
                     }
                 }
             }
 
-            if (!is_array($curlOptions[CURLOPT_HTTPHEADER])) {
+            if (! is_array($curlOptions[CURLOPT_HTTPHEADER])) {
                 $curlOptions[CURLOPT_HTTPHEADER] = [];
             }
             $curlOptions[CURLOPT_HTTPHEADER][] = 'Cookie: ' . $cookieHeader;
@@ -591,18 +594,19 @@ class CookieManager
             $httpHeaders = $curlOptions[CURLOPT_HTTPHEADER];
             if (is_array($httpHeaders)) {
                 foreach ($httpHeaders as $key => $header) {
-                    if (!is_string($header)) {
+                    if (! is_string($header)) {
                         continue;
                     }
                     if (str_starts_with(strtolower($header), 'cookie:')) {
                         $httpHeaders[$key] = $header . '; ' . $cookieHeader;
                         $curlOptions[CURLOPT_HTTPHEADER] = $httpHeaders;
+
                         return;
                     }
                 }
             }
 
-            if (!is_array($curlOptions[CURLOPT_HTTPHEADER])) {
+            if (! is_array($curlOptions[CURLOPT_HTTPHEADER])) {
                 $curlOptions[CURLOPT_HTTPHEADER] = [];
             }
             $curlOptions[CURLOPT_HTTPHEADER][] = 'Cookie: ' . $cookieHeader;
@@ -647,6 +651,7 @@ class CookieManager
             }
             if (is_array($value)) {
                 $setCookieHeaders = array_merge($setCookieHeaders, $value);
+
                 continue;
             }
             $setCookieHeaders[] = $value;
@@ -660,7 +665,7 @@ class CookieManager
         $requestDomain = $uri->getHost();
 
         foreach ($setCookieHeaders as $setCookieHeader) {
-            if (!is_string($setCookieHeader)) {
+            if (! is_string($setCookieHeader)) {
                 continue;
             }
             $cookie = Cookie::fromSetCookieHeader($setCookieHeader);

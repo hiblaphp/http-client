@@ -152,9 +152,9 @@ class FileManager
             if ($files === false) {
                 continue;
             }
-            
+
             foreach ($files as $file) {
-                if (is_file($file) && !in_array($file, $this->createdFiles, true)) {
+                if (is_file($file) && ! in_array($file, $this->createdFiles, true)) {
                     unlink($file);
                 }
             }
@@ -171,7 +171,7 @@ class FileManager
      */
     public function trackFile(string $filePath): void
     {
-        if ($this->autoManage && !in_array($filePath, $this->createdFiles, true)) {
+        if ($this->autoManage && ! in_array($filePath, $this->createdFiles, true)) {
             $this->createdFiles[] = $filePath;
         }
     }
@@ -183,7 +183,7 @@ class FileManager
      */
     public function trackDirectory(string $dirPath): void
     {
-        if ($this->autoManage && !in_array($dirPath, $this->createdDirectories, true)) {
+        if ($this->autoManage && ! in_array($dirPath, $this->createdDirectories, true)) {
             $this->createdDirectories[] = $dirPath;
         }
     }
@@ -203,7 +203,7 @@ class FileManager
         if ($scanResult === false) {
             return;
         }
-        
+
         $files = array_diff($scanResult, ['.', '..']);
         foreach ($files as $file) {
             $path = $dir.DIRECTORY_SEPARATOR.$file;

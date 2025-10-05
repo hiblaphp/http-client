@@ -28,6 +28,7 @@ trait BuildsFileMocks
     public function downloadLargeFile(int $sizeInKB = 100, ?string $filename = null): static
     {
         $content = str_repeat('MOCK_FILE_DATA_', $sizeInKB * 64);
+
         return $this->downloadFile($content, $filename, 'application/octet-stream');
     }
 }

@@ -2,9 +2,9 @@
 
 namespace Hibla\Http\Testing\Utilities;
 
-use Psr\SimpleCache\CacheInterface;
 use Hibla\Http\CacheConfig;
 use Hibla\Http\Response;
+use Psr\SimpleCache\CacheInterface;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Symfony\Component\Cache\Psr16Cache;
 
@@ -58,7 +58,7 @@ class CacheManager
     private function getDefaultCache(): CacheInterface
     {
         if (self::$defaultCache === null) {
-            self::$defaultCache = new Psr16Cache(new ArrayAdapter);
+            self::$defaultCache = new Psr16Cache(new ArrayAdapter());
         }
 
         return self::$defaultCache;

@@ -13,8 +13,9 @@ trait BuildsCookieMocks
      */
     public function setCookies(array $cookies): static
     {
-        $cookieService = new CookieManager;
+        $cookieService = new CookieManager();
         $cookieService->mockSetCookies($this->getRequest(), $cookies);
+
         return $this;
     }
 
@@ -32,7 +33,7 @@ trait BuildsCookieMocks
         ?string $sameSite = null
     ): static {
         $config = compact('value', 'path', 'domain', 'expires', 'secure', 'httpOnly', 'sameSite');
-        $config = array_filter($config, fn($v) => $v !== null);
+        $config = array_filter($config, fn ($v) => $v !== null);
 
         return $this->setCookies([$name => $config]);
     }

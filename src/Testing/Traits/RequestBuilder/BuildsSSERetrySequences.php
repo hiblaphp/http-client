@@ -7,8 +7,11 @@ use Hibla\Http\Testing\MockedRequest;
 trait BuildsSSERetrySequences
 {
     abstract protected function getRequest(): MockedRequest;
+
     abstract protected function getHandler();
+
     abstract public function respondWithSSE(array $events): static;
+
     abstract public function addSSEEvent(?string $data = null, ?string $event = null, ?string $id = null, ?int $retry = null): static;
 
     /**
@@ -92,7 +95,7 @@ trait BuildsSSERetrySequences
             $data = json_encode([
                 'success' => true,
                 'attempt' => count($failures) + 1,
-                'message' => 'SSE connection established'
+                'message' => 'SSE connection established',
             ]);
             if ($data !== false) {
                 $this->addSSEEvent(
@@ -138,7 +141,7 @@ trait BuildsSSERetrySequences
             $data = json_encode([
                 'success' => true,
                 'attempt' => $successAttempt,
-                'message' => 'SSE connection established after timeouts'
+                'message' => 'SSE connection established after timeouts',
             ]);
             if ($data !== false) {
                 $this->addSSEEvent(
@@ -178,7 +181,7 @@ trait BuildsSSERetrySequences
                 $data = json_encode([
                     'success' => true,
                     'attempt' => $attemptNumber,
-                    'status' => 'connected'
+                    'status' => 'connected',
                 ]);
                 if ($data !== false) {
                     $mock->addSSEEvent([
@@ -224,7 +227,7 @@ trait BuildsSSERetrySequences
             $data = json_encode([
                 'success' => true,
                 'attempt' => $successAttempt,
-                'message' => 'Network recovered, SSE connected'
+                'message' => 'Network recovered, SSE connected',
             ]);
             if ($data !== false) {
                 $this->addSSEEvent(
@@ -273,7 +276,7 @@ trait BuildsSSERetrySequences
                 $data = json_encode([
                     'attempt' => $i,
                     'delay' => round($delay, 2),
-                    'status' => 'slow_connection'
+                    'status' => 'slow_connection',
                 ]);
                 if ($data !== false) {
                     $mock->addSSEEvent([
@@ -291,7 +294,7 @@ trait BuildsSSERetrySequences
             $data = json_encode([
                 'success' => true,
                 'attempt' => $successAttempt,
-                'message' => 'Network fully recovered'
+                'message' => 'Network fully recovered',
             ]);
             if ($data !== false) {
                 $this->addSSEEvent(
@@ -333,7 +336,7 @@ trait BuildsSSERetrySequences
         string $lastEventId,
         array $eventsAfterResume
     ): static {
-        $this->getRequest()->addHeaderMatcher('Last-Event-ID', $lastEventId); 
+        $this->getRequest()->addHeaderMatcher('Last-Event-ID', $lastEventId);
         $this->respondWithSSE($eventsAfterResume);
 
         return $this;
@@ -435,7 +438,7 @@ trait BuildsSSERetrySequences
             $data = json_encode([
                 'success' => true,
                 'attempt' => $successAttempt,
-                'message' => 'Rate limit cleared'
+                'message' => 'Rate limit cleared',
             ]);
             if ($data !== false) {
                 $this->addSSEEvent(

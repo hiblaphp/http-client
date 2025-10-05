@@ -14,6 +14,7 @@ trait BuildsFailureMocks
     public function fail(string $error = 'Mocked request failure'): static
     {
         $this->getRequest()->setError($error);
+
         return $this;
     }
 
@@ -23,6 +24,7 @@ trait BuildsFailureMocks
     public function timeout(float $seconds = 30.0): static
     {
         $this->getRequest()->setTimeout($seconds);
+
         return $this;
     }
 
@@ -37,6 +39,7 @@ trait BuildsFailureMocks
             $this->getRequest()->setTimeout($timeoutAfter);
         }
         $this->getRequest()->setRetryable(true);
+
         return $this;
     }
 
@@ -47,6 +50,7 @@ trait BuildsFailureMocks
     {
         $this->getRequest()->setError($error);
         $this->getRequest()->setRetryable(true);
+
         return $this;
     }
 
@@ -65,6 +69,7 @@ trait BuildsFailureMocks
         $error = $errors[$errorType] ?? $errorType;
         $this->getRequest()->setError($error);
         $this->getRequest()->setRetryable(true);
+
         return $this;
     }
 

@@ -39,7 +39,8 @@ class RetryConfig
             'Connection timed out',
             'SSL connection timeout',
         ]
-    ) {}
+    ) {
+    }
 
     /**
      * Determines if a retry should be attempted based on the current state.

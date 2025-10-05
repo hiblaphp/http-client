@@ -8,7 +8,7 @@ use Psr\Http\Message\RequestInterface;
 
 /**
  * Fluent HTTP client builder interface.
- * 
+ *
  * Provides a rich, chainable interface for constructing and configuring
  * HTTP requests with various options like headers, timeouts, authentication,
  * caching, retries, and more.
@@ -52,21 +52,21 @@ interface HttpClientBuilderInterface extends RequestInterface
 
     /**
      * Set JSON data as the request body.
-     * 
+     *
      * @param array<string, mixed> $data Data to be JSON-encoded
      */
     public function withJson(array $data): self;
 
     /**
      * Set form data as the request body (application/x-www-form-urlencoded).
-     * 
+     *
      * @param array<string, mixed> $data Form fields
      */
     public function withForm(array $data): self;
 
     /**
      * Set multipart form data as the request body.
-     * 
+     *
      * @param array<string, mixed> $data Multipart fields
      */
     public function withMultipart(array $data): self;
@@ -108,7 +108,7 @@ interface HttpClientBuilderInterface extends RequestInterface
 
     /**
      * Execute a GET request.
-     * 
+     *
      * @param array<string, scalar|null> $query Query parameters
      * @return PromiseInterface<Response>
      */
@@ -116,7 +116,7 @@ interface HttpClientBuilderInterface extends RequestInterface
 
     /**
      * Execute a POST request.
-     * 
+     *
      * @param array<string, mixed> $data Request data
      * @return PromiseInterface<Response>
      */
@@ -124,7 +124,7 @@ interface HttpClientBuilderInterface extends RequestInterface
 
     /**
      * Execute a PUT request.
-     * 
+     *
      * @param array<string, mixed> $data Request data
      * @return PromiseInterface<Response>
      */
@@ -132,14 +132,14 @@ interface HttpClientBuilderInterface extends RequestInterface
 
     /**
      * Execute a DELETE request.
-     * 
+     *
      * @return PromiseInterface<Response>
      */
     public function delete(string $url): PromiseInterface;
 
     /**
      * Execute a PATCH request.
-     * 
+     *
      * @param array<string, mixed> $data Request data
      * @return PromiseInterface<Response>
      */
@@ -147,14 +147,14 @@ interface HttpClientBuilderInterface extends RequestInterface
 
     /**
      * Execute an OPTIONS request.
-     * 
+     *
      * @return PromiseInterface<Response>
      */
     public function options(string $url): PromiseInterface;
 
     /**
      * Execute a request with a custom HTTP method.
-     * 
+     *
      * @return PromiseInterface<Response>
      */
     public function send(string $method, string $url): PromiseInterface;

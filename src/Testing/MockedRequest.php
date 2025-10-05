@@ -311,7 +311,7 @@ class MockedRequest
 
         if ($this->bodyMatcher !== null) {
             $body = $options[CURLOPT_POSTFIELDS] ?? '';
-            if (!is_string($body)) {
+            if (! is_string($body)) {
                 return false;
             }
             if (! fnmatch($this->bodyMatcher, $body)) {
@@ -321,7 +321,7 @@ class MockedRequest
 
         if ($this->jsonMatcher !== null) {
             $body = $options[CURLOPT_POSTFIELDS] ?? '';
-            if (!is_string($body)) {
+            if (! is_string($body)) {
                 return false;
             }
             $decoded = json_decode($body, true);
@@ -579,12 +579,12 @@ class MockedRequest
         $headers = [];
         $httpHeaders = $options[CURLOPT_HTTPHEADER] ?? null;
 
-        if (!is_array($httpHeaders)) {
+        if (! is_array($httpHeaders)) {
             return $headers;
         }
 
         foreach ($httpHeaders as $header) {
-            if (!is_string($header)) {
+            if (! is_string($header)) {
                 continue;
             }
             if (strpos($header, ':') !== false) {
@@ -633,7 +633,7 @@ class MockedRequest
     public static function fromArray(array $data): self
     {
         $method = $data['method'] ?? '*';
-        if (!is_string($method)) {
+        if (! is_string($method)) {
             $method = '*';
         }
 

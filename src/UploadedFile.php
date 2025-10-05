@@ -3,13 +3,13 @@
 namespace Hibla\Http;
 
 use Hibla\Http\Exceptions\HttpStreamException;
+use InvalidArgumentException;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UploadedFileInterface;
-use InvalidArgumentException;
 
 /**
  * PSR-7 compliant uploaded file implementation.
- * 
+ *
  * Represents a file uploaded through an HTTP request, providing
  * methods to access file metadata, stream the file contents, and
  * move the file to a new location.
@@ -106,6 +106,7 @@ class UploadedFile implements UploadedFileInterface
             if ($resource === false) {
                 throw new HttpStreamException('Unable to open uploaded file for reading');
             }
+
             return new Stream($resource);
         }
 
@@ -130,17 +131,17 @@ class UploadedFile implements UploadedFileInterface
         }
 
         $targetDirectory = dirname($targetPath);
-        if (!is_dir($targetDirectory) || !is_writable($targetDirectory)) {
+        if (! is_dir($targetDirectory) || ! is_writable($targetDirectory)) {
             throw new HttpStreamException('Target directory is not writable');
         }
 
         if ($this->file !== null) {
             if (PHP_SAPI === 'cli') {
-                if (!rename($this->file, $targetPath)) {
+                if (! rename($this->file, $targetPath)) {
                     throw new HttpStreamException('Unable to move uploaded file');
                 }
             } else {
-                if (!move_uploaded_file($this->file, $targetPath)) {
+                if (! move_uploaded_file($this->file, $targetPath)) {
                     throw new HttpStreamException('Unable to move uploaded file');
                 }
             }
@@ -152,7 +153,7 @@ class UploadedFile implements UploadedFileInterface
 
             try {
                 $this->stream->rewind();
-                while (!$this->stream->eof()) {
+                while (! $this->stream->eof()) {
                     $chunk = $this->stream->read(4096);
                     if ($chunk === '') {
                         break;

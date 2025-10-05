@@ -1,4 +1,5 @@
 <?php
+
 // src/Testing/Traits/RequestBuilder/BuildsBasicMocks.php
 
 namespace Hibla\Http\Testing\Traits\RequestBuilder;
@@ -13,6 +14,7 @@ trait BuildsBasicMocks
     public function url(string $pattern): static
     {
         $this->getRequest()->setUrlPattern($pattern);
+
         return $this;
     }
 
@@ -22,6 +24,7 @@ trait BuildsBasicMocks
     public function respondWithStatus(int $status = 200): static
     {
         $this->getRequest()->setStatusCode($status);
+
         return $this;
     }
 
@@ -39,12 +42,13 @@ trait BuildsBasicMocks
     public function respondWith(string $body): static
     {
         $this->getRequest()->setBody($body);
+
         return $this;
     }
 
     /**
      * Set the response body as JSON.
-     * 
+     *
      * @param array<string, mixed> $data
      */
     public function respondJson(array $data): static
@@ -54,6 +58,7 @@ trait BuildsBasicMocks
             $this->getRequest()->setBody($body);
             $this->getRequest()->addResponseHeader('Content-Type', 'application/json');
         }
+
         return $this;
     }
 
@@ -63,6 +68,7 @@ trait BuildsBasicMocks
     public function delay(float $seconds): static
     {
         $this->getRequest()->setDelay($seconds);
+
         return $this;
     }
 
@@ -77,6 +83,7 @@ trait BuildsBasicMocks
 
         $randomDelay = $this->generateAggressiveRandomFloat($minSeconds, $maxSeconds);
         $this->getRequest()->setDelay($randomDelay);
+
         return $this;
     }
 
@@ -91,6 +98,7 @@ trait BuildsBasicMocks
 
         $this->getRequest()->setRandomDelayRange($minSeconds, $maxSeconds);
         $this->persistent();
+
         return $this;
     }
 
@@ -100,6 +108,7 @@ trait BuildsBasicMocks
     public function slowResponse(float $delaySeconds): static
     {
         $this->getRequest()->setDelay($delaySeconds);
+
         return $this;
     }
 
@@ -109,6 +118,7 @@ trait BuildsBasicMocks
     public function persistent(): static
     {
         $this->getRequest()->setPersistent(true);
+
         return $this;
     }
 

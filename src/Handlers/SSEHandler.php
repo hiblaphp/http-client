@@ -45,7 +45,7 @@ class SSEHandler
 
     /**
      * Creates an SSE connection with automatic reconnection logic.
-     * 
+     *
      * @param  array<int|string, mixed>  $options
      * @return CancellablePromiseInterface<SSEResponse>
      */
@@ -57,8 +57,8 @@ class SSEHandler
         SSEReconnectConfig $reconnectConfig
     ): CancellablePromiseInterface {
         /** @var CancellablePromise<SSEResponse> $mainPromise */
-        $mainPromise = new CancellablePromise;
-        
+        $mainPromise = new CancellablePromise();
+
         /** @var SSEConnectionState<SSEResponse> $connectionState */
         $connectionState = new SSEConnectionState($url, $options, $reconnectConfig);
 
@@ -78,7 +78,7 @@ class SSEHandler
 
     /**
      * Attempts to establish an SSE connection.
-     * 
+     *
      * @param  SSEConnectionState<SSEResponse>  $connectionState
      * @param  CancellablePromise<SSEResponse>  $mainPromise
      */
@@ -108,15 +108,16 @@ class SSEHandler
         if ($connectionState->getLastEventId() !== null) {
             $headers = $options[CURLOPT_HTTPHEADER] ?? [];
             // Ensure headers is an array
-            if (!is_array($headers)) {
+            if (! is_array($headers)) {
                 $headers = [];
             }
             // Remove previous Last-Event-ID header if it exists to avoid duplicates
-            $headers = array_filter($headers, function($h): bool {
-                if (!is_string($h)) {
+            $headers = array_filter($headers, function ($h): bool {
+                if (! is_string($h)) {
                     return true;
                 }
-                return !str_starts_with(strtolower($h), 'last-event-id:');
+
+                return ! str_starts_with(strtolower($h), 'last-event-id:');
             });
             $headers[] = 'Last-Event-ID: ' . $connectionState->getLastEventId();
             $options[CURLOPT_HTTPHEADER] = $headers;
@@ -144,10 +145,10 @@ class SSEHandler
              * @param  mixed  $error
              */
             function ($error) use ($mainPromise, $connectionState, $onEvent, $onError): void {
-                if (!($error instanceof \Throwable)) {
+                if (! ($error instanceof \Throwable)) {
                     return;
                 }
-                
+
                 // When a connection fails, check the master cancellation flag first.
                 if ($connectionState->isCancelled()) {
                     if (! $mainPromise->isSettled()) {
@@ -165,7 +166,7 @@ class SSEHandler
 
                 // Convert Throwable to Exception for shouldReconnect
                 $errorException = $error instanceof \Exception ? $error : new \Exception($error->getMessage(), (int)$error->getCode(), $error);
-                
+
                 if (! $connectionState->shouldReconnect($errorException)) {
                     if (! $mainPromise->isSettled()) {
                         $mainPromise->reject($error);
@@ -175,7 +176,7 @@ class SSEHandler
                 }
 
                 $delay = $connectionState->getReconnectDelay();
-                
+
                 $onReconnect = $connectionState->getConfig()->onReconnect;
                 if ($onReconnect !== null) {
                     $onReconnect($connectionState->getAttemptCount(), $delay, $error);
@@ -193,7 +194,7 @@ class SSEHandler
 
     /**
      * Creates a basic SSE connection without reconnection.
-     * 
+     *
      * @param  array<int|string, mixed>  $options
      * @return CancellablePromiseInterface<SSEResponse>
      */
@@ -204,18 +205,18 @@ class SSEHandler
         ?callable $onError
     ): CancellablePromiseInterface {
         /** @var CancellablePromise<SSEResponse> $promise */
-        $promise = new CancellablePromise;
+        $promise = new CancellablePromise();
         /** @var SSEResponse|null $sseResponse */
         $sseResponse = null;
         $headersProcessed = false;
 
         $curlOnlyOptions = array_filter($options, 'is_int', ARRAY_FILTER_USE_KEY);
-        
+
         $existingHeaders = $curlOnlyOptions[CURLOPT_HTTPHEADER] ?? [];
-        if (!is_array($existingHeaders)) {
+        if (! is_array($existingHeaders)) {
             $existingHeaders = [];
         }
-        
+
         $sseOptions = array_replace($curlOnlyOptions, [
             CURLOPT_HEADER => false,
             CURLOPT_HTTPHEADER => array_merge(
@@ -242,17 +243,17 @@ class SSEHandler
                 }
 
                 // Ensure $ch is a CurlHandle to satisfy phpstan
-                if (!($ch instanceof \CurlHandle)) {
+                if (! ($ch instanceof \CurlHandle)) {
                     return strlen($header);
                 }
-                
+
                 $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
                 if (! $headersProcessed && $httpCode > 0) {
                     if ($httpCode >= 200 && $httpCode < 300) {
                         $tempStream = fopen('php://temp', 'r+');
                         if ($tempStream === false) {
                             $exception = new HttpStreamException(
-                                "Failed to create temp stream",
+                                'Failed to create temp stream',
                                 0,
                                 null,
                                 $url
@@ -303,7 +304,7 @@ class SSEHandler
             }
         );
 
-        $promise->setCancelHandler(function() use ($requestId): void {
+        $promise->setCancelHandler(function () use ($requestId): void {
             EventLoop::getInstance()->cancelHttpRequest($requestId);
         });
 
@@ -312,7 +313,7 @@ class SSEHandler
 
     /**
      * Wraps the event callback to handle last event ID tracking.
-     * 
+     *
      * @param  SSEConnectionState<SSEResponse>  $state
      */
     private function wrapEventCallback(?callable $onEvent, SSEConnectionState $state): ?callable
@@ -334,7 +335,7 @@ class SSEHandler
 
     /**
      * Wraps the error callback to handle reconnection logic.
-     * 
+     *
      * @param  SSEConnectionState<SSEResponse>  $state
      */
     private function wrapErrorCallback(?callable $onError, SSEConnectionState $state): callable

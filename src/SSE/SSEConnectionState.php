@@ -9,7 +9,7 @@ use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 
 /**
  * Manages the state of an SSE connection including reconnection attempts.
- * 
+ *
  * @template TResponse of StreamingResponse
  */
 class SSEConnectionState
@@ -37,7 +37,8 @@ class SSEConnectionState
         private readonly string $url,
         private readonly array $options,
         private readonly SSEReconnectConfig $config
-    ) {}
+    ) {
+    }
 
     /**
      * Gets the connection URL.
@@ -64,7 +65,6 @@ class SSEConnectionState
     {
         return $this->config;
     }
-
 
     /**
      * Increments the reconnection attempt counter.

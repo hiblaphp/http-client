@@ -2,10 +2,11 @@
 
 namespace Hibla\Http\Handlers;
 
-use Psr\SimpleCache\CacheInterface;
-use Hibla\Http\Config\HttpConfigLoader;
+use function Hibla\async;
+
 use Hibla\EventLoop\EventLoop;
 use Hibla\Http\CacheConfig;
+use Hibla\Http\Config\HttpConfigLoader;
 use Hibla\Http\Exceptions\NetworkException;
 use Hibla\Http\Response;
 use Hibla\Http\RetryConfig;
@@ -16,11 +17,11 @@ use Hibla\Http\Traits\FetchOptionTrait;
 use Hibla\Promise\CancellablePromise;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
+use Psr\SimpleCache\CacheInterface;
 use RuntimeException;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
-use Symfony\Component\Cache\Psr16Cache;
 
-use function Hibla\async;
+use Symfony\Component\Cache\Psr16Cache;
 
 /**
  * Handler for fetch-style HTTP requests with advanced options support.
@@ -38,7 +39,7 @@ class FetchHandler
 
     public function __construct(?StreamingHandler $streamingHandler = null, ?SSEHandler $sseHandler = null)
     {
-        $this->streamingHandler = $streamingHandler ?? new StreamingHandler;
+        $this->streamingHandler = $streamingHandler ?? new StreamingHandler();
         $this->sseHandler = $sseHandler ?? new SSEHandler();
     }
 
@@ -105,7 +106,7 @@ class FetchHandler
     public function fetchWithRetry(string $url, array $options, RetryConfig $retryConfig): PromiseInterface
     {
         /** @var CancellablePromise<Response> $promise */
-        $promise = new CancellablePromise;
+        $promise = new CancellablePromise();
         $attempt = 0;
         $totalAttempts = 0;
         /** @var string|null $requestId */
@@ -149,6 +150,7 @@ class FetchHandler
                             $url,
                             $error
                         ));
+
                         return;
                     }
 
@@ -270,7 +272,7 @@ class FetchHandler
     public function executeBasicFetch(string $url, array $curlOptions): PromiseInterface
     {
         /** @var CancellablePromise<Response> $promise */
-        $promise = new CancellablePromise;
+        $promise = new CancellablePromise();
 
         $cookieJar = $curlOptions['_cookie_jar'] ?? null;
         unset($curlOptions['_cookie_jar']);
@@ -505,7 +507,7 @@ class FetchHandler
         $reconnect = $options['reconnect'];
 
         if ($reconnect === true) {
-            return new SSEReconnectConfig;
+            return new SSEReconnectConfig();
         }
 
         if ($reconnect instanceof SSEReconnectConfig) {
@@ -632,8 +634,8 @@ class FetchHandler
                     : sys_get_temp_dir() . '/hibla_http_cache';
             }
 
-            if (!is_dir($cacheDirectory)) {
-                if (!mkdir($cacheDirectory, 0775, true) && !is_dir($cacheDirectory)) {
+            if (! is_dir($cacheDirectory)) {
+                if (! mkdir($cacheDirectory, 0775, true) && ! is_dir($cacheDirectory)) {
                     throw new RuntimeException(sprintf('Cache directory "%s" could not be created', $cacheDirectory));
                 }
             }

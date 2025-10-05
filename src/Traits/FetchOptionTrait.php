@@ -50,7 +50,7 @@ trait FetchOptionTrait
 
         if ($this->isCurlOptionsFormat($cleanOptions)) {
             /** @var array<int|string, mixed> $curlOptions */
-            $curlOptions = array_filter($cleanOptions, fn($key) => is_int($key), ARRAY_FILTER_USE_KEY);
+            $curlOptions = array_filter($cleanOptions, fn ($key) => is_int($key), ARRAY_FILTER_USE_KEY);
 
             $curlOptions[CURLOPT_URL] = $url;
 
@@ -221,16 +221,16 @@ trait FetchOptionTrait
     protected function ensureSSEHeaders(array &$curlOptions): void
     {
         $headers = $curlOptions[CURLOPT_HTTPHEADER] ?? [];
-        
-        if (!is_array($headers)) {
+
+        if (! is_array($headers)) {
             $headers = [];
         }
-        
+
         $hasAccept = false;
         $hasCache = false;
 
         foreach ($headers as $header) {
-            if (!is_string($header)) {
+            if (! is_string($header)) {
                 continue;
             }
             if (stripos($header, 'Accept:') === 0) {
@@ -277,7 +277,7 @@ trait FetchOptionTrait
             $host = $proxy['host'] ?? $proxy['server'] ?? '';
             $port = $proxy['port'] ?? 8080;
 
-            if (!is_string($host) || $host === '' || !is_numeric($port)) {
+            if (! is_string($host) || $host === '' || ! is_numeric($port)) {
                 return null;
             }
 
@@ -303,7 +303,7 @@ trait FetchOptionTrait
     private function parseProxyUrl(string $proxyUrl): ?ProxyConfig
     {
         $parsed = parse_url($proxyUrl);
-        if (!is_array($parsed) || !isset($parsed['host']) || !is_string($parsed['host'])) {
+        if (! is_array($parsed) || ! isset($parsed['host']) || ! is_string($parsed['host'])) {
             return null;
         }
 
@@ -348,9 +348,9 @@ trait FetchOptionTrait
 
         // Configure tunneling based on proxy type
         if (in_array($proxyConfig->type, ['socks4', 'socks5'], true)) {
-            $curlOptions[CURLOPT_HTTPPROXYTUNNEL] = false; 
+            $curlOptions[CURLOPT_HTTPPROXYTUNNEL] = false;
         } else {
-            $curlOptions[CURLOPT_HTTPPROXYTUNNEL] = true; 
+            $curlOptions[CURLOPT_HTTPPROXYTUNNEL] = true;
         }
     }
 
@@ -380,7 +380,7 @@ trait FetchOptionTrait
         $cache = $options['cache'];
 
         if ($cache === true) {
-            return new CacheConfig;
+            return new CacheConfig();
         }
 
         if ($cache instanceof CacheConfig) {
@@ -427,7 +427,7 @@ trait FetchOptionTrait
         $retry = $options['retry'];
 
         if ($retry === true) {
-            return new RetryConfig;
+            return new RetryConfig();
         }
 
         if ($retry instanceof RetryConfig) {
@@ -566,14 +566,14 @@ trait FetchOptionTrait
         // Apply cookies to headers
         if (count($cookieHeaders) > 0) {
             $existingHeaders = $curlOptions[CURLOPT_HTTPHEADER] ?? [];
-            
-            if (!is_array($existingHeaders)) {
+
+            if (! is_array($existingHeaders)) {
                 $existingHeaders = [];
             }
 
             // Remove any existing Cookie headers
             $existingHeaders = array_filter($existingHeaders, function ($header) {
-                return !is_string($header) || stripos($header, 'Cookie:') !== 0;
+                return ! is_string($header) || stripos($header, 'Cookie:') !== 0;
             });
 
             // Add new Cookie header

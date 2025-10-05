@@ -25,5 +25,6 @@ class CacheConfig
         public readonly bool $respectServerHeaders = true,
         public readonly ?CacheInterface $cache = null,
         public readonly ?string $cacheKey = null
-    ) {}
+    ) {
+    }
 }

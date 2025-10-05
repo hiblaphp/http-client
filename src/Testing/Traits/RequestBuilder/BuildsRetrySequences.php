@@ -7,8 +7,11 @@ use Hibla\Http\Testing\MockedRequest;
 trait BuildsRetrySequences
 {
     abstract protected function getRequest();
+
     abstract protected function getHandler();
+
     abstract public function respondWithStatus(int $status): static;
+
     abstract public function respondJson(array $data): static;
 
     /**
@@ -36,7 +39,7 @@ trait BuildsRetrySequences
 
     /**
      * Create multiple mocks with different failure types until success.
-     * 
+     *
      * @param array<int, string|array{error?: string, retryable?: bool, delay?: float, status?: int}> $failures
      * @param string|array<string, mixed>|null $successResponse
      */
@@ -167,18 +170,22 @@ trait BuildsRetrySequences
             switch ($failureType) {
                 case 'timeout':
                     $mock->setTimeout(2.0);
+
                     break;
                 case 'connection':
                     $mock->setError("Connection failed (attempt {$i})");
                     $mock->setRetryable(true);
+
                     break;
                 case 'dns':
                     $mock->setError("Could not resolve host (attempt {$i})");
                     $mock->setRetryable(true);
+
                     break;
                 case 'ssl':
                     $mock->setError("SSL connection timeout (attempt {$i})");
                     $mock->setRetryable(true);
+
                     break;
             }
 
@@ -199,7 +206,7 @@ trait BuildsRetrySequences
 
     /**
      * Create intermittent failures (some succeed, some fail).
-     * 
+     *
      * @param array<int, bool> $pattern Array of booleans (true = fail, false = succeed)
      */
     public function intermittentFailures(array $pattern): static
@@ -231,5 +238,6 @@ trait BuildsRetrySequences
     }
 
     abstract protected function createFailureMock(string $error, bool $retryable): MockedRequest;
+
     abstract public function respondWith(string $body): static;
 }

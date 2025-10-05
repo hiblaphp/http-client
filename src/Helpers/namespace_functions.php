@@ -2,10 +2,6 @@
 
 namespace Hibla\Http;
 
-use Hibla\Http\Http;
-use Hibla\Http\Request;
-use Hibla\Http\Response;
-use Hibla\Http\StreamingResponse;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
@@ -24,7 +20,6 @@ function http(): Request
 {
     return Http::request();
 }
-
 
 /**
  * Perform an asynchronous GET request.
@@ -83,7 +78,6 @@ function http_stream(string $url, ?callable $onChunk = null): CancellablePromise
     return Http::stream($url,  $onChunk);
 }
 
-
 /**
  * Download a file from a URL.
  *
@@ -101,7 +95,6 @@ function http_download(string $url, string $destination): CancellablePromiseInte
 {
     return Http::download($url, $destination);
 }
-
 
 /**
  * Perform an asynchronous PUT request.

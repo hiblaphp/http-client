@@ -89,7 +89,7 @@ class CookieJar implements CookieJarInterface
      */
     public static function fromSetCookieHeaders(array $setCookieHeaders): self
     {
-        $jar = new self;
+        $jar = new self();
 
         foreach ($setCookieHeaders as $header) {
             $cookie = Cookie::fromSetCookieHeader($header);

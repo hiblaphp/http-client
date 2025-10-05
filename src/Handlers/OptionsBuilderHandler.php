@@ -81,15 +81,15 @@ class OptionsBuilderHandler
         }
 
         $this->addHeaderOptions($options, $headers);
-        
+
         $stringKeyOptions = array_filter(
             $additionalOptions,
-            fn($key) => is_string($key),
+            fn ($key) => is_string($key),
             ARRAY_FILTER_USE_KEY
         );
-        
+
         $this->addBodyOptions($options, $body, $stringKeyOptions);
-        
+
         $this->addAuthenticationOptions($options, $auth);
 
         if ($effectiveCookieJar !== null) {
@@ -209,20 +209,21 @@ class OptionsBuilderHandler
 
         $existingCookie = '';
         $lowerHeaders = array_change_key_case($headers, CASE_LOWER);
-        
+
         if (isset($lowerHeaders['cookie'])) {
             $existingCookie = implode('; ', $lowerHeaders['cookie']);
             // Remove old Cookie header (case-insensitive)
             foreach ($headers as $name => $value) {
                 if (strtolower($name) === 'cookie') {
                     unset($headers[$name]);
+
                     break;
                 }
             }
         }
 
-        $newCookieValue = $existingCookie !== '' 
-            ? $existingCookie . '; ' . $cookieHeader 
+        $newCookieValue = $existingCookie !== ''
+            ? $existingCookie . '; ' . $cookieHeader
             : $cookieHeader;
 
         $headers['Cookie'] = [$newCookieValue];
@@ -302,7 +303,7 @@ class OptionsBuilderHandler
         }
 
         [$type, $username, $password] = $auth;
-        
+
         if ($type === 'basic') {
             $options[CURLOPT_USERPWD] = "{$username}:{$password}";
             $options[CURLOPT_HTTPAUTH] = CURLAUTH_BASIC;

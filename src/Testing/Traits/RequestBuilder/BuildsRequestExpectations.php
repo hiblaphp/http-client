@@ -12,6 +12,7 @@ trait BuildsRequestExpectations
     public function expectHeader(string $name, string $value): static
     {
         $this->getRequest()->addHeaderMatcher($name, $value);
+
         return $this;
     }
 
@@ -23,6 +24,7 @@ trait BuildsRequestExpectations
         foreach ($headers as $name => $value) {
             $this->expectHeader($name, $value);
         }
+
         return $this;
     }
 
@@ -32,6 +34,7 @@ trait BuildsRequestExpectations
     public function expectBody(string $pattern): static
     {
         $this->getRequest()->setBodyMatcher($pattern);
+
         return $this;
     }
 
@@ -41,6 +44,7 @@ trait BuildsRequestExpectations
     public function expectJson(array $data): static
     {
         $this->getRequest()->setJsonMatcher($data);
+
         return $this;
     }
 
@@ -52,6 +56,7 @@ trait BuildsRequestExpectations
         foreach ($expectedCookies as $name => $value) {
             $this->getRequest()->addHeaderMatcher('cookie', $name . '=' . $value);
         }
+
         return $this;
     }
 }

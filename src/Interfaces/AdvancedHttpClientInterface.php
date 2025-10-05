@@ -13,7 +13,7 @@ use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 
 /**
  * Advanced HTTP client interface with specialized functionality.
- * 
+ *
  * Extends the basic client builder with advanced features like retries,
  * caching, streaming, downloading, proxy support, and Server-Sent Events.
  */
@@ -51,7 +51,7 @@ interface AdvancedHttpClientInterface extends HttpClientBuilderInterface
 
     /**
      * Add multiple cookies to the request.
-     * 
+     *
      * @param array<string, string> $cookies Cookie name-value pairs
      */
     public function withCookies(array $cookies): self;
@@ -88,7 +88,7 @@ interface AdvancedHttpClientInterface extends HttpClientBuilderInterface
 
     /**
      * Add a cookie with additional attributes (domain, path, secure, etc.).
-     * 
+     *
      * @param array<string, mixed> $attributes Cookie attributes
      */
     public function cookieWithAttributes(string $name, string $value, array $attributes = []): self;
@@ -120,7 +120,7 @@ interface AdvancedHttpClientInterface extends HttpClientBuilderInterface
 
     /**
      * Stream a GET request with chunk callbacks.
-     * 
+     *
      * @param (callable(string): void)|null $onChunk Callback invoked for each data chunk
      * @return CancellablePromiseInterface<StreamingResponse>
      */
@@ -128,7 +128,7 @@ interface AdvancedHttpClientInterface extends HttpClientBuilderInterface
 
     /**
      * Stream a POST request with chunk callbacks.
-     * 
+     *
      * @param string|resource|array<string, mixed>|null $body Request body
      * @param (callable(string): void)|null $onChunk Callback invoked for each data chunk
      * @return CancellablePromiseInterface<StreamingResponse>
@@ -137,7 +137,7 @@ interface AdvancedHttpClientInterface extends HttpClientBuilderInterface
 
     /**
      * Download a file to a destination path.
-     * 
+     *
      * @return CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}> A promise that resolves with download metadata.
      */
     public function download(string $url, string $destination): CancellablePromiseInterface;
@@ -149,7 +149,7 @@ interface AdvancedHttpClientInterface extends HttpClientBuilderInterface
 
     /**
      * Establish a Server-Sent Events connection.
-     * 
+     *
      * @param (callable(mixed): void)|null $onEvent Callback for each event
      * @param (callable(string): void)|null $onError Callback for connection errors
      * @return CancellablePromiseInterface<SSEResponse>
@@ -158,14 +158,14 @@ interface AdvancedHttpClientInterface extends HttpClientBuilderInterface
 
     /**
      * Map/transform SSE event data before invoking callbacks.
-     * 
+     *
      * @param callable(mixed): mixed $mapper Event transformation function
      */
     public function sseMap(callable $mapper): self;
 
     /**
      * Configure SSE reconnection behavior with simple parameters.
-     * 
+     *
      * @param list<string> $retryableErrors Error message substrings that trigger reconnection
      * @param (callable(int, float, \Throwable): void)|null $onReconnect Callback before each reconnection attempt
      * @param (callable(\Exception): bool)|null $shouldReconnect Custom logic to determine if reconnection should occur
@@ -194,21 +194,21 @@ interface AdvancedHttpClientInterface extends HttpClientBuilderInterface
 
     /**
      * Add a single file to a multipart request.
-     * 
+     *
      * @param string|resource|\Psr\Http\Message\UploadedFileInterface $file
      */
     public function withFile(string $name, $file, ?string $fileName = null, ?string $contentType = null): self;
 
     /**
      * Add multiple files to a multipart request.
-     * 
+     *
      * @param array<string, string|resource|\Psr\Http\Message\UploadedFileInterface|array{path: string, name?: string, type?: string}> $files Files to upload
      */
     public function withFiles(array $files): self;
 
     /**
      * Create a multipart request with both data and files.
-     * 
+     *
      * @param array<string, mixed> $data Form data fields
      * @param array<string, string|resource|\Psr\Http\Message\UploadedFileInterface|array{path: string, name?: string, type?: string}> $files Files to upload
      */

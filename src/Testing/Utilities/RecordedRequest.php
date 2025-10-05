@@ -6,19 +6,19 @@ class RecordedRequest
 {
     public string $method;
     public string $url;
-    
+
     /**
      * @var array<int, mixed>
      */
     public array $options;
-    
+
     /**
      * @var array<string, string|array<int, string>>
      */
     private array $parsedHeaders = [];
-    
+
     private ?string $body = null;
-    
+
     /**
      * @var array<mixed>|null
      */
@@ -41,17 +41,17 @@ class RecordedRequest
      */
     private function parseHeaders(): void
     {
-        if (!isset($this->options[CURLOPT_HTTPHEADER])) {
+        if (! isset($this->options[CURLOPT_HTTPHEADER])) {
             return;
         }
 
         $headers = $this->options[CURLOPT_HTTPHEADER];
-        if (!is_array($headers)) {
+        if (! is_array($headers)) {
             return;
         }
 
         foreach ($headers as $header) {
-            if (!is_string($header) || strpos($header, ':') === false) {
+            if (! is_string($header) || strpos($header, ':') === false) {
                 continue;
             }
 
@@ -62,10 +62,10 @@ class RecordedRequest
             if (isset($this->parsedHeaders[$name])) {
                 // Handle multiple headers with same name
                 $existing = $this->parsedHeaders[$name];
-                if (!is_array($existing)) {
+                if (! is_array($existing)) {
                     $this->parsedHeaders[$name] = [$existing];
                 }
-                
+
                 if (is_array($this->parsedHeaders[$name])) {
                     $this->parsedHeaders[$name][] = $value;
                 }
@@ -80,13 +80,13 @@ class RecordedRequest
      */
     private function parseBody(): void
     {
-        if (!isset($this->options[CURLOPT_POSTFIELDS])) {
+        if (! isset($this->options[CURLOPT_POSTFIELDS])) {
             return;
         }
 
         $postFields = $this->options[CURLOPT_POSTFIELDS];
-        
-        if (!is_string($postFields)) {
+
+        if (! is_string($postFields)) {
             return;
         }
 
@@ -101,7 +101,7 @@ class RecordedRequest
 
     /**
      * Get all headers as associative array.
-     * 
+     *
      * @return array<string, string|array<int, string>>
      */
     public function getHeaders(): array
@@ -119,7 +119,7 @@ class RecordedRequest
 
     /**
      * Get a specific header value (case-insensitive).
-     * 
+     *
      * @return string|array<int, string>|null
      */
     public function getHeader(string $name): string|array|null
@@ -133,7 +133,7 @@ class RecordedRequest
     public function getHeaderLine(string $name): ?string
     {
         $value = $this->getHeader($name);
-        
+
         if ($value === null) {
             return null;
         }
@@ -155,7 +155,7 @@ class RecordedRequest
 
     /**
      * Get parsed JSON body.
-     * 
+     *
      * @return array<mixed>|null
      */
     public function getJson(): ?array
@@ -189,7 +189,7 @@ class RecordedRequest
 
     /**
      * Get raw cURL options.
-     * 
+     *
      * @return array<int, mixed>
      */
     public function getOptions(): array
@@ -199,7 +199,7 @@ class RecordedRequest
 
     /**
      * Convert to array for debugging.
-     * 
+     *
      * @return array{method: string, url: string, headers: array<string, string|array<int, string>>, body: string|null, json: array<mixed>|null}
      */
     public function toArray(): array

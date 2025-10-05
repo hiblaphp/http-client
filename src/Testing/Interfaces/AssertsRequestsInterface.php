@@ -8,7 +8,7 @@ interface AssertsRequestsInterface
 {
     /**
      * Assert that a specific request was made.
-     * 
+     *
      * @param array<string, mixed> $options
      */
     public function assertRequestMade(string $method, string $url, array $options = []): void;

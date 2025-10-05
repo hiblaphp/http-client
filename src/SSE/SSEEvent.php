@@ -22,7 +22,8 @@ class SSEEvent
         public readonly ?string $data = null,
         public readonly ?int $retry = null,
         public readonly array $rawFields = []
-    ) {}
+    ) {
+    }
 
     /**
      * Checks if this is a comment or an empty keep-alive event.

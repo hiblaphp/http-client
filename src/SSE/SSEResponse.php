@@ -53,8 +53,9 @@ class SSEResponse extends StreamingResponse
         $this->buffer .= $chunk;
 
         $parts = preg_split('/\r?\n\r?\n/', $this->buffer, -1, PREG_SPLIT_NO_EMPTY);
-        if ($parts === false) { 
-            $this->buffer = ''; 
+        if ($parts === false) {
+            $this->buffer = '';
+
             return;
         }
 
@@ -82,9 +83,9 @@ class SSEResponse extends StreamingResponse
     {
         $lines = preg_split('/\r?\n/', trim($eventData));
         if ($lines === false) {
-            return null; 
+            return null;
         }
-        
+
         /** @var array<string, list<string>> $fields */
         $fields = [];
 
@@ -95,24 +96,24 @@ class SSEResponse extends StreamingResponse
 
             if (str_contains($line, ':')) {
                 [$field, $value] = explode(':', $line, 2);
-                $value = ltrim($value); 
+                $value = ltrim($value);
             } else {
                 $field = $line;
                 $value = '';
             }
-            
+
             $field = trim($field);
             if ($field === '') {
                 continue;
             }
-            
+
             $fields[$field][] = $value;
         }
-        
+
         if ($fields === []) {
             return null;
         }
-        
+
         $idValues = $fields['id'] ?? [];
         $eventValues = $fields['event'] ?? [];
         $retryValues = $fields['retry'] ?? [];
@@ -120,7 +121,7 @@ class SSEResponse extends StreamingResponse
         $id = end($idValues) !== false ? end($idValues) : null;
         $event = end($eventValues) !== false ? end($eventValues) : null;
         $retryValue = end($retryValues) !== false ? end($retryValues) : null;
-        
+
         return new SSEEvent(
             id: $id,
             event: $event,
@@ -138,7 +139,7 @@ class SSEResponse extends StreamingResponse
     public function getEvents(): \Generator
     {
         $stream = $this->getStream();
-        
+
         while (! $stream->eof()) {
             $chunk = $stream->read(8192);
             if ($chunk === '') {

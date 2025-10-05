@@ -30,7 +30,8 @@ use Psr\Http\Message\UriInterface;
  */
 class Request extends Message implements CompleteHttpClientInterface
 {
-    use StreamTrait, InterceptorTrait;
+    use StreamTrait;
+    use InterceptorTrait;
 
     private HttpHandler $handler;
     private OptionsBuilderHandler $optionsBuilder;
@@ -104,6 +105,7 @@ class Request extends Message implements CompleteHttpClientInterface
     {
         $new = clone $this;
         $new->requestInterceptors[] = $callback;
+
         return $new;
     }
 
@@ -119,6 +121,7 @@ class Request extends Message implements CompleteHttpClientInterface
     {
         $new = clone $this;
         $new->responseInterceptors[] = $callback;
+
         return $new;
     }
 
@@ -272,6 +275,7 @@ class Request extends Message implements CompleteHttpClientInterface
     {
         $new = clone $this;
         $new->auth = ['basic', $username, $password];
+
         return $new;
     }
 
@@ -286,6 +290,7 @@ class Request extends Message implements CompleteHttpClientInterface
     {
         $new = clone $this;
         $new->auth = ['digest', $username, $password];
+
         return $new;
     }
 
@@ -299,6 +304,7 @@ class Request extends Message implements CompleteHttpClientInterface
     {
         $new = clone $this;
         $new->timeout = $seconds;
+
         return $new;
     }
 
@@ -312,6 +318,7 @@ class Request extends Message implements CompleteHttpClientInterface
     {
         $new = clone $this;
         $new->connectTimeout = $seconds;
+
         return $new;
     }
 
@@ -327,6 +334,7 @@ class Request extends Message implements CompleteHttpClientInterface
         $new = clone $this;
         $new->followRedirects = $follow;
         $new->maxRedirects = $max;
+
         return $new;
     }
 
@@ -346,6 +354,7 @@ class Request extends Message implements CompleteHttpClientInterface
             baseDelay: $baseDelay,
             backoffMultiplier: $backoffMultiplier
         );
+
         return $new;
     }
 
@@ -359,6 +368,7 @@ class Request extends Message implements CompleteHttpClientInterface
     {
         $new = clone $this;
         $new->retryConfig = $config;
+
         return $new;
     }
 
@@ -371,6 +381,7 @@ class Request extends Message implements CompleteHttpClientInterface
     {
         $new = clone $this;
         $new->retryConfig = null;
+
         return $new;
     }
 
@@ -384,6 +395,7 @@ class Request extends Message implements CompleteHttpClientInterface
     {
         $new = clone $this;
         $new->verifySSL = $verify;
+
         return $new;
     }
 
@@ -397,6 +409,7 @@ class Request extends Message implements CompleteHttpClientInterface
     {
         $new = clone $this;
         $new->userAgent = $userAgent;
+
         return $new;
     }
 
@@ -411,6 +424,7 @@ class Request extends Message implements CompleteHttpClientInterface
         $stream = $this->createTempStream();
         $stream->write($content);
         $stream->rewind();
+
         return $this->withBody($stream);
     }
 
@@ -427,6 +441,7 @@ class Request extends Message implements CompleteHttpClientInterface
         if ($jsonContent === false) {
             throw new InvalidArgumentException('Failed to encode data as JSON');
         }
+
         return $this->body($jsonContent)->contentType('application/json');
     }
 
@@ -440,7 +455,8 @@ class Request extends Message implements CompleteHttpClientInterface
     public function withForm(array $data): self
     {
         return $this->body(http_build_query($data))
-            ->contentType('application/x-www-form-urlencoded');
+            ->contentType('application/x-www-form-urlencoded')
+        ;
     }
 
     /**
@@ -455,6 +471,7 @@ class Request extends Message implements CompleteHttpClientInterface
         $new->body = $this->createTempStream();
         $new->options['multipart'] = $data;
         $new = $new->withoutHeader('Content-Type');
+
         return $new;
     }
 
@@ -472,6 +489,7 @@ class Request extends Message implements CompleteHttpClientInterface
     {
         $new = clone $this;
         $new->sseDataFormat = $format;
+
         return $new;
     }
 
@@ -509,6 +527,7 @@ class Request extends Message implements CompleteHttpClientInterface
     {
         $new = clone $this;
         $new->sseMapper = $mapper;
+
         return $new;
     }
 
@@ -560,6 +579,7 @@ class Request extends Message implements CompleteHttpClientInterface
             onReconnect: $onReconnect,
             shouldReconnect: $shouldReconnect
         );
+
         return $new;
     }
 
@@ -573,6 +593,7 @@ class Request extends Message implements CompleteHttpClientInterface
     {
         $new = clone $this;
         $new->sseReconnectConfig = $config;
+
         return $new;
     }
 
@@ -585,6 +606,7 @@ class Request extends Message implements CompleteHttpClientInterface
     {
         $new = clone $this;
         $new->sseReconnectConfig = null;
+
         return $new;
     }
 
@@ -754,6 +776,7 @@ class Request extends Message implements CompleteHttpClientInterface
     {
         $new = clone $this;
         $new->cacheConfig = new CacheConfig($ttlSeconds, $respectServerHeaders);
+
         return $new;
     }
 
@@ -770,6 +793,7 @@ class Request extends Message implements CompleteHttpClientInterface
     {
         $new = clone $this;
         $new->cacheConfig = $config;
+
         return $new;
     }
 
@@ -785,6 +809,7 @@ class Request extends Message implements CompleteHttpClientInterface
     {
         $new = clone $this;
         $new->cacheConfig = new CacheConfig($ttlSeconds, $respectServerHeaders, null, $cacheKey);
+
         return $new;
     }
 
@@ -800,12 +825,12 @@ class Request extends Message implements CompleteHttpClientInterface
     public function withFile(string $name, $file, ?string $filename = null, ?string $contentType = null): self
     {
         $new = clone $this;
-        if (!isset($new->options['multipart'])) {
+        if (! isset($new->options['multipart'])) {
             $new->options['multipart'] = [];
         }
 
         $multipart = $new->options['multipart'];
-        if (!is_array($multipart)) {
+        if (! is_array($multipart)) {
             $multipart = [];
         }
 
@@ -841,6 +866,7 @@ class Request extends Message implements CompleteHttpClientInterface
 
         $new->options['multipart'] = $multipart;
         $new = $new->withoutHeader('Content-Type');
+
         return $new;
     }
 
@@ -855,7 +881,7 @@ class Request extends Message implements CompleteHttpClientInterface
         $new = $this;
         foreach ($files as $name => $file) {
             if (is_array($file)) {
-                if (!isset($file['path']) || !is_string($file['path'])) {
+                if (! isset($file['path']) || ! is_string($file['path'])) {
                     throw new InvalidArgumentException("File array for '{$name}' must contain a string 'path' key.");
                 }
 
@@ -868,6 +894,7 @@ class Request extends Message implements CompleteHttpClientInterface
                 $new = $new->withFile($name, $file);
             }
         }
+
         return $new;
     }
 
@@ -898,9 +925,9 @@ class Request extends Message implements CompleteHttpClientInterface
         return $this->getRequestInterceptorHandler()
             ->processInterceptors($initialRequest, $this->requestInterceptors)
             ->then(
-                fn($processedRequest) =>
-                $this->executeRequest($processedRequest)
-            );
+                fn ($processedRequest) => $this->executeRequest($processedRequest)
+            )
+        ;
     }
 
     /**
@@ -934,6 +961,7 @@ class Request extends Message implements CompleteHttpClientInterface
         foreach ($cookies as $name => $value) {
             $new = $new->withCookie($name, $value);
         }
+
         return $new;
     }
 
@@ -945,7 +973,7 @@ class Request extends Message implements CompleteHttpClientInterface
      */
     public function withCookieJar(): self
     {
-        return $this->useCookieJar(new CookieJar);
+        return $this->useCookieJar(new CookieJar());
     }
 
     /**
@@ -970,6 +998,7 @@ class Request extends Message implements CompleteHttpClientInterface
     {
         $new = clone $this;
         $new->cookieJar = $cookieJar;
+
         return $new;
     }
 
@@ -996,6 +1025,7 @@ class Request extends Message implements CompleteHttpClientInterface
         if ($new->cookieJar !== null) {
             $new->cookieJar->clear();
         }
+
         return $new;
     }
 
@@ -1021,7 +1051,7 @@ class Request extends Message implements CompleteHttpClientInterface
     {
         $new = clone $this;
         if ($new->cookieJar === null) {
-            $new->cookieJar = new CookieJar;
+            $new->cookieJar = new CookieJar();
         }
 
         $cookie = new Cookie(
@@ -1037,6 +1067,7 @@ class Request extends Message implements CompleteHttpClientInterface
         );
 
         $new->cookieJar->setCookie($cookie);
+
         return $new;
     }
 
@@ -1053,6 +1084,7 @@ class Request extends Message implements CompleteHttpClientInterface
     {
         $new = clone $this;
         $new->proxyConfig = ProxyConfig::http($host, $port, $username, $password);
+
         return $new;
     }
 
@@ -1068,6 +1100,7 @@ class Request extends Message implements CompleteHttpClientInterface
     {
         $new = clone $this;
         $new->proxyConfig = ProxyConfig::socks4($host, $port, $username);
+
         return $new;
     }
 
@@ -1084,6 +1117,7 @@ class Request extends Message implements CompleteHttpClientInterface
     {
         $new = clone $this;
         $new->proxyConfig = ProxyConfig::socks5($host, $port, $username, $password);
+
         return $new;
     }
 
@@ -1097,6 +1131,7 @@ class Request extends Message implements CompleteHttpClientInterface
     {
         $new = clone $this;
         $new->proxyConfig = $config;
+
         return $new;
     }
 
@@ -1109,6 +1144,7 @@ class Request extends Message implements CompleteHttpClientInterface
     {
         $new = clone $this;
         $new->proxyConfig = null;
+
         return $new;
     }
 
@@ -1167,6 +1203,7 @@ class Request extends Message implements CompleteHttpClientInterface
     {
         $new = clone $this;
         $new->options[$option] = $value;
+
         return $new;
     }
 
@@ -1184,6 +1221,7 @@ class Request extends Message implements CompleteHttpClientInterface
                 $new->options[$option] = $value;
             }
         }
+
         return $new;
     }
 
@@ -1229,8 +1267,7 @@ class Request extends Message implements CompleteHttpClientInterface
         }
 
         return $httpPromise->then(
-            fn($response) =>
-            $this->getResponseInterceptorHandler()
+            fn ($response) => $this->getResponseInterceptorHandler()
                 ->processInterceptors($response, $processedRequest->responseInterceptors)
         );
     }
@@ -1351,6 +1388,7 @@ class Request extends Message implements CompleteHttpClientInterface
         }
 
         $parsed = json_decode($event->data, true);
+
         return json_last_error() === JSON_ERROR_NONE ? $parsed : $event->data;
     }
 }

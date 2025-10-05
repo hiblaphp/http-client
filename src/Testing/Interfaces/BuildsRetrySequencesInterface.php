@@ -11,7 +11,7 @@ interface BuildsRetrySequencesInterface
 
     /**
      * Create multiple mocks with different failure types until success.
-     * 
+     *
      * @param array<int, string|array{error?: string, retryable?: bool, delay?: float, status?: int}> $failures
      * @param string|array<string, mixed>|null $successResponse
      */
@@ -34,7 +34,7 @@ interface BuildsRetrySequencesInterface
 
     /**
      * Create intermittent failures (some succeed, some fail).
-     * 
+     *
      * @param array<int, bool> $pattern Array of booleans (true = fail, false = succeed)
      */
     public function intermittentFailures(array $pattern): static;

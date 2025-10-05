@@ -1,4 +1,5 @@
 <?php
+
 namespace Hibla\Http\Testing\Traits\Assertions;
 
 use Hibla\Http\Testing\Exceptions\MockAssertionException;
@@ -10,7 +11,9 @@ trait AssertsRequests
      * @return array<int, RecordedRequest>
      */
     abstract public function getRequestHistory(): array;
+
     abstract protected function getRequestRecorder();
+
     abstract protected function getRequestMatcher();
 
     /**
@@ -75,6 +78,7 @@ trait AssertsRequests
         $request = $this->getLastRequest();
         if ($request === null) {
             echo "No requests recorded\n";
+
             return;
         }
 

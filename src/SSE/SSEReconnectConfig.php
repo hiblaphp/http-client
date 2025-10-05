@@ -41,7 +41,8 @@ class SSEReconnectConfig
         ],
         public readonly mixed $onReconnect = null,
         public readonly mixed $shouldReconnect = null,
-    ) {}
+    ) {
+    }
 
     /**
      * Calculates the reconnection delay with exponential backoff and optional jitter.

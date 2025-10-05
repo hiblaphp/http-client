@@ -26,7 +26,7 @@ interface BuildsBasicMocksInterface
 
     /**
      * Set the response body as JSON.
-     * 
+     *
      * @param array<string, mixed> $data
      */
     public function respondJson(array $data): static;

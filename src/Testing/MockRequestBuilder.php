@@ -3,20 +3,20 @@
 namespace Hibla\Http\Testing;
 
 use Hibla\Http\Testing\Interfaces\MockRequestBuilderInterface;
+use Hibla\Http\Testing\Traits\RequestBuilder\BuildsAdvancedScenarios;
 use Hibla\Http\Testing\Traits\RequestBuilder\BuildsBasicMocks;
+use Hibla\Http\Testing\Traits\RequestBuilder\BuildsCookieMocks;
+use Hibla\Http\Testing\Traits\RequestBuilder\BuildsFailureMocks;
+use Hibla\Http\Testing\Traits\RequestBuilder\BuildsFileMocks;
 use Hibla\Http\Testing\Traits\RequestBuilder\BuildsRequestExpectations;
 use Hibla\Http\Testing\Traits\RequestBuilder\BuildsResponseHeaders;
-use Hibla\Http\Testing\Traits\RequestBuilder\BuildsFailureMocks;
 use Hibla\Http\Testing\Traits\RequestBuilder\BuildsRetrySequences;
-use Hibla\Http\Testing\Traits\RequestBuilder\BuildsAdvancedScenarios;
 use Hibla\Http\Testing\Traits\RequestBuilder\BuildsSSEMocks;
-use Hibla\Http\Testing\Traits\RequestBuilder\BuildsFileMocks;
-use Hibla\Http\Testing\Traits\RequestBuilder\BuildsCookieMocks;
 use Hibla\Http\Testing\Traits\RequestBuilder\BuildsSSERetrySequences;
 
 /**
  * Builder for creating mocked HTTP requests with fluent API.
- * 
+ *
  * This class implements all mock building capabilities through traits
  * and ensures compile-time verification via the MockRequestBuilderInterface.
  */
@@ -42,11 +42,21 @@ class MockRequestBuilder implements MockRequestBuilderInterface
         $this->request = new MockedRequest($method);
     }
 
+    /**
+     * Get the current request configuration.
+     *
+     * @return MockedRequest The current request configuration.
+     */
     protected function getRequest(): MockedRequest
     {
         return $this->request;
     }
 
+    /**
+     * Get the current testing handler instance.
+     *
+     * @return TestingHttpHandler The current testing handler instance.
+     */
     protected function getHandler(): TestingHttpHandler
     {
         return $this->handler;

@@ -23,7 +23,7 @@ class RequestMatcher
     }
 
     /**
-     * @param array<int, mixed> $options
+     * @param array<string, mixed> $options
      */
     public function matchesRequest(RecordedRequest $request, string $method, string $url, array $options = []): bool
     {
@@ -31,7 +31,7 @@ class RequestMatcher
             return false;
         }
 
-        if (!$this->urlMatches($url, $request->url)) {
+        if (! $this->urlMatches($url, $request->url)) {
             return false;
         }
 

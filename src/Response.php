@@ -4,8 +4,8 @@ namespace Hibla\Http;
 
 use Hibla\Http\Interfaces\CookieJarInterface;
 use Hibla\Http\Interfaces\EnhancedResponseInterface;
-use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\StreamInterface;
 
 /**
  * Represents an HTTP response.

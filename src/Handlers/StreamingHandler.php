@@ -23,7 +23,7 @@ final readonly class StreamingHandler
     public function streamRequest(string $url, array $options, ?callable $onChunk = null): CancellablePromiseInterface
     {
         /** @var CancellablePromise<StreamingResponse> $promise */
-        $promise = new CancellablePromise;
+        $promise = new CancellablePromise();
 
         $responseStream = fopen('php://temp', 'w+b');
         if ($responseStream === false) {
@@ -132,7 +132,7 @@ final readonly class StreamingHandler
     public function downloadFile(string $url, string $destination, array $options = []): CancellablePromiseInterface
     {
         /** @var CancellablePromise<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}> $promise */
-        $promise = new CancellablePromise;
+        $promise = new CancellablePromise();
 
         $file = fopen($destination, 'wb');
         if ($file === false) {

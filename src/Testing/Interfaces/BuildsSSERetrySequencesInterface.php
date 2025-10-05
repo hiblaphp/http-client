@@ -6,7 +6,7 @@ interface BuildsSSERetrySequencesInterface
 {
     /**
      * SSE connection that fails until the specified attempt succeeds.
-     * 
+     *
      * @param array<int, array{data?: string, event?: string, id?: string, retry?: int}> $successEvents
      */
     public function sseFailUntilAttempt(
@@ -17,7 +17,7 @@ interface BuildsSSERetrySequencesInterface
 
     /**
      * SSE connection with a sequence of different failure types.
-     * 
+     *
      * @param array<int, string|array{error?: string, retryable?: bool, delay?: float}> $failures
      * @param array<int, array{data?: string, event?: string, id?: string, retry?: int}> $successEvents
      */
@@ -25,7 +25,7 @@ interface BuildsSSERetrySequencesInterface
 
     /**
      * SSE connection that times out until success.
-     * 
+     *
      * @param array<int, array{data?: string, event?: string, id?: string, retry?: int}> $successEvents
      */
     public function sseTimeoutUntilAttempt(
@@ -36,14 +36,14 @@ interface BuildsSSERetrySequencesInterface
 
     /**
      * SSE connection with intermittent failures.
-     * 
+     *
      * @param array<int, bool> $pattern Array of booleans (true = fail, false = succeed)
      */
     public function sseIntermittentFailures(array $pattern): static;
 
     /**
      * SSE connection with network error types until success.
-     * 
+     *
      * @param array<int, array{data?: string, event?: string, id?: string, retry?: int}> $successEvents
      */
     public function sseNetworkErrorsUntilAttempt(
@@ -53,7 +53,7 @@ interface BuildsSSERetrySequencesInterface
 
     /**
      * SSE connection that gradually improves (simulates network recovery).
-     * 
+     *
      * @param array<int, array{data?: string, event?: string, id?: string, retry?: int}> $successEvents
      */
     public function sseSlowlyImproveUntilAttempt(
@@ -64,7 +64,7 @@ interface BuildsSSERetrySequencesInterface
 
     /**
      * SSE connection that drops after receiving some events (then needs reconnection).
-     * 
+     *
      * @param array<int, array{data?: string, event?: string, id?: string, retry?: int}> $eventsBeforeDrop
      */
     public function sseDropAfterEvents(
@@ -75,7 +75,7 @@ interface BuildsSSERetrySequencesInterface
 
     /**
      * SSE reconnection scenario: mock resumption from a specific event ID.
-     * 
+     *
      * @param array<int, array{data?: string, event?: string, id?: string, retry?: int}> $eventsAfterResume
      */
     public function sseReconnectFromEventId(
@@ -90,7 +90,7 @@ interface BuildsSSERetrySequencesInterface
 
     /**
      * SSE with rate limiting (429 status) until success.
-     * 
+     *
      * @param array<int, array{data?: string, event?: string, id?: string, retry?: int}> $successEvents
      */
     public function sseRateLimitedUntilAttempt(

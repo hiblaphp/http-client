@@ -12,6 +12,7 @@ trait BuildsResponseHeaders
     public function respondWithHeader(string $name, string $value): static
     {
         $this->getRequest()->addResponseHeader($name, $value);
+
         return $this;
     }
 
@@ -23,6 +24,7 @@ trait BuildsResponseHeaders
         foreach ($headers as $name => $value) {
             $this->respondWithHeader($name, $value);
         }
+
         return $this;
     }
 
@@ -32,6 +34,7 @@ trait BuildsResponseHeaders
     public function respondWithChunks(array $chunks): static
     {
         $this->getRequest()->setBodySequence($chunks);
+
         return $this;
     }
 }

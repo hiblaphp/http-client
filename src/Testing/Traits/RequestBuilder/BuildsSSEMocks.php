@@ -5,11 +5,12 @@ namespace Hibla\Http\Testing\Traits\RequestBuilder;
 trait BuildsSSEMocks
 {
     abstract protected function getRequest();
+
     abstract public function respondWithHeader(string $name, string $value): static;
 
     /**
      * Configure this mock as an SSE response.
-     * 
+     *
      * @param array<int, array{data?: string, event?: string, id?: string, retry?: int, comment?: string}> $events
      */
     public function respondWithSSE(array $events): static
@@ -38,7 +39,7 @@ trait BuildsSSEMocks
             'event' => $event,
             'id' => $id,
             'retry' => $retry,
-        ], fn($v) => $v !== null);
+        ], fn ($v) => $v !== null);
 
         $this->getRequest()->addSSEEvent($eventData);
 
@@ -47,7 +48,7 @@ trait BuildsSSEMocks
 
     /**
      * Mock an SSE stream that sends keepalive events.
-     * 
+     *
      * @param array<int, array{data?: string, event?: string, id?: string, retry?: int}> $dataEvents
      */
     public function sseWithKeepalive(array $dataEvents, int $keepaliveCount = 3): static
@@ -92,7 +93,7 @@ trait BuildsSSEMocks
 
     /**
      * Mock an SSE stream with custom retry interval.
-     * 
+     *
      * @param array<int, array{data?: string, event?: string, id?: string, retry?: int}> $events
      */
     public function sseWithRetry(array $events, int $retryMs = 3000): static
@@ -106,7 +107,7 @@ trait BuildsSSEMocks
 
     /**
      * Mock an SSE stream with multiple event types.
-     * 
+     *
      * @param array<string, array<int, string|array<string, mixed>>> $eventsByType
      */
     public function sseMultipleTypes(array $eventsByType): static
@@ -129,7 +130,7 @@ trait BuildsSSEMocks
 
     /**
      * Mock an SSE stream with event IDs (useful for reconnection scenarios).
-     * 
+     *
      * @param array<int, array{data?: string, event?: string, id: string, retry?: int}> $eventsWithIds
      */
     public function sseWithEventIds(array $eventsWithIds): static
@@ -138,9 +139,9 @@ trait BuildsSSEMocks
         $this->respondWithHeader('Content-Type', 'text/event-stream');
         $this->respondWithHeader('Cache-Control', 'no-cache');
         $this->respondWithHeader('Connection', 'keep-alive');
-        
+
         foreach ($eventsWithIds as $event) {
-            if (!isset($event['id'])) {
+            if (! isset($event['id'])) {
                 throw new \InvalidArgumentException('All events must have an id field when using sseWithEventIds()');
             }
             $this->getRequest()->addSSEEvent($event);
@@ -151,18 +152,19 @@ trait BuildsSSEMocks
 
     /**
      * Mock an SSE stream that expects Last-Event-ID header (for resumption).
-     * 
+     *
      * @param array<int, array{data?: string, event?: string, id?: string, retry?: int}> $eventsAfterResume
      */
     public function sseExpectLastEventId(string $lastEventId, array $eventsAfterResume): static
     {
         $this->getRequest()->addHeaderMatcher('Last-Event-ID', $lastEventId);
+
         return $this->respondWithSSE($eventsAfterResume);
     }
 
     /**
      * Mock an SSE stream with server-sent retry directive.
-     * 
+     *
      * @param array<int, array{data?: string, event?: string, id?: string, retry?: int}> $events
      */
     public function sseWithRetryDirective(int $retryMs, array $events = []): static
@@ -171,11 +173,11 @@ trait BuildsSSEMocks
         $this->respondWithHeader('Content-Type', 'text/event-stream');
         $this->respondWithHeader('Cache-Control', 'no-cache');
         $this->respondWithHeader('Connection', 'keep-alive');
-        
+
         // Add retry directive as first event
         $retryEvent = ['retry' => $retryMs];
         $allEvents = array_merge([$retryEvent], $events);
-        
+
         $this->getRequest()->setSSEEvents($allEvents);
 
         return $this;
@@ -183,14 +185,14 @@ trait BuildsSSEMocks
 
     /**
      * Mock an SSE stream with comment lines (for testing parser).
-     * 
+     *
      * @param array<int, array{data?: string, event?: string, id?: string, retry?: int}> $events
      * @param array<int, string> $comments
      */
     public function sseWithComments(array $events, array $comments = []): static
     {
         $eventsWithComments = [];
-        
+
         foreach ($events as $index => $event) {
             if (isset($comments[$index])) {
                 $eventsWithComments[] = ['comment' => $comments[$index]];

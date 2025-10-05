@@ -11,7 +11,8 @@ class ProxyConfig
         public readonly ?string $password = null,
         public readonly string $type = 'http', // 'http', 'socks4', 'socks5'
         public readonly ?int $tunnelPort = null
-    ) {}
+    ) {
+    }
 
     /**
      * Create HTTP proxy configuration

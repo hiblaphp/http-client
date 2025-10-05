@@ -30,7 +30,7 @@ use Hibla\Promise\Interfaces\PromiseInterface;
 /**
  * Robust HTTP testing handler with comprehensive mocking capabilities.
  */
-class TestingHttpHandler extends HttpHandler implements 
+class TestingHttpHandler extends HttpHandler implements
     AssertsRequestsInterface,
     AssertsHeadersInterface,
     AssertsCookiesInterface,
@@ -42,12 +42,28 @@ class TestingHttpHandler extends HttpHandler implements
     use AssertsCookies;
     use AssertsSSE;
 
-    /** @var array<MockedRequest> */
+    /**
+     * List of mocked HTTP requests.
+     *
+     * @var list<MockedRequest>
+     */
     private array $mockedRequests = [];
 
+    /**
+     * Minimum seconds for global random delay.
+     */
     private ?float $globalRandomDelayMin = null;
+
+    /**
+     * Maximum seconds for global random delay.
+     */
     private ?float $globalRandomDelayMax = null;
 
+    /**
+     * Global testing configuration settings.
+     *
+     * @var array<string, mixed>
+     */
     private array $globalSettings = [
         'record_requests' => true,
         'strict_matching' => false,
@@ -55,24 +71,58 @@ class TestingHttpHandler extends HttpHandler implements
         'throw_on_unexpected' => true,
     ];
 
+    /**
+     * Manages temporary file creation and cleanup.
+     */
     private FileManager $fileManager;
+
+    /**
+     * Simulates network conditions like delays and failures.
+     */
     private NetworkSimulator $networkSimulator;
+
+    /**
+     * Matches incoming requests against mocked requests.
+     */
     private RequestMatcher $requestMatcher;
+
+    /**
+     * Creates mock HTTP responses.
+     */
     private ResponseFactory $responseFactory;
+
+    /**
+     * Manages HTTP cookies for testing.
+     */
     private CookieManager $cookieManager;
+
+    /**
+     * Executes HTTP requests with mocking support.
+     */
     private RequestExecutor $requestExecutor;
+
+    /**
+     * Records all HTTP requests made during testing.
+     */
     private RequestRecorder $requestRecorder;
+
+    /**
+     * Manages HTTP cache for testing.
+     */
     private CacheManager $cacheManager;
 
+    /**
+     * Initialize the testing HTTP handler with all utilities.
+     */
     public function __construct()
     {
         parent::__construct();
-        $this->fileManager = new FileManager;
-        $this->networkSimulator = new NetworkSimulator;
-        $this->requestMatcher = new RequestMatcher;
-        $this->cookieManager = new CookieManager;
-        $this->requestRecorder = new RequestRecorder;
-        $this->cacheManager = new CacheManager;
+        $this->fileManager = new FileManager();
+        $this->networkSimulator = new NetworkSimulator();
+        $this->requestMatcher = new RequestMatcher();
+        $this->cookieManager = new CookieManager();
+        $this->requestRecorder = new RequestRecorder();
+        $this->cacheManager = new CacheManager();
         $this->responseFactory = new ResponseFactory($this->networkSimulator, $this);
 
         $this->requestExecutor = new RequestExecutor(
@@ -85,36 +135,57 @@ class TestingHttpHandler extends HttpHandler implements
         );
     }
 
+    /**
+     * Get the request recorder instance.
+     */
     protected function getRequestRecorder(): RequestRecorder
     {
         return $this->requestRecorder;
     }
 
+    /**
+     * Get the request matcher instance.
+     */
     protected function getRequestMatcher(): RequestMatcher
     {
         return $this->requestMatcher;
     }
 
+    /**
+     * Get the cookie manager instance.
+     */
     protected function getCookieManager(): CookieManager
     {
         return $this->cookieManager;
     }
 
+    /**
+     * Create a new mock request builder.
+     */
     public function mock(string $method = '*'): MockRequestBuilder
     {
         return new MockRequestBuilder($this, $method);
     }
 
+    /**
+     * Add a mocked request to the handler.
+     */
     public function addMockedRequest(MockedRequest $request): void
     {
         $this->mockedRequests[] = $request;
     }
 
+    /**
+     * Get the cookie manager for manual cookie operations.
+     */
     public function cookies(): CookieManager
     {
         return $this->cookieManager;
     }
 
+    /**
+     * Set a global cookie jar for all requests.
+     */
     public function withGlobalCookieJar(?CookieJarInterface $jar = null): self
     {
         if ($jar === null) {
@@ -126,6 +197,9 @@ class TestingHttpHandler extends HttpHandler implements
         return $this;
     }
 
+    /**
+     * Set a file-based cookie jar for all requests.
+     */
     public function withGlobalFileCookieJar(?string $filename = null, bool $includeSessionCookies = true): self
     {
         if ($filename === null) {
@@ -137,6 +211,9 @@ class TestingHttpHandler extends HttpHandler implements
         return $this;
     }
 
+    /**
+     * Add a random delay to all requests.
+     */
     public function withGlobalRandomDelay(float $minSeconds, float $maxSeconds): self
     {
         if ($minSeconds > $maxSeconds) {
@@ -149,6 +226,9 @@ class TestingHttpHandler extends HttpHandler implements
         return $this;
     }
 
+    /**
+     * Remove global random delay from requests.
+     */
     public function withoutGlobalRandomDelay(): self
     {
         $this->globalRandomDelayMin = null;
@@ -157,14 +237,26 @@ class TestingHttpHandler extends HttpHandler implements
         return $this;
     }
 
+    /**
+     * Add network random delay with additional settings.
+     *
+     * @param array<float> $delayRange
+     * @param array<string, mixed> $additionalSettings
+     */
     public function withNetworkRandomDelay(array $delayRange, array $additionalSettings = []): self
     {
+        /** @var array{failure_rate?: float, timeout_rate?: float, connection_failure_rate?: float, default_delay?: array<float>|float, timeout_delay?: array<float>|float, retryable_failure_rate?: float, random_delay?: array<float>|null} */
         $settings = array_merge($additionalSettings, ['random_delay' => $delayRange]);
         $this->networkSimulator->enable($settings);
 
         return $this;
     }
 
+    /**
+     * Enable network simulation with custom settings.
+     *
+     * @param array{failure_rate?: float, timeout_rate?: float, connection_failure_rate?: float, default_delay?: array<float>|float, timeout_delay?: array<float>|float, retryable_failure_rate?: float, random_delay?: array<float>|null} $settings
+     */
     public function enableNetworkSimulation(array $settings = []): self
     {
         $this->networkSimulator->enable($settings);
@@ -172,6 +264,9 @@ class TestingHttpHandler extends HttpHandler implements
         return $this;
     }
 
+    /**
+     * Disable network simulation.
+     */
     public function disableNetworkSimulation(): self
     {
         $this->networkSimulator->disable();
@@ -179,6 +274,9 @@ class TestingHttpHandler extends HttpHandler implements
         return $this;
     }
 
+    /**
+     * Simulate a poor network connection with high delays and failures.
+     */
     public function withPoorNetwork(): self
     {
         return $this->enableNetworkSimulation([
@@ -190,6 +288,9 @@ class TestingHttpHandler extends HttpHandler implements
         ]);
     }
 
+    /**
+     * Simulate a fast network connection with minimal delays.
+     */
     public function withFastNetwork(): self
     {
         return $this->enableNetworkSimulation([
@@ -201,6 +302,9 @@ class TestingHttpHandler extends HttpHandler implements
         ]);
     }
 
+    /**
+     * Simulate a mobile network connection with moderate delays.
+     */
     public function withMobileNetwork(): self
     {
         return $this->enableNetworkSimulation([
@@ -212,6 +316,9 @@ class TestingHttpHandler extends HttpHandler implements
         ]);
     }
 
+    /**
+     * Simulate an unstable network with high variability.
+     */
     public function withUnstableNetwork(): self
     {
         return $this->enableNetworkSimulation([
@@ -223,6 +330,9 @@ class TestingHttpHandler extends HttpHandler implements
         ]);
     }
 
+    /**
+     * Enable or disable automatic temporary file cleanup.
+     */
     public function setAutoTempFileManagement(bool $enabled): self
     {
         $this->fileManager->setAutoManagement($enabled);
@@ -230,6 +340,9 @@ class TestingHttpHandler extends HttpHandler implements
         return $this;
     }
 
+    /**
+     * Enable strict matching for mocked requests.
+     */
     public function setStrictMatching(bool $strict): self
     {
         $this->globalSettings['strict_matching'] = $strict;
@@ -237,6 +350,9 @@ class TestingHttpHandler extends HttpHandler implements
         return $this;
     }
 
+    /**
+     * Enable or disable request recording.
+     */
     public function setRecordRequests(bool $enabled): self
     {
         $this->globalSettings['record_requests'] = $enabled;
@@ -245,6 +361,9 @@ class TestingHttpHandler extends HttpHandler implements
         return $this;
     }
 
+    /**
+     * Allow unmocked requests to pass through to real HTTP.
+     */
     public function setAllowPassthrough(bool $allow): self
     {
         $this->globalSettings['allow_passthrough'] = $allow;
@@ -252,55 +371,91 @@ class TestingHttpHandler extends HttpHandler implements
         return $this;
     }
 
+    /**
+     * Throw exception when an unexpected request is made.
+     */
     public function throwOnUnexpected(bool $throw = true): self
     {
         $this->globalSettings['throw_on_unexpected'] = $throw;
+
         return $this;
     }
 
+    /**
+     * Allow passthrough and disable throwing on unexpected requests.
+     */
     public function allowPassthrough(bool $allow = true): self
     {
         $this->globalSettings['allow_passthrough'] = $allow;
-        $this->globalSettings['throw_on_unexpected'] = !$allow;
+        $this->globalSettings['throw_on_unexpected'] = ! $allow;
+
         return $this;
     }
 
-    // Request execution methods
+    /**
+     * Send an HTTP request with mocking support.
+     */
     public function sendRequest(string $url, array $curlOptions, ?CacheConfig $cacheConfig = null, ?RetryConfig $retryConfig = null): PromiseInterface
     {
+        $mockedRequests = array_values($this->mockedRequests);
+
         return $this->requestExecutor->executeSendRequest(
             $url,
             $curlOptions,
-            $this->mockedRequests,
+            $mockedRequests,
             $this->globalSettings,
             $cacheConfig,
             $retryConfig,
-            fn($url, $curlOptions, $cacheConfig, $retryConfig) => parent::sendRequest($url, $curlOptions, $cacheConfig, $retryConfig)
+            fn (string $url, array $curlOptions, ?CacheConfig $cacheConfig, ?RetryConfig $retryConfig) => parent::sendRequest($url, $curlOptions, $cacheConfig, $retryConfig)
         );
     }
 
+    /**
+     * Fetch a URL with mocking support.
+     *
+     * @param array<int|string, mixed> $options
+     * @return PromiseInterface<\Hibla\Http\Response>|CancellablePromiseInterface<\Hibla\Http\StreamingResponse>|CancellablePromiseInterface<\Hibla\Http\SSE\SSEResponse>|CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}>
+     */
     public function fetch(string $url, array $options = []): PromiseInterface|CancellablePromiseInterface
     {
+        $mockedRequests = array_values($this->mockedRequests);
+        /** @var array<string, mixed> $normalizedOptions */
+        $normalizedOptions = $options;
+
+        // @phpstan-ignore-next-line return.type
         return $this->requestExecutor->executeFetch(
             $url,
-            $options,
-            $this->mockedRequests,
+            $normalizedOptions,
+            $mockedRequests,
             $this->globalSettings,
-            fn($url, $options) => parent::fetch($url, $options),
+            fn (string $url, array $options) => parent::fetch($url, $options),
             [$this, 'createStream']
         );
     }
 
+    /**
+     * Stream data from a URL with chunk callbacks.
+     *
+     * @param array<int|string, mixed> $options
+     * @return CancellablePromiseInterface<\Hibla\Http\StreamingResponse>
+     */
     public function stream(string $url, array $options = [], ?callable $onChunk = null): CancellablePromiseInterface
     {
         $options['stream'] = true;
-        if ($onChunk) {
+        if ($onChunk !== null) {
             $options['on_chunk'] = $onChunk;
         }
 
+        /** @var CancellablePromiseInterface<\Hibla\Http\StreamingResponse> */
         return $this->fetch($url, $options);
     }
 
+    /**
+     * Download a file to a destination path.
+     *
+     * @param array<int|string, mixed> $options
+     * @return CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}>
+     */
     public function download(string $url, ?string $destination = null, array $options = []): CancellablePromiseInterface
     {
         if ($destination === null) {
@@ -313,9 +468,15 @@ class TestingHttpHandler extends HttpHandler implements
 
         $options['download'] = $destination;
 
+        /** @var CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}> */
         return $this->fetch($url, $options);
     }
 
+    /**
+     * Connect to a Server-Sent Events endpoint.
+     *
+     * @param array<int|string, mixed> $options
+     */
     public function sse(
         string $url,
         array $options = [],
@@ -324,39 +485,60 @@ class TestingHttpHandler extends HttpHandler implements
         ?SSEReconnectConfig $reconnectConfig = null
     ): CancellablePromiseInterface {
         $curlOptions = $this->normalizeFetchOptions($url, $options, true);
+        $mockedRequests = array_values($this->mockedRequests);
+
+        /** @var array<int, mixed> $normalizedCurlOptions */
+        $normalizedCurlOptions = $curlOptions;
 
         return $this->requestExecutor->executeSSE(
             $url,
-            $curlOptions,
-            $this->mockedRequests,
+            $normalizedCurlOptions,
+            $mockedRequests,
             $this->globalSettings,
             $onEvent,
             $onError,
-            fn($url, $options, $onEvent, $onError, $reconnectConfig) => parent::sse($url, $options, $onEvent, $onError, $reconnectConfig),
-            $reconnectConfig  
+            fn (string $url, array $options, ?callable $onEvent, ?callable $onError, ?SSEReconnectConfig $reconnectConfig) => parent::sse($url, $options, $onEvent, $onError, $reconnectConfig),
+            $reconnectConfig
         );
     }
 
+    /**
+     * Get the temporary directory path.
+     */
     public static function getTempPath(?string $filename = null): string
     {
         return FileManager::getTempPath($filename);
     }
 
+    /**
+     * Create a temporary directory.
+     */
     public function createTempDirectory(string $prefix = 'http_test_'): string
     {
         return $this->fileManager->createTempDirectory($prefix);
     }
 
+    /**
+     * Create a temporary file with optional content.
+     */
     public function createTempFile(?string $filename = null, string $content = ''): string
     {
         return $this->fileManager->createTempFile($filename, $content);
     }
 
+    /**
+     * Get the history of all recorded requests.
+     *
+     * @return array<int, Utilities\RecordedRequest>
+     */
     public function getRequestHistory(): array
     {
         return $this->requestRecorder->getRequestHistory();
     }
 
+    /**
+     * Generate a random delay value within the configured range.
+     */
     public function generateGlobalRandomDelay(): float
     {
         if ($this->globalRandomDelayMin === null || $this->globalRandomDelayMax === null) {
@@ -372,6 +554,9 @@ class TestingHttpHandler extends HttpHandler implements
         return $randomInt / $precision;
     }
 
+    /**
+     * Reset the handler state, clearing mocks and history.
+     */
     public function reset(): void
     {
         $this->mockedRequests = [];

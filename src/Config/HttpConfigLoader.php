@@ -13,7 +13,7 @@ final class HttpConfigLoader
 {
     private static ?self $instance = null;
     private ?string $rootPath = null;
-    
+
     /**
      * @var array<string, mixed>
      */
@@ -37,8 +37,9 @@ final class HttpConfigLoader
     public static function getInstance(): self
     {
         if (self::$instance === null) {
-            self::$instance = new self;
+            self::$instance = new self();
         }
+
         return self::$instance;
     }
 

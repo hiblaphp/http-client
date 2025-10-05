@@ -7,6 +7,7 @@ use Hibla\Http\Testing\Exceptions\MockAssertionException;
 trait AssertsHeaders
 {
     abstract public function getLastRequest();
+
     abstract public function getRequest(int $index);
 
     /**
@@ -22,7 +23,7 @@ trait AssertsHeaders
             throw new MockAssertionException('No request found at the specified index');
         }
 
-        if (!$request->hasHeader($name)) {
+        if (! $request->hasHeader($name)) {
             throw new MockAssertionException("Header '{$name}' was not sent in the request");
         }
 
@@ -51,6 +52,7 @@ trait AssertsHeaders
 
         if ($request->hasHeader($name)) {
             $value = $request->getHeaderLine($name);
+
             throw new MockAssertionException(
                 "Header '{$name}' was sent in the request with value: '{$value}'"
             );
@@ -82,12 +84,12 @@ trait AssertsHeaders
             throw new MockAssertionException('No request found at the specified index');
         }
 
-        if (!$request->hasHeader($name)) {
+        if (! $request->hasHeader($name)) {
             throw new MockAssertionException("Header '{$name}' was not sent in the request");
         }
 
         $actualValue = $request->getHeaderLine($name);
-        if (!preg_match($pattern, $actualValue)) {
+        if ($actualValue === null || preg_match($pattern, $actualValue) !== 1) {
             throw new MockAssertionException(
                 "Header '{$name}' does not match pattern '{$pattern}'. Got: '{$actualValue}'"
             );

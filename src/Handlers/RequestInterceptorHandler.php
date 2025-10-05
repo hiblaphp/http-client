@@ -45,6 +45,7 @@ class RequestInterceptorHandler
     ): void {
         if ($interceptors === []) {
             $resolve($request);
+
             return;
         }
 
