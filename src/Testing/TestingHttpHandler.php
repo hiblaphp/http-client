@@ -7,6 +7,10 @@ use Hibla\Http\Handlers\HttpHandler;
 use Hibla\Http\Interfaces\CookieJarInterface;
 use Hibla\Http\RetryConfig;
 use Hibla\Http\SSE\SSEReconnectConfig;
+use Hibla\Http\Testing\Interfaces\AssertsCookiesInterface;
+use Hibla\Http\Testing\Interfaces\AssertsHeadersInterface;
+use Hibla\Http\Testing\Interfaces\AssertsRequestsInterface;
+use Hibla\Http\Testing\Interfaces\AssertsSSEInterface;
 use Hibla\Http\Testing\Traits\Assertions\AssertsCookies;
 use Hibla\Http\Testing\Traits\Assertions\AssertsHeaders;
 use Hibla\Http\Testing\Traits\Assertions\AssertsRequests;
@@ -26,7 +30,11 @@ use Hibla\Promise\Interfaces\PromiseInterface;
 /**
  * Robust HTTP testing handler with comprehensive mocking capabilities.
  */
-class TestingHttpHandler extends HttpHandler
+class TestingHttpHandler extends HttpHandler implements 
+    AssertsRequestsInterface,
+    AssertsHeadersInterface,
+    AssertsCookiesInterface,
+    AssertsSSEInterface
 {
     use FetchOptionTrait;
     use AssertsRequests;

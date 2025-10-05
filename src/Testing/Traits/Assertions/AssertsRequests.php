@@ -1,5 +1,4 @@
 <?php
-
 namespace Hibla\Http\Testing\Traits\Assertions;
 
 use Hibla\Http\Testing\Exceptions\MockAssertionException;
@@ -7,10 +6,18 @@ use Hibla\Http\Testing\Utilities\RecordedRequest;
 
 trait AssertsRequests
 {
+    /**
+     * @return array<int, RecordedRequest>
+     */
     abstract public function getRequestHistory(): array;
     abstract protected function getRequestRecorder();
     abstract protected function getRequestMatcher();
 
+    /**
+     * Assert that a request was made with the given method, URL, and options.
+     *
+     * @param array<string, mixed> $options
+     */
     public function assertRequestMade(string $method, string $url, array $options = []): void
     {
         foreach ($this->getRequestHistory() as $request) {
@@ -22,14 +29,20 @@ trait AssertsRequests
         throw new MockAssertionException("Expected request not found: {$method} {$url}");
     }
 
+    /**
+     * Assert that no requests were made.
+     */
     public function assertNoRequestsMade(): void
     {
         $history = $this->getRequestHistory();
-        if (!empty($history)) {
+        if ($history !== []) {
             throw new MockAssertionException('Expected no requests, but ' . count($history) . ' were made');
         }
     }
 
+    /**
+     * Assert that a specific number of requests were made.
+     */
     public function assertRequestCount(int $expected): void
     {
         $actual = count($this->getRequestHistory());
@@ -38,16 +51,25 @@ trait AssertsRequests
         }
     }
 
+    /**
+     * Get the last recorded request.
+     */
     public function getLastRequest(): ?RecordedRequest
     {
         return $this->getRequestRecorder()->getLastRequest();
     }
 
+    /**
+     * Get a specific request by index.
+     */
     public function getRequest(int $index): ?RecordedRequest
     {
         return $this->getRequestRecorder()->getRequest($index);
     }
 
+    /**
+     * Dump the last recorded request for debugging.
+     */
     public function dumpLastRequest(): void
     {
         $request = $this->getLastRequest();
@@ -65,14 +87,16 @@ trait AssertsRequests
             echo "  {$name}: {$displayValue}\n";
         }
 
-        if ($request->getBody()) {
+        $body = $request->getBody();
+        if ($body !== null && $body !== '') {
             echo "\nBody:\n";
-            echo $request->getBody() . "\n";
+            echo $body . "\n";
         }
 
-        if ($request->getJson()) {
+        $json = $request->getJson();
+        if ($json !== null) {
             echo "\nParsed JSON:\n";
-            print_r($request->getJson());
+            print_r($json);
         }
         echo "===================\n";
     }

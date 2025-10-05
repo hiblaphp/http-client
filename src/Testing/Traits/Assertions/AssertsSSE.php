@@ -6,18 +6,24 @@ use Hibla\Http\Testing\Exceptions\MockAssertionException;
 
 trait AssertsSSE
 {
+    /**
+     * @return array<int, \Hibla\Http\Testing\Utilities\RecordedRequest>
+     */
     abstract public function getRequestHistory(): array;
     abstract public function getLastRequest();
     abstract public function getRequest(int $index);
 
+    /**
+     * Assert that an SSE connection was made to the specified URL.
+     */
     public function assertSSEConnectionMade(string $url): void
     {
         foreach ($this->getRequestHistory() as $request) {
             if ($request->getUrl() === $url || fnmatch($url, $request->getUrl())) {
                 $accept = $request->getHeader('accept');
-                if ($accept && (
+                if ($accept !== null && (
                     (is_string($accept) && str_contains($accept, 'text/event-stream')) ||
-                    (is_array($accept) && in_array('text/event-stream', $accept))
+                    (is_array($accept) && in_array('text/event-stream', $accept, true))
                 )) {
                     return;
                 }
@@ -27,13 +33,16 @@ trait AssertsSSE
         throw new MockAssertionException("Expected SSE connection to {$url} was not made");
     }
 
+    /**
+     * Assert that no SSE connections were made.
+     */
     public function assertNoSSEConnections(): void
     {
         foreach ($this->getRequestHistory() as $request) {
             $accept = $request->getHeader('accept');
-            if ($accept && (
+            if ($accept !== null && (
                 (is_string($accept) && str_contains($accept, 'text/event-stream')) ||
-                (is_array($accept) && in_array('text/event-stream', $accept))
+                (is_array($accept) && in_array('text/event-stream', $accept, true))
             )) {
                 throw new MockAssertionException(
                     "Expected no SSE connections, but found connection to: {$request->getUrl()}"
@@ -42,6 +51,9 @@ trait AssertsSSE
         }
     }
 
+    /**
+     * Assert that the Last-Event-ID header matches the expected value.
+     */
     public function assertSSELastEventId(string $expectedId, ?int $requestIndex = null): void
     {
         $request = $requestIndex === null

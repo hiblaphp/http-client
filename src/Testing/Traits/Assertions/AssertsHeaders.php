@@ -9,6 +9,9 @@ trait AssertsHeaders
     abstract public function getLastRequest();
     abstract public function getRequest(int $index);
 
+    /**
+     * Assert that a specific header was sent in the request.
+     */
     public function assertHeaderSent(string $name, ?string $expectedValue = null, ?int $requestIndex = null): void
     {
         $request = $requestIndex === null
@@ -33,6 +36,9 @@ trait AssertsHeaders
         }
     }
 
+    /**
+     * Assert that a specific header was not sent in the request.
+     */
     public function assertHeaderNotSent(string $name, ?int $requestIndex = null): void
     {
         $request = $requestIndex === null
@@ -51,6 +57,11 @@ trait AssertsHeaders
         }
     }
 
+    /**
+     * Assert that multiple headers were sent in the request.
+     *
+     * @param array<string, string> $expectedHeaders
+     */
     public function assertHeadersSent(array $expectedHeaders, ?int $requestIndex = null): void
     {
         foreach ($expectedHeaders as $name => $value) {
@@ -58,6 +69,9 @@ trait AssertsHeaders
         }
     }
 
+    /**
+     * Assert that a specific header value matches a given pattern.
+     */
     public function assertHeaderMatches(string $name, string $pattern, ?int $requestIndex = null): void
     {
         $request = $requestIndex === null
@@ -80,21 +94,33 @@ trait AssertsHeaders
         }
     }
 
+    /**
+     * Assert that a Bearer token was sent in the request.
+     */
     public function assertBearerTokenSent(string $expectedToken, ?int $requestIndex = null): void
     {
         $this->assertHeaderSent('authorization', "Bearer {$expectedToken}", $requestIndex);
     }
 
+    /**
+     * Assert that the Content-Type header matches the expected value.
+     */
     public function assertContentType(string $expectedType, ?int $requestIndex = null): void
     {
         $this->assertHeaderSent('content-type', $expectedType, $requestIndex);
     }
 
+    /**
+     * Assert that the Accept header matches the expected value.
+     */
     public function assertAcceptHeader(string $expectedType, ?int $requestIndex = null): void
     {
         $this->assertHeaderSent('accept', $expectedType, $requestIndex);
     }
 
+    /**
+     * Assert that the User-Agent header matches the expected value.
+     */
     public function assertUserAgent(string $expectedUserAgent, ?int $requestIndex = null): void
     {
         $this->assertHeaderSent('user-agent', $expectedUserAgent, $requestIndex);
