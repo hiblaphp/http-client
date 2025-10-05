@@ -2,6 +2,7 @@
 
 namespace Hibla\Http\Testing;
 
+use Hibla\Http\Testing\Interfaces\MockRequestBuilderInterface;
 use Hibla\Http\Testing\Traits\RequestBuilder\BuildsBasicMocks;
 use Hibla\Http\Testing\Traits\RequestBuilder\BuildsRequestExpectations;
 use Hibla\Http\Testing\Traits\RequestBuilder\BuildsResponseHeaders;
@@ -13,7 +14,13 @@ use Hibla\Http\Testing\Traits\RequestBuilder\BuildsFileMocks;
 use Hibla\Http\Testing\Traits\RequestBuilder\BuildsCookieMocks;
 use Hibla\Http\Testing\Traits\RequestBuilder\BuildsSSERetrySequences;
 
-class MockRequestBuilder
+/**
+ * Builder for creating mocked HTTP requests with fluent API.
+ * 
+ * This class implements all mock building capabilities through traits
+ * and ensures compile-time verification via the MockRequestBuilderInterface.
+ */
+class MockRequestBuilder implements MockRequestBuilderInterface
 {
     use BuildsBasicMocks;
     use BuildsRequestExpectations;

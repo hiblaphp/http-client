@@ -11,7 +11,7 @@ trait BuildsCookieMocks
     /**
      * Configure the mock to set cookies via Set-Cookie headers.
      */
-    public function setCookies(array $cookies): self
+    public function setCookies(array $cookies): static
     {
         $cookieService = new CookieManager;
         $cookieService->mockSetCookies($this->getRequest(), $cookies);
@@ -30,7 +30,7 @@ trait BuildsCookieMocks
         bool $secure = false,
         bool $httpOnly = false,
         ?string $sameSite = null
-    ): self {
+    ): static {
         $config = compact('value', 'path', 'domain', 'expires', 'secure', 'httpOnly', 'sameSite');
         $config = array_filter($config, fn($v) => $v !== null);
 

@@ -9,7 +9,7 @@ trait BuildsResponseHeaders
     /**
      * Add a response header.
      */
-    public function respondWithHeader(string $name, string $value): self
+    public function respondWithHeader(string $name, string $value): static
     {
         $this->getRequest()->addResponseHeader($name, $value);
         return $this;
@@ -18,7 +18,7 @@ trait BuildsResponseHeaders
     /**
      * Add multiple response headers.
      */
-    public function respondWithHeaders(array $headers): self
+    public function respondWithHeaders(array $headers): static
     {
         foreach ($headers as $name => $value) {
             $this->respondWithHeader($name, $value);
@@ -29,7 +29,7 @@ trait BuildsResponseHeaders
     /**
      * Set a sequence of body chunks to simulate streaming.
      */
-    public function respondWithChunks(array $chunks): self
+    public function respondWithChunks(array $chunks): static
     {
         $this->getRequest()->setBodySequence($chunks);
         return $this;

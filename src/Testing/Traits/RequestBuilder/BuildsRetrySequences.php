@@ -8,13 +8,13 @@ trait BuildsRetrySequences
 {
     abstract protected function getRequest();
     abstract protected function getHandler();
-    abstract public function respondWithStatus(int $status): self;
-    abstract public function respondJson(array $data): self;
+    abstract public function respondWithStatus(int $status): static;
+    abstract public function respondJson(array $data): static;
 
     /**
      * Create multiple mocks that fail until the specified attempt succeeds.
      */
-    public function failUntilAttempt(int $successAttempt, string $failureError = 'Connection failed'): self
+    public function failUntilAttempt(int $successAttempt, string $failureError = 'Connection failed'): static
     {
         if ($successAttempt < 1) {
             throw new \InvalidArgumentException('Success attempt must be >= 1');
@@ -27,7 +27,7 @@ trait BuildsRetrySequences
         }
 
         $this->respondWithStatus(200);
-        if (empty($this->getRequest()->getBody())) {
+        if ($this->getRequest()->getBody() === '') {
             $this->respondJson(['success' => true, 'attempt' => $successAttempt]);
         }
 
@@ -36,15 +36,19 @@ trait BuildsRetrySequences
 
     /**
      * Create multiple mocks with different failure types until success.
+     * 
+     * @param array<int, string|array{error?: string, retryable?: bool, delay?: float, status?: int}> $failures
+     * @param string|array<string, mixed>|null $successResponse
      */
-    public function failWithSequence(array $failures, string|array|null $successResponse = null): self
+    public function failWithSequence(array $failures, string|array|null $successResponse = null): static
     {
         foreach ($failures as $index => $failure) {
             $attemptNumber = $index + 1;
 
             $mock = new MockedRequest($this->getRequest()->method);
-            if ($this->getRequest()->urlPattern) {
-                $mock->setUrlPattern($this->getRequest()->urlPattern);
+            $urlPattern = $this->getRequest()->urlPattern;
+            if ($urlPattern !== null && $urlPattern !== '') {
+                $mock->setUrlPattern($urlPattern);
             }
 
             if (is_string($failure)) {
@@ -58,7 +62,10 @@ trait BuildsRetrySequences
 
                 if ($statusCode !== null) {
                     $mock->setStatusCode($statusCode);
-                    $mock->setBody(json_encode(['error' => $error]));
+                    $body = json_encode(['error' => $error]);
+                    if ($body !== false) {
+                        $mock->setBody($body);
+                    }
                     $mock->addResponseHeader('Content-Type', 'application/json');
                 } else {
                     $mock->setError($error . " (attempt {$attemptNumber})");
@@ -75,7 +82,7 @@ trait BuildsRetrySequences
             if (is_array($successResponse)) {
                 $this->respondJson($successResponse);
             } else {
-                $this->respondWith((string) $successResponse);
+                $this->respondWith($successResponse);
             }
         } else {
             $this->respondJson(['success' => true, 'attempt' => count($failures) + 1]);
@@ -87,18 +94,21 @@ trait BuildsRetrySequences
     /**
      * Create timeout failures until success.
      */
-    public function timeoutUntilAttempt(int $successAttempt, float $timeoutAfter = 5.0): self
+    public function timeoutUntilAttempt(int $successAttempt, float $timeoutAfter = 5.0): static
     {
         for ($i = 1; $i < $successAttempt; $i++) {
             $mock = new MockedRequest($this->getRequest()->method ?? '*');
-            $mock->setUrlPattern($this->getRequest()->urlPattern);
+            $urlPattern = $this->getRequest()->urlPattern;
+            if ($urlPattern !== null) {
+                $mock->setUrlPattern($urlPattern);
+            }
             $mock->setTimeout($timeoutAfter);
             $mock->setRetryable(true);
             $this->getHandler()->addMockedRequest($mock);
         }
 
         $this->respondWithStatus(200);
-        if (empty($this->getRequest()->getBody())) {
+        if ($this->getRequest()->getBody() === '') {
             $this->respondJson(['success' => true, 'attempt' => $successAttempt, 'message' => 'Success after timeouts']);
         }
 
@@ -108,16 +118,22 @@ trait BuildsRetrySequences
     /**
      * Create HTTP status code failures until success.
      */
-    public function statusFailuresUntilAttempt(int $successAttempt, int $failureStatus = 500): self
+    public function statusFailuresUntilAttempt(int $successAttempt, int $failureStatus = 500): static
     {
         for ($i = 1; $i < $successAttempt; $i++) {
             $mock = new MockedRequest($this->getRequest()->method ?? '*');
-            $mock->setUrlPattern($this->getRequest()->urlPattern);
+            $urlPattern = $this->getRequest()->urlPattern;
+            if ($urlPattern !== null) {
+                $mock->setUrlPattern($urlPattern);
+            }
             $mock->setStatusCode($failureStatus);
-            $mock->setBody(json_encode(['error' => "Server error on attempt {$i}"]));
+            $body = json_encode(['error' => "Server error on attempt {$i}"]);
+            if ($body !== false) {
+                $mock->setBody($body);
+            }
             $mock->addResponseHeader('Content-Type', 'application/json');
 
-            if (in_array($failureStatus, [408, 429, 500, 502, 503, 504])) {
+            if (in_array($failureStatus, [408, 429, 500, 502, 503, 504], true)) {
                 $mock->setRetryable(true);
             }
 
@@ -125,7 +141,7 @@ trait BuildsRetrySequences
         }
 
         $this->respondWithStatus(200);
-        if (empty($this->getRequest()->getBody())) {
+        if ($this->getRequest()->getBody() === '') {
             $this->respondJson(['success' => true, 'attempt' => $successAttempt]);
         }
 
@@ -135,7 +151,7 @@ trait BuildsRetrySequences
     /**
      * Create a mixed sequence of different failure types.
      */
-    public function mixedFailuresUntilAttempt(int $successAttempt): self
+    public function mixedFailuresUntilAttempt(int $successAttempt): static
     {
         $failureTypes = ['timeout', 'connection', 'dns', 'ssl'];
 
@@ -143,7 +159,10 @@ trait BuildsRetrySequences
             $failureType = $failureTypes[($i - 1) % count($failureTypes)];
 
             $mock = new MockedRequest($this->getRequest()->method ?? '*');
-            $mock->setUrlPattern($this->getRequest()->urlPattern);
+            $urlPattern = $this->getRequest()->urlPattern;
+            if ($urlPattern !== null) {
+                $mock->setUrlPattern($urlPattern);
+            }
 
             switch ($failureType) {
                 case 'timeout':
@@ -167,7 +186,7 @@ trait BuildsRetrySequences
         }
 
         $this->respondWithStatus(200);
-        if (empty($this->getRequest()->getBody())) {
+        if ($this->getRequest()->getBody() === '') {
             $this->respondJson([
                 'success' => true,
                 'attempt' => $successAttempt,
@@ -180,20 +199,28 @@ trait BuildsRetrySequences
 
     /**
      * Create intermittent failures (some succeed, some fail).
+     * 
+     * @param array<int, bool> $pattern Array of booleans (true = fail, false = succeed)
      */
-    public function intermittentFailures(array $pattern): self
+    public function intermittentFailures(array $pattern): static
     {
         foreach ($pattern as $index => $shouldFail) {
             $attemptNumber = $index + 1;
             $mock = new MockedRequest($this->getRequest()->method ?? '*');
-            $mock->setUrlPattern($this->getRequest()->urlPattern);
+            $urlPattern = $this->getRequest()->urlPattern;
+            if ($urlPattern !== null) {
+                $mock->setUrlPattern($urlPattern);
+            }
 
             if ($shouldFail) {
                 $mock->setError("Intermittent failure on attempt {$attemptNumber}");
                 $mock->setRetryable(true);
             } else {
                 $mock->setStatusCode(200);
-                $mock->setBody(json_encode(['success' => true, 'attempt' => $attemptNumber]));
+                $body = json_encode(['success' => true, 'attempt' => $attemptNumber]);
+                if ($body !== false) {
+                    $mock->setBody($body);
+                }
                 $mock->addResponseHeader('Content-Type', 'application/json');
             }
 
@@ -204,5 +231,5 @@ trait BuildsRetrySequences
     }
 
     abstract protected function createFailureMock(string $error, bool $retryable): MockedRequest;
-    abstract public function respondWith(string $body): self;
+    abstract public function respondWith(string $body): static;
 }

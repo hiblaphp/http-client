@@ -8,27 +8,36 @@ trait BuildsAdvancedScenarios
 {
     abstract protected function getRequest();
     abstract protected function getHandler();
-    abstract public function respondWithStatus(int $status): self;
-    abstract public function respondJson(array $data): self;
+    abstract public function respondWithStatus(int $status): static;
+    abstract public function respondJson(array $data): static;
 
     /**
      * Create gradually improving response times (simulate network recovery).
      */
-    public function slowlyImproveUntilAttempt(int $successAttempt, float $maxDelay = 10.0): self
+    public function slowlyImproveUntilAttempt(int $successAttempt, float $maxDelay = 10.0): static
     {
         for ($i = 1; $i < $successAttempt; $i++) {
             $delay = $maxDelay * (($successAttempt - $i) / ($successAttempt - 1));
 
             if ($delay > 5.0) {
                 $mock = new MockedRequest($this->getRequest()->method ?? '*');
-                $mock->setUrlPattern($this->getRequest()->urlPattern);
+                $urlPattern = $this->getRequest()->urlPattern;
+                if ($urlPattern !== null) {
+                    $mock->setUrlPattern($urlPattern);
+                }
                 $mock->setTimeout($delay);
                 $mock->setRetryable(true);
             } else {
                 $mock = new MockedRequest($this->getRequest()->method ?? '*');
-                $mock->setUrlPattern($this->getRequest()->urlPattern);
+                $urlPattern = $this->getRequest()->urlPattern;
+                if ($urlPattern !== null) {
+                    $mock->setUrlPattern($urlPattern);
+                }
                 $mock->setStatusCode(200);
-                $mock->setBody(json_encode(['attempt' => $i, 'delay' => $delay, 'status' => 'slow']));
+                $body = json_encode(['attempt' => $i, 'delay' => $delay, 'status' => 'slow']);
+                if ($body !== false) {
+                    $mock->setBody($body);
+                }
                 $mock->setDelay($delay);
             }
 
@@ -44,17 +53,23 @@ trait BuildsAdvancedScenarios
     /**
      * Simulate rate limiting with exponential backoff.
      */
-    public function rateLimitedUntilAttempt(int $successAttempt): self
+    public function rateLimitedUntilAttempt(int $successAttempt): static
     {
         for ($i = 1; $i < $successAttempt; $i++) {
             $mock = new MockedRequest($this->getRequest()->method ?? '*');
-            $mock->setUrlPattern($this->getRequest()->urlPattern);
+            $urlPattern = $this->getRequest()->urlPattern;
+            if ($urlPattern !== null) {
+                $mock->setUrlPattern($urlPattern);
+            }
             $mock->setStatusCode(429);
-            $mock->setBody(json_encode([
+            $body = json_encode([
                 'error' => 'Too Many Requests',
                 'retry_after' => pow(2, $i),
                 'attempt' => $i,
-            ]));
+            ]);
+            if ($body !== false) {
+                $mock->setBody($body);
+            }
             $mock->addResponseHeader('Content-Type', 'application/json');
             $mock->addResponseHeader('Retry-After', (string) pow(2, $i));
             $mock->setRetryable(true);
@@ -63,7 +78,7 @@ trait BuildsAdvancedScenarios
         }
 
         $this->respondWithStatus(200);
-        if (empty($this->getRequest()->getBody())) {
+        if ($this->getRequest()->getBody() === '') {
             $this->respondJson(['success' => true, 'attempt' => $successAttempt, 'message' => 'Rate limit cleared']);
         }
 

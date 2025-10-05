@@ -11,7 +11,7 @@ trait BuildsFailureMocks
     /**
      * Make the mock fail with an error.
      */
-    public function fail(string $error = 'Mocked request failure'): self
+    public function fail(string $error = 'Mocked request failure'): static
     {
         $this->getRequest()->setError($error);
         return $this;
@@ -20,7 +20,7 @@ trait BuildsFailureMocks
     /**
      * Simulate a timeout failure.
      */
-    public function timeout(float $seconds = 30.0): self
+    public function timeout(float $seconds = 30.0): static
     {
         $this->getRequest()->setTimeout($seconds);
         return $this;
@@ -29,9 +29,9 @@ trait BuildsFailureMocks
     /**
      * Simulate a timeout failure that can be retried.
      */
-    public function timeoutFailure(float $timeoutAfter = 30.0, ?string $customMessage = null): self
+    public function timeoutFailure(float $timeoutAfter = 30.0, ?string $customMessage = null): static
     {
-        if ($customMessage) {
+        if ($customMessage !== null && $customMessage !== '') {
             $this->getRequest()->setError($customMessage);
         } else {
             $this->getRequest()->setTimeout($timeoutAfter);
@@ -43,7 +43,7 @@ trait BuildsFailureMocks
     /**
      * Simulate a retryable failure.
      */
-    public function retryableFailure(string $error = 'Connection failed'): self
+    public function retryableFailure(string $error = 'Connection failed'): static
     {
         $this->getRequest()->setError($error);
         $this->getRequest()->setRetryable(true);
@@ -53,7 +53,7 @@ trait BuildsFailureMocks
     /**
      * Simulate a network error.
      */
-    public function networkError(string $errorType = 'connection'): self
+    public function networkError(string $errorType = 'connection'): static
     {
         $errors = [
             'connection' => 'Connection failed',
@@ -74,8 +74,9 @@ trait BuildsFailureMocks
     protected function createFailureMock(string $error, bool $retryable): MockedRequest
     {
         $mock = new MockedRequest($this->getRequest()->method ?? '*');
-        if ($this->getRequest()->urlPattern) {
-            $mock->setUrlPattern($this->getRequest()->urlPattern);
+        $urlPattern = $this->getRequest()->urlPattern;
+        if ($urlPattern !== null && $urlPattern !== '') {
+            $mock->setUrlPattern($urlPattern);
         }
         $mock->setError($error);
         $mock->setRetryable($retryable);

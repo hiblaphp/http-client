@@ -8,21 +8,21 @@ trait BuildsSSERetrySequences
 {
     abstract protected function getRequest(): MockedRequest;
     abstract protected function getHandler();
-    abstract public function respondWithSSE(array $events): self;
-    abstract public function addSSEEvent(?string $data = null, ?string $event = null, ?string $id = null, ?int $retry = null): self;
+    abstract public function respondWithSSE(array $events): static;
+    abstract public function addSSEEvent(?string $data = null, ?string $event = null, ?string $id = null, ?int $retry = null): static;
 
     /**
      * SSE connection that fails until the specified attempt succeeds.
      *
      * @param int $successAttempt The attempt number that should succeed (1-based)
-     * @param array $successEvents Events to send on successful connection
+     * @param array<int, array{data?: string, event?: string, id?: string, retry?: int}> $successEvents Events to send on successful connection
      * @param string $failureError Error message for failed attempts
      */
     public function sseFailUntilAttempt(
         int $successAttempt,
         array $successEvents = [],
         string $failureError = 'SSE Connection failed'
-    ): self {
+    ): static {
         if ($successAttempt < 1) {
             throw new \InvalidArgumentException('Success attempt must be >= 1');
         }
@@ -35,11 +35,14 @@ trait BuildsSSERetrySequences
 
         // Configure the final successful response
         $this->respondWithSSE($successEvents);
-        if (empty($successEvents)) {
-            $this->addSSEEvent(
-                data: json_encode(['success' => true, 'attempt' => $successAttempt]),
-                event: 'message'
-            );
+        if ($successEvents === []) {
+            $data = json_encode(['success' => true, 'attempt' => $successAttempt]);
+            if ($data !== false) {
+                $this->addSSEEvent(
+                    data: $data,
+                    event: 'message'
+                );
+            }
         }
 
         return $this;
@@ -48,16 +51,19 @@ trait BuildsSSERetrySequences
     /**
      * SSE connection with a sequence of different failure types.
      *
-     * @param array $failures Array of failure specifications (strings or arrays with 'error', 'retryable', 'delay')
-     * @param array $successEvents Events to send on final successful connection
+     * @param array<int, string|array{error?: string, retryable?: bool, delay?: float}> $failures Array of failure specifications
+     * @param array<int, array{data?: string, event?: string, id?: string, retry?: int}> $successEvents Events to send on final successful connection
      */
-    public function sseFailWithSequence(array $failures, array $successEvents = []): self
+    public function sseFailWithSequence(array $failures, array $successEvents = []): static
     {
         foreach ($failures as $index => $failure) {
             $attemptNumber = $index + 1;
 
             $mock = new MockedRequest($this->getRequest()->getMethod());
-            $mock->setUrlPattern($this->getRequest()->getUrlPattern());
+            $urlPattern = $this->getRequest()->getUrlPattern();
+            if ($urlPattern !== null) {
+                $mock->setUrlPattern($urlPattern);
+            }
             $mock->asSSE();
             $mock->addResponseHeader('Content-Type', 'text/event-stream');
             $mock->addResponseHeader('Cache-Control', 'no-cache');
@@ -82,15 +88,18 @@ trait BuildsSSERetrySequences
 
         // Configure the final successful response
         $this->respondWithSSE($successEvents);
-        if (empty($successEvents)) {
-            $this->addSSEEvent(
-                data: json_encode([
-                    'success' => true,
-                    'attempt' => count($failures) + 1,
-                    'message' => 'SSE connection established'
-                ]),
-                event: 'connected'
-            );
+        if ($successEvents === []) {
+            $data = json_encode([
+                'success' => true,
+                'attempt' => count($failures) + 1,
+                'message' => 'SSE connection established'
+            ]);
+            if ($data !== false) {
+                $this->addSSEEvent(
+                    data: $data,
+                    event: 'connected'
+                );
+            }
         }
 
         return $this;
@@ -100,17 +109,20 @@ trait BuildsSSERetrySequences
      * SSE connection that times out until success.
      *
      * @param int $successAttempt The attempt number that should succeed
-     * @param array $successEvents Events to send on successful connection
+     * @param array<int, array{data?: string, event?: string, id?: string, retry?: int}> $successEvents Events to send on successful connection
      * @param float $timeoutAfter Timeout duration in seconds
      */
     public function sseTimeoutUntilAttempt(
         int $successAttempt,
         array $successEvents = [],
         float $timeoutAfter = 5.0
-    ): self {
+    ): static {
         for ($i = 1; $i < $successAttempt; $i++) {
             $mock = new MockedRequest($this->getRequest()->getMethod());
-            $mock->setUrlPattern($this->getRequest()->getUrlPattern());
+            $urlPattern = $this->getRequest()->getUrlPattern();
+            if ($urlPattern !== null) {
+                $mock->setUrlPattern($urlPattern);
+            }
             $mock->asSSE();
             $mock->setTimeout($timeoutAfter);
             $mock->setRetryable(true);
@@ -122,15 +134,18 @@ trait BuildsSSERetrySequences
         }
 
         $this->respondWithSSE($successEvents);
-        if (empty($successEvents)) {
-            $this->addSSEEvent(
-                data: json_encode([
-                    'success' => true,
-                    'attempt' => $successAttempt,
-                    'message' => 'SSE connection established after timeouts'
-                ]),
-                event: 'connected'
-            );
+        if ($successEvents === []) {
+            $data = json_encode([
+                'success' => true,
+                'attempt' => $successAttempt,
+                'message' => 'SSE connection established after timeouts'
+            ]);
+            if ($data !== false) {
+                $this->addSSEEvent(
+                    data: $data,
+                    event: 'connected'
+                );
+            }
         }
 
         return $this;
@@ -139,14 +154,17 @@ trait BuildsSSERetrySequences
     /**
      * SSE connection with intermittent failures.
      *
-     * @param array $pattern Array of booleans (true = fail, false = succeed)
+     * @param array<int, bool> $pattern Array of booleans (true = fail, false = succeed)
      */
-    public function sseIntermittentFailures(array $pattern): self
+    public function sseIntermittentFailures(array $pattern): static
     {
         foreach ($pattern as $index => $shouldFail) {
             $attemptNumber = $index + 1;
             $mock = new MockedRequest($this->getRequest()->getMethod());
-            $mock->setUrlPattern($this->getRequest()->getUrlPattern());
+            $urlPattern = $this->getRequest()->getUrlPattern();
+            if ($urlPattern !== null) {
+                $mock->setUrlPattern($urlPattern);
+            }
             $mock->asSSE();
             $mock->addResponseHeader('Content-Type', 'text/event-stream');
             $mock->addResponseHeader('Cache-Control', 'no-cache');
@@ -157,14 +175,17 @@ trait BuildsSSERetrySequences
                 $mock->setRetryable(true);
                 $mock->setDelay(0.1);
             } else {
-                $mock->addSSEEvent([
-                    'data' => json_encode([
-                        'success' => true,
-                        'attempt' => $attemptNumber,
-                        'status' => 'connected'
-                    ]),
-                    'event' => 'message',
+                $data = json_encode([
+                    'success' => true,
+                    'attempt' => $attemptNumber,
+                    'status' => 'connected'
                 ]);
+                if ($data !== false) {
+                    $mock->addSSEEvent([
+                        'data' => $data,
+                        'event' => 'message',
+                    ]);
+                }
             }
 
             $this->getHandler()->addMockedRequest($mock);
@@ -177,12 +198,12 @@ trait BuildsSSERetrySequences
      * SSE connection with network error types until success.
      *
      * @param int $successAttempt The attempt number that should succeed
-     * @param array $successEvents Events to send on successful connection
+     * @param array<int, array{data?: string, event?: string, id?: string, retry?: int}> $successEvents Events to send on successful connection
      */
     public function sseNetworkErrorsUntilAttempt(
         int $successAttempt,
         array $successEvents = []
-    ): self {
+    ): static {
         $errorTypes = [
             'Connection refused',
             'Connection reset',
@@ -199,15 +220,18 @@ trait BuildsSSERetrySequences
         }
 
         $this->respondWithSSE($successEvents);
-        if (empty($successEvents)) {
-            $this->addSSEEvent(
-                data: json_encode([
-                    'success' => true,
-                    'attempt' => $successAttempt,
-                    'message' => 'Network recovered, SSE connected'
-                ]),
-                event: 'connected'
-            );
+        if ($successEvents === []) {
+            $data = json_encode([
+                'success' => true,
+                'attempt' => $successAttempt,
+                'message' => 'Network recovered, SSE connected'
+            ]);
+            if ($data !== false) {
+                $this->addSSEEvent(
+                    data: $data,
+                    event: 'connected'
+                );
+            }
         }
 
         return $this;
@@ -217,20 +241,23 @@ trait BuildsSSERetrySequences
      * SSE connection that gradually improves (simulates network recovery).
      *
      * @param int $successAttempt The attempt number that should succeed
-     * @param array $successEvents Events to send on successful connection
+     * @param array<int, array{data?: string, event?: string, id?: string, retry?: int}> $successEvents Events to send on successful connection
      * @param float $maxDelay Maximum delay for worst connection
      */
     public function sseSlowlyImproveUntilAttempt(
         int $successAttempt,
         array $successEvents = [],
         float $maxDelay = 10.0
-    ): self {
+    ): static {
         for ($i = 1; $i < $successAttempt; $i++) {
             // Calculate delay with exponential improvement
             $delay = $maxDelay * (($successAttempt - $i) / ($successAttempt - 1));
 
             $mock = new MockedRequest($this->getRequest()->getMethod());
-            $mock->setUrlPattern($this->getRequest()->getUrlPattern());
+            $urlPattern = $this->getRequest()->getUrlPattern();
+            if ($urlPattern !== null) {
+                $mock->setUrlPattern($urlPattern);
+            }
             $mock->asSSE();
             $mock->addResponseHeader('Content-Type', 'text/event-stream');
             $mock->addResponseHeader('Cache-Control', 'no-cache');
@@ -243,29 +270,35 @@ trait BuildsSSERetrySequences
             } else {
                 // Moderate delay = slow connection with some data
                 $mock->setDelay($delay);
-                $mock->addSSEEvent([
-                    'data' => json_encode([
-                        'attempt' => $i,
-                        'delay' => round($delay, 2),
-                        'status' => 'slow_connection'
-                    ]),
-                    'event' => 'message',
+                $data = json_encode([
+                    'attempt' => $i,
+                    'delay' => round($delay, 2),
+                    'status' => 'slow_connection'
                 ]);
+                if ($data !== false) {
+                    $mock->addSSEEvent([
+                        'data' => $data,
+                        'event' => 'message',
+                    ]);
+                }
             }
 
             $this->getHandler()->addMockedRequest($mock);
         }
 
         $this->respondWithSSE($successEvents);
-        if (empty($successEvents)) {
-            $this->addSSEEvent(
-                data: json_encode([
-                    'success' => true,
-                    'attempt' => $successAttempt,
-                    'message' => 'Network fully recovered'
-                ]),
-                event: 'connected'
-            );
+        if ($successEvents === []) {
+            $data = json_encode([
+                'success' => true,
+                'attempt' => $successAttempt,
+                'message' => 'Network fully recovered'
+            ]);
+            if ($data !== false) {
+                $this->addSSEEvent(
+                    data: $data,
+                    event: 'connected'
+                );
+            }
         }
 
         return $this;
@@ -274,7 +307,7 @@ trait BuildsSSERetrySequences
     /**
      * SSE connection that drops after receiving some events (then needs reconnection).
      *
-     * @param array $eventsBeforeDrop Events to send before dropping connection
+     * @param array<int, array{data?: string, event?: string, id?: string, retry?: int}> $eventsBeforeDrop Events to send before dropping connection
      * @param string $dropError Error message when connection drops
      * @param bool $retryable Whether the error is retryable
      */
@@ -282,7 +315,7 @@ trait BuildsSSERetrySequences
         array $eventsBeforeDrop,
         string $dropError = 'Connection lost',
         bool $retryable = true
-    ): self {
+    ): static {
         $this->respondWithSSE($eventsBeforeDrop);
         $this->getRequest()->setError($dropError);
         $this->getRequest()->setRetryable($retryable);
@@ -294,12 +327,12 @@ trait BuildsSSERetrySequences
      * SSE reconnection scenario: mock resumption from a specific event ID.
      *
      * @param string $lastEventId The last event ID received by client
-     * @param array $eventsAfterResume Events to send after resuming
+     * @param array<int, array{data?: string, event?: string, id?: string, retry?: int}> $eventsAfterResume Events to send after resuming
      */
     public function sseReconnectFromEventId(
         string $lastEventId,
         array $eventsAfterResume
-    ): self {
+    ): static {
         $this->getRequest()->addHeaderMatcher('Last-Event-ID', $lastEventId); 
         $this->respondWithSSE($eventsAfterResume);
 
@@ -311,7 +344,7 @@ trait BuildsSSERetrySequences
      *
      * @param int $successAttempt The attempt number that should succeed
      */
-    public function sseMixedFailuresUntilAttempt(int $successAttempt): self
+    public function sseMixedFailuresUntilAttempt(int $successAttempt): static
     {
         $failureTypes = [
             ['type' => 'timeout', 'delay' => 5.0],
@@ -324,7 +357,10 @@ trait BuildsSSERetrySequences
             $failureType = $failureTypes[($i - 1) % count($failureTypes)];
 
             $mock = new MockedRequest($this->getRequest()->getMethod());
-            $mock->setUrlPattern($this->getRequest()->getUrlPattern());
+            $urlPattern = $this->getRequest()->getUrlPattern();
+            if ($urlPattern !== null) {
+                $mock->setUrlPattern($urlPattern);
+            }
             $mock->asSSE();
             $mock->addResponseHeader('Content-Type', 'text/event-stream');
             $mock->addResponseHeader('Cache-Control', 'no-cache');
@@ -343,14 +379,17 @@ trait BuildsSSERetrySequences
         }
 
         $this->respondWithSSE([]);
-        $this->addSSEEvent(
-            data: json_encode([
-                'success' => true,
-                'attempt' => $successAttempt,
-                'message' => 'Success after mixed failures',
-            ]),
-            event: 'connected'
-        );
+        $data = json_encode([
+            'success' => true,
+            'attempt' => $successAttempt,
+            'message' => 'Success after mixed failures',
+        ]);
+        if ($data !== false) {
+            $this->addSSEEvent(
+                data: $data,
+                event: 'connected'
+            );
+        }
 
         return $this;
     }
@@ -359,24 +398,30 @@ trait BuildsSSERetrySequences
      * SSE with rate limiting (429 status) until success.
      *
      * @param int $successAttempt The attempt number that should succeed
-     * @param array $successEvents Events to send on successful connection
+     * @param array<int, array{data?: string, event?: string, id?: string, retry?: int}> $successEvents Events to send on successful connection
      */
     public function sseRateLimitedUntilAttempt(
         int $successAttempt,
         array $successEvents = []
-    ): self {
+    ): static {
         for ($i = 1; $i < $successAttempt; $i++) {
             $retryAfter = pow(2, $i - 1); // Exponential backoff
 
             $mock = new MockedRequest($this->getRequest()->getMethod());
-            $mock->setUrlPattern($this->getRequest()->getUrlPattern());
+            $urlPattern = $this->getRequest()->getUrlPattern();
+            if ($urlPattern !== null) {
+                $mock->setUrlPattern($urlPattern);
+            }
             $mock->asSSE();
             $mock->setStatusCode(429);
-            $mock->setBody(json_encode([
+            $body = json_encode([
                 'error' => 'Too Many Requests',
                 'retry_after' => $retryAfter,
                 'attempt' => $i,
-            ]));
+            ]);
+            if ($body !== false) {
+                $mock->setBody($body);
+            }
             $mock->addResponseHeader('Content-Type', 'application/json');
             $mock->addResponseHeader('Retry-After', (string) $retryAfter);
             $mock->setRetryable(true);
@@ -386,15 +431,18 @@ trait BuildsSSERetrySequences
         }
 
         $this->respondWithSSE($successEvents);
-        if (empty($successEvents)) {
-            $this->addSSEEvent(
-                data: json_encode([
-                    'success' => true,
-                    'attempt' => $successAttempt,
-                    'message' => 'Rate limit cleared'
-                ]),
-                event: 'connected'
-            );
+        if ($successEvents === []) {
+            $data = json_encode([
+                'success' => true,
+                'attempt' => $successAttempt,
+                'message' => 'Rate limit cleared'
+            ]);
+            if ($data !== false) {
+                $this->addSSEEvent(
+                    data: $data,
+                    event: 'connected'
+                );
+            }
         }
 
         return $this;
@@ -409,7 +457,10 @@ trait BuildsSSERetrySequences
     protected function createSSEFailureMock(string $error): MockedRequest
     {
         $mock = new MockedRequest($this->getRequest()->getMethod());
-        $mock->setUrlPattern($this->getRequest()->getUrlPattern());
+        $urlPattern = $this->getRequest()->getUrlPattern();
+        if ($urlPattern !== null) {
+            $mock->setUrlPattern($urlPattern);
+        }
         $mock->asSSE();
         $mock->setError($error);
         $mock->setRetryable(true);
