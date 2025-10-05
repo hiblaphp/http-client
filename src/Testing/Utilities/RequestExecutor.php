@@ -46,8 +46,8 @@ class RequestExecutor
     }
 
     /**
-     * @param array<int, mixed> $curlOptions
-     * @param array<int, MockedRequest> $mockedRequests
+     * @param array<int|string, mixed> $curlOptions
+     * @param list<MockedRequest> $mockedRequests
      * @param array<string, mixed> $globalSettings
      * @return PromiseInterface<Response>
      */
@@ -60,7 +60,10 @@ class RequestExecutor
         ?RetryConfig $retryConfig = null,
         ?callable $parentSendRequest = null
     ): PromiseInterface {
-        if ($this->isSSERequest($curlOptions)) {
+        /** @var array<int, mixed> $curlOnlyOptions */
+        $curlOnlyOptions = array_filter($curlOptions, 'is_int', ARRAY_FILTER_USE_KEY);
+
+        if ($this->isSSERequest($curlOnlyOptions)) {
             throw new \InvalidArgumentException(
                 'SSE requests should use $http->request()->sse() or $http->sse() directly, not send() or get()/post() methods'
             );
@@ -76,39 +79,37 @@ class RequestExecutor
             $mockedRequests,
             $method,
             $url,
-            $curlOptions
+            $curlOnlyOptions
         );
 
         if ($matchedMock === null) {
-            if ($globalSettings['throw_on_unexpected'] ?? true) {
+            if ((bool)($globalSettings['throw_on_unexpected'] ?? true)) {
                 throw UnexpectedRequestException::noMatchFound(
                     $method,
                     $url,
-                    $curlOptions,
+                    $curlOnlyOptions,
                     $mockedRequests
                 );
             }
 
-            if ($globalSettings['allow_passthrough'] ?? false) {
+            if ((bool)($globalSettings['allow_passthrough'] ?? false)) {
                 if ($parentSendRequest === null) {
                     throw new \RuntimeException('No parent send request handler available');
                 }
+                /** @var PromiseInterface<Response> $result */
                 $result = $parentSendRequest($url, $curlOptions, $cacheConfig, $retryConfig);
-                if (!$result instanceof PromiseInterface) {
-                    throw new \RuntimeException('Parent send request must return PromiseInterface');
-                }
                 return $result;
             }
 
             throw UnexpectedRequestException::noMatchFound(
                 $method,
                 $url,
-                $curlOptions,
+                $curlOnlyOptions,
                 $mockedRequests
             );
         }
 
-        if ($this->tryServeFromCache($url, $method, $cacheConfig)) {
+        if ($cacheConfig !== null && $this->tryServeFromCache($url, $method, $cacheConfig)) {
             $cachedResponse = $this->cacheManager->getCachedResponse($url, $cacheConfig);
             if ($cachedResponse === null) {
                 throw new \RuntimeException('Cache indicated response available but returned null');
@@ -116,6 +117,7 @@ class RequestExecutor
             return Promise::resolved($cachedResponse);
         }
 
+        /** @var PromiseInterface<Response> $promise */
         $promise = $this->executeMockedRequest(
             $url,
             $curlOptions,
@@ -125,25 +127,32 @@ class RequestExecutor
             $parentSendRequest
         );
 
-        $promise = $promise->then(function ($response) use ($curlOptions, $url, $cacheConfig, $method) {
-            if ($response instanceof Response) {
-                $this->cookieManager->processResponseCookiesForOptions($response->getHeaders(), $curlOptions, $url);
+        return $promise->then(function (Response $response) use ($curlOptions, $url, $cacheConfig, $method) {
+            $rawHeaders = $response->getHeaders();
 
-                if ($cacheConfig !== null && $method === 'GET' && $response->ok()) {
-                    $this->cacheManager->cacheResponse($url, $response, $cacheConfig);
+            // Transform headers: ensure each value is an array with string key
+            $transformedHeaders = [];
+            foreach ($rawHeaders as $key => $value) {
+                if (is_string($key)) {
+                    $transformedHeaders[$key] = is_array($value) ? $value : [$value];
                 }
+            }
+
+            $this->cookieManager->processResponseCookiesForOptions($transformedHeaders, $curlOptions, $url);
+
+            if ($cacheConfig !== null && $method === 'GET' && $response->ok()) {
+                $this->cacheManager->cacheResponse($url, $response, $cacheConfig);
             }
 
             return $response;
         });
-
-        return $promise;
     }
 
     /**
      * @param array<int, mixed> $curlOptions
-     * @param array<int, MockedRequest> $mockedRequests
+     * @param list<MockedRequest> $mockedRequests
      * @param array<string, mixed> $globalSettings
+     * @param mixed $reconnectConfig
      * @return CancellablePromiseInterface<\Hibla\Http\SSE\SSEResponse>
      */
     public function executeSSE(
@@ -154,11 +163,11 @@ class RequestExecutor
         ?callable $onEvent = null,
         ?callable $onError = null,
         ?callable $parentSSE = null,
-        mixed $reconnectConfig = null
+        $reconnectConfig = null
     ): CancellablePromiseInterface {
         $method = 'GET';
 
-        if ($reconnectConfig !== null && is_object($reconnectConfig) && property_exists($reconnectConfig, 'enabled') && $reconnectConfig->enabled) {
+        if ($reconnectConfig instanceof \Hibla\Http\SSE\SSEReconnectConfig && $reconnectConfig->enabled) {
             return $this->executeSSEWithRetry(
                 $url,
                 $curlOptions,
@@ -183,10 +192,6 @@ class RequestExecutor
         if ($match !== null) {
             $mock = $match['mock'];
 
-            if (!$mock instanceof MockedRequest) {
-                throw new \RuntimeException('Mock must be an instance of MockedRequest');
-            }
-
             if (!$mock->isPersistent()) {
                 array_splice($mockedRequests, $match['index'], 1);
             }
@@ -201,7 +206,7 @@ class RequestExecutor
             );
         }
 
-        if ($globalSettings['strict_matching'] ?? true) {
+        if ((bool)($globalSettings['strict_matching'] ?? true)) {
             throw UnexpectedRequestException::noMatchFound(
                 $method,
                 $url,
@@ -210,7 +215,7 @@ class RequestExecutor
             );
         }
 
-        if (!($globalSettings['allow_passthrough'] ?? false)) {
+        if (!(bool)($globalSettings['allow_passthrough'] ?? false)) {
             throw UnexpectedRequestException::noMatchFound(
                 $method,
                 $url,
@@ -223,18 +228,16 @@ class RequestExecutor
             throw new \RuntimeException('No parent SSE handler available');
         }
 
+        /** @var CancellablePromiseInterface<\Hibla\Http\SSE\SSEResponse> $result */
         $result = $parentSSE($url, [], $onEvent, $onError, $reconnectConfig);
-        if (!$result instanceof CancellablePromiseInterface) {
-            throw new \RuntimeException('Parent SSE handler must return CancellablePromiseInterface');
-        }
-
         return $result;
     }
 
     /**
      * @param array<int, mixed> $curlOptions
-     * @param array<int, MockedRequest> $mockedRequests
+     * @param list<MockedRequest> $mockedRequests
      * @param array<string, mixed> $globalSettings
+     * @param \Hibla\Http\SSE\SSEReconnectConfig $reconnectConfig
      * @return CancellablePromiseInterface<\Hibla\Http\SSE\SSEResponse>
      */
     private function executeSSEWithRetry(
@@ -244,7 +247,7 @@ class RequestExecutor
         array $globalSettings,
         ?callable $onEvent,
         ?callable $onError,
-        mixed $reconnectConfig,
+        $reconnectConfig,
         ?callable $parentSSE
     ): CancellablePromiseInterface {
         $method = 'GET';
@@ -279,11 +282,6 @@ class RequestExecutor
             }
 
             $mock = $match['mock'];
-
-            if (!$mock instanceof MockedRequest) {
-                throw new \RuntimeException('Mock must be an instance of MockedRequest');
-            }
-
             $this->requestRecorder->recordRequest($method, $url, $modifiedOptions);
 
             if (!$mock->isPersistent()) {
@@ -300,13 +298,7 @@ class RequestExecutor
             return $mock;
         };
 
-        if (!$reconnectConfig instanceof \Hibla\Http\SSE\SSEReconnectConfig) {
-            throw new \RuntimeException('Reconnect config must be an instance of SSEReconnectConfig');
-        }
-
-        $onReconnectCallback = is_object($reconnectConfig) && property_exists($reconnectConfig, 'onReconnect')
-            ? $reconnectConfig->onReconnect
-            : null;
+        $onReconnectCallback = is_callable([$reconnectConfig, 'onReconnect']) ? $reconnectConfig->onReconnect : null;
 
         return $this->responseFactory->createRetryableMockedSSE(
             $reconnectConfig,
@@ -342,9 +334,9 @@ class RequestExecutor
 
     /**
      * @param array<string, mixed> $options
-     * @param array<int, MockedRequest> $mockedRequests
+     * @param list<MockedRequest> $mockedRequests
      * @param array<string, mixed> $globalSettings
-     * @return PromiseInterface<Response>|CancellablePromiseInterface<StreamingResponse|array<string, mixed>|\Hibla\Http\SSE\SSEResponse>
+     * @return CancellablePromiseInterface<array<string, mixed>|StreamingResponse>|PromiseInterface<Response>
      */
     public function executeFetch(
         string $url,
@@ -358,19 +350,17 @@ class RequestExecutor
         $method = is_string($methodValue) ? strtoupper($methodValue) : 'GET';
 
         $curlOptions = $this->normalizeFetchOptions($url, $options);
+        /** @var array<int, mixed> $curlOnlyOptions */
+        $curlOnlyOptions = array_filter($curlOptions, 'is_int', ARRAY_FILTER_USE_KEY);
+
         $retryConfig = $this->extractRetryConfig($options);
         $cacheConfig = $this->extractCacheConfig($options);
 
         if ($this->isSSERequested($options)) {
-            $match = $this->requestMatcher->findMatchingMock($mockedRequests, $method, $url, $curlOptions);
+            $match = $this->requestMatcher->findMatchingMock($mockedRequests, $method, $url, $curlOnlyOptions);
 
             if ($match !== null) {
                 $mock = $match['mock'];
-
-                if (!$mock instanceof MockedRequest) {
-                    throw new \RuntimeException('Mock must be an instance of MockedRequest');
-                }
-
                 if (!$mock->isPersistent()) {
                     array_splice($mockedRequests, $match['index'], 1);
                 }
@@ -379,65 +369,52 @@ class RequestExecutor
                     $onEvent = $options['on_event'] ?? $options['onEvent'] ?? null;
                     $onError = $options['on_error'] ?? $options['onError'] ?? null;
 
-                    if ($onEvent !== null && !is_callable($onEvent)) {
-                        $onEvent = null;
-                    }
-                    if ($onError !== null && !is_callable($onError)) {
-                        $onError = null;
-                    }
-
-                    return $this->responseFactory->createMockedSSE($mock, $onEvent, $onError);
+                    // @phpstan-ignore-next-line - SSEResponse is part of the union type but PHPStan can't verify due to template covariance
+                    return $this->responseFactory->createMockedSSE(
+                        $mock,
+                        is_callable($onEvent) ? $onEvent : null,
+                        is_callable($onError) ? $onError : null
+                    );
                 }
             }
         }
 
-        if ($this->tryServeFromCache($url, $method, $cacheConfig)) {
+        if ($cacheConfig !== null && $this->tryServeFromCache($url, $method, $cacheConfig)) {
             $cachedResponse = $this->cacheManager->getCachedResponse($url, $cacheConfig);
             if ($cachedResponse === null) {
                 throw new \RuntimeException('Cache indicated response available but returned null');
             }
+
             return Promise::resolved($cachedResponse);
         }
 
         if ($retryConfig !== null) {
+            // @phpstan-ignore-next-line - SSEResponse is part of the union type but PHPStan can't verify due to template covariance
             return $this->executeWithMockRetry($url, $options, $retryConfig, $method, $mockedRequests, $createStream);
         }
 
-        $this->requestRecorder->recordRequest($method, $url, $curlOptions);
+        $this->requestRecorder->recordRequest($method, $url, $curlOnlyOptions);
 
-        $match = $this->requestMatcher->findMatchingMock($mockedRequests, $method, $url, $curlOptions);
+        $match = $this->requestMatcher->findMatchingMock($mockedRequests, $method, $url, $curlOnlyOptions);
 
         if ($match !== null) {
             return $this->handleMockedResponse($match, $options, $mockedRequests, $cacheConfig, $url, $method, $createStream);
         }
 
-        if ($globalSettings['strict_matching'] ?? true) {
-            throw UnexpectedRequestException::noMatchFound(
-                $method,
-                $url,
-                $curlOptions,
-                $mockedRequests
-            );
+        if ((bool)($globalSettings['strict_matching'] ?? true)) {
+            throw UnexpectedRequestException::noMatchFound($method, $url, $curlOnlyOptions, $mockedRequests);
         }
 
-        if (! ($globalSettings['allow_passthrough'] ?? false)) {
-            throw UnexpectedRequestException::noMatchFound(
-                $method,
-                $url,
-                $curlOptions,
-                $mockedRequests
-            );
+        if (!(bool)($globalSettings['allow_passthrough'] ?? false)) {
+            throw UnexpectedRequestException::noMatchFound($method, $url, $curlOnlyOptions, $mockedRequests);
         }
 
         if ($parentFetch === null) {
             throw new \RuntimeException('No parent fetch available');
         }
 
+        /** @var PromiseInterface<Response>|CancellablePromiseInterface<StreamingResponse|array<string, mixed>> $result */
         $result = $parentFetch($url, $options);
-        if (!$result instanceof PromiseInterface) {
-            throw new \RuntimeException('Parent fetch must return PromiseInterface');
-        }
-
         return $result;
     }
 
@@ -466,9 +443,9 @@ class RequestExecutor
     }
 
     /**
-     * @param array{mock: mixed, index: int} $match
+     * @param array{mock: MockedRequest, index: int} $match
      * @param array<string, mixed> $options
-     * @param array<int, MockedRequest> $mockedRequests
+     * @param list<MockedRequest> $mockedRequests
      * @return PromiseInterface<Response>|CancellablePromiseInterface<StreamingResponse|array<string, mixed>>
      */
     private function handleMockedResponse(
@@ -482,10 +459,6 @@ class RequestExecutor
     ): PromiseInterface|CancellablePromiseInterface {
         $mock = $match['mock'];
 
-        if (!$mock instanceof MockedRequest) {
-            throw new \RuntimeException('Mock must be an instance of MockedRequest');
-        }
-
         if (! $mock->isPersistent()) {
             array_splice($mockedRequests, $match['index'], 1);
         }
@@ -495,38 +468,33 @@ class RequestExecutor
             if ($destination === '') {
                 throw new \InvalidArgumentException('Download destination must be a non-empty string');
             }
+            // @phpstan-ignore-next-line - array<string, mixed> is compatible with union return type but PHPStan can't verify due to template covariance
             return $this->responseFactory->createMockedDownload($mock, $destination, $this->fileManager);
         }
 
         if (isset($options['stream']) && $options['stream'] === true) {
-            $onChunk = $options['on_chunk'] ?? $options['onChunk'] ?? null;
-            if ($onChunk !== null && !is_callable($onChunk)) {
-                $onChunk = null;
-            }
+            $onChunkRaw = $options['on_chunk'] ?? $options['onChunk'] ?? null;
+            $onChunk = is_callable($onChunkRaw) ? $onChunkRaw : null;
 
-            $createStream ??= fn(string $body): StreamInterface => (new HttpHandler)->createStream($body);
+            $createStreamFn = $createStream ?? fn(string $body): StreamInterface => (new HttpHandler)->createStream($body);
 
-            return $this->responseFactory->createMockedStream($mock, $onChunk, $createStream);
+            // @phpstan-ignore-next-line - StreamingResponse is part of union return type but PHPStan can't verify due to template covariance
+            return $this->responseFactory->createMockedStream($mock, $onChunk, $createStreamFn);
         }
 
         $responsePromise = $this->responseFactory->createMockedResponse($mock);
 
-        if ($cacheConfig !== null && $method === 'GET') {
-            return $responsePromise->then(function ($response) use ($cacheConfig, $url) {
-                if ($response instanceof Response && $response->ok()) {
-                    $this->cacheManager->cacheResponse($url, $response, $cacheConfig);
-                }
-
-                return $response;
-            });
-        }
-
-        return $responsePromise;
+        return $responsePromise->then(function (Response $response) use ($cacheConfig, $url) {
+            if ($cacheConfig !== null && $response->ok()) {
+                $this->cacheManager->cacheResponse($url, $response, $cacheConfig);
+            }
+            return $response;
+        });
     }
 
     /**
-     * @param array<int, mixed> $curlOptions
-     * @param array<int, MockedRequest> $mockedRequests
+     * @param array<int|string, mixed> $curlOptions
+     * @param list<MockedRequest> $mockedRequests
      * @param array<string, mixed> $globalSettings
      * @return PromiseInterface<Response>
      */
@@ -541,31 +509,40 @@ class RequestExecutor
         $methodValue = $curlOptions[CURLOPT_CUSTOMREQUEST] ?? 'GET';
         $method = is_string($methodValue) ? $methodValue : 'GET';
 
-        $match = $this->requestMatcher->findMatchingMock($mockedRequests, $method, $url, $curlOptions);
+        /** @var array<int, mixed> $curlOnlyOptions */
+        $curlOnlyOptions = array_filter($curlOptions, 'is_int', ARRAY_FILTER_USE_KEY);
+
+        $match = $this->requestMatcher->findMatchingMock($mockedRequests, $method, $url, $curlOnlyOptions);
 
         if ($retryConfig !== null && $match !== null) {
-            return $this->executeWithMockRetry($url, $curlOptions, $retryConfig, $method, $mockedRequests, null);
+            $retryResult = $this->executeWithMockRetry($url, $curlOptions, $retryConfig, $method, $mockedRequests, null);
+            // Since executeWithMockRetry can return Response|StreamingResponse|array, we need to ensure it's Response
+            return $retryResult->then(function ($response) {
+                if ($response instanceof Response) {
+                    return $response;
+                }
+                throw new \RuntimeException('Expected Response but got different type from retry');
+            });
         }
 
-        $this->requestRecorder->recordRequest($method, $url, $curlOptions);
+        $this->requestRecorder->recordRequest($method, $url, $curlOnlyOptions);
 
         if ($match !== null) {
-            return $this->handleMockedResponse(
-                $match,
-                [],
-                $mockedRequests,
-                null,
-                $url,
-                $method,
-                null
-            );
+            $mockedResult = $this->handleMockedResponse($match, [], $mockedRequests, null, $url, $method, null);
+            // Ensure we return only Response type
+            return $mockedResult->then(function ($response) {
+                if ($response instanceof Response) {
+                    return $response;
+                }
+                throw new \RuntimeException('Expected Response but got different type from mock');
+            });
         }
 
-        if ($globalSettings['strict_matching']) {
+        if ((bool)($globalSettings['strict_matching'])) {
             throw new MockException("No mock found for: {$method} {$url}");
         }
 
-        if (! $globalSettings['allow_passthrough']) {
+        if (!(bool)($globalSettings['allow_passthrough'])) {
             throw new MockException("Passthrough disabled and no mock found for: {$method} {$url}");
         }
 
@@ -573,17 +550,14 @@ class RequestExecutor
             throw new \RuntimeException('No parent send request available');
         }
 
+        /** @var PromiseInterface<Response> $result */
         $result = $parentSendRequest($url, $curlOptions, null, $retryConfig);
-        if (!$result instanceof PromiseInterface) {
-            throw new \RuntimeException('Parent send request must return PromiseInterface');
-        }
-
         return $result;
     }
 
     /**
-     * @param array<string, mixed> $options
-     * @param array<int, MockedRequest> $mockedRequests
+     * @param array<int|string, mixed> $options
+     * @param list<MockedRequest> $mockedRequests
      * @return PromiseInterface<Response|StreamingResponse|array<string, mixed>>
      */
     private function executeWithMockRetry(
@@ -597,21 +571,18 @@ class RequestExecutor
         /** @var CancellablePromise<Response|StreamingResponse|array<string, mixed>> $finalPromise */
         $finalPromise = new CancellablePromise;
         $curlOptions = $this->normalizeFetchOptions($url, $options);
+        /** @var array<int, mixed> $curlOnlyOptions */
+        $curlOnlyOptions = array_filter($curlOptions, 'is_int', ARRAY_FILTER_USE_KEY);
 
-        $mockProvider = function (int $attemptNumber) use ($method, $url, $curlOptions, &$mockedRequests): MockedRequest {
-            $match = $this->requestMatcher->findMatchingMock($mockedRequests, $method, $url, $curlOptions);
+        $mockProvider = function (int $attemptNumber) use ($method, $url, $curlOnlyOptions, &$mockedRequests): MockedRequest {
+            $match = $this->requestMatcher->findMatchingMock($mockedRequests, $method, $url, $curlOnlyOptions);
 
             if ($match === null) {
                 throw new MockAssertionException("No mock found for attempt #{$attemptNumber}: {$method} {$url}");
             }
 
             $mock = $match['mock'];
-
-            if (!$mock instanceof MockedRequest) {
-                throw new \RuntimeException('Mock must be an instance of MockedRequest');
-            }
-
-            $this->requestRecorder->recordRequest($method, $url, $curlOptions);
+            $this->requestRecorder->recordRequest($method, $url, $curlOnlyOptions);
 
             if (!$mock->isPersistent()) {
                 array_splice($mockedRequests, $match['index'], 1);
@@ -620,52 +591,39 @@ class RequestExecutor
             return $mock;
         };
 
-        $retryPromise = $this->responseFactory->createRetryableMockedResponse(
-            $retryConfig,
-            $mockProvider
-        );
+        $retryPromise = $this->responseFactory->createRetryableMockedResponse($retryConfig, $mockProvider);
 
         $retryPromise->then(
-            function ($successfulResponse) use ($options, $finalPromise, $createStream) {
+            function (Response $successfulResponse) use ($options, $finalPromise, $createStream): void {
                 if (isset($options['download'])) {
                     $destPath = is_string($options['download']) ? $options['download'] : $this->fileManager->createTempFile();
-                    $body = $successfulResponse instanceof Response ? $successfulResponse->body() : '';
-                    file_put_contents($destPath, $body);
-                    $status = $successfulResponse instanceof Response ? $successfulResponse->status() : 200;
-                    $headers = $successfulResponse instanceof Response ? $successfulResponse->headers() : [];
-
+                    file_put_contents($destPath, $successfulResponse->body());
                     $finalPromise->resolve([
                         'file' => $destPath,
-                        'status' => $status,
-                        'headers' => $headers,
-                        'size' => strlen($body),
+                        'status' => $successfulResponse->status(),
+                        'headers' => $successfulResponse->headers(),
+                        'size' => strlen($successfulResponse->body()),
+                        'protocol_version' => '1.1',
                     ]);
                 } elseif (isset($options['stream']) && $options['stream'] === true) {
-                    $onChunk = $options['on_chunk'] ?? $options['onChunk'] ?? null;
-                    $body = $successfulResponse instanceof Response ? $successfulResponse->body() : '';
+                    $onChunkRaw = $options['on_chunk'] ?? $options['onChunk'] ?? null;
+                    $onChunk = is_callable($onChunkRaw) ? $onChunkRaw : null;
+                    $body = $successfulResponse->body();
 
-                    if ($onChunk !== null && is_callable($onChunk)) {
+                    if ($onChunk !== null) {
                         $onChunk($body);
                     }
 
-                    if ($createStream === null) {
-                        $createStream = fn(string $b): StreamInterface => (new HttpHandler)->createStream($b);
-                    }
+                    $createStreamFn = $createStream ?? fn(string $b): StreamInterface => (new HttpHandler)->createStream($b);
 
-                    $stream = $createStream($body);
-                    if (!$stream instanceof StreamInterface) {
-                        throw new \RuntimeException('Stream creator must return StreamInterface');
-                    }
-
-                    $status = $successfulResponse instanceof Response ? $successfulResponse->status() : 200;
-                    $headers = $successfulResponse instanceof Response ? $successfulResponse->headers() : [];
-
-                    $finalPromise->resolve(new StreamingResponse($stream, $status, $headers));
+                    /** @var StreamInterface $stream */
+                    $stream = $createStreamFn($body);
+                    $finalPromise->resolve(new StreamingResponse($stream, $successfulResponse->status(), $successfulResponse->headers()));
                 } else {
                     $finalPromise->resolve($successfulResponse);
                 }
             },
-            function ($reason) use ($finalPromise) {
+            function ($reason) use ($finalPromise): void {
                 $finalPromise->reject($reason);
             }
         );
