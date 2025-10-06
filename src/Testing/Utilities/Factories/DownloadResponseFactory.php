@@ -25,6 +25,8 @@ class DownloadResponseFactory
     }
 
     /**
+     * Creates a download response with the given configuration.
+     * 
      * @return CancellablePromiseInterface<array{file: string, status: int, headers: array<string, string>, size: int, protocol_version: string}>
      */
     public function create(

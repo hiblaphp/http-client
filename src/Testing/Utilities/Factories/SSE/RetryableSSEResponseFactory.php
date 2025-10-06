@@ -31,6 +31,8 @@ class RetryableSSEResponseFactory
     }
 
     /**
+     * Creates a retryable SSE response with the given configuration.
+     * 
      * @return CancellablePromiseInterface<SSEResponse>
      */
     public function create(

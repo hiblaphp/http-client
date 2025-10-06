@@ -31,6 +31,8 @@ class SSEResponseFactory
     }
 
     /**
+     * Creates an SSE response with the given configuration.
+     * 
      * @return CancellablePromiseInterface<SSEResponse>
      */
     public function create(

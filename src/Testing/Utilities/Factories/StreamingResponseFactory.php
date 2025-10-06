@@ -26,6 +26,8 @@ class StreamingResponseFactory
     }
 
     /**
+     * Creates a streaming response with the given configuration.
+     * 
      * @return CancellablePromiseInterface<StreamingResponse>
      */
     public function create(

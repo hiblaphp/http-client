@@ -28,6 +28,8 @@ class RetryableResponseFactory
     }
 
     /**
+     * Creates a retryable response with the given configuration.
+     * 
      * @return PromiseInterface<Response>
      */
     public function create(RetryConfig $retryConfig, callable $mockProvider): PromiseInterface

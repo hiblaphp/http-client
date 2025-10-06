@@ -20,6 +20,8 @@ class ImmediateSSEEmitter
 
     /**
      * @param CancellablePromise<SSEResponse> $promise
+     * @param MockedRequest $mock
+     * @param callable|null $onEvent
      * @param string|null &$lastEventId
      * @param int|null &$retryInterval
      */

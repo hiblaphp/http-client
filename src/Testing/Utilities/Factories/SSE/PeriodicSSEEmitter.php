@@ -21,6 +21,9 @@ class PeriodicSSEEmitter
 
     /**
      * @param CancellablePromise<SSEResponse> $promise
+     * @param MockedRequest $mock
+     * @param callable|null $onEvent
+     * @param callable|null $onError
      * @param string|null &$periodicTimerId
      * @param-out string $periodicTimerId
      */
@@ -63,6 +66,9 @@ class PeriodicSSEEmitter
 
     /**
      * @param array<string, mixed> $config
+     * @param callable|null $onEvent
+     * @param float $interval
+     * @param float $jitter
      * @param string|null &$periodicTimerId
      * @param-out string $periodicTimerId
      */
@@ -126,6 +132,11 @@ class PeriodicSSEEmitter
 
     /**
      * @param array<string, mixed> $config
+     * @param MockedRequest $mock
+     * @param callable|null $onEvent
+     * @param callable|null $onError
+     * @param float $interval
+     * @param float $jitter
      * @param string|null &$periodicTimerId
      * @param-out string $periodicTimerId
      */

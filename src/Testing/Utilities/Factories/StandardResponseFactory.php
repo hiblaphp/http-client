@@ -25,6 +25,8 @@ class StandardResponseFactory
     }
 
     /**
+     * Creates a standard response with the given configuration.
+     * 
      * @return PromiseInterface<Response>
      */
     public function create(MockedRequest $mock): PromiseInterface
