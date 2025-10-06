@@ -33,7 +33,7 @@ class ResponseTypeHandler
      * @param array{mock: MockedRequest, index: int} $match
      * @param array<string, mixed> $options
      * @param list<MockedRequest> $mockedRequests
-     * @return PromiseInterface<Response>|CancellablePromiseInterface<StreamingResponse|array<string, mixed>>
+     * @return PromiseInterface<Response>|CancellablePromiseInterface<StreamingResponse>|CancellablePromiseInterface<array<string, mixed>>
      */
     public function handleMockedResponse(
         array $match,
@@ -88,7 +88,6 @@ class ResponseTypeHandler
 
         $createStreamFn = $createStream ?? fn(string $body): StreamInterface => (new HttpHandler())->createStream($body);
 
-        // @phpstan-ignore-next-line
         return $this->responseFactory->createMockedStream($mock, $onChunk, $createStreamFn);
     }
 

@@ -73,7 +73,9 @@ class StandardRequestExecutor
 
         // Try cache first
         if ($this->cacheHandler->tryServeFromCache($url, $method, $cacheConfig)) {
-            return Promise::resolved($this->cacheHandler->getCachedResponse($url, $cacheConfig));
+            /** @var Response $cachedResponse */
+            $cachedResponse = $this->cacheHandler->getCachedResponse($url, $cacheConfig);
+            return Promise::resolved($cachedResponse);
         }
 
         // Find matching mock

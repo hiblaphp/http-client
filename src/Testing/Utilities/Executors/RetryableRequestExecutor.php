@@ -52,14 +52,7 @@ class RetryableRequestExecutor
         $curlOnlyOptions = array_filter($curlOptions, 'is_int', ARRAY_FILTER_USE_KEY);
 
         $mockProvider = $this->createMockProvider($method, $url, $curlOnlyOptions, $mockedRequests);
-        $retryPromise = $this->responseFactory->createRetryableMockedResponse($retryConfig, $mockProvider);
-
-        return $retryPromise->then(function ($response) {
-            if ($response instanceof Response) {
-                return $response;
-            }
-            throw new \RuntimeException('Expected Response but got different type from retry');
-        });
+        return $this->responseFactory->createRetryableMockedResponse($retryConfig, $mockProvider);
     }
 
     /**
@@ -86,9 +79,12 @@ class RetryableRequestExecutor
         $mockProvider = $this->createMockProvider($method, $url, $curlOnlyOptions, $mockedRequests);
         $retryPromise = $this->responseFactory->createRetryableMockedResponse($retryConfig, $mockProvider);
 
+        /** @var array<string, mixed> $stringKeyedOptions */
+        $stringKeyedOptions = array_filter($options, fn($key) => is_string($key), ARRAY_FILTER_USE_KEY);
+
         $retryPromise->then(
-            function (Response $successfulResponse) use ($options, $finalPromise, $createStream, $fileManager): void {
-                $this->resolveRetryResponse($successfulResponse, $options, $finalPromise, $createStream, $fileManager);
+            function (Response $successfulResponse) use ($stringKeyedOptions, $finalPromise, $createStream, $fileManager): void {
+                $this->resolveRetryResponse($successfulResponse, $stringKeyedOptions, $finalPromise, $createStream, $fileManager);
             },
             function ($reason) use ($finalPromise): void {
                 $finalPromise->reject($reason);
@@ -162,7 +158,7 @@ class RetryableRequestExecutor
     ): void {
         $destPath = is_string($options['download']) 
             ? $options['download'] 
-            : ($fileManager ? $fileManager->createTempFile() : sys_get_temp_dir() . '/download_' . uniqid());
+            : ($fileManager !== null ? $fileManager->createTempFile() : sys_get_temp_dir() . '/download_' . uniqid());
             
         file_put_contents($destPath, $successfulResponse->body());
         

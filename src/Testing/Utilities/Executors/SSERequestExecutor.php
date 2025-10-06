@@ -46,6 +46,7 @@ class SSERequestExecutor
         $method = 'GET';
 
         if ($this->shouldUseRetry($reconnectConfig)) {
+            /** @var \Hibla\Http\SSE\SSEReconnectConfig $reconnectConfig */
             return $this->executeWithRetry(
                 $url,
                 $curlOptions,
@@ -76,7 +77,7 @@ class SSERequestExecutor
      */
     private function shouldUseRetry($reconnectConfig): bool
     {
-        return $reconnectConfig instanceof \Hibla\Http\SSE\SSEReconnectConfig 
+        return $reconnectConfig instanceof \Hibla\Http\SSE\SSEReconnectConfig
             && $reconnectConfig->enabled;
     }
 
@@ -139,7 +140,7 @@ class SSERequestExecutor
         if (!$mock->isSSE()) {
             throw new \RuntimeException(
                 'Mock matched for SSE request but is not configured as SSE. ' .
-                'Use ->respondWithSSE() or ->sseInfiniteStream() or other SSE methods'
+                    'Use ->respondWithSSE() or ->sseInfiniteStream() or other SSE methods'
             );
         }
 
@@ -185,7 +186,6 @@ class SSERequestExecutor
      * @param array<int, mixed> $curlOptions
      * @param list<MockedRequest> $mockedRequests
      * @param array<string, mixed> $globalSettings
-     * @param \Hibla\Http\SSE\SSEReconnectConfig $reconnectConfig
      * @return CancellablePromiseInterface<\Hibla\Http\SSE\SSEResponse>
      */
     private function executeWithRetry(
@@ -195,7 +195,7 @@ class SSERequestExecutor
         array $globalSettings,
         ?callable $onEvent,
         ?callable $onError,
-        $reconnectConfig,
+        \Hibla\Http\SSE\SSEReconnectConfig $reconnectConfig,
         ?callable $parentSSE
     ): CancellablePromiseInterface {
         $method = 'GET';
@@ -248,7 +248,7 @@ class SSERequestExecutor
             if (!$mock->isSSE()) {
                 throw new \RuntimeException(
                     'Mock matched for SSE request but is not configured as SSE. ' .
-                    'Use ->respondWithSSE() instead of ->respondWith() or ->respondJson()'
+                        'Use ->respondWithSSE() instead of ->respondWith() or ->respondJson()'
                 );
             }
 
