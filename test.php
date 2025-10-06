@@ -7,10 +7,9 @@ require 'vendor/autoload.php';
 
 Http::startTesting();
 
-echo "Testing infinite stream (limited to 10 events)...\n";
-
 Http::mock()
     ->url("*")
+    ->sseFailUntilAttempt(3)
     ->sseInfiniteStream(
         eventGenerator: fn($i) => [
             'data' => json_encode(['index' => $i, 'timestamp' => time()]),
@@ -18,15 +17,31 @@ Http::mock()
             'event' => 'message',
         ],
         intervalSeconds: 0.1,
-        maxEvents: null
+        maxEvents: 100
     )
+    // ->sseWithPeriodicEvents([
+    //     [
+    //         'data' => json_encode(['index' => 100, 'timestamp' => time()]),
+    //         'id' => '100',
+    //         'event' => 'message'
+    //     ],
+    // ], 1.0)
     ->persistent()
     ->register();
 
-Http::sse("http://localhost:8080/sse", 
-    onEvent: function (SSEEvent $event) {
-        $data = json_decode($event->data, true);
-        echo "[" . date('H:i:s') . "] Event {$data['index']} - ID: {$event->id}\n";
-    }
-);
-echo "Done\n";
+Http::sseDataFormat()
+    ->sseReconnect(
+        enabled: true,
+        maxAttempts: 5,
+        initialDelay: 1.0,
+        maxDelay: 60,
+        backoffMultiplier: 1.0,
+    )->sse(
+        "http://localhost:8080/sse",
+        onEvent: function ($data) {
+            print_r($data);
+        },
+        onError: function ($error) {
+            print_r($error);
+        }
+    );
