@@ -9,7 +9,6 @@ Http::startTesting();
 
 Http::mock()
     ->url("*")
-    ->sseFailUntilAttempt(3)
     ->sseInfiniteStream(
         eventGenerator: fn($i) => [
             'data' => json_encode(['index' => $i, 'timestamp' => time()]),
@@ -17,7 +16,7 @@ Http::mock()
             'event' => 'message',
         ],
         intervalSeconds: 0.1,
-        maxEvents: 100
+        maxEvents: 10
     )
     // ->sseWithPeriodicEvents([
     //     [
@@ -29,7 +28,7 @@ Http::mock()
     ->persistent()
     ->register();
 
-Http::sseDataFormat()
+Http::sseDataFormat('array')
     ->sseReconnect(
         enabled: true,
         maxAttempts: 5,
