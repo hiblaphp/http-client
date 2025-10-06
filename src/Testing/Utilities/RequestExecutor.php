@@ -199,12 +199,13 @@ class RequestExecutor
             }
 
             if ($mock->isSSE()) {
+                // This should call createMockedSSE which handles periodic events
                 return $this->responseFactory->createMockedSSE($mock, $onEvent, $onError);
             }
 
             throw new \RuntimeException(
                 'Mock matched for SSE request but is not configured as SSE. ' .
-                    'Use ->respondWithSSE() instead of ->respondWith() or ->respondJson()'
+                    'Use ->respondWithSSE() or ->sseInfiniteStream() or other SSE methods'
             );
         }
 
@@ -482,7 +483,7 @@ class RequestExecutor
             $onChunkRaw = $options['on_chunk'] ?? $options['onChunk'] ?? null;
             $onChunk = is_callable($onChunkRaw) ? $onChunkRaw : null;
 
-            $createStreamFn = $createStream ?? fn (string $body): StreamInterface => (new HttpHandler())->createStream($body);
+            $createStreamFn = $createStream ?? fn(string $body): StreamInterface => (new HttpHandler())->createStream($body);
 
             // @phpstan-ignore-next-line - StreamingResponse is part of union return type but PHPStan can't verify due to template covariance
             return $this->responseFactory->createMockedStream($mock, $onChunk, $createStreamFn);
@@ -626,7 +627,7 @@ class RequestExecutor
                         $onChunk($body);
                     }
 
-                    $createStreamFn = $createStream ?? fn (string $b): StreamInterface => (new HttpHandler())->createStream($b);
+                    $createStreamFn = $createStream ?? fn(string $b): StreamInterface => (new HttpHandler())->createStream($b);
 
                     /** @var StreamInterface $stream */
                     $stream = $createStreamFn($body);
@@ -641,7 +642,7 @@ class RequestExecutor
         );
 
         if ($retryPromise instanceof CancellablePromiseInterface) {
-            $finalPromise->setCancelHandler(fn () => $retryPromise->cancel());
+            $finalPromise->setCancelHandler(fn() => $retryPromise->cancel());
         }
 
         return $finalPromise;

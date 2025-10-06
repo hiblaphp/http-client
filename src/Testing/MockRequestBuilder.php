@@ -8,6 +8,7 @@ use Hibla\Http\Testing\Traits\RequestBuilder\BuildsBasicMocks;
 use Hibla\Http\Testing\Traits\RequestBuilder\BuildsCookieMocks;
 use Hibla\Http\Testing\Traits\RequestBuilder\BuildsFailureMocks;
 use Hibla\Http\Testing\Traits\RequestBuilder\BuildsFileMocks;
+use Hibla\Http\Testing\Traits\RequestBuilder\BuildsRealisticSSEMocks;
 use Hibla\Http\Testing\Traits\RequestBuilder\BuildsRequestExpectations;
 use Hibla\Http\Testing\Traits\RequestBuilder\BuildsResponseHeaders;
 use Hibla\Http\Testing\Traits\RequestBuilder\BuildsRetrySequences;
@@ -32,6 +33,7 @@ class MockRequestBuilder implements MockRequestBuilderInterface
     use BuildsSSERetrySequences;
     use BuildsFileMocks;
     use BuildsCookieMocks;
+    use BuildsRealisticSSEMocks;
 
     private TestingHttpHandler $handler;
     private MockedRequest $request;

@@ -296,6 +296,12 @@ class ResponseFactory
         ?callable $onEvent,
         ?callable $onError
     ): CancellablePromiseInterface {
+        // Check if this mock has streaming configuration
+        if ($mock->hasStreamConfig()) {
+            return $this->createPeriodicSSE($mock, $onEvent, $onError);
+        }
+
+        // Existing immediate SSE response code
         /** @var CancellablePromise<SSEResponse> $promise */
         $promise = new CancellablePromise();
 
@@ -401,6 +407,252 @@ class ResponseFactory
         });
 
         return $promise;
+    }
+
+    /**
+     * Create a periodic SSE response using EventLoop timers.
+     * This keeps the connection alive and emits events over time.
+     *
+     * @return CancellablePromiseInterface<SSEResponse>
+     */
+    private function createPeriodicSSE(
+        MockedRequest $mock,
+        ?callable $onEvent,
+        ?callable $onError
+    ): CancellablePromiseInterface {
+        /** @var CancellablePromise<SSEResponse> $promise */
+        $promise = new CancellablePromise();
+
+        $config = $mock->getSSEStreamConfig();
+        if ($config === null) {
+            throw new \RuntimeException('SSE stream config is required');
+        }
+
+        $networkConditions = $this->networkSimulator->simulate();
+        $mockDelay = $mock->getDelay();
+        $globalDelay = $this->handler !== null ? $this->handler->generateGlobalRandomDelay() : 0.0;
+        $initialDelay = max($mockDelay, $globalDelay, $networkConditions['delay'] ?? 0);
+
+        $type = $config['type'] ?? 'periodic';
+        $events = $config['events'] ?? [];
+
+        /** @var string|null $initialTimerId */
+        $initialTimerId = null;
+        /** @var string|null $periodicTimerId */
+        $periodicTimerId = null;
+        $eventIndex = 0;
+        $totalEvents = count($events);
+
+        $promise->setCancelHandler(function () use (&$initialTimerId, &$periodicTimerId) {
+            if ($initialTimerId !== null) {
+                EventLoop::getInstance()->cancelTimer($initialTimerId);
+                $initialTimerId = null;
+            }
+            if ($periodicTimerId !== null) {
+                EventLoop::getInstance()->cancelTimer($periodicTimerId);
+                $periodicTimerId = null;
+            }
+        });
+
+        // Check for network failure
+        if ($networkConditions['should_fail']) {
+            $initialTimerId = EventLoop::getInstance()->addTimer($initialDelay, function () use ($promise, $networkConditions, $onError) {
+                if ($promise->isCancelled()) {
+                    return;
+                }
+
+                $error = $networkConditions['error_message'] ?? 'Network failure';
+                if ($onError !== null) {
+                    $onError($error);
+                }
+                $promise->reject(new NetworkException($error));
+            });
+
+            return $promise;
+        }
+
+        // Check for mock failure (but not for auto_close scenarios)
+        if ($mock->shouldFail() && !($config['auto_close'] ?? false)) {
+            $initialTimerId = EventLoop::getInstance()->addTimer($initialDelay, function () use ($promise, $mock, $onError) {
+                if ($promise->isCancelled()) {
+                    return;
+                }
+
+                $error = $mock->getError() ?? 'Mocked SSE failure';
+                if ($onError !== null) {
+                    $onError($error);
+                }
+                $promise->reject(new NetworkException($error));
+            });
+
+            return $promise;
+        }
+
+        // Schedule the SSE response creation and event emission
+        $initialTimerId = EventLoop::getInstance()->addTimer($initialDelay, function () use (
+            $promise,
+            $mock,
+            $config,
+            $type,
+            &$events,
+            &$eventIndex,
+            &$totalEvents,
+            $onEvent,
+            $onError,
+            &$periodicTimerId
+        ) {
+            if ($promise->isCancelled()) {
+                return;
+            }
+
+            try {
+                // Create the SSE response
+                $resource = fopen('php://temp', 'w+b');
+                if ($resource === false) {
+                    throw new HttpStreamException('Failed to create temporary stream');
+                }
+
+                $stream = new Stream($resource);
+                $sseResponse = new SSEResponse(
+                    $stream,
+                    $mock->getStatusCode(),
+                    $mock->getHeaders()
+                );
+
+                $promise->resolve($sseResponse);
+
+                $interval = $config['interval'] ?? 1.0;
+                $jitter = $config['jitter'] ?? 0.0;
+
+                // For infinite streams
+                if ($type === 'infinite' && isset($config['event_generator'])) {
+                    $maxEvents = $config['max_events'] ?? null;
+
+                    $periodicTimerId = EventLoop::getInstance()->addPeriodicTimer(
+                        $interval,
+                        function () use (
+                            $config,
+                            &$eventIndex,
+                            $maxEvents,
+                            $onEvent,
+                            $jitter,
+                            $interval,
+                            &$periodicTimerId
+                        ) {
+                            if ($maxEvents !== null && $eventIndex >= $maxEvents) {
+                                if ($periodicTimerId !== null) {
+                                    EventLoop::getInstance()->cancelTimer($periodicTimerId);
+                                    $periodicTimerId = null;
+                                }
+                                return;
+                            }
+
+                            $eventData = $config['event_generator']($eventIndex);
+                            $this->emitSSEEvent($eventData, $onEvent);
+                            $eventIndex++;
+
+                            // Apply jitter by sleeping briefly
+                            if ($jitter > 0) {
+                                $jitterAmount = $interval * $jitter;
+                                $randomJitter = (mt_rand() / mt_getrandmax()) * 2 * $jitterAmount - $jitterAmount;
+                                if ($randomJitter > 0) {
+                                    usleep((int)($randomJitter * 1000000));
+                                }
+                            }
+                        },
+                        $maxEvents // maxExecutions
+                    );
+                } else {
+                    // For finite periodic events (sseWithPeriodicEvents, sseWithLimitedEvents, ssePeriodicThenDisconnect)
+                    $periodicTimerId = EventLoop::getInstance()->addPeriodicTimer(
+                        $interval,
+                        function () use (
+                            &$events,
+                            &$eventIndex,
+                            &$totalEvents,
+                            $onEvent,
+                            $onError,
+                            $mock,
+                            $config,
+                            $jitter,
+                            $interval,
+                            &$periodicTimerId
+                        ) {
+                            if ($eventIndex >= $totalEvents) {
+                                if ($periodicTimerId !== null) {
+                                    EventLoop::getInstance()->cancelTimer($periodicTimerId);
+                                    $periodicTimerId = null;
+                                }
+
+                                // Check if we should trigger an error after all events
+                                if ($mock->shouldFail() && ($config['auto_close'] ?? false)) {
+                                    $error = $mock->getError() ?? 'Connection closed';
+                                    if ($onError !== null) {
+                                        $onError($error);
+                                    }
+                                }
+                                return;
+                            }
+
+                            $eventData = $events[$eventIndex];
+                            $this->emitSSEEvent($eventData, $onEvent);
+                            $eventIndex++;
+
+                            // Apply jitter
+                            if ($jitter > 0) {
+                                $jitterAmount = $interval * $jitter;
+                                $randomJitter = (mt_rand() / mt_getrandmax()) * 2 * $jitterAmount - $jitterAmount;
+                                if ($randomJitter > 0) {
+                                    usleep((int)($randomJitter * 1000000));
+                                }
+                            }
+                        },
+                        $totalEvents // maxExecutions
+                    );
+                }
+            } catch (Throwable $e) {
+                if ($onError !== null) {
+                    $onError($e->getMessage());
+                }
+                $promise->reject($e);
+            }
+        });
+
+        return $promise;
+    }
+
+    /**
+     * @param array{data?: string, event?: string, id?: string, retry?: int} $eventData
+     */
+    private function emitSSEEvent(array $eventData, ?callable $onEvent): void
+    {
+        if ($onEvent === null) {
+            return;
+        }
+
+        $rawFields = [];
+        if (isset($eventData['id'])) {
+            $rawFields['id'] = [$eventData['id']];
+        }
+        if (isset($eventData['event'])) {
+            $rawFields['event'] = [$eventData['event']];
+        }
+        if (isset($eventData['data'])) {
+            $rawFields['data'] = [$eventData['data']];
+        }
+        if (isset($eventData['retry'])) {
+            $rawFields['retry'] = [(string)$eventData['retry']];
+        }
+
+        $event = new SSEEvent(
+            id: $eventData['id'] ?? null,
+            event: $eventData['event'] ?? null,
+            data: $eventData['data'] ?? null,
+            retry: $eventData['retry'] ?? null,
+            rawFields: $rawFields
+        );
+
+        $onEvent($event);
     }
 
     /**

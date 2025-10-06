@@ -117,6 +117,30 @@ class MockedRequest
         $this->method = $method;
     }
 
+    /** @var array<string, mixed>|null */
+    private ?array $sseStreamConfig = null;
+
+    /**
+     * @param array<string, mixed> $config
+     */
+    public function setSSEStreamConfig(array $config): void
+    {
+        $this->sseStreamConfig = $config;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function getSSEStreamConfig(): ?array
+    {
+        return $this->sseStreamConfig;
+    }
+
+    public function hasStreamConfig(): bool
+    {
+        return $this->sseStreamConfig !== null;
+    }
+
     /**
      * Adds a single SSE event to the events array.
      *
