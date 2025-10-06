@@ -18,9 +18,18 @@ Http::mock()
     ->persistent()
     ->register();
 
-Http::sseReconnect(maxAttempts: 1, onReconnect: function () {
-    echo "Reconnected" . PHP_EOL;
-})->sse("https://test.coms", function (SSEEvent $event) {
-    $data = json_decode($event->data, true);
-    print_r($data);
-});
+Http::sseReconnect(
+    maxAttempts: 3,
+    onReconnect: function () {
+        echo "Reconnected" . PHP_EOL;
+    }
+)->sse(
+    "https://test.coms",
+    function (SSEEvent $event) {
+        $data = json_decode($event->data, true);
+        print_r($data);
+    },
+    onError: function ($error) {
+        echo "SSE Error: " . $error . PHP_EOL;
+    }
+);

@@ -143,9 +143,23 @@ use Psr\Http\Message\UploadedFileInterface;
  * @method static void assertCookieSent(string $name) Assert a cookie was sent.
  * @method static void assertCookieExists(string $name) Assert a cookie exists in jar.
  * @method static void assertCookieValue(string $name, string $expectedValue) Assert cookie value.
- * @method static void assertSSEConnectionMade(string $url) Assert that an SSE connection was made.
- * @method static void assertSSEEventReceived(string $url, array<string, mixed> $expectedEvent) Assert that a specific SSE event was received.
- * @method static void assertSSEEventNotReceived(string $url, array<string, mixed> $unexpectedEvent) Assert that a specific SSE event was NOT received.
+ * @method static void assertSSEConnectionMade(string $url) Assert that an SSE connection was made to the specified URL.
+ * @method static void assertNoSSEConnections() Assert that no SSE connections were made.
+ * @method static void assertSSELastEventId(string $expectedId, ?int $requestIndex = null) Assert that the Last-Event-ID header matches the expected value.
+ * @method static void assertSSEConnectionAttempts(string $url, int $expectedAttempts) Assert that SSE connection was attempted a specific number of times.
+ * @method static void assertSSEConnectionAttemptsAtLeast(string $url, int $minAttempts) Assert that SSE connection was attempted at least a minimum number of times.
+ * @method static void assertSSEConnectionAttemptsAtMost(string $url, int $maxAttempts) Assert that SSE connection was attempted at most a maximum number of times.
+ * @method static void assertSSEReconnectionOccurred(string $url) Assert that SSE reconnection occurred with Last-Event-ID header.
+ * @method static void assertSSEConnectionHasHeader(string $url, string $headerName, string $expectedValue) Assert that SSE connection has specific header value.
+ * @method static void assertSSEConnectionMissingHeader(string $url, string $headerName) Assert that SSE connection does not have a specific header.
+ * @method static void assertSSEConnectionsMadeToMultipleUrls(array<string> $urls) Assert that multiple SSE connections were made to different URLs.
+ * @method static void assertSSEConnectionsInOrder(array<string> $urls) Assert that SSE connections were made in a specific order.
+ * @method static void assertSSEConnectionAuthenticated(string $url, ?string $expectedToken = null) Assert that SSE connection includes authentication header.
+ * @method static void assertSSEReconnectionProgression(string $url) Assert that SSE reconnection attempts have increasing Last-Event-IDs.
+ * @method static void assertFirstSSEConnectionHasNoLastEventId(string $url) Assert that the first SSE connection has no Last-Event-ID header.
+ * @method static void assertSSEConnectionRequestedWithProperHeaders(string $url) Assert that SSE connection was requested with proper Cache-Control headers.
+ * @method static void assertSSEConnectionCount(string $url, int $expectedCount) Assert that SSE connection count matches expected for a URL pattern.
+ * @method static array<int, RecordedRequest> getSSEConnectionAttempts(string $url) Get all SSE connection attempts for a specific URL.
  * @method static RecordedRequest|null getLastRequest() Get the last recorded request.
  * @method static RecordedRequest|null getRequest(int $index) Get a specific request by index.
  * @method static list<RecordedRequest> getRequestHistory() Get all recorded requests.
@@ -314,8 +328,22 @@ class Http
             'assertCookieExists',
             'assertCookieValue',
             'assertSSEConnectionMade',
-            'assertSSEEventReceived',
-            'assertSSEEventNotReceived',
+            'assertNoSSEConnections',
+            'assertSSELastEventId',
+            'assertSSEConnectionAttempts',
+            'assertSSEConnectionAttemptsAtLeast',
+            'assertSSEConnectionAttemptsAtMost',
+            'assertSSEReconnectionOccurred',
+            'assertSSEConnectionHasHeader',
+            'assertSSEConnectionMissingHeader',
+            'assertSSEConnectionsMadeToMultipleUrls',
+            'assertSSEConnectionsInOrder',
+            'assertSSEConnectionAuthenticated',
+            'assertSSEReconnectionProgression',
+            'assertFirstSSEConnectionHasNoLastEventId',
+            'assertSSEConnectionRequestedWithProperHeaders',
+            'assertSSEConnectionCount',
+            'getSSEConnectionAttempts',
             'getLastRequest',
             'getRequest',
             'getRequestHistory',
