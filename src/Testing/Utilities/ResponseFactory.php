@@ -436,6 +436,19 @@ class ResponseFactory
         $type = $config['type'] ?? 'periodic';
         $events = $config['events'] ?? [];
 
+        if (!is_array($events)) {
+            $events = [];
+        }
+
+        /** @var array<array{data?: string, event?: string, id?: string, retry?: int}> $validatedEvents */
+        $validatedEvents = [];
+        foreach ($events as $event) {
+            if (is_array($event)) {
+                $validatedEvents[] = $event;
+            }
+        }
+        $events = $validatedEvents;
+
         /** @var string|null $initialTimerId */
         $initialTimerId = null;
         /** @var string|null $periodicTimerId */
@@ -454,7 +467,6 @@ class ResponseFactory
             }
         });
 
-        // Check for network failure
         if ($networkConditions['should_fail']) {
             $initialTimerId = EventLoop::getInstance()->addTimer($initialDelay, function () use ($promise, $networkConditions, $onError) {
                 if ($promise->isCancelled()) {
@@ -471,8 +483,8 @@ class ResponseFactory
             return $promise;
         }
 
-        // Check for mock failure (but not for auto_close scenarios)
-        if ($mock->shouldFail() && !($config['auto_close'] ?? false)) {
+        $autoClose = isset($config['auto_close']) && is_bool($config['auto_close']) ? $config['auto_close'] : false;
+        if ($mock->shouldFail() && !$autoClose) {
             $initialTimerId = EventLoop::getInstance()->addTimer($initialDelay, function () use ($promise, $mock, $onError) {
                 if ($promise->isCancelled()) {
                     return;
@@ -488,7 +500,6 @@ class ResponseFactory
             return $promise;
         }
 
-        // Schedule the SSE response creation and event emission
         $initialTimerId = EventLoop::getInstance()->addTimer($initialDelay, function () use (
             $promise,
             $mock,
@@ -506,7 +517,6 @@ class ResponseFactory
             }
 
             try {
-                // Create the SSE response
                 $resource = fopen('php://temp', 'w+b');
                 if ($resource === false) {
                     throw new HttpStreamException('Failed to create temporary stream');
@@ -521,17 +531,21 @@ class ResponseFactory
 
                 $promise->resolve($sseResponse);
 
-                $interval = $config['interval'] ?? 1.0;
-                $jitter = $config['jitter'] ?? 0.0;
+                $interval = isset($config['interval']) && (is_float($config['interval']) || is_int($config['interval']))
+                    ? (float)$config['interval']
+                    : 1.0;
+                $jitter = isset($config['jitter']) && (is_float($config['jitter']) || is_int($config['jitter']))
+                    ? (float)$config['jitter']
+                    : 0.0;
 
-                // For infinite streams
-                if ($type === 'infinite' && isset($config['event_generator'])) {
-                    $maxEvents = $config['max_events'] ?? null;
+                if ($type === 'infinite' && isset($config['event_generator']) && is_callable($config['event_generator'])) {
+                    $eventGenerator = $config['event_generator'];
+                    $maxEvents = isset($config['max_events']) && is_int($config['max_events']) ? $config['max_events'] : null;
 
                     $periodicTimerId = EventLoop::getInstance()->addPeriodicTimer(
-                        $interval,
-                        function () use (
-                            $config,
+                        interval: $interval,
+                        callback: function () use (
+                            $eventGenerator,
                             &$eventIndex,
                             $maxEvents,
                             $onEvent,
@@ -547,8 +561,11 @@ class ResponseFactory
                                 return;
                             }
 
-                            $eventData = $config['event_generator']($eventIndex);
-                            $this->emitSSEEvent($eventData, $onEvent);
+                            $eventData = $eventGenerator($eventIndex);
+                            if (is_array($eventData)) {
+                                /** @var array{data?: string, event?: string, id?: string, retry?: int} $eventData */
+                                $this->emitSSEEvent($eventData, $onEvent);
+                            }
                             $eventIndex++;
 
                             // Apply jitter by sleeping briefly
@@ -560,20 +577,22 @@ class ResponseFactory
                                 }
                             }
                         },
-                        $maxEvents // maxExecutions
+                        maxExecutions: $maxEvents
                     );
                 } else {
                     // For finite periodic events (sseWithPeriodicEvents, sseWithLimitedEvents, ssePeriodicThenDisconnect)
+                    $autoClose = isset($config['auto_close']) && is_bool($config['auto_close']) ? $config['auto_close'] : false;
+
                     $periodicTimerId = EventLoop::getInstance()->addPeriodicTimer(
-                        $interval,
-                        function () use (
+                        interval: $interval,
+                        callback: function () use (
                             &$events,
                             &$eventIndex,
                             &$totalEvents,
                             $onEvent,
                             $onError,
                             $mock,
-                            $config,
+                            $autoClose,
                             $jitter,
                             $interval,
                             &$periodicTimerId
@@ -585,7 +604,7 @@ class ResponseFactory
                                 }
 
                                 // Check if we should trigger an error after all events
-                                if ($mock->shouldFail() && ($config['auto_close'] ?? false)) {
+                                if ($mock->shouldFail() && $autoClose) {
                                     $error = $mock->getError() ?? 'Connection closed';
                                     if ($onError !== null) {
                                         $onError($error);
@@ -595,6 +614,7 @@ class ResponseFactory
                             }
 
                             $eventData = $events[$eventIndex];
+                            /** @var array{data?: string, event?: string, id?: string, retry?: int} $eventData */
                             $this->emitSSEEvent($eventData, $onEvent);
                             $eventIndex++;
 
@@ -607,7 +627,7 @@ class ResponseFactory
                                 }
                             }
                         },
-                        $totalEvents // maxExecutions
+                        maxExecutions: $totalEvents
                     );
                 }
             } catch (Throwable $e) {

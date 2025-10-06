@@ -1,7 +1,7 @@
 <?php
 
-use Hibla\EventLoop\Loop;
 use Hibla\Http\Http;
+use Hibla\Http\SSE\SSEEvent;
 
 require 'vendor/autoload.php';
 
@@ -24,11 +24,9 @@ Http::mock()
     ->register();
 
 Http::sse("http://localhost:8080/sse", 
-    onEvent: function ($event) {
+    onEvent: function (SSEEvent $event) {
         $data = json_decode($event->data, true);
         echo "[" . date('H:i:s') . "] Event {$data['index']} - ID: {$event->id}\n";
     }
 );
-
-Loop::run();
 echo "Done\n";
