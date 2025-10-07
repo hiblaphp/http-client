@@ -1,8 +1,8 @@
 <?php
 
-namespace Hibla\Http\Testing\Utilities;
+namespace Hibla\HttpClient\Testing\Utilities;
 
-use Hibla\Http\Testing\MockedRequest;
+use Hibla\HttpClient\Testing\MockedRequest;
 
 class RequestMatcher
 {

@@ -1,6 +1,6 @@
 <?php
 
-namespace Hibla\Http\Testing\Exceptions;
+namespace Hibla\HttpClient\Testing\Exceptions;
 
 /**
  * Thrown when mock assertions fail during testing.

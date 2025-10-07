@@ -1,36 +1,36 @@
 <?php
 
-namespace Hibla\Http\Testing;
+namespace Hibla\HttpClient\Testing;
 
-use Hibla\Http\CacheConfig;
-use Hibla\Http\Handlers\HttpHandler;
-use Hibla\Http\Interfaces\CookieJarInterface;
-use Hibla\Http\RetryConfig;
-use Hibla\Http\SSE\SSEReconnectConfig;
-use Hibla\Http\Testing\Interfaces\AssertsCookiesInterface;
-use Hibla\Http\Testing\Interfaces\AssertsDownloadsInterface;
-use Hibla\Http\Testing\Interfaces\AssertsHeadersInterface;
-use Hibla\Http\Testing\Interfaces\AssertsRequestBodyInterface;
-use Hibla\Http\Testing\Interfaces\AssertsRequestsInterface;
-use Hibla\Http\Testing\Interfaces\AssertsSSEInterface;
-use Hibla\Http\Testing\Interfaces\AssertsStreamsInterface;
-use Hibla\Http\Testing\Traits\Assertions\AssertsCookies;
-use Hibla\Http\Testing\Traits\Assertions\AssertsDownloads;
-use Hibla\Http\Testing\Traits\Assertions\AssertsHeaders;
-use Hibla\Http\Testing\Traits\Assertions\AssertsRequestBody;
-use Hibla\Http\Testing\Traits\Assertions\AssertsRequests;
-use Hibla\Http\Testing\Traits\Assertions\AssertsRequestsExtended;
-use Hibla\Http\Testing\Traits\Assertions\AssertsSSE;
-use Hibla\Http\Testing\Traits\Assertions\AssertsStreams;
-use Hibla\Http\Testing\Utilities\CacheManager;
-use Hibla\Http\Testing\Utilities\CookieManager;
-use Hibla\Http\Testing\Utilities\FileManager;
-use Hibla\Http\Testing\Utilities\NetworkSimulator;
-use Hibla\Http\Testing\Utilities\RequestExecutor;
-use Hibla\Http\Testing\Utilities\RequestMatcher;
-use Hibla\Http\Testing\Utilities\RequestRecorder;
-use Hibla\Http\Testing\Utilities\ResponseFactory;
-use Hibla\Http\Traits\FetchOptionTrait;
+use Hibla\HttpClient\CacheConfig;
+use Hibla\HttpClient\Handlers\HttpHandler;
+use Hibla\HttpClient\Interfaces\CookieJarInterface;
+use Hibla\HttpClient\RetryConfig;
+use Hibla\HttpClient\SSE\SSEReconnectConfig;
+use Hibla\HttpClient\Testing\Interfaces\AssertsCookiesInterface;
+use Hibla\HttpClient\Testing\Interfaces\AssertsDownloadsInterface;
+use Hibla\HttpClient\Testing\Interfaces\AssertsHeadersInterface;
+use Hibla\HttpClient\Testing\Interfaces\AssertsRequestBodyInterface;
+use Hibla\HttpClient\Testing\Interfaces\AssertsRequestsInterface;
+use Hibla\HttpClient\Testing\Interfaces\AssertsSSEInterface;
+use Hibla\HttpClient\Testing\Interfaces\AssertsStreamsInterface;
+use Hibla\HttpClient\Testing\Traits\Assertions\AssertsCookies;
+use Hibla\HttpClient\Testing\Traits\Assertions\AssertsDownloads;
+use Hibla\HttpClient\Testing\Traits\Assertions\AssertsHeaders;
+use Hibla\HttpClient\Testing\Traits\Assertions\AssertsRequestBody;
+use Hibla\HttpClient\Testing\Traits\Assertions\AssertsRequests;
+use Hibla\HttpClient\Testing\Traits\Assertions\AssertsRequestsExtended;
+use Hibla\HttpClient\Testing\Traits\Assertions\AssertsSSE;
+use Hibla\HttpClient\Testing\Traits\Assertions\AssertsStreams;
+use Hibla\HttpClient\Testing\Utilities\CacheManager;
+use Hibla\HttpClient\Testing\Utilities\CookieManager;
+use Hibla\HttpClient\Testing\Utilities\FileManager;
+use Hibla\HttpClient\Testing\Utilities\NetworkSimulator;
+use Hibla\HttpClient\Testing\Utilities\RequestExecutor;
+use Hibla\HttpClient\Testing\Utilities\RequestMatcher;
+use Hibla\HttpClient\Testing\Utilities\RequestRecorder;
+use Hibla\HttpClient\Testing\Utilities\ResponseFactory;
+use Hibla\HttpClient\Traits\FetchOptionTrait;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
@@ -430,7 +430,7 @@ class TestingHttpHandler extends HttpHandler implements
      * Fetch a URL with mocking support.
      *
      * @param array<int|string, mixed> $options
-     * @return PromiseInterface<\Hibla\Http\Response>|CancellablePromiseInterface<\Hibla\Http\StreamingResponse>|CancellablePromiseInterface<\Hibla\Http\SSE\SSEResponse>|CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}>
+     * @return PromiseInterface<\Hibla\HttpClient\Response>|CancellablePromiseInterface<\Hibla\HttpClient\StreamingResponse>|CancellablePromiseInterface<\Hibla\HttpClient\SSE\SSEResponse>|CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}>
      */
     public function fetch(string $url, array $options = []): PromiseInterface|CancellablePromiseInterface
     {
@@ -453,7 +453,7 @@ class TestingHttpHandler extends HttpHandler implements
      * Stream data from a URL with chunk callbacks.
      *
      * @param array<int|string, mixed> $options
-     * @return CancellablePromiseInterface<\Hibla\Http\StreamingResponse>
+     * @return CancellablePromiseInterface<\Hibla\HttpClient\StreamingResponse>
      */
     public function stream(string $url, array $options = [], ?callable $onChunk = null): CancellablePromiseInterface
     {
@@ -462,7 +462,7 @@ class TestingHttpHandler extends HttpHandler implements
             $options['on_chunk'] = $onChunk;
         }
 
-        /** @var CancellablePromiseInterface<\Hibla\Http\StreamingResponse> */
+        /** @var CancellablePromiseInterface<\Hibla\HttpClient\StreamingResponse> */
         return $this->fetch($url, $options);
     }
 

@@ -1,13 +1,13 @@
 <?php
 
-namespace Hibla\Http\Testing\Traits\Assertions;
+namespace Hibla\HttpClient\Testing\Traits\Assertions;
 
-use Hibla\Http\Testing\Exceptions\MockAssertionException;
+use Hibla\HttpClient\Testing\Exceptions\MockAssertionException;
 
 trait AssertsSSE
 {
     /**
-     * @return array<int, \Hibla\Http\Testing\Utilities\RecordedRequest>
+     * @return array<int, \Hibla\HttpClient\Testing\Utilities\RecordedRequest>
      */
     abstract public function getRequestHistory(): array;
 
@@ -461,7 +461,7 @@ trait AssertsSSE
     /**
      * Get all SSE connection attempts for a specific URL.
      * 
-     * @return array<int, \Hibla\Http\Testing\Utilities\RecordedRequest>
+     * @return array<int, \Hibla\HttpClient\Testing\Utilities\RecordedRequest>
      */
     public function getSSEConnectionAttempts(string $url): array
     {

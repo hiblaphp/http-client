@@ -1,6 +1,6 @@
 <?php
 
-namespace Hibla\Http\Interfaces;
+namespace Hibla\HttpClient\Interfaces;
 
 /**
  * Interface for client-side errors (4xx responses).

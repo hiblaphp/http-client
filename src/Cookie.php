@@ -1,6 +1,6 @@
 <?php
 
-namespace Hibla\Http;
+namespace Hibla\HttpClient;
 
 /**
  * Represents an HTTP cookie with all its attributes.

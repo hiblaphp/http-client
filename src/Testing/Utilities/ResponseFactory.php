@@ -1,21 +1,21 @@
 <?php
 
-namespace Hibla\Http\Testing\Utilities;
+namespace Hibla\HttpClient\Testing\Utilities;
 
-use Hibla\Http\Response;
-use Hibla\Http\RetryConfig;
-use Hibla\Http\SSE\SSEReconnectConfig;
-use Hibla\Http\SSE\SSEResponse;
-use Hibla\Http\StreamingResponse;
-use Hibla\Http\Testing\MockedRequest;
-use Hibla\Http\Testing\TestingHttpHandler;
-use Hibla\Http\Testing\Utilities\Factories\DownloadResponseFactory;
-use Hibla\Http\Testing\Utilities\Factories\RetryableResponseFactory;
-use Hibla\Http\Testing\Utilities\Factories\SSE\RetryableSSEResponseFactory;
-use Hibla\Http\Testing\Utilities\Factories\SSE\SSEResponseFactory;
-use Hibla\Http\Testing\Utilities\Factories\StandardResponseFactory;
-use Hibla\Http\Testing\Utilities\Factories\StreamingResponseFactory;
-use Hibla\Http\Testing\Utilities\Handlers\NetworkSimulationHandler;
+use Hibla\HttpClient\Response;
+use Hibla\HttpClient\RetryConfig;
+use Hibla\HttpClient\SSE\SSEReconnectConfig;
+use Hibla\HttpClient\SSE\SSEResponse;
+use Hibla\HttpClient\StreamingResponse;
+use Hibla\HttpClient\Testing\MockedRequest;
+use Hibla\HttpClient\Testing\TestingHttpHandler;
+use Hibla\HttpClient\Testing\Utilities\Factories\DownloadResponseFactory;
+use Hibla\HttpClient\Testing\Utilities\Factories\RetryableResponseFactory;
+use Hibla\HttpClient\Testing\Utilities\Factories\SSE\RetryableSSEResponseFactory;
+use Hibla\HttpClient\Testing\Utilities\Factories\SSE\SSEResponseFactory;
+use Hibla\HttpClient\Testing\Utilities\Factories\StandardResponseFactory;
+use Hibla\HttpClient\Testing\Utilities\Factories\StreamingResponseFactory;
+use Hibla\HttpClient\Testing\Utilities\Handlers\NetworkSimulationHandler;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
 

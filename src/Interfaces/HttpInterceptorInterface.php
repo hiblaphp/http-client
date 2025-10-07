@@ -1,9 +1,9 @@
 <?php
 
-namespace Hibla\Http\Interfaces;
+namespace Hibla\HttpClient\Interfaces;
 
-use Hibla\Http\Request;
-use Hibla\Http\Response;
+use Hibla\HttpClient\Request;
+use Hibla\HttpClient\Response;
 
 /**
  * HTTP request/response interceptor interface.

@@ -1,9 +1,9 @@
 <?php
 
-namespace Hibla\Http\Testing\Traits\Assertions;
+namespace Hibla\HttpClient\Testing\Traits\Assertions;
 
-use Hibla\Http\Testing\Exceptions\MockAssertionException;
-use Hibla\Http\Testing\Utilities\RecordedRequest;
+use Hibla\HttpClient\Testing\Exceptions\MockAssertionException;
+use Hibla\HttpClient\Testing\Utilities\RecordedRequest;
 
 trait AssertsDownloads
 {

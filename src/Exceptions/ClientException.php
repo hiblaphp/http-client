@@ -1,8 +1,8 @@
 <?php
 
-namespace Hibla\Http\Exceptions;
+namespace Hibla\HttpClient\Exceptions;
 
-use Hibla\Http\Interfaces\ClientExceptionInterface;
+use Hibla\HttpClient\Interfaces\ClientExceptionInterface;
 
 /**
  * Thrown for client-side HTTP errors (4xx status codes).

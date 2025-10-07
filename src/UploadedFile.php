@@ -1,8 +1,8 @@
 <?php
 
-namespace Hibla\Http;
+namespace Hibla\HttpClient;
 
-use Hibla\Http\Exceptions\HttpStreamException;
+use Hibla\HttpClient\Exceptions\HttpStreamException;
 use InvalidArgumentException;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UploadedFileInterface;

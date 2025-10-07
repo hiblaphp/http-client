@@ -1,8 +1,8 @@
 <?php
 
-namespace Hibla\Http;
+namespace Hibla\HttpClient;
 
-use Hibla\Http\Interfaces\CookieJarInterface;
+use Hibla\HttpClient\Interfaces\CookieJarInterface;
 
 /**
  * In-memory cookie jar implementation.

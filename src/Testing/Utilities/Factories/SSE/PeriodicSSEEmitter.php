@@ -1,13 +1,13 @@
 <?php
 
-namespace Hibla\Http\Testing\Utilities\Factories\SSE;
+namespace Hibla\HttpClient\Testing\Utilities\Factories\SSE;
 
 use Hibla\EventLoop\EventLoop;
-use Hibla\Http\Exceptions\HttpStreamException;
-use Hibla\Http\SSE\SSEResponse;
-use Hibla\Http\Stream;
-use Hibla\Http\Testing\MockedRequest;
-use Hibla\Http\Testing\Utilities\Formatters\SSEEventFormatter;
+use Hibla\HttpClient\Exceptions\HttpStreamException;
+use Hibla\HttpClient\SSE\SSEResponse;
+use Hibla\HttpClient\Stream;
+use Hibla\HttpClient\Testing\MockedRequest;
+use Hibla\HttpClient\Testing\Utilities\Formatters\SSEEventFormatter;
 use Hibla\Promise\CancellablePromise;
 
 class PeriodicSSEEmitter

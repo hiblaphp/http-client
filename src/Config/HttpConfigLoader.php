@@ -1,6 +1,6 @@
 <?php
 
-namespace Hibla\Http\Config;
+namespace Hibla\HttpClient\Config;
 
 /**
  * A dedicated, standalone, and singleton configuration loader for the HTTP client.

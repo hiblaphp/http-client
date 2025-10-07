@@ -2,7 +2,7 @@
 
 // src/Testing/Traits/RequestBuilder/BuildsBasicMocks.php
 
-namespace Hibla\Http\Testing\Traits\RequestBuilder;
+namespace Hibla\HttpClient\Testing\Traits\RequestBuilder;
 
 trait BuildsBasicMocks
 {

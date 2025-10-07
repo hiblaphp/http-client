@@ -1,13 +1,13 @@
 <?php
 
-namespace Hibla\Http\Testing\Traits\Assertions;
+namespace Hibla\HttpClient\Testing\Traits\Assertions;
 
-use Hibla\Http\Testing\Exceptions\MockAssertionException;
+use Hibla\HttpClient\Testing\Exceptions\MockAssertionException;
 
 trait AssertsRequestBody
 {
     /**
-     * @return array<int, \Hibla\Http\Testing\Utilities\RecordedRequest>
+     * @return array<int, \Hibla\HttpClient\Testing\Utilities\RecordedRequest>
      */
     abstract public function getRequestHistory(): array;
 

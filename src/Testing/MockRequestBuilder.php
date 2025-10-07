@@ -1,19 +1,19 @@
 <?php
 
-namespace Hibla\Http\Testing;
+namespace Hibla\HttpClient\Testing;
 
-use Hibla\Http\Testing\Interfaces\MockRequestBuilderInterface;
-use Hibla\Http\Testing\Traits\RequestBuilder\BuildsAdvancedScenarios;
-use Hibla\Http\Testing\Traits\RequestBuilder\BuildsBasicMocks;
-use Hibla\Http\Testing\Traits\RequestBuilder\BuildsCookieMocks;
-use Hibla\Http\Testing\Traits\RequestBuilder\BuildsFailureMocks;
-use Hibla\Http\Testing\Traits\RequestBuilder\BuildsFileMocks;
-use Hibla\Http\Testing\Traits\RequestBuilder\BuildsRealisticSSEMocks;
-use Hibla\Http\Testing\Traits\RequestBuilder\BuildsRequestExpectations;
-use Hibla\Http\Testing\Traits\RequestBuilder\BuildsResponseHeaders;
-use Hibla\Http\Testing\Traits\RequestBuilder\BuildsRetrySequences;
-use Hibla\Http\Testing\Traits\RequestBuilder\BuildsSSEMocks;
-use Hibla\Http\Testing\Traits\RequestBuilder\BuildsSSERetrySequences;
+use Hibla\HttpClient\Testing\Interfaces\MockRequestBuilderInterface;
+use Hibla\HttpClient\Testing\Traits\RequestBuilder\BuildsAdvancedScenarios;
+use Hibla\HttpClient\Testing\Traits\RequestBuilder\BuildsBasicMocks;
+use Hibla\HttpClient\Testing\Traits\RequestBuilder\BuildsCookieMocks;
+use Hibla\HttpClient\Testing\Traits\RequestBuilder\BuildsFailureMocks;
+use Hibla\HttpClient\Testing\Traits\RequestBuilder\BuildsFileMocks;
+use Hibla\HttpClient\Testing\Traits\RequestBuilder\BuildsRealisticSSEMocks;
+use Hibla\HttpClient\Testing\Traits\RequestBuilder\BuildsRequestExpectations;
+use Hibla\HttpClient\Testing\Traits\RequestBuilder\BuildsResponseHeaders;
+use Hibla\HttpClient\Testing\Traits\RequestBuilder\BuildsRetrySequences;
+use Hibla\HttpClient\Testing\Traits\RequestBuilder\BuildsSSEMocks;
+use Hibla\HttpClient\Testing\Traits\RequestBuilder\BuildsSSERetrySequences;
 
 /**
  * Builder for creating mocked HTTP requests with fluent API.

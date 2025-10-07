@@ -1,14 +1,14 @@
 <?php
 
-namespace Hibla\Http\Interfaces;
+namespace Hibla\HttpClient\Interfaces;
 
-use Hibla\Http\CacheConfig;
-use Hibla\Http\ProxyConfig;
-use Hibla\Http\Response;
-use Hibla\Http\RetryConfig;
-use Hibla\Http\SSE\SSEReconnectConfig;
-use Hibla\Http\SSE\SSEResponse;
-use Hibla\Http\StreamingResponse;
+use Hibla\HttpClient\CacheConfig;
+use Hibla\HttpClient\ProxyConfig;
+use Hibla\HttpClient\Response;
+use Hibla\HttpClient\RetryConfig;
+use Hibla\HttpClient\SSE\SSEReconnectConfig;
+use Hibla\HttpClient\SSE\SSEResponse;
+use Hibla\HttpClient\StreamingResponse;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 
 /**

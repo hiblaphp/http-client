@@ -1,8 +1,8 @@
 <?php
 
-namespace Hibla\Http\Testing\Traits\Assertions;
+namespace Hibla\HttpClient\Testing\Traits\Assertions;
 
-use Hibla\Http\Testing\Exceptions\MockAssertionException;
+use Hibla\HttpClient\Testing\Exceptions\MockAssertionException;
 
 trait AssertsHeaders
 {

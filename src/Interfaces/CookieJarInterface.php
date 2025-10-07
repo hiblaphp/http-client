@@ -1,8 +1,8 @@
 <?php
 
-namespace Hibla\Http\Interfaces;
+namespace Hibla\HttpClient\Interfaces;
 
-use Hibla\Http\Cookie;
+use Hibla\HttpClient\Cookie;
 
 /**
  * Interface for cookie storage and management.

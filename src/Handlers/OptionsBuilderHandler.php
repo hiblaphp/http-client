@@ -1,12 +1,12 @@
 <?php
 
-namespace Hibla\Http\Handlers;
+namespace Hibla\HttpClient\Handlers;
 
-use Hibla\Http\Interfaces\CookieJarInterface;
-use Hibla\Http\ProxyConfig;
-use Hibla\Http\RetryConfig;
-use Hibla\Http\Stream;
-use Hibla\Http\Uri;
+use Hibla\HttpClient\Interfaces\CookieJarInterface;
+use Hibla\HttpClient\ProxyConfig;
+use Hibla\HttpClient\RetryConfig;
+use Hibla\HttpClient\Stream;
+use Hibla\HttpClient\Uri;
 
 class OptionsBuilderHandler
 {

@@ -1,6 +1,6 @@
 <?php
 
-namespace Hibla\Http\Interfaces;
+namespace Hibla\HttpClient\Interfaces;
 
 /**
  * Interface for network-level errors.

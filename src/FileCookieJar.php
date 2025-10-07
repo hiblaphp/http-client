@@ -1,6 +1,6 @@
 <?php
 
-namespace Hibla\Http;
+namespace Hibla\HttpClient;
 
 /**
  * File-based persistent cookie jar implementation.

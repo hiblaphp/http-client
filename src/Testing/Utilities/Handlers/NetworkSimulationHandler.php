@@ -1,9 +1,9 @@
 <?php
 
-namespace Hibla\Http\Testing\Utilities\Handlers;
+namespace Hibla\HttpClient\Testing\Utilities\Handlers;
 
-use Hibla\Http\Testing\TestingHttpHandler;
-use Hibla\Http\Testing\Utilities\NetworkSimulator;
+use Hibla\HttpClient\Testing\TestingHttpHandler;
+use Hibla\HttpClient\Testing\Utilities\NetworkSimulator;
 
 class NetworkSimulationHandler
 {

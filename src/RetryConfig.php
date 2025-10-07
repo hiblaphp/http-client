@@ -1,6 +1,6 @@
 <?php
 
-namespace Hibla\Http;
+namespace Hibla\HttpClient;
 
 /**
  * A configuration object for defining HTTP request retry behavior.

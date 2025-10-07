@@ -1,14 +1,14 @@
 <?php
 
-namespace Hibla\Http;
+namespace Hibla\HttpClient;
 
-use Hibla\Http\Handlers\HttpHandler;
-use Hibla\Http\Interfaces\CookieJarInterface;
-use Hibla\Http\SSE\SSEReconnectConfig;
-use Hibla\Http\SSE\SSEResponse;
-use Hibla\Http\Testing\MockRequestBuilder;
-use Hibla\Http\Testing\TestingHttpHandler;
-use Hibla\Http\Testing\Utilities\RecordedRequest;
+use Hibla\HttpClient\Handlers\HttpHandler;
+use Hibla\HttpClient\Interfaces\CookieJarInterface;
+use Hibla\HttpClient\SSE\SSEReconnectConfig;
+use Hibla\HttpClient\SSE\SSEResponse;
+use Hibla\HttpClient\Testing\MockRequestBuilder;
+use Hibla\HttpClient\Testing\TestingHttpHandler;
+use Hibla\HttpClient\Testing\Utilities\RecordedRequest;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Psr\Http\Message\UploadedFileInterface;

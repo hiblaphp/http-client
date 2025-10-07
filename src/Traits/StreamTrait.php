@@ -1,9 +1,9 @@
 <?php
 
-namespace Hibla\Http\Traits;
+namespace Hibla\HttpClient\Traits;
 
-use Hibla\Http\Exceptions\HttpStreamException;
-use Hibla\Http\Stream;
+use Hibla\HttpClient\Exceptions\HttpStreamException;
+use Hibla\HttpClient\Stream;
 
 trait StreamTrait
 {

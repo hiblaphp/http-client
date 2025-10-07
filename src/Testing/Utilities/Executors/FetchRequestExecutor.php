@@ -1,20 +1,20 @@
 <?php
 
-namespace Hibla\Http\Testing\Utilities\Executors;
+namespace Hibla\HttpClient\Testing\Utilities\Executors;
 
-use Hibla\Http\CacheConfig;
-use Hibla\Http\Response;
-use Hibla\Http\StreamingResponse;
-use Hibla\Http\Testing\Exceptions\UnexpectedRequestException;
-use Hibla\Http\Testing\MockedRequest;
-use Hibla\Http\Testing\Utilities\FileManager;
-use Hibla\Http\Testing\Utilities\Handlers\CacheHandler;
-use Hibla\Http\Testing\Utilities\Handlers\ResponseTypeHandler;
-use Hibla\Http\Testing\Utilities\RequestMatcher;
-use Hibla\Http\Testing\Utilities\RequestRecorder;
-use Hibla\Http\Testing\Utilities\ResponseFactory;
-use Hibla\Http\Testing\Utilities\Validators\RequestValidator;
-use Hibla\Http\Traits\FetchOptionTrait;
+use Hibla\HttpClient\CacheConfig;
+use Hibla\HttpClient\Response;
+use Hibla\HttpClient\StreamingResponse;
+use Hibla\HttpClient\Testing\Exceptions\UnexpectedRequestException;
+use Hibla\HttpClient\Testing\MockedRequest;
+use Hibla\HttpClient\Testing\Utilities\FileManager;
+use Hibla\HttpClient\Testing\Utilities\Handlers\CacheHandler;
+use Hibla\HttpClient\Testing\Utilities\Handlers\ResponseTypeHandler;
+use Hibla\HttpClient\Testing\Utilities\RequestMatcher;
+use Hibla\HttpClient\Testing\Utilities\RequestRecorder;
+use Hibla\HttpClient\Testing\Utilities\ResponseFactory;
+use Hibla\HttpClient\Testing\Utilities\Validators\RequestValidator;
+use Hibla\HttpClient\Traits\FetchOptionTrait;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Hibla\Promise\Promise;

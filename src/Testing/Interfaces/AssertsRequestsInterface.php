@@ -1,8 +1,8 @@
 <?php
 
-namespace Hibla\Http\Testing\Interfaces;
+namespace Hibla\HttpClient\Testing\Interfaces;
 
-use Hibla\Http\Testing\Utilities\RecordedRequest;
+use Hibla\HttpClient\Testing\Utilities\RecordedRequest;
 
 interface AssertsRequestsInterface
 {

@@ -1,16 +1,16 @@
 <?php
 
-namespace Hibla\Http;
+namespace Hibla\HttpClient;
 
-use Hibla\Http\Handlers\HttpHandler;
-use Hibla\Http\Handlers\OptionsBuilderHandler;
-use Hibla\Http\Interfaces\CompleteHttpClientInterface;
-use Hibla\Http\Interfaces\CookieJarInterface;
-use Hibla\Http\SSE\SSEEvent;
-use Hibla\Http\SSE\SSEReconnectConfig;
-use Hibla\Http\SSE\SSEResponse;
-use Hibla\Http\Traits\InterceptorTrait;
-use Hibla\Http\Traits\StreamTrait;
+use Hibla\HttpClient\Handlers\HttpHandler;
+use Hibla\HttpClient\Handlers\OptionsBuilderHandler;
+use Hibla\HttpClient\Interfaces\CompleteHttpClientInterface;
+use Hibla\HttpClient\Interfaces\CookieJarInterface;
+use Hibla\HttpClient\SSE\SSEEvent;
+use Hibla\HttpClient\SSE\SSEReconnectConfig;
+use Hibla\HttpClient\SSE\SSEResponse;
+use Hibla\HttpClient\Traits\InterceptorTrait;
+use Hibla\HttpClient\Traits\StreamTrait;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use InvalidArgumentException;

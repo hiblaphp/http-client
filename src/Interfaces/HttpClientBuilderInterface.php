@@ -1,8 +1,8 @@
 <?php
 
-namespace Hibla\Http\Interfaces;
+namespace Hibla\HttpClient\Interfaces;
 
-use Hibla\Http\Response;
+use Hibla\HttpClient\Response;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Psr\Http\Message\RequestInterface;
 

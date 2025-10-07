@@ -1,13 +1,13 @@
 <?php
 
-namespace Hibla\Http\Testing\Utilities\Factories;
+namespace Hibla\HttpClient\Testing\Utilities\Factories;
 
-use Hibla\Http\Exceptions\HttpStreamException;
-use Hibla\Http\Exceptions\NetworkException;
-use Hibla\Http\Testing\MockedRequest;
-use Hibla\Http\Testing\Utilities\FileManager;
-use Hibla\Http\Testing\Utilities\Handlers\DelayCalculator;
-use Hibla\Http\Testing\Utilities\Handlers\NetworkSimulationHandler;
+use Hibla\HttpClient\Exceptions\HttpStreamException;
+use Hibla\HttpClient\Exceptions\NetworkException;
+use Hibla\HttpClient\Testing\MockedRequest;
+use Hibla\HttpClient\Testing\Utilities\FileManager;
+use Hibla\HttpClient\Testing\Utilities\Handlers\DelayCalculator;
+use Hibla\HttpClient\Testing\Utilities\Handlers\NetworkSimulationHandler;
 use Hibla\Promise\CancellablePromise;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 

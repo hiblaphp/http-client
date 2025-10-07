@@ -1,8 +1,8 @@
 <?php
 
-namespace Hibla\Http\Testing\Traits\RequestBuilder;
+namespace Hibla\HttpClient\Testing\Traits\RequestBuilder;
 
-use Hibla\Http\Testing\Utilities\CookieManager;
+use Hibla\HttpClient\Testing\Utilities\CookieManager;
 
 trait BuildsCookieMocks
 {

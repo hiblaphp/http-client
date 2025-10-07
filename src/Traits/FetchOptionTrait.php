@@ -1,11 +1,11 @@
 <?php
 
-namespace Hibla\Http\Traits;
+namespace Hibla\HttpClient\Traits;
 
-use Hibla\Http\CacheConfig;
-use Hibla\Http\Interfaces\CookieJarInterface;
-use Hibla\Http\ProxyConfig;
-use Hibla\Http\RetryConfig;
+use Hibla\HttpClient\CacheConfig;
+use Hibla\HttpClient\Interfaces\CookieJarInterface;
+use Hibla\HttpClient\ProxyConfig;
+use Hibla\HttpClient\RetryConfig;
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\SimpleCache\CacheInterface as PsrCacheInterface;
 use Symfony\Component\Cache\Psr16Cache;

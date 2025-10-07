@@ -1,9 +1,9 @@
 <?php
 
-namespace Hibla\Http\SSE;
+namespace Hibla\HttpClient\SSE;
 
-use Hibla\Http\Stream;
-use Hibla\Http\StreamingResponse;
+use Hibla\HttpClient\Stream;
+use Hibla\HttpClient\StreamingResponse;
 use Psr\Http\Message\StreamInterface;
 
 /**

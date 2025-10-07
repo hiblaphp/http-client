@@ -1,8 +1,8 @@
 <?php
 
-namespace Hibla\Http\Testing\Utilities\Formatters;
+namespace Hibla\HttpClient\Testing\Utilities\Formatters;
 
-use Hibla\Http\SSE\SSEEvent;
+use Hibla\HttpClient\SSE\SSEEvent;
 
 class SSEEventFormatter
 {

@@ -1,6 +1,6 @@
 <?php
 
-namespace Hibla\Http\Testing;
+namespace Hibla\HttpClient\Testing;
 
 /**
  * Represents a mocked HTTP request with matching criteria and response data.

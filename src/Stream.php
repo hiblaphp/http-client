@@ -1,8 +1,8 @@
 <?php
 
-namespace Hibla\Http;
+namespace Hibla\HttpClient;
 
-use Hibla\Http\Exceptions\HttpStreamException;
+use Hibla\HttpClient\Exceptions\HttpStreamException;
 use Psr\Http\Message\StreamInterface;
 
 /**

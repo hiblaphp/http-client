@@ -1,9 +1,9 @@
 <?php
 
-namespace Hibla\Http\Testing\Utilities;
+namespace Hibla\HttpClient\Testing\Utilities;
 
-use Hibla\Http\CacheConfig;
-use Hibla\Http\Response;
+use Hibla\HttpClient\CacheConfig;
+use Hibla\HttpClient\Response;
 use Psr\SimpleCache\CacheInterface;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Symfony\Component\Cache\Psr16Cache;

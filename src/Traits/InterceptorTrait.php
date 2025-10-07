@@ -1,9 +1,9 @@
 <?php
 
-namespace Hibla\Http\Traits;
+namespace Hibla\HttpClient\Traits;
 
-use Hibla\Http\Handlers\RequestInterceptorHandler;
-use Hibla\Http\Handlers\ResponseInterceptorHandler;
+use Hibla\HttpClient\Handlers\RequestInterceptorHandler;
+use Hibla\HttpClient\Handlers\ResponseInterceptorHandler;
 
 trait InterceptorTrait
 {

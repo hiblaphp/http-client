@@ -1,12 +1,12 @@
 <?php
 
-namespace Hibla\Http\Handlers;
+namespace Hibla\HttpClient\Handlers;
 
 use Hibla\EventLoop\EventLoop;
-use Hibla\Http\Exceptions\HttpStreamException;
-use Hibla\Http\Exceptions\NetworkException;
-use Hibla\Http\Stream;
-use Hibla\Http\StreamingResponse;
+use Hibla\HttpClient\Exceptions\HttpStreamException;
+use Hibla\HttpClient\Exceptions\NetworkException;
+use Hibla\HttpClient\Stream;
+use Hibla\HttpClient\StreamingResponse;
 use Hibla\Promise\CancellablePromise;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 

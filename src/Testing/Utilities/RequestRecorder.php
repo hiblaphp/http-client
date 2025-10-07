@@ -1,6 +1,6 @@
 <?php
 
-namespace Hibla\Http\Testing\Utilities;
+namespace Hibla\HttpClient\Testing\Utilities;
 
 class RequestRecorder
 {

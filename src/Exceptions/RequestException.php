@@ -1,8 +1,8 @@
 <?php
 
-namespace Hibla\Http\Exceptions;
+namespace Hibla\HttpClient\Exceptions;
 
-use Hibla\Http\Interfaces\RequestExceptionInterface;
+use Hibla\HttpClient\Interfaces\RequestExceptionInterface;
 
 /**
  * Generic request exception for errors that don't fit other categories.

@@ -1,8 +1,8 @@
 <?php
 
-namespace Hibla\Http\Testing\Exceptions;
+namespace Hibla\HttpClient\Testing\Exceptions;
 
-use Hibla\Http\Testing\MockedRequest;
+use Hibla\HttpClient\Testing\MockedRequest;
 
 /**
  * Thrown when a request doesn't match any mocked expectations.

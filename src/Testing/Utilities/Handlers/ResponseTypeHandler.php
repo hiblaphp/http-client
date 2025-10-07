@@ -1,14 +1,14 @@
 <?php
 
-namespace Hibla\Http\Testing\Utilities\Handlers;
+namespace Hibla\HttpClient\Testing\Utilities\Handlers;
 
-use Hibla\Http\CacheConfig;
-use Hibla\Http\Handlers\HttpHandler;
-use Hibla\Http\Response;
-use Hibla\Http\StreamingResponse;
-use Hibla\Http\Testing\MockedRequest;
-use Hibla\Http\Testing\Utilities\FileManager;
-use Hibla\Http\Testing\Utilities\ResponseFactory;
+use Hibla\HttpClient\CacheConfig;
+use Hibla\HttpClient\Handlers\HttpHandler;
+use Hibla\HttpClient\Response;
+use Hibla\HttpClient\StreamingResponse;
+use Hibla\HttpClient\Testing\MockedRequest;
+use Hibla\HttpClient\Testing\Utilities\FileManager;
+use Hibla\HttpClient\Testing\Utilities\ResponseFactory;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Psr\Http\Message\StreamInterface;

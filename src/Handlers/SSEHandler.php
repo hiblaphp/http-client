@@ -1,16 +1,16 @@
 <?php
 
-namespace Hibla\Http\Handlers;
+namespace Hibla\HttpClient\Handlers;
 
 use Hibla\EventLoop\EventLoop;
-use Hibla\Http\Exceptions\HttpStreamException;
-use Hibla\Http\Exceptions\NetworkException;
-use Hibla\Http\Exceptions\RequestException;
-use Hibla\Http\SSE\SSEConnectionState;
-use Hibla\Http\SSE\SSEEvent;
-use Hibla\Http\SSE\SSEReconnectConfig;
-use Hibla\Http\SSE\SSEResponse;
-use Hibla\Http\Stream;
+use Hibla\HttpClient\Exceptions\HttpStreamException;
+use Hibla\HttpClient\Exceptions\NetworkException;
+use Hibla\HttpClient\Exceptions\RequestException;
+use Hibla\HttpClient\SSE\SSEConnectionState;
+use Hibla\HttpClient\SSE\SSEEvent;
+use Hibla\HttpClient\SSE\SSEReconnectConfig;
+use Hibla\HttpClient\SSE\SSEResponse;
+use Hibla\HttpClient\Stream;
 use Hibla\Promise\CancellablePromise;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 

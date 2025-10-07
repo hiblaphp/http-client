@@ -1,11 +1,11 @@
 <?php
 
-namespace Hibla\Http\Testing\Utilities\Handlers;
+namespace Hibla\HttpClient\Testing\Utilities\Handlers;
 
-use Hibla\Http\CacheConfig;
-use Hibla\Http\Response;
-use Hibla\Http\Testing\Utilities\CacheManager;
-use Hibla\Http\Testing\Utilities\RequestRecorder;
+use Hibla\HttpClient\CacheConfig;
+use Hibla\HttpClient\Response;
+use Hibla\HttpClient\Testing\Utilities\CacheManager;
+use Hibla\HttpClient\Testing\Utilities\RequestRecorder;
 
 class CacheHandler
 {

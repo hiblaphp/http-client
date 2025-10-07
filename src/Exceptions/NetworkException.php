@@ -1,8 +1,8 @@
 <?php
 
-namespace Hibla\Http\Exceptions;
+namespace Hibla\HttpClient\Exceptions;
 
-use Hibla\Http\Interfaces\NetworkExceptionInterface;
+use Hibla\HttpClient\Interfaces\NetworkExceptionInterface;
 
 /**
  * Thrown when network-level errors occur.

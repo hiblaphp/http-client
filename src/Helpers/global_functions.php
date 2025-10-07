@@ -1,9 +1,9 @@
 <?php
 
-use Hibla\Http\Http;
-use Hibla\Http\Request;
-use Hibla\Http\Response;
-use Hibla\Http\StreamingResponse;
+use Hibla\HttpClient\Http;
+use Hibla\HttpClient\Request;
+use Hibla\HttpClient\Response;
+use Hibla\HttpClient\StreamingResponse;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
 

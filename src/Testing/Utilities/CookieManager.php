@@ -1,14 +1,14 @@
 <?php
 
-namespace Hibla\Http\Testing\Utilities;
+namespace Hibla\HttpClient\Testing\Utilities;
 
-use Hibla\Http\Cookie;
-use Hibla\Http\CookieJar;
-use Hibla\Http\FileCookieJar;
-use Hibla\Http\Interfaces\CookieJarInterface;
-use Hibla\Http\Testing\Exceptions\MockAssertionException;
-use Hibla\Http\Testing\MockedRequest;
-use Hibla\Http\Uri;
+use Hibla\HttpClient\Cookie;
+use Hibla\HttpClient\CookieJar;
+use Hibla\HttpClient\FileCookieJar;
+use Hibla\HttpClient\Interfaces\CookieJarInterface;
+use Hibla\HttpClient\Testing\Exceptions\MockAssertionException;
+use Hibla\HttpClient\Testing\MockedRequest;
+use Hibla\HttpClient\Uri;
 
 /**
  * Comprehensive cookie testing service for HTTP testing scenarios.

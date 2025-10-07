@@ -1,19 +1,19 @@
 <?php
 
-namespace Hibla\Http\Handlers;
+namespace Hibla\HttpClient\Handlers;
 
 use function Hibla\async;
 
 use Hibla\EventLoop\EventLoop;
-use Hibla\Http\CacheConfig;
-use Hibla\Http\Config\HttpConfigLoader;
-use Hibla\Http\Exceptions\NetworkException;
-use Hibla\Http\Response;
-use Hibla\Http\RetryConfig;
-use Hibla\Http\SSE\SSEReconnectConfig;
-use Hibla\Http\SSE\SSEResponse;
-use Hibla\Http\StreamingResponse;
-use Hibla\Http\Traits\FetchOptionTrait;
+use Hibla\HttpClient\CacheConfig;
+use Hibla\HttpClient\Config\HttpConfigLoader;
+use Hibla\HttpClient\Exceptions\NetworkException;
+use Hibla\HttpClient\Response;
+use Hibla\HttpClient\RetryConfig;
+use Hibla\HttpClient\SSE\SSEReconnectConfig;
+use Hibla\HttpClient\SSE\SSEResponse;
+use Hibla\HttpClient\StreamingResponse;
+use Hibla\HttpClient\Traits\FetchOptionTrait;
 use Hibla\Promise\CancellablePromise;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
@@ -162,7 +162,7 @@ class FetchHandler
                         $responseObj->setHttpVersion($httpVersion);
                     }
 
-                    if ($cookieJar instanceof \Hibla\Http\Interfaces\CookieJarInterface) {
+                    if ($cookieJar instanceof \Hibla\HttpClient\Interfaces\CookieJarInterface) {
                         $responseObj->applyCookiesToJar($cookieJar);
                     }
 
@@ -304,7 +304,7 @@ class FetchHandler
                         $responseObj->setHttpVersion($httpVersion);
                     }
 
-                    if ($cookieJar instanceof \Hibla\Http\Interfaces\CookieJarInterface) {
+                    if ($cookieJar instanceof \Hibla\HttpClient\Interfaces\CookieJarInterface) {
                         $responseObj->applyCookiesToJar($cookieJar);
                     }
 

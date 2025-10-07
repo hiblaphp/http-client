@@ -1,21 +1,21 @@
 <?php
 
-namespace Hibla\Http\Handlers;
+namespace Hibla\HttpClient\Handlers;
 
 use function Hibla\async;
 
-use Hibla\Http\CacheConfig;
-use Hibla\Http\Config\HttpConfigLoader;
-use Hibla\Http\Exceptions\HttpStreamException;
-use Hibla\Http\Interfaces\CookieJarInterface;
-use Hibla\Http\Request;
-use Hibla\Http\Response;
-use Hibla\Http\RetryConfig;
-use Hibla\Http\SSE\SSEEvent;
-use Hibla\Http\SSE\SSEReconnectConfig;
-use Hibla\Http\SSE\SSEResponse;
-use Hibla\Http\Stream;
-use Hibla\Http\StreamingResponse;
+use Hibla\HttpClient\CacheConfig;
+use Hibla\HttpClient\Config\HttpConfigLoader;
+use Hibla\HttpClient\Exceptions\HttpStreamException;
+use Hibla\HttpClient\Interfaces\CookieJarInterface;
+use Hibla\HttpClient\Request;
+use Hibla\HttpClient\Response;
+use Hibla\HttpClient\RetryConfig;
+use Hibla\HttpClient\SSE\SSEEvent;
+use Hibla\HttpClient\SSE\SSEReconnectConfig;
+use Hibla\HttpClient\SSE\SSEResponse;
+use Hibla\HttpClient\Stream;
+use Hibla\HttpClient\StreamingResponse;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Psr\SimpleCache\CacheInterface;

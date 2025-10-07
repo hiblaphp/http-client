@@ -1,6 +1,6 @@
 <?php
 
-namespace Hibla\Http\Interfaces;
+namespace Hibla\HttpClient\Interfaces;
 
 use Psr\Http\Message\ResponseInterface;
 

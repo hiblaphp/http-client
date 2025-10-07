@@ -1,6 +1,6 @@
 <?php
 
-namespace Hibla\Http\Testing\Interfaces;
+namespace Hibla\HttpClient\Testing\Interfaces;
 
 interface BuildsFailureMocksInterface
 {

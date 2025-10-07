@@ -1,8 +1,8 @@
 <?php
 
-namespace Hibla\Http\Testing\Traits\RequestBuilder;
+namespace Hibla\HttpClient\Testing\Traits\RequestBuilder;
 
-use Hibla\Http\Testing\MockedRequest;
+use Hibla\HttpClient\Testing\MockedRequest;
 
 trait BuildsAdvancedScenarios
 {

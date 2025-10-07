@@ -1,6 +1,6 @@
 <?php
 
-namespace Hibla\Http\Interfaces;
+namespace Hibla\HttpClient\Interfaces;
 
 /**
  * Complete HTTP client interface combining all functionality.

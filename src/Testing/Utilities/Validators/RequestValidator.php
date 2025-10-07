@@ -1,6 +1,6 @@
 <?php
 
-namespace Hibla\Http\Testing\Utilities\Validators;
+namespace Hibla\HttpClient\Testing\Utilities\Validators;
 
 class RequestValidator
 {

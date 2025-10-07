@@ -1,8 +1,8 @@
 <?php
 
-namespace Hibla\Http\Exceptions;
+namespace Hibla\HttpClient\Exceptions;
 
-use Hibla\Http\Interfaces\RequestExceptionInterface;
+use Hibla\HttpClient\Interfaces\RequestExceptionInterface;
 
 /**
  * Thrown when streaming-specific errors occur.

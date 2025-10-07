@@ -1,6 +1,6 @@
 <?php
 
-namespace Hibla\Http\SSE;
+namespace Hibla\HttpClient\SSE;
 
 /**
  * Represents a single Server-Sent Event.

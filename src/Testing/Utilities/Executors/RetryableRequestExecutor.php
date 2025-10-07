@@ -1,18 +1,18 @@
 <?php
 
-namespace Hibla\Http\Testing\Utilities\Executors;
+namespace Hibla\HttpClient\Testing\Utilities\Executors;
 
-use Hibla\Http\Handlers\HttpHandler;
-use Hibla\Http\Response;
-use Hibla\Http\RetryConfig;
-use Hibla\Http\StreamingResponse;
-use Hibla\Http\Testing\Exceptions\MockAssertionException;
-use Hibla\Http\Testing\MockedRequest;
-use Hibla\Http\Testing\Utilities\FileManager;
-use Hibla\Http\Testing\Utilities\RequestMatcher;
-use Hibla\Http\Testing\Utilities\RequestRecorder;
-use Hibla\Http\Testing\Utilities\ResponseFactory;
-use Hibla\Http\Traits\FetchOptionTrait;
+use Hibla\HttpClient\Handlers\HttpHandler;
+use Hibla\HttpClient\Response;
+use Hibla\HttpClient\RetryConfig;
+use Hibla\HttpClient\StreamingResponse;
+use Hibla\HttpClient\Testing\Exceptions\MockAssertionException;
+use Hibla\HttpClient\Testing\MockedRequest;
+use Hibla\HttpClient\Testing\Utilities\FileManager;
+use Hibla\HttpClient\Testing\Utilities\RequestMatcher;
+use Hibla\HttpClient\Testing\Utilities\RequestRecorder;
+use Hibla\HttpClient\Testing\Utilities\ResponseFactory;
+use Hibla\HttpClient\Traits\FetchOptionTrait;
 use Hibla\Promise\CancellablePromise;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;

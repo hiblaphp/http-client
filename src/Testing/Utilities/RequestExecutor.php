@@ -1,18 +1,18 @@
 <?php
 
-namespace Hibla\Http\Testing\Utilities;
+namespace Hibla\HttpClient\Testing\Utilities;
 
-use Hibla\Http\CacheConfig;
-use Hibla\Http\Response;
-use Hibla\Http\RetryConfig;
-use Hibla\Http\StreamingResponse;
-use Hibla\Http\Testing\Utilities\Executors\FetchRequestExecutor;
-use Hibla\Http\Testing\Utilities\Executors\SSERequestExecutor;
-use Hibla\Http\Testing\Utilities\Executors\StandardRequestExecutor;
-use Hibla\Http\Testing\Utilities\Handlers\CacheHandler;
-use Hibla\Http\Testing\Utilities\Validators\RequestValidator;
-use Hibla\Http\Testing\MockedRequest;
-use Hibla\Http\Traits\FetchOptionTrait;
+use Hibla\HttpClient\CacheConfig;
+use Hibla\HttpClient\Response;
+use Hibla\HttpClient\RetryConfig;
+use Hibla\HttpClient\StreamingResponse;
+use Hibla\HttpClient\Testing\Utilities\Executors\FetchRequestExecutor;
+use Hibla\HttpClient\Testing\Utilities\Executors\SSERequestExecutor;
+use Hibla\HttpClient\Testing\Utilities\Executors\StandardRequestExecutor;
+use Hibla\HttpClient\Testing\Utilities\Handlers\CacheHandler;
+use Hibla\HttpClient\Testing\Utilities\Validators\RequestValidator;
+use Hibla\HttpClient\Testing\MockedRequest;
+use Hibla\HttpClient\Traits\FetchOptionTrait;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
@@ -112,7 +112,7 @@ class RequestExecutor
      * @param list<MockedRequest> $mockedRequests
      * @param array<string, mixed> $globalSettings
      * @param mixed $reconnectConfig
-     * @return CancellablePromiseInterface<\Hibla\Http\SSE\SSEResponse>
+     * @return CancellablePromiseInterface<\Hibla\HttpClient\SSE\SSEResponse>
      */
     public function executeSSE(
         string $url,

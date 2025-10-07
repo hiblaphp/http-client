@@ -1,6 +1,6 @@
 <?php
 
-namespace Hibla\Http;
+namespace Hibla\HttpClient;
 
 use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\StreamInterface;

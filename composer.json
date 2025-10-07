@@ -1,10 +1,10 @@
 {
-    "name": "hiblaphp/http",
+    "name": "hiblaphp/http-client",
     "type": "library",
     "license": "MIT",
     "autoload": {
         "psr-4": {
-            "Hibla\\Http\\": "src/"
+            "Hibla\\HttpClient\\": "src/"
         },
         "files": [
             "src/Helpers/global_functions.php",

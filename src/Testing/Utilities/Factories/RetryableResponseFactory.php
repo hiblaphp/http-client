@@ -1,15 +1,15 @@
 <?php
 
-namespace Hibla\Http\Testing\Utilities\Factories;
+namespace Hibla\HttpClient\Testing\Utilities\Factories;
 
 use Exception;
-use Hibla\Http\Exceptions\NetworkException;
-use Hibla\Http\Response;
-use Hibla\Http\RetryConfig;
-use Hibla\Http\Testing\Exceptions\MockException;
-use Hibla\Http\Testing\MockedRequest;
-use Hibla\Http\Testing\Utilities\Handlers\DelayCalculator;
-use Hibla\Http\Testing\Utilities\Handlers\NetworkSimulationHandler;
+use Hibla\HttpClient\Exceptions\NetworkException;
+use Hibla\HttpClient\Response;
+use Hibla\HttpClient\RetryConfig;
+use Hibla\HttpClient\Testing\Exceptions\MockException;
+use Hibla\HttpClient\Testing\MockedRequest;
+use Hibla\HttpClient\Testing\Utilities\Handlers\DelayCalculator;
+use Hibla\HttpClient\Testing\Utilities\Handlers\NetworkSimulationHandler;
 use Hibla\Promise\CancellablePromise;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;

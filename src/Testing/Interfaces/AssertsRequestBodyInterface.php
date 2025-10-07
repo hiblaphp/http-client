@@ -1,8 +1,8 @@
 <?php
 
-namespace Hibla\Http\Testing\Interfaces;
+namespace Hibla\HttpClient\Testing\Interfaces;
 
-use Hibla\Http\Testing\Exceptions\MockAssertionException;
+use Hibla\HttpClient\Testing\Exceptions\MockAssertionException;
 
 interface AssertsRequestBodyInterface
 {

@@ -1,10 +1,10 @@
 <?php
 
-namespace Hibla\Http\SSE;
+namespace Hibla\HttpClient\SSE;
 
 use Exception;
 use Hibla\EventLoop\EventLoop;
-use Hibla\Http\StreamingResponse;
+use Hibla\HttpClient\StreamingResponse;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 
 /**

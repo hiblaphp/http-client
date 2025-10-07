@@ -1,8 +1,8 @@
 <?php
 
-namespace Hibla\Http\Testing\Exceptions;
+namespace Hibla\HttpClient\Testing\Exceptions;
 
-use Hibla\Http\Exceptions\HttpException;
+use Hibla\HttpClient\Exceptions\HttpException;
 
 /**
  * Base exception for all mocking-related errors.

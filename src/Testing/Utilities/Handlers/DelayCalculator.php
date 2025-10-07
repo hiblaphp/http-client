@@ -1,8 +1,8 @@
 <?php
 
-namespace Hibla\Http\Testing\Utilities\Handlers;
+namespace Hibla\HttpClient\Testing\Utilities\Handlers;
 
-use Hibla\Http\Testing\MockedRequest;
+use Hibla\HttpClient\Testing\MockedRequest;
 
 class DelayCalculator
 {

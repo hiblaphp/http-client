@@ -1,8 +1,8 @@
 <?php
 
-namespace Hibla\Http\Testing\Interfaces;
+namespace Hibla\HttpClient\Testing\Interfaces;
 
-use Hibla\Http\Testing\Exceptions\MockAssertionException;
+use Hibla\HttpClient\Testing\Exceptions\MockAssertionException;
 
 interface AssertsSSEInterface
 {
@@ -137,7 +137,7 @@ interface AssertsSSEInterface
      * Get all SSE connection attempts for a specific URL.
      *
      * @param string $url The URL pattern
-     * @return array<int, \Hibla\Http\Testing\Utilities\RecordedRequest>
+     * @return array<int, \Hibla\HttpClient\Testing\Utilities\RecordedRequest>
      */
     public function getSSEConnectionAttempts(string $url): array;
 

@@ -1,9 +1,9 @@
 <?php
 
-namespace Hibla\Http\Exceptions;
+namespace Hibla\HttpClient\Exceptions;
 
 use Exception;
-use Hibla\Http\Interfaces\RequestExceptionInterface;
+use Hibla\HttpClient\Interfaces\RequestExceptionInterface;
 
 class HttpException extends Exception implements RequestExceptionInterface
 {

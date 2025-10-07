@@ -1,9 +1,9 @@
 <?php
 
-namespace Hibla\Http\Handlers;
+namespace Hibla\HttpClient\Handlers;
 
-use Hibla\Http\Exceptions\RequestException;
-use Hibla\Http\Request;
+use Hibla\HttpClient\Exceptions\RequestException;
+use Hibla\HttpClient\Request;
 use Hibla\Promise\CancellablePromise;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
