@@ -44,8 +44,11 @@ class HttpHandler
     /**
      * Creates a new HttpHandler instance.
      */
-    public function __construct(?StreamingHandler $streamingHandler = null, ?FetchHandler $fetchHandler = null, ?SSEHandler $sseHandler = null)
-    {
+    public function __construct(
+        ?StreamingHandler $streamingHandler = null,
+        ?FetchHandler $fetchHandler = null,
+        ?SSEHandler $sseHandler = null
+    ) {
         $this->streamingHandler = $streamingHandler ?? new StreamingHandler();
         $this->fetchHandler = $fetchHandler ?? new FetchHandler($this->streamingHandler);
         $this->sseHandler = $sseHandler ?? new SSEHandler();

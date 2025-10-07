@@ -2,26 +2,14 @@
 
 namespace Hibla\HttpClient\Handlers;
 
-use function Hibla\async;
-
-use Hibla\EventLoop\EventLoop;
-use Hibla\HttpClient\CacheConfig;
-use Hibla\HttpClient\Config\HttpConfigLoader;
-use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Response;
 use Hibla\HttpClient\RetryConfig;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
 use Hibla\HttpClient\SSE\SSEResponse;
 use Hibla\HttpClient\StreamingResponse;
 use Hibla\HttpClient\Traits\FetchOptionTrait;
-use Hibla\Promise\CancellablePromise;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
-use Psr\SimpleCache\CacheInterface;
-use RuntimeException;
-use Symfony\Component\Cache\Adapter\FilesystemAdapter;
-
-use Symfony\Component\Cache\Psr16Cache;
 
 /**
  * Handler for fetch-style HTTP requests with advanced options support.
@@ -34,13 +22,23 @@ class FetchHandler
     use FetchOptionTrait;
 
     private StreamingHandler $streamingHandler;
-    private static ?CacheInterface $defaultCache = null;
     private SSEHandler $sseHandler;
+    private RequestExecutor $requestExecutor;
+    private RetryHandler $retryHandler;
+    private CacheHandler $cacheHandler;
 
-    public function __construct(?StreamingHandler $streamingHandler = null, ?SSEHandler $sseHandler = null)
-    {
+    public function __construct(
+        ?StreamingHandler $streamingHandler = null,
+        ?SSEHandler $sseHandler = null,
+        ?RequestExecutor $requestExecutor = null,
+        ?RetryHandler $retryHandler = null,
+        ?CacheHandler $cacheHandler = null
+    ) {
         $this->streamingHandler = $streamingHandler ?? new StreamingHandler();
         $this->sseHandler = $sseHandler ?? new SSEHandler();
+        $this->requestExecutor = $requestExecutor ?? new RequestExecutor();
+        $this->retryHandler = $retryHandler ?? new RetryHandler();
+        $this->cacheHandler = $cacheHandler ?? new CacheHandler($this->requestExecutor, $this->retryHandler);
     }
 
     /**
@@ -85,17 +83,18 @@ class FetchHandler
         $curlOptions = $this->normalizeFetchOptions($url, $options);
 
         if ($cacheConfig !== null) {
-            return $this->sendRequestWithCache($url, $curlOptions, $cacheConfig, $retryConfig);
+            return $this->cacheHandler->execute($url, $curlOptions, $cacheConfig, $retryConfig);
         }
 
         if ($retryConfig !== null) {
-            return $this->fetchWithRetry($url, $curlOptions, $retryConfig);
+            return $this->retryHandler->execute($url, $curlOptions, $retryConfig);
         }
 
-        return $this->executeBasicFetch($url, $curlOptions);
+        return $this->requestExecutor->execute($url, $curlOptions);
     }
 
     /**
+     * @deprecated Use HttpRetryHandler::execute() directly. This method is maintained for backward compatibility.
      * Sends a request with automatic retry logic on failure.
      *
      * @param  string  $url  The target URL.
@@ -105,81 +104,7 @@ class FetchHandler
      */
     public function fetchWithRetry(string $url, array $options, RetryConfig $retryConfig): PromiseInterface
     {
-        /** @var CancellablePromise<Response> $promise */
-        $promise = new CancellablePromise();
-        $attempt = 0;
-        $totalAttempts = 0;
-        /** @var string|null $requestId */
-        $requestId = null;
-
-        $cookieJar = $options['_cookie_jar'] ?? null;
-        unset($options['_cookie_jar']);
-
-        /** @var array<int, mixed> $curlOnlyOptions */
-        $curlOnlyOptions = array_filter($options, 'is_int', ARRAY_FILTER_USE_KEY);
-
-        $executeRequest = function () use ($url, $curlOnlyOptions, $retryConfig, $promise, &$attempt, &$totalAttempts, &$requestId, &$executeRequest, $cookieJar) {
-            $totalAttempts++;
-
-            $requestId = EventLoop::getInstance()->addHttpRequest(
-                $url,
-                $curlOnlyOptions,
-                function (?string $error, ?string $responseBody, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $retryConfig, $promise, &$attempt, &$totalAttempts, &$executeRequest, $cookieJar) {
-
-                    if ($promise->isCancelled()) {
-                        return;
-                    }
-
-                    $isRetryable = ($error !== null && $retryConfig->isRetryableError($error)) ||
-                        ($httpCode !== null && in_array($httpCode, $retryConfig->retryableStatusCodes, true));
-
-                    if ($isRetryable && $attempt < $retryConfig->maxRetries) {
-                        $attempt++;
-                        $delay = $retryConfig->getDelay($attempt);
-
-                        EventLoop::getInstance()->addTimer($delay, $executeRequest);
-
-                        return;
-                    }
-
-                    if ($error !== null) {
-                        $promise->reject(new NetworkException(
-                            "HTTP Request failed after {$totalAttempts} attempts: {$error}",
-                            0,
-                            null,
-                            $url,
-                            $error
-                        ));
-
-                        return;
-                    }
-
-                    /** @var array<string, array<string>|string> $normalizedHeaders */
-                    $normalizedHeaders = $this->normalizeHeaders($headers);
-                    $responseObj = new Response($responseBody ?? '', $httpCode ?? 0, $normalizedHeaders);
-
-                    if ($httpVersion !== null) {
-                        $responseObj->setHttpVersion($httpVersion);
-                    }
-
-                    if ($cookieJar instanceof \Hibla\HttpClient\Interfaces\CookieJarInterface) {
-                        $responseObj->applyCookiesToJar($cookieJar);
-                    }
-
-                    $promise->resolve($responseObj);
-                }
-            );
-        };
-
-        $executeRequest();
-
-        $promise->setCancelHandler(function () use (&$requestId) {
-            if ($requestId !== null) {
-                EventLoop::getInstance()->cancelHttpRequest($requestId);
-            }
-        });
-
-        return $promise;
+        return $this->retryHandler->execute($url, $options, $retryConfig);
     }
 
     /**
@@ -271,153 +196,7 @@ class FetchHandler
      */
     public function executeBasicFetch(string $url, array $curlOptions): PromiseInterface
     {
-        /** @var CancellablePromise<Response> $promise */
-        $promise = new CancellablePromise();
-
-        $cookieJar = $curlOptions['_cookie_jar'] ?? null;
-        unset($curlOptions['_cookie_jar']);
-
-        /** @var array<int, mixed> $curlOnlyOptions */
-        $curlOnlyOptions = array_filter($curlOptions, 'is_int', ARRAY_FILTER_USE_KEY);
-
-        $requestId = EventLoop::getInstance()->addHttpRequest(
-            $url,
-            $curlOnlyOptions,
-            function (?string $error, ?string $response, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $promise, $cookieJar) {
-                if ($promise->isCancelled()) {
-                    return;
-                }
-
-                if ($error !== null) {
-                    $promise->reject(new NetworkException(
-                        "HTTP Request failed: {$error}",
-                        0,
-                        null,
-                        $url,
-                        $error
-                    ));
-                } else {
-                    $normalizedHeaders = $this->normalizeHeaders($headers);
-                    $responseObj = new Response($response ?? '', $httpCode ?? 0, $normalizedHeaders);
-
-                    if ($httpVersion !== null) {
-                        $responseObj->setHttpVersion($httpVersion);
-                    }
-
-                    if ($cookieJar instanceof \Hibla\HttpClient\Interfaces\CookieJarInterface) {
-                        $responseObj->applyCookiesToJar($cookieJar);
-                    }
-
-                    $promise->resolve($responseObj);
-                }
-            }
-        );
-
-        $promise->setCancelHandler(function () use ($requestId) {
-            EventLoop::getInstance()->cancelHttpRequest($requestId);
-        });
-
-        return $promise;
-    }
-
-    /**
-     * Sends a request with caching support.
-     *
-     * @param  string  $url  The target URL.
-     * @param  array<int|string, mixed>  $curlOptions  cURL options for the request.
-     * @param  CacheConfig  $cacheConfig  Cache configuration.
-     * @param  RetryConfig|null  $retryConfig  Optional retry configuration.
-     * @return PromiseInterface<Response> A promise that resolves with a Response object.
-     */
-    private function sendRequestWithCache(string $url, array $curlOptions, CacheConfig $cacheConfig, ?RetryConfig $retryConfig = null): PromiseInterface
-    {
-        if (($curlOptions[CURLOPT_CUSTOMREQUEST] ?? 'GET') !== 'GET') {
-            return $this->dispatchRequest($url, $curlOptions, $retryConfig);
-        }
-
-        $cache = $cacheConfig->cache ?? self::getDefaultCache();
-        $cacheKey = $cacheConfig->cacheKey ?? self::generateCacheKey($url);
-
-        /** @var PromiseInterface<Response> */
-        return async(function () use ($cache, $cacheKey, $url, $curlOptions, $cacheConfig, $retryConfig): Response {
-            /** @var array{body: string, status: int, headers: array<string, array<string>|string>, expires_at: int}|null $cachedItem */
-            $cachedItem = $cache->get($cacheKey);
-
-            if (is_array($cachedItem) && isset($cachedItem['expires_at']) && is_int($cachedItem['expires_at']) && time() < $cachedItem['expires_at']) {
-                if (isset($cachedItem['body'], $cachedItem['status'], $cachedItem['headers']) && is_string($cachedItem['body']) && is_int($cachedItem['status']) && is_array($cachedItem['headers'])) {
-                    return new Response($cachedItem['body'], $cachedItem['status'], $cachedItem['headers']);
-                }
-            }
-
-            if (is_array($cachedItem) && $cacheConfig->respectServerHeaders && isset($cachedItem['headers']) && is_array($cachedItem['headers'])) {
-                /** @var array<string> $httpHeaders */
-                $httpHeaders = [];
-                if (isset($curlOptions[CURLOPT_HTTPHEADER]) && is_array($curlOptions[CURLOPT_HTTPHEADER])) {
-                    $httpHeaders = $curlOptions[CURLOPT_HTTPHEADER];
-                }
-
-                $cachedHeaders = $cachedItem['headers'];
-
-                if (isset($cachedHeaders['etag'])) {
-                    $etagValue = $cachedHeaders['etag'];
-                    if (is_string($etagValue)) {
-                        $etag = $etagValue;
-                    } elseif (is_array($etagValue) && isset($etagValue[0]) && is_string($etagValue[0])) {
-                        $etag = $etagValue[0];
-                    } else {
-                        $etag = null;
-                    }
-
-                    if ($etag !== null) {
-                        $httpHeaders[] = 'If-None-Match: ' . $etag;
-                    }
-                }
-
-                if (isset($cachedHeaders['last-modified'])) {
-                    $lastModifiedValue = $cachedHeaders['last-modified'];
-                    if (is_string($lastModifiedValue)) {
-                        $lastModified = $lastModifiedValue;
-                    } elseif (is_array($lastModifiedValue) && isset($lastModifiedValue[0]) && is_string($lastModifiedValue[0])) {
-                        $lastModified = $lastModifiedValue[0];
-                    } else {
-                        $lastModified = null;
-                    }
-
-                    if ($lastModified !== null) {
-                        $httpHeaders[] = 'If-Modified-Since: ' . $lastModified;
-                    }
-                }
-
-                $curlOptions[CURLOPT_HTTPHEADER] = $httpHeaders;
-            }
-
-            $response = await($this->dispatchRequest($url, $curlOptions, $retryConfig));
-
-            if ($response->status() === 304 && is_array($cachedItem)) {
-                $newExpiry = $this->calculateExpiry($response, $cacheConfig);
-                $cachedItem['expires_at'] = $newExpiry;
-                $cache->set($cacheKey, $cachedItem, $newExpiry > time() ? $newExpiry - time() : 0);
-
-                if (isset($cachedItem['body'], $cachedItem['headers']) && is_string($cachedItem['body']) && is_array($cachedItem['headers'])) {
-                    return new Response($cachedItem['body'], 200, $cachedItem['headers']);
-                }
-            }
-
-            if ($response->ok()) {
-                $expiry = $this->calculateExpiry($response, $cacheConfig);
-                if ($expiry > time()) {
-                    $ttl = $expiry - time();
-                    $cache->set($cacheKey, [
-                        'body' => (string) $response->getBody(),
-                        'status' => $response->status(),
-                        'headers' => $response->getHeaders(),
-                        'expires_at' => $expiry,
-                    ], $ttl);
-                }
-            }
-
-            return $response;
-        });
+        return $this->requestExecutor->execute($url, $curlOptions);
     }
 
     /**
@@ -552,117 +331,5 @@ class FetchHandler
         }
 
         return null;
-    }
-
-    /**
-     * Dispatches the request to the network, applying retry logic if configured.
-     *
-     * @param  string  $url  The target URL.
-     * @param  array<int|string, mixed>  $curlOptions  cURL options for the request.
-     * @param  RetryConfig|null  $retryConfig  Optional retry configuration.
-     * @return PromiseInterface<Response> A promise that resolves with a Response object.
-     */
-    private function dispatchRequest(string $url, array $curlOptions, ?RetryConfig $retryConfig): PromiseInterface
-    {
-        if ($retryConfig !== null) {
-            return $this->fetchWithRetry($url, $curlOptions, $retryConfig);
-        }
-
-        return $this->executeBasicFetch($url, $curlOptions);
-    }
-
-    /**
-     * Normalizes headers array to the expected format.
-     *
-     * @param  array<mixed>  $headers  The headers to normalize.
-     * @return array<string, array<string>|string> Normalized headers.
-     */
-    private function normalizeHeaders(array $headers): array
-    {
-        /** @var array<string, array<string>|string> $normalized */
-        $normalized = [];
-
-        foreach ($headers as $key => $value) {
-            if (is_string($key)) {
-                if (is_string($value)) {
-                    $normalized[$key] = $value;
-                } elseif (is_array($value)) {
-                    $stringValues = array_filter($value, 'is_string');
-                    if (count($stringValues) > 0) {
-                        $normalized[$key] = array_values($stringValues);
-                    }
-                }
-            }
-        }
-
-        return $normalized;
-    }
-
-    /**
-     * Generates the unique cache key for a given URL.
-     *
-     * @param  string  $url  The URL to generate a cache key for.
-     * @return string The unique cache key.
-     */
-    private function generateCacheKey(string $url): string
-    {
-        return 'http_' . sha1($url);
-    }
-
-    /**
-     * Lazily creates and returns a default PSR-16 cache instance.
-     *
-     * @return CacheInterface The default cache instance.
-     */
-    private static function getDefaultCache(): CacheInterface
-    {
-        if (self::$defaultCache === null) {
-            $httpConfigLoader = HttpConfigLoader::getInstance();
-
-            /** @var mixed $httpConfig */
-            $httpConfig = $httpConfigLoader->get('client', []);
-
-            $cacheDirectory = null;
-            if (is_array($httpConfig) && isset($httpConfig['cache']) && is_array($httpConfig['cache']) && isset($httpConfig['cache']['path']) && is_string($httpConfig['cache']['path'])) {
-                $cacheDirectory = $httpConfig['cache']['path'];
-            }
-
-            if ($cacheDirectory === null) {
-                $rootPath = $httpConfigLoader->getRootPath();
-                $cacheDirectory = is_string($rootPath)
-                    ? $rootPath . '/storage/cache'
-                    : sys_get_temp_dir() . '/hibla_http_cache';
-            }
-
-            if (! is_dir($cacheDirectory)) {
-                if (! mkdir($cacheDirectory, 0775, true) && ! is_dir($cacheDirectory)) {
-                    throw new RuntimeException(sprintf('Cache directory "%s" could not be created', $cacheDirectory));
-                }
-            }
-
-            $psr6Cache = new FilesystemAdapter('http', 0, $cacheDirectory);
-            self::$defaultCache = new Psr16Cache($psr6Cache);
-        }
-
-        return self::$defaultCache;
-    }
-
-    /**
-     * Calculates the expiry timestamp based on Cache-Control headers or the default TTL from config.
-     *
-     * @param  Response  $response  The HTTP response.
-     * @param  CacheConfig  $cacheConfig  The cache configuration.
-     * @return int The expiry timestamp.
-     */
-    private function calculateExpiry(Response $response, CacheConfig $cacheConfig): int
-    {
-        if ($cacheConfig->respectServerHeaders) {
-            $header = $response->getHeaderLine('Cache-Control');
-            if ($header !== '' && preg_match('/max-age=(\d+)/', $header, $matches) === 1) {
-                return time() + (int) $matches[1];
-            }
-        }
-
-        return time() + $cacheConfig->ttlSeconds;
     }
 }
