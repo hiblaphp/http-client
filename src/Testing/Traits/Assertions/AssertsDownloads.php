@@ -23,10 +23,10 @@ trait AssertsDownloads
     {
         foreach ($this->getRequestHistory() as $request) {
             $options = $request->getOptions();
-            
+
             if ($request->getUrl() === $url && isset($options['download'])) {
                 $downloadDest = $options['download'];
-                
+
                 if (is_string($downloadDest) && $downloadDest === $destination) {
                     return;
                 }
@@ -48,7 +48,7 @@ trait AssertsDownloads
     {
         foreach ($this->getRequestHistory() as $request) {
             $options = $request->getOptions();
-            
+
             if ($request->getUrl() === $url && isset($options['download'])) {
                 return;
             }
@@ -67,10 +67,10 @@ trait AssertsDownloads
     {
         foreach ($this->getRequestHistory() as $request) {
             $options = $request->getOptions();
-            
+
             if (isset($options['download'])) {
                 $downloadDest = $options['download'];
-                
+
                 if (is_string($downloadDest) && $downloadDest === $destination) {
                     return;
                 }
@@ -93,19 +93,19 @@ trait AssertsDownloads
     {
         foreach ($this->getRequestHistory() as $request) {
             $options = $request->getOptions();
-            
+
             if ($request->getUrl() === $url && isset($options['download'])) {
                 $matches = true;
-                
+
                 foreach ($expectedHeaders as $name => $value) {
                     $headerValue = $request->getHeader($name);
-                    
+
                     if ($headerValue === null || $headerValue !== $value) {
                         $matches = false;
                         break;
                     }
                 }
-                
+
                 if ($matches) {
                     return;
                 }
@@ -126,11 +126,11 @@ trait AssertsDownloads
     {
         foreach ($this->getRequestHistory() as $request) {
             $options = $request->getOptions();
-            
+
             if (isset($options['download'])) {
                 $destination = $options['download'];
                 $destinationStr = is_string($destination) ? $destination : 'unknown';
-                
+
                 throw new MockAssertionException(
                     "Expected no downloads, but at least one was made to: {$destinationStr}"
                 );
@@ -147,10 +147,10 @@ trait AssertsDownloads
     public function assertDownloadCount(int $expected): void
     {
         $actual = 0;
-        
+
         foreach ($this->getRequestHistory() as $request) {
             $options = $request->getOptions();
-            
+
             if (isset($options['download'])) {
                 $actual++;
             }
@@ -192,7 +192,7 @@ trait AssertsDownloads
         $this->assertDownloadedFileExists($destination);
 
         $actualContent = file_get_contents($destination);
-        
+
         if ($actualContent === false) {
             throw new MockAssertionException(
                 "Cannot read downloaded file: {$destination}"
@@ -218,7 +218,7 @@ trait AssertsDownloads
         $this->assertDownloadedFileExists($destination);
 
         $actualContent = file_get_contents($destination);
-        
+
         if ($actualContent === false) {
             throw new MockAssertionException(
                 "Cannot read downloaded file: {$destination}"
@@ -244,7 +244,7 @@ trait AssertsDownloads
         $this->assertDownloadedFileExists($destination);
 
         $actualSize = filesize($destination);
-        
+
         if ($actualSize === false) {
             throw new MockAssertionException(
                 "Cannot determine size of downloaded file: {$destination}"
@@ -271,7 +271,7 @@ trait AssertsDownloads
         $this->assertDownloadedFileExists($destination);
 
         $actualSize = filesize($destination);
-        
+
         if ($actualSize === false) {
             throw new MockAssertionException(
                 "Cannot determine size of downloaded file: {$destination}"
@@ -296,10 +296,12 @@ trait AssertsDownloads
     {
         foreach ($this->getRequestHistory() as $request) {
             $options = $request->getOptions();
-            
-            if ($request->getUrl() === $url && 
+
+            if (
+                $request->getUrl() === $url &&
                 isset($options['download']) &&
-                strtoupper($request->getMethod()) === strtoupper($method)) {
+                strtoupper($request->getMethod()) === strtoupper($method)
+            ) {
                 return;
             }
         }
@@ -317,10 +319,10 @@ trait AssertsDownloads
     public function getDownloadRequests(): array
     {
         $downloads = [];
-        
+
         foreach ($this->getRequestHistory() as $request) {
             $options = $request->getOptions();
-            
+
             if (isset($options['download'])) {
                 $downloads[] = $request;
             }
@@ -337,7 +339,7 @@ trait AssertsDownloads
     public function getLastDownload(): ?RecordedRequest
     {
         $downloads = $this->getDownloadRequests();
-        
+
         if ($downloads === []) {
             return null;
         }
@@ -353,7 +355,7 @@ trait AssertsDownloads
     public function getFirstDownload(): ?RecordedRequest
     {
         $downloads = $this->getDownloadRequests();
-        
+
         if ($downloads === []) {
             return null;
         }
@@ -371,8 +373,9 @@ trait AssertsDownloads
     {
         foreach ($this->getRequestHistory() as $request) {
             $options = $request->getOptions();
-            
+
             if ($request->getUrl() === $url && isset($options['download'])) {
+                /** @var mixed $destination */
                 $destination = $options['download'];
                 return is_string($destination) ? $destination : null;
             }
@@ -389,31 +392,32 @@ trait AssertsDownloads
     public function dumpDownloads(): void
     {
         $downloads = $this->getDownloadRequests();
-        
+
         if ($downloads === []) {
             echo "No downloads recorded\n";
             return;
         }
 
         echo "=== Downloads (" . count($downloads) . ") ===\n";
-        
+
         foreach ($downloads as $index => $request) {
             $options = $request->getOptions();
+            /** @var mixed $destination */
             $destination = $options['download'] ?? 'unknown';
             $destinationStr = is_string($destination) ? $destination : 'unknown';
-            
+
             echo "\n[{$index}] {$request->getMethod()} {$request->getUrl()}\n";
             echo "    Destination: {$destinationStr}\n";
-            
-            if (is_string($destination) && file_exists($destination)) {
-                $size = filesize($destination);
+
+            if (isset($options['download']) && is_string($options['download']) && file_exists($destinationStr)) {
+                $size = filesize($destinationStr);
                 $sizeStr = $size !== false ? $size . " bytes" : "unknown";
                 echo "    File exists: Yes\n";
                 echo "    File size: {$sizeStr}\n";
             } else {
                 echo "    File exists: No\n";
             }
-            
+
             $headers = $request->getHeaders();
             if ($headers !== []) {
                 echo "    Headers:\n";
@@ -423,7 +427,7 @@ trait AssertsDownloads
                 }
             }
         }
-        
+
         echo "===================\n";
     }
 
@@ -435,21 +439,22 @@ trait AssertsDownloads
     public function dumpLastDownload(): void
     {
         $download = $this->getLastDownload();
-        
+
         if ($download === null) {
             echo "No downloads recorded\n";
             return;
         }
 
         $options = $download->getOptions();
+        /** @var mixed $destination */
         $destination = $options['download'] ?? 'unknown';
         $destinationStr = is_string($destination) ? $destination : 'unknown';
-        
+
         echo "=== Last Download ===\n";
         echo "Method: {$download->getMethod()}\n";
         echo "URL: {$download->getUrl()}\n";
         echo "Destination: {$destinationStr}\n";
-        
+
         if (is_string($destination) && file_exists($destination)) {
             $size = filesize($destination);
             $sizeStr = $size !== false ? $size . " bytes" : "unknown";
@@ -458,13 +463,13 @@ trait AssertsDownloads
         } else {
             echo "File exists: No\n";
         }
-        
+
         echo "\nHeaders:\n";
         foreach ($download->getHeaders() as $name => $value) {
             $displayValue = is_array($value) ? implode(', ', $value) : $value;
             echo "  {$name}: {$displayValue}\n";
         }
-        
+
         echo "===================\n";
     }
 }

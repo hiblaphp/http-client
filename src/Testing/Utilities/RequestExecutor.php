@@ -26,7 +26,7 @@ class RequestExecutor
     private CookieManager $cookieManager;
     private RequestRecorder $requestRecorder;
     private CacheManager $cacheManager;
-    
+
     private StandardRequestExecutor $standardExecutor;
     private SSERequestExecutor $sseExecutor;
     private FetchRequestExecutor $fetchExecutor;
@@ -47,7 +47,7 @@ class RequestExecutor
         $this->cookieManager = $cookieManager;
         $this->requestRecorder = $requestRecorder;
         $this->cacheManager = $cacheManager;
-        
+
         $this->initializeExecutors();
     }
 
@@ -55,7 +55,7 @@ class RequestExecutor
     {
         $this->cacheHandler = new CacheHandler($this->cacheManager, $this->requestRecorder);
         $this->validator = new RequestValidator();
-        
+
         $this->standardExecutor = new StandardRequestExecutor(
             $this->requestMatcher,
             $this->responseFactory,
@@ -64,13 +64,13 @@ class RequestExecutor
             $this->cacheHandler,
             $this->validator
         );
-        
+
         $this->sseExecutor = new SSERequestExecutor(
             $this->requestMatcher,
             $this->responseFactory,
             $this->requestRecorder
         );
-        
+
         $this->fetchExecutor = new FetchRequestExecutor(
             $this->requestMatcher,
             $this->responseFactory,
@@ -150,6 +150,7 @@ class RequestExecutor
         ?callable $parentFetch = null,
         ?callable $createStream = null
     ): PromiseInterface|CancellablePromiseInterface {
+        /** @var CancellablePromiseInterface<array<string, mixed>|StreamingResponse>|PromiseInterface<Response> */
         return $this->fetchExecutor->execute(
             $url,
             $options,

@@ -8,9 +8,12 @@ use Hibla\Http\Interfaces\CookieJarInterface;
 use Hibla\Http\RetryConfig;
 use Hibla\Http\SSE\SSEReconnectConfig;
 use Hibla\Http\Testing\Interfaces\AssertsCookiesInterface;
+use Hibla\Http\Testing\Interfaces\AssertsDownloadsInterface;
 use Hibla\Http\Testing\Interfaces\AssertsHeadersInterface;
+use Hibla\Http\Testing\Interfaces\AssertsRequestBodyInterface;
 use Hibla\Http\Testing\Interfaces\AssertsRequestsInterface;
 use Hibla\Http\Testing\Interfaces\AssertsSSEInterface;
+use Hibla\Http\Testing\Interfaces\AssertsStreamsInterface;
 use Hibla\Http\Testing\Traits\Assertions\AssertsCookies;
 use Hibla\Http\Testing\Traits\Assertions\AssertsDownloads;
 use Hibla\Http\Testing\Traits\Assertions\AssertsHeaders;
@@ -38,7 +41,11 @@ class TestingHttpHandler extends HttpHandler implements
     AssertsRequestsInterface,
     AssertsHeadersInterface,
     AssertsCookiesInterface,
-    AssertsSSEInterface
+    AssertsSSEInterface,
+    AssertsDownloadsInterface,
+    AssertsStreamsInterface,
+    AssertsRequestBodyInterface,
+    AssertsRequestsInterface
 {
     use FetchOptionTrait;
     use AssertsRequests;
