@@ -12,9 +12,13 @@ use Hibla\Http\Testing\Interfaces\AssertsHeadersInterface;
 use Hibla\Http\Testing\Interfaces\AssertsRequestsInterface;
 use Hibla\Http\Testing\Interfaces\AssertsSSEInterface;
 use Hibla\Http\Testing\Traits\Assertions\AssertsCookies;
+use Hibla\Http\Testing\Traits\Assertions\AssertsDownloads;
 use Hibla\Http\Testing\Traits\Assertions\AssertsHeaders;
+use Hibla\Http\Testing\Traits\Assertions\AssertsRequestBody;
 use Hibla\Http\Testing\Traits\Assertions\AssertsRequests;
+use Hibla\Http\Testing\Traits\Assertions\AssertsRequestsExtended;
 use Hibla\Http\Testing\Traits\Assertions\AssertsSSE;
+use Hibla\Http\Testing\Traits\Assertions\AssertsStreams;
 use Hibla\Http\Testing\Utilities\CacheManager;
 use Hibla\Http\Testing\Utilities\CookieManager;
 use Hibla\Http\Testing\Utilities\FileManager;
@@ -41,6 +45,11 @@ class TestingHttpHandler extends HttpHandler implements
     use AssertsHeaders;
     use AssertsCookies;
     use AssertsSSE;
+    use AssertsDownloads;
+    use AssertsStreams;
+    use AssertsRequestBody;
+    use AssertsRequestsExtended;
+
 
     /**
      * List of mocked HTTP requests.
@@ -406,7 +415,7 @@ class TestingHttpHandler extends HttpHandler implements
             $this->globalSettings,
             $cacheConfig,
             $retryConfig,
-            fn (string $url, array $curlOptions, ?CacheConfig $cacheConfig, ?RetryConfig $retryConfig) => parent::sendRequest($url, $curlOptions, $cacheConfig, $retryConfig)
+            fn(string $url, array $curlOptions, ?CacheConfig $cacheConfig, ?RetryConfig $retryConfig) => parent::sendRequest($url, $curlOptions, $cacheConfig, $retryConfig)
         );
     }
 
@@ -428,7 +437,7 @@ class TestingHttpHandler extends HttpHandler implements
             $normalizedOptions,
             $mockedRequests,
             $this->globalSettings,
-            fn (string $url, array $options) => parent::fetch($url, $options),
+            fn(string $url, array $options) => parent::fetch($url, $options),
             [$this, 'createStream']
         );
     }
@@ -497,7 +506,7 @@ class TestingHttpHandler extends HttpHandler implements
             $this->globalSettings,
             $onEvent,
             $onError,
-            fn (string $url, array $options, ?callable $onEvent, ?callable $onError, ?SSEReconnectConfig $reconnectConfig) => parent::sse($url, $options, $onEvent, $onError, $reconnectConfig),
+            fn(string $url, array $options, ?callable $onEvent, ?callable $onError, ?SSEReconnectConfig $reconnectConfig) => parent::sse($url, $options, $onEvent, $onError, $reconnectConfig),
             $reconnectConfig
         );
     }
