@@ -13,7 +13,7 @@ use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 /**
  * Handles non-blocking HTTP streaming operations with cancellation support.
  */
-final readonly class StreamingHandler
+class StreamingHandler
 {
     /**
      * Creates a streaming HTTP request with optional real-time chunk processing.
