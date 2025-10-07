@@ -508,8 +508,8 @@ class Request extends Message implements CompleteHttpClientInterface
         ?callable $onError = null,
         ?SSEReconnectConfig $reconnectConfig = null
     ): CancellablePromiseInterface {
-        $options = $this->buildFetchOptions('GET');
-        unset($options['timeout']);
+        $method = $this->body->getSize() > 0 ? 'POST' : 'GET';
+        $options = $this->buildCurlOptions($method, $url);
 
         $effectiveReconnectConfig = $reconnectConfig ?? $this->sseReconnectConfig;
         $wrappedCallback = $this->wrapSSECallback($onEvent);
@@ -925,7 +925,7 @@ class Request extends Message implements CompleteHttpClientInterface
         return $this->getRequestInterceptorHandler()
             ->processInterceptors($initialRequest, $this->requestInterceptors)
             ->then(
-                fn ($processedRequest) => $this->executeRequest($processedRequest)
+                fn($processedRequest) => $this->executeRequest($processedRequest)
             )
         ;
     }
@@ -1267,7 +1267,7 @@ class Request extends Message implements CompleteHttpClientInterface
         }
 
         return $httpPromise->then(
-            fn ($response) => $this->getResponseInterceptorHandler()
+            fn($response) => $this->getResponseInterceptorHandler()
                 ->processInterceptors($response, $processedRequest->responseInterceptors)
         );
     }
