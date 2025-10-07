@@ -11,6 +11,11 @@
             "src/Helpers/namespace_functions.php"
         ]
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
     "authors": [
         {
             "name": "Reymart A. Calicdan",

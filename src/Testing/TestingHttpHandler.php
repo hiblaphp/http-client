@@ -11,6 +11,7 @@ use Hibla\HttpClient\Testing\Interfaces\AssertsCookiesInterface;
 use Hibla\HttpClient\Testing\Interfaces\AssertsDownloadsInterface;
 use Hibla\HttpClient\Testing\Interfaces\AssertsHeadersInterface;
 use Hibla\HttpClient\Testing\Interfaces\AssertsRequestBodyInterface;
+use Hibla\HttpClient\Testing\Interfaces\AssertsRequestsExtendedInterface;
 use Hibla\HttpClient\Testing\Interfaces\AssertsRequestsInterface;
 use Hibla\HttpClient\Testing\Interfaces\AssertsSSEInterface;
 use Hibla\HttpClient\Testing\Interfaces\AssertsStreamsInterface;
@@ -45,7 +46,7 @@ class TestingHttpHandler extends HttpHandler implements
     AssertsDownloadsInterface,
     AssertsStreamsInterface,
     AssertsRequestBodyInterface,
-    AssertsRequestsInterface
+    AssertsRequestsExtendedInterface
 {
     use FetchOptionTrait;
     use AssertsRequests;

@@ -48,6 +48,7 @@ use Psr\Http\Message\UploadedFileInterface;
  * @method static Request withToken(string $token) Start building a request with bearer token.
  * @method static Request withBasicAuth(string $username, string $password) Start building a request with basic auth.
  * @method static Request withDigestAuth(string $username, string $password) Start building a request with digest auth.
+ * @method static Request withHeaders(array<string, string|string[]> $headers) Start building a request with multiple headers.
  * @method static Request retry(int $maxRetries = 3, float $baseDelay = 1.0, float $backoffMultiplier = 2.0) Start building a request with retry logic.
  * @method static Request retryWith(RetryConfig $config) Start building a request with custom retry configuration.
  * @method static Request noRetry() Start building a request with retries disabled.
@@ -129,6 +130,8 @@ use Psr\Http\Message\UploadedFileInterface;
  * @method static PromiseInterface<Response> send(string $method, string $url) Dispatches the configured request.
  *
  * Testing assertion methods (only available in testing mode):
+ * 
+ * Header assertions:
  * @method static void assertHeaderSent(string $name, ?string $expectedValue = null, ?int $requestIndex = null) Assert that a specific header was sent.
  * @method static void assertHeaderNotSent(string $name, ?int $requestIndex = null) Assert that a header was NOT sent.
  * @method static void assertHeadersSent(array<string, string> $expectedHeaders, ?int $requestIndex = null) Assert multiple headers were sent.
@@ -137,12 +140,57 @@ use Psr\Http\Message\UploadedFileInterface;
  * @method static void assertContentType(string $expectedType, ?int $requestIndex = null) Assert Content-Type header.
  * @method static void assertAcceptHeader(string $expectedType, ?int $requestIndex = null) Assert Accept header.
  * @method static void assertUserAgent(string $expectedUserAgent, ?int $requestIndex = null) Assert User-Agent header.
+ * 
+ * Request assertions:
  * @method static void assertRequestMade(string $method, string $url, array<string, mixed> $options = []) Assert a request was made.
  * @method static void assertNoRequestsMade() Assert no requests were made.
  * @method static void assertRequestCount(int $expected) Assert request count.
+ * @method static void assertRequestMatchingUrl(string $method, string $pattern) Assert that a request was made with a specific URL pattern.
+ * @method static void assertRequestSequence(array<array{method: string, url: string}> $expectedSequence) Assert that requests were made in a specific order.
+ * @method static void assertRequestAtIndex(string $method, string $url, int $index) Assert that a request was made at a specific index.
+ * @method static void assertSingleRequestTo(string $url) Assert that exactly one request was made to a URL.
+ * @method static void assertRequestNotMade(string $method, string $url) Assert that a request was NOT made.
+ * @method static void assertRequestCountTo(string $url, int $maxCount) Assert that requests to a URL do not exceed a limit.
+ * 
+ * Request body assertions:
+ * @method static void assertRequestWithBody(string $method, string $url, string $expectedBody) Assert that a request was made with specific body content.
+ * @method static void assertRequestBodyContains(string $method, string $url, string $needle) Assert that a request was made with body containing a string.
+ * @method static void assertRequestWithJson(string $method, string $url, array<mixed> $expectedJson) Assert that a request was made with JSON body.
+ * @method static void assertRequestJsonContains(string $method, string $url, array<mixed> $expectedKeys) Assert that a request was made with JSON containing specific keys.
+ * @method static void assertRequestJsonPath(string $method, string $url, string $path, mixed $expectedValue) Assert that a request was made with a JSON path value.
+ * @method static void assertRequestWithEmptyBody(string $method, string $url) Assert that a request was made with empty body.
+ * @method static void assertRequestHasBody(string $method, string $url) Assert that a request has a non-empty body.
+ * @method static void assertRequestIsJson(string $method, string $url) Assert that a request was made with JSON body.
+ * @method static void assertRequestBodyMatches(string $method, string $url, string $pattern) Assert that a request body matches a pattern.
+ * 
+ * Cookie assertions:
  * @method static void assertCookieSent(string $name) Assert a cookie was sent.
  * @method static void assertCookieExists(string $name) Assert a cookie exists in jar.
  * @method static void assertCookieValue(string $name, string $expectedValue) Assert cookie value.
+ * 
+ * Download assertions:
+ * @method static void assertDownloadMade(string $url, string $destination) Assert that a download was made to a specific destination.
+ * @method static void assertDownloadMadeToUrl(string $url) Assert that a download was made to any destination.
+ * @method static void assertFileDownloaded(string $destination) Assert that a specific file was downloaded.
+ * @method static void assertDownloadWithHeaders(string $url, array<string, string> $expectedHeaders) Assert that a download was made with specific headers.
+ * @method static void assertNoDownloadsMade() Assert that no downloads were made.
+ * @method static void assertDownloadCount(int $expected) Assert a specific number of downloads were made.
+ * @method static void assertDownloadedFileExists(string $destination) Assert that a file exists at the download destination.
+ * @method static void assertDownloadedFileContains(string $destination, string $expectedContent) Assert that a downloaded file has specific content.
+ * @method static void assertDownloadedFileContainsString(string $destination, string $needle) Assert that a downloaded file contains a substring.
+ * @method static void assertDownloadedFileSize(string $destination, int $expectedSize) Assert that a downloaded file size matches expected size.
+ * @method static void assertDownloadedFileSizeBetween(string $destination, int $minSize, int $maxSize) Assert that a downloaded file size is within a range.
+ * @method static void assertDownloadWithMethod(string $url, string $method) Assert that a download was made using a specific HTTP method.
+ * 
+ * Stream assertions:
+ * @method static void assertStreamMade(string $url) Assert that a streaming request was made.
+ * @method static void assertStreamWithCallback(string $url) Assert that a streaming request was made with a chunk callback.
+ * @method static void assertStreamWithHeaders(string $url, array<string, string> $expectedHeaders) Assert that a streaming request was made with specific headers.
+ * @method static void assertStreamWithMethod(string $url, string $method) Assert that a streaming request was made using a specific HTTP method.
+ * @method static void assertNoStreamsMade() Assert that no streaming requests were made.
+ * @method static void assertStreamCount(int $expected) Assert a specific number of streaming requests were made.
+ * 
+ * SSE assertions:
  * @method static void assertSSEConnectionMade(string $url) Assert that an SSE connection was made to the specified URL.
  * @method static void assertNoSSEConnections() Assert that no SSE connections were made.
  * @method static void assertSSELastEventId(string $expectedId, ?int $requestIndex = null) Assert that the Last-Event-ID header matches the expected value.
@@ -159,11 +207,28 @@ use Psr\Http\Message\UploadedFileInterface;
  * @method static void assertFirstSSEConnectionHasNoLastEventId(string $url) Assert that the first SSE connection has no Last-Event-ID header.
  * @method static void assertSSEConnectionRequestedWithProperHeaders(string $url) Assert that SSE connection was requested with proper Cache-Control headers.
  * @method static void assertSSEConnectionCount(string $url, int $expectedCount) Assert that SSE connection count matches expected for a URL pattern.
+ * 
+ * Testing helper methods:
  * @method static array<int, RecordedRequest> getSSEConnectionAttempts(string $url) Get all SSE connection attempts for a specific URL.
  * @method static RecordedRequest|null getLastRequest() Get the last recorded request.
  * @method static RecordedRequest|null getRequest(int $index) Get a specific request by index.
  * @method static list<RecordedRequest> getRequestHistory() Get all recorded requests.
+ * @method static array<int, RecordedRequest> getRequestsTo(string $url) Get all requests to a specific URL.
+ * @method static array<int, RecordedRequest> getRequestsByMethod(string $method) Get all requests using a specific method.
+ * @method static array<int, RecordedRequest> getDownloadRequests() Get all download requests from history.
+ * @method static RecordedRequest|null getLastDownload() Get the last download request.
+ * @method static RecordedRequest|null getFirstDownload() Get the first download request.
+ * @method static string|null getDownloadDestination(string $url) Get download destination for a specific URL.
+ * @method static array<int, RecordedRequest> getStreamRequests() Get all streaming requests from history.
+ * @method static RecordedRequest|null getLastStream() Get the last streaming request.
+ * @method static RecordedRequest|null getFirstStream() Get the first streaming request.
+ * @method static bool streamHasCallback(RecordedRequest $request) Check if a stream request has a callback.
  * @method static void dumpLastRequest() Dump the last request for debugging.
+ * @method static void dumpRequestsByMethod(string $method) Dump all requests with a specific method.
+ * @method static void dumpDownloads() Dump information about all downloads for debugging.
+ * @method static void dumpLastDownload() Dump detailed information about the last download.
+ * @method static void dumpStreams() Dump information about all streams for debugging.
+ * @method static void dumpLastStream() Dump detailed information about the last stream.
  */
 class Http
 {
@@ -313,6 +378,7 @@ class Http
     {
         /** @var list<string> */
         $assertionMethods = [
+            // Header assertions
             'assertHeaderSent',
             'assertHeaderNotSent',
             'assertHeadersSent',
@@ -321,12 +387,57 @@ class Http
             'assertContentType',
             'assertAcceptHeader',
             'assertUserAgent',
+            
+            // Request assertions
             'assertRequestMade',
             'assertNoRequestsMade',
             'assertRequestCount',
+            'assertRequestMatchingUrl',
+            'assertRequestSequence',
+            'assertRequestAtIndex',
+            'assertSingleRequestTo',
+            'assertRequestNotMade',
+            'assertRequestCountTo',
+            
+            // Request body assertions
+            'assertRequestWithBody',
+            'assertRequestBodyContains',
+            'assertRequestWithJson',
+            'assertRequestJsonContains',
+            'assertRequestJsonPath',
+            'assertRequestWithEmptyBody',
+            'assertRequestHasBody',
+            'assertRequestIsJson',
+            'assertRequestBodyMatches',
+            
+            // Cookie assertions
             'assertCookieSent',
             'assertCookieExists',
             'assertCookieValue',
+            
+            // Download assertions
+            'assertDownloadMade',
+            'assertDownloadMadeToUrl',
+            'assertFileDownloaded',
+            'assertDownloadWithHeaders',
+            'assertNoDownloadsMade',
+            'assertDownloadCount',
+            'assertDownloadedFileExists',
+            'assertDownloadedFileContains',
+            'assertDownloadedFileContainsString',
+            'assertDownloadedFileSize',
+            'assertDownloadedFileSizeBetween',
+            'assertDownloadWithMethod',
+            
+            // Stream assertions
+            'assertStreamMade',
+            'assertStreamWithCallback',
+            'assertStreamWithHeaders',
+            'assertStreamWithMethod',
+            'assertNoStreamsMade',
+            'assertStreamCount',
+            
+            // SSE assertions
             'assertSSEConnectionMade',
             'assertNoSSEConnections',
             'assertSSELastEventId',
@@ -343,11 +454,28 @@ class Http
             'assertFirstSSEConnectionHasNoLastEventId',
             'assertSSEConnectionRequestedWithProperHeaders',
             'assertSSEConnectionCount',
+            
+            // Testing helper methods
             'getSSEConnectionAttempts',
             'getLastRequest',
             'getRequest',
             'getRequestHistory',
+            'getRequestsTo',
+            'getRequestsByMethod',
+            'getDownloadRequests',
+            'getLastDownload',
+            'getFirstDownload',
+            'getDownloadDestination',
+            'getStreamRequests',
+            'getLastStream',
+            'getFirstStream',
+            'streamHasCallback',
             'dumpLastRequest',
+            'dumpRequestsByMethod',
+            'dumpDownloads',
+            'dumpLastDownload',
+            'dumpStreams',
+            'dumpLastStream',
         ];
 
         if (in_array($method, $assertionMethods, true)) {

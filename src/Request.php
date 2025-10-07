@@ -212,6 +212,22 @@ class Request extends Message implements CompleteHttpClientInterface
     }
 
     /**
+     * Set multiple headers at once.
+     *
+     * @param  array<string, string|string[]>  $headers  An associative array of header names to values.
+     * @return self For fluent method chaining.
+     */
+    public function withHeaders(array $headers): self
+    {
+        $new = clone $this; 
+        foreach ($headers as $name => $value) {
+            $new = $new->withHeader($name, $value);
+        }
+        
+        return $new;
+    }
+
+    /**
      * Set the Content-Type header.
      *
      * @param  string  $type  The media type (e.g., 'application/json').
