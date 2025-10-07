@@ -2,10 +2,10 @@
 
 namespace Hibla\HttpClient\Testing\Traits\Assertions;
 
-use Hibla\HttpClient\Testing\Exceptions\MockAssertionException;
-
 trait AssertsRequestBody
 {
+    use AssertionHandler;
+
     /**
      * @return array<int, \Hibla\HttpClient\Testing\Utilities\RecordedRequest>
      */
@@ -17,7 +17,6 @@ trait AssertsRequestBody
      * @param string $method HTTP method
      * @param string $url Request URL
      * @param string $expectedBody Expected body content
-     * @throws MockAssertionException
      */
     public function assertRequestWithBody(string $method, string $url, string $expectedBody): void
     {
@@ -31,7 +30,7 @@ trait AssertsRequestBody
             }
         }
 
-        throw new MockAssertionException(
+        $this->failAssertion(
             "Expected request with body not found: {$method} {$url}"
         );
     }
@@ -42,7 +41,6 @@ trait AssertsRequestBody
      * @param string $method HTTP method
      * @param string $url Request URL
      * @param string $needle String to search for
-     * @throws MockAssertionException
      */
     public function assertRequestBodyContains(string $method, string $url, string $needle): void
     {
@@ -59,7 +57,7 @@ trait AssertsRequestBody
             }
         }
 
-        throw new MockAssertionException(
+        $this->failAssertion(
             "Expected request body containing '{$needle}' not found: {$method} {$url}"
         );
     }
@@ -70,7 +68,6 @@ trait AssertsRequestBody
      * @param string $method HTTP method
      * @param string $url Request URL
      * @param array<mixed> $expectedJson Expected JSON data
-     * @throws MockAssertionException
      */
     public function assertRequestWithJson(string $method, string $url, array $expectedJson): void
     {
@@ -87,7 +84,7 @@ trait AssertsRequestBody
             }
         }
 
-        throw new MockAssertionException(
+        $this->failAssertion(
             "Expected request with JSON not found: {$method} {$url}"
         );
     }
@@ -98,7 +95,6 @@ trait AssertsRequestBody
      * @param string $method HTTP method
      * @param string $url Request URL
      * @param array<mixed> $expectedKeys Expected keys and values
-     * @throws MockAssertionException
      */
     public function assertRequestJsonContains(string $method, string $url, array $expectedKeys): void
     {
@@ -115,7 +111,7 @@ trait AssertsRequestBody
             }
         }
 
-        throw new MockAssertionException(
+        $this->failAssertion(
             "Expected request with JSON keys not found: {$method} {$url}"
         );
     }
@@ -127,7 +123,6 @@ trait AssertsRequestBody
      * @param string $url Request URL
      * @param string $path Dot-notation path (e.g., 'user.name')
      * @param mixed $expectedValue Expected value at path
-     * @throws MockAssertionException
      */
     public function assertRequestJsonPath(string $method, string $url, string $path, mixed $expectedValue): void
     {
@@ -148,7 +143,7 @@ trait AssertsRequestBody
             }
         }
 
-        throw new MockAssertionException(
+        $this->failAssertion(
             "Expected request with JSON path '{$path}' not found: {$method} {$url}"
         );
     }
@@ -158,7 +153,6 @@ trait AssertsRequestBody
      *
      * @param string $method HTTP method
      * @param string $url Request URL
-     * @throws MockAssertionException
      */
     public function assertRequestWithEmptyBody(string $method, string $url): void
     {
@@ -175,7 +169,7 @@ trait AssertsRequestBody
             }
         }
 
-        throw new MockAssertionException(
+        $this->failAssertion(
             "Expected request with empty body not found: {$method} {$url}"
         );
     }
@@ -185,7 +179,6 @@ trait AssertsRequestBody
      *
      * @param string $method HTTP method
      * @param string $url Request URL
-     * @throws MockAssertionException
      */
     public function assertRequestHasBody(string $method, string $url): void
     {
@@ -202,7 +195,7 @@ trait AssertsRequestBody
             }
         }
 
-        throw new MockAssertionException(
+        $this->failAssertion(
             "Expected request with non-empty body not found: {$method} {$url}"
         );
     }
@@ -212,7 +205,6 @@ trait AssertsRequestBody
      *
      * @param string $method HTTP method
      * @param string $url Request URL
-     * @throws MockAssertionException
      */
     public function assertRequestIsJson(string $method, string $url): void
     {
@@ -226,7 +218,7 @@ trait AssertsRequestBody
             }
         }
 
-        throw new MockAssertionException(
+        $this->failAssertion(
             "Expected request with JSON body not found: {$method} {$url}"
         );
     }
@@ -237,7 +229,6 @@ trait AssertsRequestBody
      * @param string $method HTTP method
      * @param string $url Request URL
      * @param string $pattern Regular expression pattern
-     * @throws MockAssertionException
      */
     public function assertRequestBodyMatches(string $method, string $url, string $pattern): void
     {
@@ -254,7 +245,7 @@ trait AssertsRequestBody
             }
         }
 
-        throw new MockAssertionException(
+        $this->failAssertion(
             "Expected request body matching pattern not found: {$method} {$url}"
         );
     }
@@ -289,7 +280,7 @@ trait AssertsRequestBody
      * Get value from JSON using dot notation path.
      *
      * @param array<mixed> $json JSON
-     * * @param string $path Dot notation path
+     * @param string $path Dot notation path
      * @return mixed
      */
     private function getJsonPath(array $json, string $path): mixed

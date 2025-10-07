@@ -2,10 +2,10 @@
 
 namespace Hibla\HttpClient\Testing\Traits\Assertions;
 
-use Hibla\HttpClient\Testing\Exceptions\MockAssertionException;
-
 trait AssertsHeaders
 {
+    use AssertionHandler;
+
     abstract public function getLastRequest();
 
     abstract public function getRequest(int $index);
@@ -20,17 +20,17 @@ trait AssertsHeaders
             : $this->getRequest($requestIndex);
 
         if ($request === null) {
-            throw new MockAssertionException('No request found at the specified index');
+            $this->failAssertion('No request found at the specified index');
         }
 
         if (! $request->hasHeader($name)) {
-            throw new MockAssertionException("Header '{$name}' was not sent in the request");
+            $this->failAssertion("Header '{$name}' was not sent in the request");
         }
 
         if ($expectedValue !== null) {
             $actualValue = $request->getHeaderLine($name);
             if ($actualValue !== $expectedValue) {
-                throw new MockAssertionException(
+                $this->failAssertion(
                     "Header '{$name}' value mismatch. Expected: '{$expectedValue}', Got: '{$actualValue}'"
                 );
             }
@@ -47,13 +47,13 @@ trait AssertsHeaders
             : $this->getRequest($requestIndex);
 
         if ($request === null) {
-            throw new MockAssertionException('No request found at the specified index');
+            $this->failAssertion('No request found at the specified index');
         }
 
         if ($request->hasHeader($name)) {
             $value = $request->getHeaderLine($name);
 
-            throw new MockAssertionException(
+            $this->failAssertion(
                 "Header '{$name}' was sent in the request with value: '{$value}'"
             );
         }
@@ -81,16 +81,16 @@ trait AssertsHeaders
             : $this->getRequest($requestIndex);
 
         if ($request === null) {
-            throw new MockAssertionException('No request found at the specified index');
+            $this->failAssertion('No request found at the specified index');
         }
 
         if (! $request->hasHeader($name)) {
-            throw new MockAssertionException("Header '{$name}' was not sent in the request");
+            $this->failAssertion("Header '{$name}' was not sent in the request");
         }
 
         $actualValue = $request->getHeaderLine($name);
         if ($actualValue === null || preg_match($pattern, $actualValue) !== 1) {
-            throw new MockAssertionException(
+            $this->failAssertion(
                 "Header '{$name}' does not match pattern '{$pattern}'. Got: '{$actualValue}'"
             );
         }

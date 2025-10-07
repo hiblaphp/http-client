@@ -84,7 +84,7 @@ class OptionsBuilderHandler
 
         $stringKeyOptions = array_filter(
             $additionalOptions,
-            fn ($key) => is_string($key),
+            fn($key) => is_string($key),
             ARRAY_FILTER_USE_KEY
         );
 
@@ -182,6 +182,7 @@ class OptionsBuilderHandler
                 ? CURL_HTTP_VERSION_3
                 : CURL_HTTP_VERSION_1_1,
             '1.0' => CURL_HTTP_VERSION_1_0,
+            '1.1' => CURL_HTTP_VERSION_1_1,
             default => CURL_HTTP_VERSION_2TLS,
         };
     }

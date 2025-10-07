@@ -2,10 +2,10 @@
 
 namespace Hibla\HttpClient\Testing\Traits\Assertions;
 
-use Hibla\HttpClient\Testing\Exceptions\MockAssertionException;
-
 trait AssertsCookies
 {
+    use AssertionHandler;
+
     abstract protected function getCookieManager();
 
     abstract protected function getRequestRecorder();
@@ -17,12 +17,12 @@ trait AssertsCookies
     {
         $history = $this->getRequestRecorder()->getRequestHistory();
         if ($history === []) {
-            throw new MockAssertionException('No requests have been made');
+            $this->failAssertion('No requests have been made');
         }
 
         $lastRequest = end($history);
         if ($lastRequest === false) {
-            throw new MockAssertionException('No requests have been made');
+            $this->failAssertion('No requests have been made');
         }
 
         $this->getCookieManager()->assertCookieSent($name, $lastRequest->options);

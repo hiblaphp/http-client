@@ -2,11 +2,12 @@
 
 namespace Hibla\HttpClient\Testing\Traits\Assertions;
 
-use Hibla\HttpClient\Testing\Exceptions\MockAssertionException;
 use Hibla\HttpClient\Testing\Utilities\RecordedRequest;
 
 trait AssertsRequests
 {
+    use AssertionHandler;
+
     /**
      * @return array<int, RecordedRequest>
      */
@@ -29,7 +30,7 @@ trait AssertsRequests
             }
         }
 
-        throw new MockAssertionException("Expected request not found: {$method} {$url}");
+        $this->failAssertion("Expected request not found: {$method} {$url}");
     }
 
     /**
@@ -39,7 +40,7 @@ trait AssertsRequests
     {
         $history = $this->getRequestHistory();
         if ($history !== []) {
-            throw new MockAssertionException('Expected no requests, but ' . count($history) . ' were made');
+            $this->failAssertion('Expected no requests, but ' . count($history) . ' were made');
         }
     }
 
@@ -50,7 +51,7 @@ trait AssertsRequests
     {
         $actual = count($this->getRequestHistory());
         if ($actual !== $expected) {
-            throw new MockAssertionException("Expected {$expected} requests, but {$actual} were made");
+            $this->failAssertion("Expected {$expected} requests, but {$actual} were made");
         }
     }
 

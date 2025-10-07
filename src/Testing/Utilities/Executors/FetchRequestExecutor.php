@@ -186,7 +186,7 @@ class FetchRequestExecutor
         ?callable $parentFetch,
         ?callable $createStream
     ): PromiseInterface|CancellablePromiseInterface {
-        $this->requestRecorder->recordRequest($method, $url, $curlOnlyOptions);
+      $this->requestRecorder->recordRequest($method, $url, array_merge($options, $curlOnlyOptions));
 
         $match = $this->requestMatcher->findMatchingMock($mockedRequests, $method, $url, $curlOnlyOptions);
 

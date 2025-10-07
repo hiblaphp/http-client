@@ -12,10 +12,20 @@ class CacheManager
 {
     private static ?CacheInterface $defaultCache = null;
 
+    /**
+     * Resets the static default cache instance.
+     * This is crucial for ensuring test isolation.
+     */
+    public function reset(): void
+    {
+        self::$defaultCache = null;
+    }
+
+
     public function getCachedResponse(string $url, CacheConfig $cacheConfig): ?Response
     {
         $cache = $cacheConfig->cache ?? $this->getDefaultCache();
-        $cacheKey = $this->generateCacheKey($url);
+        $cacheKey = $cacheConfig->cacheKey ?? $this->generateCacheKey($url);
         $cachedItem = $cache->get($cacheKey);
 
         if (
@@ -45,7 +55,8 @@ class CacheManager
     public function cacheResponse(string $url, Response $response, CacheConfig $cacheConfig): void
     {
         $cache = $cacheConfig->cache ?? $this->getDefaultCache();
-        $cacheKey = $this->generateCacheKey($url);
+        $cacheKey = $cacheConfig->cacheKey ?? $this->generateCacheKey($url);
+
         $expiry = time() + $cacheConfig->ttlSeconds;
         $cache->set($cacheKey, [
             'body' => $response->body(),

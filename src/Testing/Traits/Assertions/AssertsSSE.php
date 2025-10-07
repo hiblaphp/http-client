@@ -2,10 +2,10 @@
 
 namespace Hibla\HttpClient\Testing\Traits\Assertions;
 
-use Hibla\HttpClient\Testing\Exceptions\MockAssertionException;
-
 trait AssertsSSE
 {
+    use AssertionHandler;
+
     /**
      * @return array<int, \Hibla\HttpClient\Testing\Utilities\RecordedRequest>
      */
@@ -32,7 +32,7 @@ trait AssertsSSE
             }
         }
 
-        throw new MockAssertionException("Expected SSE connection to {$url} was not made");
+        $this->failAssertion("Expected SSE connection to {$url} was not made");
     }
 
     /**
@@ -46,7 +46,7 @@ trait AssertsSSE
                 (is_string($accept) && str_contains($accept, 'text/event-stream')) ||
                 (is_array($accept) && in_array('text/event-stream', $accept, true))
             )) {
-                throw new MockAssertionException(
+                $this->failAssertion(
                     "Expected no SSE connections, but found connection to: {$request->getUrl()}"
                 );
             }
@@ -63,17 +63,17 @@ trait AssertsSSE
             : $this->getRequest($requestIndex);
 
         if ($request === null) {
-            throw new MockAssertionException('No request found at the specified index');
+            $this->failAssertion('No request found at the specified index');
         }
 
         $lastEventId = $request->getHeader('last-event-id');
         if ($lastEventId === null) {
-            throw new MockAssertionException('Last-Event-ID header was not sent in the request');
+            $this->failAssertion('Last-Event-ID header was not sent in the request');
         }
 
         $actualId = is_array($lastEventId) ? $lastEventId[0] : $lastEventId;
         if ($actualId !== $expectedId) {
-            throw new MockAssertionException(
+            $this->failAssertion(
                 "Last-Event-ID mismatch. Expected: '{$expectedId}', Got: '{$actualId}'"
             );
         }
@@ -99,7 +99,7 @@ trait AssertsSSE
         }
 
         if ($actualAttempts !== $expectedAttempts) {
-            throw new MockAssertionException(
+            $this->failAssertion(
                 "Expected {$expectedAttempts} SSE connection attempt(s) to {$url}, but found {$actualAttempts}"
             );
         }
@@ -125,7 +125,7 @@ trait AssertsSSE
         }
 
         if ($actualAttempts < $minAttempts) {
-            throw new MockAssertionException(
+            $this->failAssertion(
                 "Expected at least {$minAttempts} SSE connection attempt(s) to {$url}, but found {$actualAttempts}"
             );
         }
@@ -151,7 +151,7 @@ trait AssertsSSE
         }
 
         if ($actualAttempts > $maxAttempts) {
-            throw new MockAssertionException(
+            $this->failAssertion(
                 "Expected at most {$maxAttempts} SSE connection attempt(s) to {$url}, but found {$actualAttempts}"
             );
         }
@@ -180,7 +180,7 @@ trait AssertsSSE
         }
 
         if (!$hasReconnection) {
-            throw new MockAssertionException(
+            $this->failAssertion(
                 "Expected SSE reconnection with Last-Event-ID header to {$url}, but none found"
             );
         }
@@ -200,14 +200,14 @@ trait AssertsSSE
                 )) {
                     $headerValue = $request->getHeader($headerName);
                     if ($headerValue === null) {
-                        throw new MockAssertionException(
+                        $this->failAssertion(
                             "SSE connection to {$url} does not have header '{$headerName}'"
                         );
                     }
 
                     $actualValue = is_array($headerValue) ? $headerValue[0] : $headerValue;
                     if ($actualValue !== $expectedValue) {
-                        throw new MockAssertionException(
+                        $this->failAssertion(
                             "SSE connection header '{$headerName}' mismatch. Expected: '{$expectedValue}', Got: '{$actualValue}'"
                         );
                     }
@@ -216,7 +216,7 @@ trait AssertsSSE
             }
         }
 
-        throw new MockAssertionException("No SSE connection found to {$url}");
+        $this->failAssertion("No SSE connection found to {$url}");
     }
 
     /**
@@ -233,7 +233,7 @@ trait AssertsSSE
                 )) {
                     $headerValue = $request->getHeader($headerName);
                     if ($headerValue !== null) {
-                        throw new MockAssertionException(
+                        $this->failAssertion(
                             "SSE connection to {$url} should not have header '{$headerName}', but it was found"
                         );
                     }
@@ -242,7 +242,7 @@ trait AssertsSSE
             }
         }
 
-        throw new MockAssertionException("No SSE connection found to {$url}");
+        $this->failAssertion("No SSE connection found to {$url}");
     }
 
     /**
@@ -271,7 +271,7 @@ trait AssertsSSE
 
         $missingUrls = array_diff($urls, $foundUrls);
         if ($missingUrls !== []) {
-            throw new MockAssertionException(
+            $this->failAssertion(
                 "Expected SSE connections to all URLs, but missing: " . implode(', ', $missingUrls)
             );
         }
@@ -311,7 +311,7 @@ trait AssertsSSE
             }
 
             if (!$found) {
-                throw new MockAssertionException(
+                $this->failAssertion(
                     "SSE connections not in expected order. Expected '{$expectedUrl}' after position {$matchedCount}"
                 );
             }
@@ -332,7 +332,7 @@ trait AssertsSSE
                 )) {
                     $authHeader = $request->getHeader('authorization');
                     if ($authHeader === null) {
-                        throw new MockAssertionException(
+                        $this->failAssertion(
                             "SSE connection to {$url} missing Authorization header"
                         );
                     }
@@ -340,7 +340,7 @@ trait AssertsSSE
                     if ($expectedToken !== null) {
                         $actualToken = is_array($authHeader) ? $authHeader[0] : $authHeader;
                         if (!str_contains($actualToken, $expectedToken)) {
-                            throw new MockAssertionException(
+                            $this->failAssertion(
                                 "SSE connection Authorization token mismatch. Expected token containing '{$expectedToken}', Got: '{$actualToken}'"
                             );
                         }
@@ -350,7 +350,7 @@ trait AssertsSSE
             }
         }
 
-        throw new MockAssertionException("No SSE connection found to {$url}");
+        $this->failAssertion("No SSE connection found to {$url}");
     }
 
     /**
@@ -376,7 +376,7 @@ trait AssertsSSE
         }
 
         if (count($eventIds) < 2) {
-            throw new MockAssertionException(
+            $this->failAssertion(
                 "Not enough SSE reconnections with Last-Event-ID to verify progression. Found: " . count($eventIds)
             );
         }
@@ -385,7 +385,7 @@ trait AssertsSSE
         for ($i = 1; $i < count($eventIds); $i++) {
             if (is_numeric($eventIds[$i]) && is_numeric($eventIds[$i - 1])) {
                 if ((int)$eventIds[$i] <= (int)$eventIds[$i - 1]) {
-                    throw new MockAssertionException(
+                    $this->failAssertion(
                         "SSE reconnection Last-Event-IDs are not progressing. " .
                         "Event ID {$eventIds[$i]} at position {$i} is not greater than previous {$eventIds[$i - 1]}"
                     );
@@ -410,7 +410,7 @@ trait AssertsSSE
                 )) {
                     $lastEventId = $request->getHeader('last-event-id');
                     if ($lastEventId !== null) {
-                        throw new MockAssertionException(
+                        $this->failAssertion(
                             "First SSE connection to {$url} should not have Last-Event-ID header, but found: " .
                             (is_array($lastEventId) ? $lastEventId[0] : $lastEventId)
                         );
@@ -422,7 +422,7 @@ trait AssertsSSE
         }
 
         if (!$foundFirst) {
-            throw new MockAssertionException("No SSE connection found to {$url}");
+            $this->failAssertion("No SSE connection found to {$url}");
         }
     }
 
@@ -445,7 +445,7 @@ trait AssertsSSE
                         $cacheValue = is_array($cacheControl) ? $cacheControl[0] : $cacheControl;
                         if (!str_contains(strtolower($cacheValue), 'no-cache') && 
                             !str_contains(strtolower($cacheValue), 'no-store')) {
-                            throw new MockAssertionException(
+                            $this->failAssertion(
                                 "SSE connection to {$url} should have Cache-Control: no-cache or no-store"
                             );
                         }
@@ -455,7 +455,7 @@ trait AssertsSSE
             }
         }
 
-        throw new MockAssertionException("No SSE connection found to {$url}");
+        $this->failAssertion("No SSE connection found to {$url}");
     }
 
     /**
@@ -491,7 +491,7 @@ trait AssertsSSE
         $actualCount = count($attempts);
 
         if ($actualCount !== $expectedCount) {
-            throw new MockAssertionException(
+            $this->failAssertion(
                 "Expected {$expectedCount} SSE connection(s) to {$url}, but found {$actualCount}"
             );
         }

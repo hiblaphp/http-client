@@ -27,7 +27,6 @@ class CacheHandler
         $cachedResponse = $this->cacheManager->getCachedResponse($url, $cacheConfig);
 
         if ($cachedResponse !== null) {
-            $this->requestRecorder->recordRequest('GET (FROM CACHE)', $url, []);
             return true;
         }
 
@@ -41,7 +40,7 @@ class CacheHandler
         }
 
         $cachedResponse = $this->cacheManager->getCachedResponse($url, $cacheConfig);
-        
+
         if ($cachedResponse === null) {
             throw new \RuntimeException('Cache indicated response available but returned null');
         }

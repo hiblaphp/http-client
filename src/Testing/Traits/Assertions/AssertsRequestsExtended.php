@@ -2,7 +2,6 @@
 
 namespace Hibla\HttpClient\Testing\Traits\Assertions;
 
-use Hibla\HttpClient\Testing\Exceptions\MockAssertionException;
 use Hibla\HttpClient\Testing\Utilities\RecordedRequest;
 
 /**
@@ -10,6 +9,8 @@ use Hibla\HttpClient\Testing\Utilities\RecordedRequest;
  */
 trait AssertsRequestsExtended
 {
+    use AssertionHandler;
+
     /**
      * @return array<int, RecordedRequest>
      */
@@ -20,18 +21,19 @@ trait AssertsRequestsExtended
      *
      * @param string $method HTTP method
      * @param string $pattern URL pattern (fnmatch syntax)
-     * @throws MockAssertionException
      */
     public function assertRequestMatchingUrl(string $method, string $pattern): void
     {
         foreach ($this->getRequestHistory() as $request) {
-            if (strtoupper($request->getMethod()) === strtoupper($method) &&
-                fnmatch($pattern, $request->getUrl())) {
+            if (
+                strtoupper($request->getMethod()) === strtoupper($method) &&
+                fnmatch($pattern, $request->getUrl())
+            ) {
                 return;
             }
         }
 
-        throw new MockAssertionException(
+        $this->failAssertion(
             "Expected request not found: {$method} matching {$pattern}"
         );
     }
@@ -40,7 +42,6 @@ trait AssertsRequestsExtended
      * Assert that requests were made in a specific order.
      *
      * @param array<array{method: string, url: string}> $expectedSequence Expected sequence of requests
-     * @throws MockAssertionException
      */
     public function assertRequestSequence(array $expectedSequence): void
     {
@@ -49,7 +50,7 @@ trait AssertsRequestsExtended
         $expectedCount = count($expectedSequence);
 
         if ($historyCount < $expectedCount) {
-            throw new MockAssertionException(
+            $this->failAssertion(
                 "Expected at least {$expectedCount} requests, but only {$historyCount} were made"
             );
         }
@@ -61,14 +62,16 @@ trait AssertsRequestsExtended
             }
 
             $expected = $expectedSequence[$matchIndex];
-            if (strtoupper($request->getMethod()) === strtoupper($expected['method']) &&
-                $request->getUrl() === $expected['url']) {
+            if (
+                strtoupper($request->getMethod()) === strtoupper($expected['method']) &&
+                $request->getUrl() === $expected['url']
+            ) {
                 $matchIndex++;
             }
         }
 
         if ($matchIndex !== $expectedCount) {
-            throw new MockAssertionException(
+            $this->failAssertion(
                 "Expected request sequence not found. Matched {$matchIndex} of {$expectedCount} requests"
             );
         }
@@ -80,23 +83,24 @@ trait AssertsRequestsExtended
      * @param string $method HTTP method
      * @param string $url Request URL
      * @param int $index Request index in history
-     * @throws MockAssertionException
      */
     public function assertRequestAtIndex(string $method, string $url, int $index): void
     {
         $history = $this->getRequestHistory();
 
         if (!isset($history[$index])) {
-            throw new MockAssertionException(
+            $this->failAssertion(
                 "No request found at index {$index}"
             );
         }
 
         $request = $history[$index];
 
-        if (strtoupper($request->getMethod()) !== strtoupper($method) ||
-            $request->getUrl() !== $url) {
-            throw new MockAssertionException(
+        if (
+            strtoupper($request->getMethod()) !== strtoupper($method) ||
+            $request->getUrl() !== $url
+        ) {
+            $this->failAssertion(
                 "Request at index {$index} does not match: {$method} {$url}"
             );
         }
@@ -106,7 +110,6 @@ trait AssertsRequestsExtended
      * Assert that exactly one request was made to a URL.
      *
      * @param string $url Request URL
-     * @throws MockAssertionException
      */
     public function assertSingleRequestTo(string $url): void
     {
@@ -119,13 +122,13 @@ trait AssertsRequestsExtended
         }
 
         if ($count === 0) {
-            throw new MockAssertionException(
+            $this->failAssertion(
                 "No requests found to: {$url}"
             );
         }
 
         if ($count > 1) {
-            throw new MockAssertionException(
+            $this->failAssertion(
                 "Expected single request to {$url}, but {$count} were made"
             );
         }
@@ -136,14 +139,15 @@ trait AssertsRequestsExtended
      *
      * @param string $method HTTP method
      * @param string $url Request URL
-     * @throws MockAssertionException
      */
     public function assertRequestNotMade(string $method, string $url): void
     {
         foreach ($this->getRequestHistory() as $request) {
-            if (strtoupper($request->getMethod()) === strtoupper($method) &&
-                $request->getUrl() === $url) {
-                throw new MockAssertionException(
+            if (
+                strtoupper($request->getMethod()) === strtoupper($method) &&
+                $request->getUrl() === $url
+            ) {
+                $this->failAssertion(
                     "Unexpected request found: {$method} {$url}"
                 );
             }
@@ -155,7 +159,6 @@ trait AssertsRequestsExtended
      *
      * @param string $url Request URL
      * @param int $maxCount Maximum allowed count
-     * @throws MockAssertionException
      */
     public function assertRequestCountTo(string $url, int $maxCount): void
     {
@@ -168,7 +171,7 @@ trait AssertsRequestsExtended
         }
 
         if ($count > $maxCount) {
-            throw new MockAssertionException(
+            $this->failAssertion(
                 "Expected at most {$maxCount} requests to {$url}, but {$count} were made"
             );
         }

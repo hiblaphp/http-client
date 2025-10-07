@@ -582,5 +582,6 @@ class TestingHttpHandler extends HttpHandler implements
         $this->fileManager->cleanup();
         $this->cookieManager->cleanup();
         $this->requestRecorder->reset();
+        $this->cacheManager->reset();
     }
 }

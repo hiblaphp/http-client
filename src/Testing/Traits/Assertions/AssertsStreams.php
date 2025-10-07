@@ -7,6 +7,8 @@ use Hibla\HttpClient\Testing\Utilities\RecordedRequest;
 
 trait AssertsStreams
 {
+    use AssertionHandler;
+
     /**
      * @return array<int, RecordedRequest>
      */
@@ -16,41 +18,43 @@ trait AssertsStreams
      * Assert that a streaming request was made.
      *
      * @param string $url The URL that was streamed
-     * @throws MockAssertionException
      */
     public function assertStreamMade(string $url): void
     {
         foreach ($this->getRequestHistory() as $request) {
             $options = $request->getOptions();
-            
+
             if ($request->getUrl() === $url && isset($options['stream']) && $options['stream'] === true) {
                 return;
             }
         }
 
-        throw new MockAssertionException("Expected stream not found for URL: {$url}");
+        $this->failAssertion(
+            "Expected stream not found for URL: {$url}"
+        );
     }
 
     /**
      * Assert that a streaming request was made with a chunk callback.
      *
      * @param string $url The URL that was streamed
-     * @throws MockAssertionException
      */
     public function assertStreamWithCallback(string $url): void
     {
         foreach ($this->getRequestHistory() as $request) {
             $options = $request->getOptions();
-            
-            if ($request->getUrl() === $url && 
-                isset($options['stream']) && 
+
+            if (
+                $request->getUrl() === $url &&
+                isset($options['stream']) &&
                 $options['stream'] === true &&
-                isset($options['on_chunk'])) {
+                isset($options['on_chunk'])
+            ) {
                 return;
             }
         }
 
-        throw new MockAssertionException(
+        $this->failAssertion(
             "Expected stream with callback not found for URL: {$url}"
         );
     }
@@ -60,32 +64,31 @@ trait AssertsStreams
      *
      * @param string $url The URL that was streamed
      * @param array<string, string> $expectedHeaders Expected headers
-     * @throws MockAssertionException
      */
     public function assertStreamWithHeaders(string $url, array $expectedHeaders): void
     {
         foreach ($this->getRequestHistory() as $request) {
             $options = $request->getOptions();
-            
+
             if ($request->getUrl() === $url && isset($options['stream']) && $options['stream'] === true) {
                 $matches = true;
-                
+
                 foreach ($expectedHeaders as $name => $value) {
                     $headerValue = $request->getHeader($name);
-                    
+
                     if ($headerValue === null || $headerValue !== $value) {
                         $matches = false;
                         break;
                     }
                 }
-                
+
                 if ($matches) {
                     return;
                 }
             }
         }
 
-        throw new MockAssertionException(
+        $this->failAssertion(
             "Expected stream with headers not found for URL: {$url}"
         );
     }
@@ -95,22 +98,23 @@ trait AssertsStreams
      *
      * @param string $url The URL that was streamed
      * @param string $method Expected HTTP method
-     * @throws MockAssertionException
      */
     public function assertStreamWithMethod(string $url, string $method): void
     {
         foreach ($this->getRequestHistory() as $request) {
             $options = $request->getOptions();
-            
-            if ($request->getUrl() === $url && 
+
+            if (
+                $request->getUrl() === $url &&
                 isset($options['stream']) &&
                 $options['stream'] === true &&
-                strtoupper($request->getMethod()) === strtoupper($method)) {
+                strtoupper($request->getMethod()) === strtoupper($method)
+            ) {
                 return;
             }
         }
 
-        throw new MockAssertionException(
+        $this->failAssertion(
             "Expected stream with method {$method} not found for URL: {$url}"
         );
     }
@@ -118,17 +122,16 @@ trait AssertsStreams
     /**
      * Assert that no streaming requests were made.
      *
-     * @throws MockAssertionException
      */
     public function assertNoStreamsMade(): void
     {
         foreach ($this->getRequestHistory() as $request) {
             $options = $request->getOptions();
-            
+
             if (isset($options['stream']) && $options['stream'] === true) {
                 throw new MockAssertionException(
-                    'Expected no streams, but at least one was made to: ' . 
-                    $request->getUrl()
+                    'Expected no streams, but at least one was made to: ' .
+                        $request->getUrl()
                 );
             }
         }
@@ -138,22 +141,21 @@ trait AssertsStreams
      * Assert a specific number of streaming requests were made.
      *
      * @param int $expected Expected number of streams
-     * @throws MockAssertionException
      */
     public function assertStreamCount(int $expected): void
     {
         $actual = 0;
-        
+
         foreach ($this->getRequestHistory() as $request) {
             $options = $request->getOptions();
-            
+
             if (isset($options['stream']) && $options['stream'] === true) {
                 $actual++;
             }
         }
 
         if ($actual !== $expected) {
-            throw new MockAssertionException(
+            $this->failAssertion(
                 "Expected {$expected} streams, but {$actual} were made"
             );
         }
@@ -167,10 +169,10 @@ trait AssertsStreams
     public function getStreamRequests(): array
     {
         $streams = [];
-        
+
         foreach ($this->getRequestHistory() as $request) {
             $options = $request->getOptions();
-            
+
             if (isset($options['stream']) && $options['stream'] === true) {
                 $streams[] = $request;
             }
@@ -187,7 +189,7 @@ trait AssertsStreams
     public function getLastStream(): ?RecordedRequest
     {
         $streams = $this->getStreamRequests();
-        
+
         if ($streams === []) {
             return null;
         }
@@ -203,7 +205,7 @@ trait AssertsStreams
     public function getFirstStream(): ?RecordedRequest
     {
         $streams = $this->getStreamRequests();
-        
+
         if ($streams === []) {
             return null;
         }
@@ -231,20 +233,20 @@ trait AssertsStreams
     public function dumpStreams(): void
     {
         $streams = $this->getStreamRequests();
-        
+
         if ($streams === []) {
             echo "No streams recorded\n";
             return;
         }
 
         echo "=== Streams (" . count($streams) . ") ===\n";
-        
+
         foreach ($streams as $index => $request) {
             $options = $request->getOptions();
-            
+
             echo "\n[{$index}] {$request->getMethod()} {$request->getUrl()}\n";
             echo "    Has callback: " . (isset($options['on_chunk']) ? "Yes" : "No") . "\n";
-            
+
             $headers = $request->getHeaders();
             if ($headers !== []) {
                 echo "    Headers:\n";
@@ -254,7 +256,7 @@ trait AssertsStreams
                 }
             }
         }
-        
+
         echo "===================\n";
     }
 
@@ -266,25 +268,25 @@ trait AssertsStreams
     public function dumpLastStream(): void
     {
         $stream = $this->getLastStream();
-        
+
         if ($stream === null) {
             echo "No streams recorded\n";
             return;
         }
 
         $options = $stream->getOptions();
-        
+
         echo "=== Last Stream ===\n";
         echo "Method: {$stream->getMethod()}\n";
         echo "URL: {$stream->getUrl()}\n";
         echo "Has callback: " . (isset($options['on_chunk']) ? "Yes" : "No") . "\n";
-        
+
         echo "\nHeaders:\n";
         foreach ($stream->getHeaders() as $name => $value) {
             $displayValue = is_array($value) ? implode(', ', $value) : $value;
             echo "  {$name}: {$displayValue}\n";
         }
-        
+
         echo "===================\n";
     }
 }

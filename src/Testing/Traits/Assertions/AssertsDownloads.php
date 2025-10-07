@@ -2,11 +2,12 @@
 
 namespace Hibla\HttpClient\Testing\Traits\Assertions;
 
-use Hibla\HttpClient\Testing\Exceptions\MockAssertionException;
 use Hibla\HttpClient\Testing\Utilities\RecordedRequest;
 
 trait AssertsDownloads
 {
+    use AssertionHandler;
+
     /**
      * @return array<int, RecordedRequest>
      */
@@ -17,7 +18,6 @@ trait AssertsDownloads
      *
      * @param string $url The URL that was downloaded
      * @param string $destination The expected destination path
-     * @throws MockAssertionException
      */
     public function assertDownloadMade(string $url, string $destination): void
     {
@@ -33,7 +33,7 @@ trait AssertsDownloads
             }
         }
 
-        throw new MockAssertionException(
+        $this->failAssertion(
             "Expected download not found: {$url} to {$destination}"
         );
     }
@@ -42,7 +42,6 @@ trait AssertsDownloads
      * Assert that a download was made to any destination.
      *
      * @param string $url The URL that was downloaded
-     * @throws MockAssertionException
      */
     public function assertDownloadMadeToUrl(string $url): void
     {
@@ -54,14 +53,13 @@ trait AssertsDownloads
             }
         }
 
-        throw new MockAssertionException("Expected download not found for URL: {$url}");
+        $this->failAssertion("Expected download not found for URL: {$url}");
     }
 
     /**
      * Assert that a specific file was downloaded.
      *
      * @param string $destination The destination path
-     * @throws MockAssertionException
      */
     public function assertFileDownloaded(string $destination): void
     {
@@ -77,7 +75,7 @@ trait AssertsDownloads
             }
         }
 
-        throw new MockAssertionException(
+        $this->failAssertion(
             "Expected file download not found: {$destination}"
         );
     }
@@ -87,7 +85,6 @@ trait AssertsDownloads
      *
      * @param string $url The URL that was downloaded
      * @param array<string, string> $expectedHeaders Expected request headers
-     * @throws MockAssertionException
      */
     public function assertDownloadWithHeaders(string $url, array $expectedHeaders): void
     {
@@ -112,15 +109,13 @@ trait AssertsDownloads
             }
         }
 
-        throw new MockAssertionException(
+        $this->failAssertion(
             "Expected download with headers not found for URL: {$url}"
         );
     }
 
     /**
      * Assert that no downloads were made.
-     *
-     * @throws MockAssertionException
      */
     public function assertNoDownloadsMade(): void
     {
@@ -131,7 +126,7 @@ trait AssertsDownloads
                 $destination = $options['download'];
                 $destinationStr = is_string($destination) ? $destination : 'unknown';
 
-                throw new MockAssertionException(
+                $this->failAssertion(
                     "Expected no downloads, but at least one was made to: {$destinationStr}"
                 );
             }
@@ -142,7 +137,6 @@ trait AssertsDownloads
      * Assert a specific number of downloads were made.
      *
      * @param int $expected Expected number of downloads
-     * @throws MockAssertionException
      */
     public function assertDownloadCount(int $expected): void
     {
@@ -157,7 +151,7 @@ trait AssertsDownloads
         }
 
         if ($actual !== $expected) {
-            throw new MockAssertionException(
+            $this->failAssertion(
                 "Expected {$expected} downloads, but {$actual} were made"
             );
         }
@@ -167,14 +161,13 @@ trait AssertsDownloads
      * Assert that a file exists at the download destination.
      *
      * @param string $destination The destination path
-     * @throws MockAssertionException
      */
     public function assertDownloadedFileExists(string $destination): void
     {
         $this->assertFileDownloaded($destination);
 
         if (!file_exists($destination)) {
-            throw new MockAssertionException(
+            $this->failAssertion(
                 "Download was recorded but file does not exist: {$destination}"
             );
         }
@@ -185,7 +178,6 @@ trait AssertsDownloads
      *
      * @param string $destination The destination path
      * @param string $expectedContent Expected file content
-     * @throws MockAssertionException
      */
     public function assertDownloadedFileContains(string $destination, string $expectedContent): void
     {
@@ -194,13 +186,13 @@ trait AssertsDownloads
         $actualContent = file_get_contents($destination);
 
         if ($actualContent === false) {
-            throw new MockAssertionException(
+            $this->failAssertion(
                 "Cannot read downloaded file: {$destination}"
             );
         }
 
         if ($actualContent !== $expectedContent) {
-            throw new MockAssertionException(
+            $this->failAssertion(
                 "Downloaded file content does not match expected content"
             );
         }
@@ -211,7 +203,6 @@ trait AssertsDownloads
      *
      * @param string $destination The destination path
      * @param string $needle Substring to search for
-     * @throws MockAssertionException
      */
     public function assertDownloadedFileContainsString(string $destination, string $needle): void
     {
@@ -220,13 +211,13 @@ trait AssertsDownloads
         $actualContent = file_get_contents($destination);
 
         if ($actualContent === false) {
-            throw new MockAssertionException(
+            $this->failAssertion(
                 "Cannot read downloaded file: {$destination}"
             );
         }
 
         if (!str_contains($actualContent, $needle)) {
-            throw new MockAssertionException(
+            $this->failAssertion(
                 "Downloaded file does not contain expected string: {$needle}"
             );
         }
@@ -237,7 +228,6 @@ trait AssertsDownloads
      *
      * @param string $destination The destination path
      * @param int $expectedSize Expected file size in bytes
-     * @throws MockAssertionException
      */
     public function assertDownloadedFileSize(string $destination, int $expectedSize): void
     {
@@ -246,13 +236,13 @@ trait AssertsDownloads
         $actualSize = filesize($destination);
 
         if ($actualSize === false) {
-            throw new MockAssertionException(
+            $this->failAssertion(
                 "Cannot determine size of downloaded file: {$destination}"
             );
         }
 
         if ($actualSize !== $expectedSize) {
-            throw new MockAssertionException(
+            $this->failAssertion(
                 "Downloaded file size {$actualSize} does not match expected size {$expectedSize}"
             );
         }
@@ -264,7 +254,6 @@ trait AssertsDownloads
      * @param string $destination The destination path
      * @param int $minSize Minimum size in bytes
      * @param int $maxSize Maximum size in bytes
-     * @throws MockAssertionException
      */
     public function assertDownloadedFileSizeBetween(string $destination, int $minSize, int $maxSize): void
     {
@@ -273,13 +262,13 @@ trait AssertsDownloads
         $actualSize = filesize($destination);
 
         if ($actualSize === false) {
-            throw new MockAssertionException(
+            $this->failAssertion(
                 "Cannot determine size of downloaded file: {$destination}"
             );
         }
 
         if ($actualSize < $minSize || $actualSize > $maxSize) {
-            throw new MockAssertionException(
+            $this->failAssertion(
                 "Downloaded file size {$actualSize} is not between {$minSize} and {$maxSize}"
             );
         }
@@ -290,7 +279,6 @@ trait AssertsDownloads
      *
      * @param string $url The URL that was downloaded
      * @param string $method Expected HTTP method
-     * @throws MockAssertionException
      */
     public function assertDownloadWithMethod(string $url, string $method): void
     {
@@ -306,7 +294,7 @@ trait AssertsDownloads
             }
         }
 
-        throw new MockAssertionException(
+        $this->failAssertion(
             "Expected download with method {$method} not found for URL: {$url}"
         );
     }
