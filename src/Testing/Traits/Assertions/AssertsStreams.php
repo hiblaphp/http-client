@@ -21,6 +21,8 @@ trait AssertsStreams
      */
     public function assertStreamMade(string $url): void
     {
+        $this->registerAssertion();
+
         foreach ($this->getRequestHistory() as $request) {
             $options = $request->getOptions();
 
@@ -41,6 +43,8 @@ trait AssertsStreams
      */
     public function assertStreamWithCallback(string $url): void
     {
+        $this->registerAssertion();
+
         foreach ($this->getRequestHistory() as $request) {
             $options = $request->getOptions();
 
@@ -67,6 +71,8 @@ trait AssertsStreams
      */
     public function assertStreamWithHeaders(string $url, array $expectedHeaders): void
     {
+        $this->registerAssertion();
+
         foreach ($this->getRequestHistory() as $request) {
             $options = $request->getOptions();
 
@@ -101,6 +107,8 @@ trait AssertsStreams
      */
     public function assertStreamWithMethod(string $url, string $method): void
     {
+        $this->registerAssertion();
+
         foreach ($this->getRequestHistory() as $request) {
             $options = $request->getOptions();
 
@@ -125,6 +133,8 @@ trait AssertsStreams
      */
     public function assertNoStreamsMade(): void
     {
+        $this->registerAssertion();
+
         foreach ($this->getRequestHistory() as $request) {
             $options = $request->getOptions();
 
@@ -144,6 +154,7 @@ trait AssertsStreams
      */
     public function assertStreamCount(int $expected): void
     {
+        $this->registerAssertion();
         $actual = 0;
 
         foreach ($this->getRequestHistory() as $request) {
@@ -168,6 +179,7 @@ trait AssertsStreams
      */
     public function getStreamRequests(): array
     {
+        $this->registerAssertion();
         $streams = [];
 
         foreach ($this->getRequestHistory() as $request) {
@@ -188,6 +200,7 @@ trait AssertsStreams
      */
     public function getLastStream(): ?RecordedRequest
     {
+        $this->registerAssertion();
         $streams = $this->getStreamRequests();
 
         if ($streams === []) {
@@ -204,6 +217,7 @@ trait AssertsStreams
      */
     public function getFirstStream(): ?RecordedRequest
     {
+        $this->registerAssertion();
         $streams = $this->getStreamRequests();
 
         if ($streams === []) {

@@ -20,6 +20,7 @@ trait AssertsSSE
      */
     public function assertSSEConnectionMade(string $url): void
     {
+        $this->registerAssertion();
         foreach ($this->getRequestHistory() as $request) {
             if ($request->getUrl() === $url || fnmatch($url, $request->getUrl())) {
                 $accept = $request->getHeader('accept');
@@ -40,6 +41,7 @@ trait AssertsSSE
      */
     public function assertNoSSEConnections(): void
     {
+        $this->registerAssertion();
         foreach ($this->getRequestHistory() as $request) {
             $accept = $request->getHeader('accept');
             if ($accept !== null && (
@@ -58,6 +60,7 @@ trait AssertsSSE
      */
     public function assertSSELastEventId(string $expectedId, ?int $requestIndex = null): void
     {
+        $this->registerAssertion();
         $request = $requestIndex === null
             ? $this->getLastRequest()
             : $this->getRequest($requestIndex);
@@ -84,6 +87,7 @@ trait AssertsSSE
      */
     public function assertSSEConnectionAttempts(string $url, int $expectedAttempts): void
     {
+        $this->registerAssertion();
         $actualAttempts = 0;
 
         foreach ($this->getRequestHistory() as $request) {
@@ -110,6 +114,7 @@ trait AssertsSSE
      */
     public function assertSSEConnectionAttemptsAtLeast(string $url, int $minAttempts): void
     {
+        $this->registerAssertion();
         $actualAttempts = 0;
 
         foreach ($this->getRequestHistory() as $request) {
@@ -136,6 +141,7 @@ trait AssertsSSE
      */
     public function assertSSEConnectionAttemptsAtMost(string $url, int $maxAttempts): void
     {
+        $this->registerAssertion();
         $actualAttempts = 0;
 
         foreach ($this->getRequestHistory() as $request) {
@@ -162,6 +168,7 @@ trait AssertsSSE
      */
     public function assertSSEReconnectionOccurred(string $url): void
     {
+        $this->registerAssertion();
         $hasReconnection = false;
 
         foreach ($this->getRequestHistory() as $request) {
@@ -191,6 +198,7 @@ trait AssertsSSE
      */
     public function assertSSEConnectionHasHeader(string $url, string $headerName, string $expectedValue): void
     {
+        $this->registerAssertion();
         foreach ($this->getRequestHistory() as $request) {
             if ($request->getUrl() === $url || fnmatch($url, $request->getUrl())) {
                 $accept = $request->getHeader('accept');
@@ -224,6 +232,7 @@ trait AssertsSSE
      */
     public function assertSSEConnectionMissingHeader(string $url, string $headerName): void
     {
+        $this->registerAssertion();
         foreach ($this->getRequestHistory() as $request) {
             if ($request->getUrl() === $url || fnmatch($url, $request->getUrl())) {
                 $accept = $request->getHeader('accept');
@@ -252,6 +261,7 @@ trait AssertsSSE
      */
     public function assertSSEConnectionsMadeToMultipleUrls(array $urls): void
     {
+        $this->registerAssertion();
         $foundUrls = [];
 
         foreach ($this->getRequestHistory() as $request) {
@@ -284,6 +294,7 @@ trait AssertsSSE
      */
     public function assertSSEConnectionsInOrder(array $urls): void
     {
+        $this->registerAssertion();
         $sseRequests = [];
 
         foreach ($this->getRequestHistory() as $request) {
@@ -323,6 +334,7 @@ trait AssertsSSE
      */
     public function assertSSEConnectionAuthenticated(string $url, ?string $expectedToken = null): void
     {
+        $this->registerAssertion();
         foreach ($this->getRequestHistory() as $request) {
             if ($request->getUrl() === $url || fnmatch($url, $request->getUrl())) {
                 $accept = $request->getHeader('accept');
@@ -358,6 +370,7 @@ trait AssertsSSE
      */
     public function assertSSEReconnectionProgression(string $url): void
     {
+        $this->registerAssertion();
         $eventIds = [];
 
         foreach ($this->getRequestHistory() as $request) {
@@ -399,6 +412,7 @@ trait AssertsSSE
      */
     public function assertFirstSSEConnectionHasNoLastEventId(string $url): void
     {
+        $this->registerAssertion();
         $foundFirst = false;
 
         foreach ($this->getRequestHistory() as $request) {
@@ -432,6 +446,7 @@ trait AssertsSSE
      */
     public function assertSSEConnectionRequestedWithProperHeaders(string $url): void
     {
+        $this->registerAssertion();
         foreach ($this->getRequestHistory() as $request) {
             if ($request->getUrl() === $url || fnmatch($url, $request->getUrl())) {
                 $accept = $request->getHeader('accept');

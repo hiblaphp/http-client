@@ -24,6 +24,7 @@ trait AssertsRequestsExtended
      */
     public function assertRequestMatchingUrl(string $method, string $pattern): void
     {
+        $this->registerAssertion();
         foreach ($this->getRequestHistory() as $request) {
             if (
                 strtoupper($request->getMethod()) === strtoupper($method) &&
@@ -45,6 +46,7 @@ trait AssertsRequestsExtended
      */
     public function assertRequestSequence(array $expectedSequence): void
     {
+        $this->registerAssertion();
         $history = $this->getRequestHistory();
         $historyCount = count($history);
         $expectedCount = count($expectedSequence);
@@ -86,6 +88,7 @@ trait AssertsRequestsExtended
      */
     public function assertRequestAtIndex(string $method, string $url, int $index): void
     {
+        $this->registerAssertion();
         $history = $this->getRequestHistory();
 
         if (!isset($history[$index])) {
@@ -113,6 +116,7 @@ trait AssertsRequestsExtended
      */
     public function assertSingleRequestTo(string $url): void
     {
+        $this->registerAssertion();
         $count = 0;
 
         foreach ($this->getRequestHistory() as $request) {
@@ -142,6 +146,7 @@ trait AssertsRequestsExtended
      */
     public function assertRequestNotMade(string $method, string $url): void
     {
+        $this->registerAssertion();
         foreach ($this->getRequestHistory() as $request) {
             if (
                 strtoupper($request->getMethod()) === strtoupper($method) &&
@@ -162,6 +167,7 @@ trait AssertsRequestsExtended
      */
     public function assertRequestCountTo(string $url, int $maxCount): void
     {
+        $this->registerAssertion();
         $count = 0;
 
         foreach ($this->getRequestHistory() as $request) {

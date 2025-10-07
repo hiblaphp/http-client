@@ -21,6 +21,7 @@ trait AssertsDownloads
      */
     public function assertDownloadMade(string $url, string $destination): void
     {
+        $this->registerAssertion();
         foreach ($this->getRequestHistory() as $request) {
             $options = $request->getOptions();
 
@@ -45,6 +46,7 @@ trait AssertsDownloads
      */
     public function assertDownloadMadeToUrl(string $url): void
     {
+        $this->registerAssertion();
         foreach ($this->getRequestHistory() as $request) {
             $options = $request->getOptions();
 
@@ -63,6 +65,7 @@ trait AssertsDownloads
      */
     public function assertFileDownloaded(string $destination): void
     {
+        $this->registerAssertion();
         foreach ($this->getRequestHistory() as $request) {
             $options = $request->getOptions();
 
@@ -88,6 +91,7 @@ trait AssertsDownloads
      */
     public function assertDownloadWithHeaders(string $url, array $expectedHeaders): void
     {
+        $this->registerAssertion();
         foreach ($this->getRequestHistory() as $request) {
             $options = $request->getOptions();
 
@@ -119,6 +123,7 @@ trait AssertsDownloads
      */
     public function assertNoDownloadsMade(): void
     {
+        $this->registerAssertion();
         foreach ($this->getRequestHistory() as $request) {
             $options = $request->getOptions();
 
@@ -140,6 +145,7 @@ trait AssertsDownloads
      */
     public function assertDownloadCount(int $expected): void
     {
+        $this->registerAssertion();
         $actual = 0;
 
         foreach ($this->getRequestHistory() as $request) {
@@ -164,6 +170,7 @@ trait AssertsDownloads
      */
     public function assertDownloadedFileExists(string $destination): void
     {
+        $this->registerAssertion();
         $this->assertFileDownloaded($destination);
 
         if (!file_exists($destination)) {
@@ -181,6 +188,7 @@ trait AssertsDownloads
      */
     public function assertDownloadedFileContains(string $destination, string $expectedContent): void
     {
+        $this->registerAssertion();
         $this->assertDownloadedFileExists($destination);
 
         $actualContent = file_get_contents($destination);
@@ -206,6 +214,7 @@ trait AssertsDownloads
      */
     public function assertDownloadedFileContainsString(string $destination, string $needle): void
     {
+        $this->registerAssertion();
         $this->assertDownloadedFileExists($destination);
 
         $actualContent = file_get_contents($destination);
@@ -231,6 +240,7 @@ trait AssertsDownloads
      */
     public function assertDownloadedFileSize(string $destination, int $expectedSize): void
     {
+        $this->registerAssertion();
         $this->assertDownloadedFileExists($destination);
 
         $actualSize = filesize($destination);
@@ -257,6 +267,7 @@ trait AssertsDownloads
      */
     public function assertDownloadedFileSizeBetween(string $destination, int $minSize, int $maxSize): void
     {
+        $this->registerAssertion();
         $this->assertDownloadedFileExists($destination);
 
         $actualSize = filesize($destination);
@@ -282,6 +293,7 @@ trait AssertsDownloads
      */
     public function assertDownloadWithMethod(string $url, string $method): void
     {
+        $this->registerAssertion();
         foreach ($this->getRequestHistory() as $request) {
             $options = $request->getOptions();
 

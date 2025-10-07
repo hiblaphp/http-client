@@ -24,6 +24,7 @@ trait AssertsRequests
      */
     public function assertRequestMade(string $method, string $url, array $options = []): void
     {
+        $this->registerAssertion();
         foreach ($this->getRequestHistory() as $request) {
             if ($this->getRequestMatcher()->matchesRequest($request, $method, $url, $options)) {
                 return;
@@ -38,6 +39,7 @@ trait AssertsRequests
      */
     public function assertNoRequestsMade(): void
     {
+        $this->registerAssertion();
         $history = $this->getRequestHistory();
         if ($history !== []) {
             $this->failAssertion('Expected no requests, but ' . count($history) . ' were made');
@@ -49,6 +51,7 @@ trait AssertsRequests
      */
     public function assertRequestCount(int $expected): void
     {
+        $this->registerAssertion();
         $actual = count($this->getRequestHistory());
         if ($actual !== $expected) {
             $this->failAssertion("Expected {$expected} requests, but {$actual} were made");

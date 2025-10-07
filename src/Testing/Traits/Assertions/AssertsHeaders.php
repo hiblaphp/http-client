@@ -15,6 +15,7 @@ trait AssertsHeaders
      */
     public function assertHeaderSent(string $name, ?string $expectedValue = null, ?int $requestIndex = null): void
     {
+        $this->registerAssertion();
         $request = $requestIndex === null
             ? $this->getLastRequest()
             : $this->getRequest($requestIndex);
@@ -42,6 +43,7 @@ trait AssertsHeaders
      */
     public function assertHeaderNotSent(string $name, ?int $requestIndex = null): void
     {
+        $this->registerAssertion();
         $request = $requestIndex === null
             ? $this->getLastRequest()
             : $this->getRequest($requestIndex);
@@ -66,6 +68,7 @@ trait AssertsHeaders
      */
     public function assertHeadersSent(array $expectedHeaders, ?int $requestIndex = null): void
     {
+        $this->registerAssertion();
         foreach ($expectedHeaders as $name => $value) {
             $this->assertHeaderSent($name, $value, $requestIndex);
         }
@@ -76,6 +79,7 @@ trait AssertsHeaders
      */
     public function assertHeaderMatches(string $name, string $pattern, ?int $requestIndex = null): void
     {
+        $this->registerAssertion();
         $request = $requestIndex === null
             ? $this->getLastRequest()
             : $this->getRequest($requestIndex);
@@ -101,6 +105,7 @@ trait AssertsHeaders
      */
     public function assertBearerTokenSent(string $expectedToken, ?int $requestIndex = null): void
     {
+        $this->registerAssertion();
         $this->assertHeaderSent('authorization', "Bearer {$expectedToken}", $requestIndex);
     }
 
@@ -117,6 +122,7 @@ trait AssertsHeaders
      */
     public function assertAcceptHeader(string $expectedType, ?int $requestIndex = null): void
     {
+        $this->registerAssertion();
         $this->assertHeaderSent('accept', $expectedType, $requestIndex);
     }
 
@@ -125,6 +131,7 @@ trait AssertsHeaders
      */
     public function assertUserAgent(string $expectedUserAgent, ?int $requestIndex = null): void
     {
+        $this->registerAssertion();
         $this->assertHeaderSent('user-agent', $expectedUserAgent, $requestIndex);
     }
 }

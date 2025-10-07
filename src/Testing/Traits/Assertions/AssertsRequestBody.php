@@ -20,6 +20,7 @@ trait AssertsRequestBody
      */
     public function assertRequestWithBody(string $method, string $url, string $expectedBody): void
     {
+        $this->registerAssertion();
         foreach ($this->getRequestHistory() as $request) {
             if (
                 strtoupper($request->getMethod()) === strtoupper($method) &&
@@ -44,6 +45,7 @@ trait AssertsRequestBody
      */
     public function assertRequestBodyContains(string $method, string $url, string $needle): void
     {
+        $this->registerAssertion();
         foreach ($this->getRequestHistory() as $request) {
             if (
                 strtoupper($request->getMethod()) === strtoupper($method) &&
@@ -71,6 +73,7 @@ trait AssertsRequestBody
      */
     public function assertRequestWithJson(string $method, string $url, array $expectedJson): void
     {
+        $this->registerAssertion();
         foreach ($this->getRequestHistory() as $request) {
             if (
                 strtoupper($request->getMethod()) === strtoupper($method) &&
@@ -98,6 +101,7 @@ trait AssertsRequestBody
      */
     public function assertRequestJsonContains(string $method, string $url, array $expectedKeys): void
     {
+        $this->registerAssertion();
         foreach ($this->getRequestHistory() as $request) {
             if (
                 strtoupper($request->getMethod()) === strtoupper($method) &&
@@ -126,6 +130,7 @@ trait AssertsRequestBody
      */
     public function assertRequestJsonPath(string $method, string $url, string $path, mixed $expectedValue): void
     {
+        $this->registerAssertion();
         foreach ($this->getRequestHistory() as $request) {
             if (
                 strtoupper($request->getMethod()) === strtoupper($method) &&
@@ -156,6 +161,7 @@ trait AssertsRequestBody
      */
     public function assertRequestWithEmptyBody(string $method, string $url): void
     {
+        $this->registerAssertion();
         foreach ($this->getRequestHistory() as $request) {
             if (
                 strtoupper($request->getMethod()) === strtoupper($method) &&
@@ -182,6 +188,7 @@ trait AssertsRequestBody
      */
     public function assertRequestHasBody(string $method, string $url): void
     {
+        $this->registerAssertion();
         foreach ($this->getRequestHistory() as $request) {
             if (
                 strtoupper($request->getMethod()) === strtoupper($method) &&
@@ -208,6 +215,7 @@ trait AssertsRequestBody
      */
     public function assertRequestIsJson(string $method, string $url): void
     {
+        $this->registerAssertion();
         foreach ($this->getRequestHistory() as $request) {
             if (
                 strtoupper($request->getMethod()) === strtoupper($method) &&
@@ -232,6 +240,7 @@ trait AssertsRequestBody
      */
     public function assertRequestBodyMatches(string $method, string $url, string $pattern): void
     {
+        $this->registerAssertion();
         foreach ($this->getRequestHistory() as $request) {
             if (
                 strtoupper($request->getMethod()) === strtoupper($method) &&

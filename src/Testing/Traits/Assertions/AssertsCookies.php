@@ -15,6 +15,8 @@ trait AssertsCookies
      */
     public function assertCookieSent(string $name): void
     {
+        $this->registerAssertion();
+
         $history = $this->getRequestRecorder()->getRequestHistory();
         if ($history === []) {
             $this->failAssertion('No requests have been made');
@@ -33,6 +35,7 @@ trait AssertsCookies
      */
     public function assertCookieExists(string $name): void
     {
+        $this->registerAssertion();
         $this->getCookieManager()->assertCookieExists($name);
     }
 
@@ -41,6 +44,7 @@ trait AssertsCookies
      */
     public function assertCookieValue(string $name, string $expectedValue): void
     {
+        $this->registerAssertion();
         $this->getCookieManager()->assertCookieValue($name, $expectedValue);
     }
 }

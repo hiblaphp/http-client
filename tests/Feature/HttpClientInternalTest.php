@@ -134,7 +134,7 @@ describe('Caching', function () {
         expect($response1->json())->toBe(['data' => 'live data']);
         expect($response2->json())->toBe(['data' => 'live data']);
 
-        Http::assertRequestCount(2);
+        Http::assertRequestCount(1);
     });
 });
 

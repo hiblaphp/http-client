@@ -37,40 +37,40 @@ class RecordedRequest
     }
 
     /**
-     * Parse cURL headers into associative array.
+     * Parse cURL and fetch-style headers into a single associative array.
      */
     private function parseHeaders(): void
     {
-        if (! isset($this->options[CURLOPT_HTTPHEADER])) {
-            return;
-        }
+        if (isset($this->options[CURLOPT_HTTPHEADER]) && is_array($this->options[CURLOPT_HTTPHEADER])) {
+            foreach ($this->options[CURLOPT_HTTPHEADER] as $header) {
+                if (! is_string($header) || strpos($header, ':') === false) {
+                    continue;
+                }
 
-        $headers = $this->options[CURLOPT_HTTPHEADER];
-        if (! is_array($headers)) {
-            return;
-        }
+                [$name, $value] = explode(':', $header, 2);
+                $name = strtolower(trim($name));
+                $value = trim($value);
 
-        foreach ($headers as $header) {
-            if (! is_string($header) || strpos($header, ':') === false) {
-                continue;
+                if (isset($this->parsedHeaders[$name])) {
+                    $existing = $this->parsedHeaders[$name];
+                    if (! is_array($existing)) {
+                        $this->parsedHeaders[$name] = [$existing];
+                    }
+                    if (is_array($this->parsedHeaders[$name])) {
+                        $this->parsedHeaders[$name][] = $value;
+                    }
+                } else {
+                    $this->parsedHeaders[$name] = $value;
+                }
             }
+        }
 
-            [$name, $value] = explode(':', $header, 2);
-            $name = strtolower(trim($name));
-            $value = trim($value);
-
-            if (isset($this->parsedHeaders[$name])) {
-                // Handle multiple headers with same name
-                $existing = $this->parsedHeaders[$name];
-                if (! is_array($existing)) {
-                    $this->parsedHeaders[$name] = [$existing];
+        if (isset($this->options['headers']) && is_array($this->options['headers'])) {
+            foreach ($this->options['headers'] as $name => $value) {
+                if (is_string($name) && is_scalar($value)) {
+                    $normalizedName = strtolower(trim($name));
+                    $this->parsedHeaders[$normalizedName] = trim((string)$value);
                 }
-
-                if (is_array($this->parsedHeaders[$name])) {
-                    $this->parsedHeaders[$name][] = $value;
-                }
-            } else {
-                $this->parsedHeaders[$name] = $value;
             }
         }
     }
@@ -80,22 +80,18 @@ class RecordedRequest
      */
     private function parseBody(): void
     {
-        if (! isset($this->options[CURLOPT_POSTFIELDS])) {
-            return;
+        if (isset($this->options[CURLOPT_POSTFIELDS]) && is_string($this->options[CURLOPT_POSTFIELDS])) {
+            $this->body = $this->options[CURLOPT_POSTFIELDS];
+        } 
+        elseif (isset($this->options['body']) && is_string($this->options['body'])) {
+            $this->body = $this->options['body'];
         }
 
-        $postFields = $this->options[CURLOPT_POSTFIELDS];
-
-        if (! is_string($postFields)) {
-            return;
-        }
-
-        $this->body = $postFields;
-
-        // Try to parse as JSON
-        $decoded = json_decode($this->body, true);
-        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-            $this->parsedJson = $decoded;
+        if ($this->body !== null) {
+            $decoded = json_decode($this->body, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                $this->parsedJson = $decoded;
+            }
         }
     }
 
