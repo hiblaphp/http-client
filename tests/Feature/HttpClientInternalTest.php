@@ -3,9 +3,6 @@
 use Hibla\HttpClient\Http;
 use Hibla\HttpClient\Response;
 use Hibla\HttpClient\SSE\SSEEvent;
-use Hibla\HttpClient\Exceptions\ClientException;
-use Hibla\HttpClient\Exceptions\ServerException;
-use Hibla\HttpClient\Testing\Exceptions\MockAssertionException;
 
 beforeEach(function () {
     Http::startTesting();

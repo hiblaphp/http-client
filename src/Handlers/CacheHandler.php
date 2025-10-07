@@ -25,11 +25,11 @@ class CacheHandler
 {
     private static ?CacheInterface $defaultCache = null;
     private RetryHandler $retryHandler;
-    private RequestExecutor $requestExecutor;
+    private RequestExecutorHandler $requestExecutor;
 
-    public function __construct(?RequestExecutor $requestExecutor = null, ?RetryHandler $retryHandler = null)
+    public function __construct(?RequestExecutorHandler $requestExecutor = null, ?RetryHandler $retryHandler = null)
     {
-        $this->requestExecutor = $requestExecutor ?? new RequestExecutor();
+        $this->requestExecutor = $requestExecutor ?? new RequestExecutorHandler();
         $this->retryHandler = $retryHandler ?? new RetryHandler();
     }
 

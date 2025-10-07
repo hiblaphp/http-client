@@ -2,7 +2,7 @@
 
 namespace Hibla\HttpClient\Testing\Interfaces;
 
-use Hibla\HttpClient\Testing\Exceptions\MockAssertionException;
+use Hibla\HttpClient\Testing\Exceptions\MockAssertionError;
 use Hibla\HttpClient\Testing\Utilities\RecordedRequest;
 
 interface AssertsDownloadsInterface
@@ -12,7 +12,7 @@ interface AssertsDownloadsInterface
      *
      * @param string $url The URL that was downloaded
      * @param string $destination The expected destination path
-     * @throws MockAssertionException
+     * @throws MockAssertionError
      */
     public function assertDownloadMade(string $url, string $destination): void;
 
@@ -20,7 +20,7 @@ interface AssertsDownloadsInterface
      * Assert that a download was made to any destination.
      *
      * @param string $url The URL that was downloaded
-     * @throws MockAssertionException
+     * @throws MockAssertionError
      */
     public function assertDownloadMadeToUrl(string $url): void;
 
@@ -28,7 +28,7 @@ interface AssertsDownloadsInterface
      * Assert that a specific file was downloaded.
      *
      * @param string $destination The destination path
-     * @throws MockAssertionException
+     * @throws MockAssertionError
      */
     public function assertFileDownloaded(string $destination): void;
 
@@ -37,14 +37,14 @@ interface AssertsDownloadsInterface
      *
      * @param string $url The URL that was downloaded
      * @param array<string, string> $expectedHeaders Expected request headers
-     * @throws MockAssertionException
+     * @throws MockAssertionError
      */
     public function assertDownloadWithHeaders(string $url, array $expectedHeaders): void;
 
     /**
      * Assert that no downloads were made.
      *
-     * @throws MockAssertionException
+     * @throws MockAssertionError
      */
     public function assertNoDownloadsMade(): void;
 
@@ -52,7 +52,7 @@ interface AssertsDownloadsInterface
      * Assert a specific number of downloads were made.
      *
      * @param int $expected Expected number of downloads
-     * @throws MockAssertionException
+     * @throws MockAssertionError
      */
     public function assertDownloadCount(int $expected): void;
 
@@ -60,7 +60,7 @@ interface AssertsDownloadsInterface
      * Assert that a file exists at the download destination.
      *
      * @param string $destination The destination path
-     * @throws MockAssertionException
+     * @throws MockAssertionError
      */
     public function assertDownloadedFileExists(string $destination): void;
 
@@ -69,7 +69,7 @@ interface AssertsDownloadsInterface
      *
      * @param string $destination The destination path
      * @param string $expectedContent Expected file content
-     * @throws MockAssertionException
+     * @throws MockAssertionError
      */
     public function assertDownloadedFileContains(string $destination, string $expectedContent): void;
 
@@ -78,7 +78,7 @@ interface AssertsDownloadsInterface
      *
      * @param string $destination The destination path
      * @param string $needle Substring to search for
-     * @throws MockAssertionException
+     * @throws MockAssertionError
      */
     public function assertDownloadedFileContainsString(string $destination, string $needle): void;
 
@@ -87,7 +87,7 @@ interface AssertsDownloadsInterface
      *
      * @param string $destination The destination path
      * @param int $expectedSize Expected file size in bytes
-     * @throws MockAssertionException
+     * @throws MockAssertionError
      */
     public function assertDownloadedFileSize(string $destination, int $expectedSize): void;
 
@@ -97,7 +97,7 @@ interface AssertsDownloadsInterface
      * @param string $destination The destination path
      * @param int $minSize Minimum size in bytes
      * @param int $maxSize Maximum size in bytes
-     * @throws MockAssertionException
+     * @throws MockAssertionError
      */
     public function assertDownloadedFileSizeBetween(string $destination, int $minSize, int $maxSize): void;
 
@@ -106,7 +106,7 @@ interface AssertsDownloadsInterface
      *
      * @param string $url The URL that was downloaded
      * @param string $method Expected HTTP method
-     * @throws MockAssertionException
+     * @throws MockAssertionError
      */
     public function assertDownloadWithMethod(string $url, string $method): void;
 

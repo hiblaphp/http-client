@@ -2,7 +2,7 @@
 
 namespace Hibla\HttpClient\Testing\Traits\Assertions;
 
-use Hibla\HttpClient\Testing\Exceptions\MockAssertionException;
+use Hibla\HttpClient\Testing\Exceptions\MockAssertionError;
 use PHPUnit\Framework\Assert;
 
 trait AssertionHandler
@@ -22,7 +22,7 @@ trait AssertionHandler
      *
      * @param string $message
      * @return never
-     * @throws MockAssertionException
+     * @throws MockAssertionError
      */
     protected function failAssertion(string $message): void
     {
@@ -30,6 +30,6 @@ trait AssertionHandler
             Assert::fail($message);
         }
 
-        throw new MockAssertionException($message);
+        throw new MockAssertionError($message);
     }
 }

@@ -3,7 +3,6 @@
 namespace Hibla\HttpClient\Handlers;
 
 use Hibla\HttpClient\Response;
-use Hibla\HttpClient\RetryConfig;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
 use Hibla\HttpClient\SSE\SSEResponse;
 use Hibla\HttpClient\StreamingResponse;
@@ -23,20 +22,20 @@ class FetchHandler
 
     private StreamingHandler $streamingHandler;
     private SSEHandler $sseHandler;
-    private RequestExecutor $requestExecutor;
+    private RequestExecutorHandler $requestExecutor;
     private RetryHandler $retryHandler;
     private CacheHandler $cacheHandler;
 
     public function __construct(
         ?StreamingHandler $streamingHandler = null,
         ?SSEHandler $sseHandler = null,
-        ?RequestExecutor $requestExecutor = null,
+        ?RequestExecutorHandler $requestExecutor = null,
         ?RetryHandler $retryHandler = null,
         ?CacheHandler $cacheHandler = null
     ) {
         $this->streamingHandler = $streamingHandler ?? new StreamingHandler();
         $this->sseHandler = $sseHandler ?? new SSEHandler();
-        $this->requestExecutor = $requestExecutor ?? new RequestExecutor();
+        $this->requestExecutor = $requestExecutor ?? new RequestExecutorHandler();
         $this->retryHandler = $retryHandler ?? new RetryHandler();
         $this->cacheHandler = $cacheHandler ?? new CacheHandler($this->requestExecutor, $this->retryHandler);
     }
@@ -91,20 +90,6 @@ class FetchHandler
         }
 
         return $this->requestExecutor->execute($url, $curlOptions);
-    }
-
-    /**
-     * @deprecated Use HttpRetryHandler::execute() directly. This method is maintained for backward compatibility.
-     * Sends a request with automatic retry logic on failure.
-     *
-     * @param  string  $url  The target URL.
-     * @param  array<int|string, mixed>  $options  An array of cURL options.
-     * @param  RetryConfig  $retryConfig  Configuration object for retry behavior.
-     * @return PromiseInterface<Response> A promise that resolves with a Response object or rejects with an HttpException on final failure.
-     */
-    public function fetchWithRetry(string $url, array $options, RetryConfig $retryConfig): PromiseInterface
-    {
-        return $this->retryHandler->execute($url, $options, $retryConfig);
     }
 
     /**
@@ -186,17 +171,6 @@ class FetchHandler
         }
 
         return null;
-    }
-
-    /**
-     * Executes basic fetch without advanced features
-     *
-     * @param  array<int|string, mixed>  $curlOptions
-     * @return PromiseInterface<Response>
-     */
-    public function executeBasicFetch(string $url, array $curlOptions): PromiseInterface
-    {
-        return $this->requestExecutor->execute($url, $curlOptions);
     }
 
     /**

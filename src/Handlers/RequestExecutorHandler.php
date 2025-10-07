@@ -13,7 +13,7 @@ use Hibla\Promise\Interfaces\PromiseInterface;
  * 
  * This is the base executor that other handlers can build upon.
  */
-class RequestExecutor
+class RequestExecutorHandler
 {
     /**
      * Executes a basic HTTP request.

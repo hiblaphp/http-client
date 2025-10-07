@@ -2,7 +2,7 @@
 
 namespace Hibla\HttpClient\Testing\Interfaces;
 
-use Hibla\HttpClient\Testing\Exceptions\MockAssertionException;
+use Hibla\HttpClient\Testing\Exceptions\MockAssertionError;
 use Hibla\HttpClient\Testing\Utilities\RecordedRequest;
 
 interface AssertsStreamsInterface
@@ -11,7 +11,7 @@ interface AssertsStreamsInterface
      * Assert that a streaming request was made.
      *
      * @param string $url The URL that was streamed
-     * @throws MockAssertionException
+     * @throws MockAssertionError
      */
     public function assertStreamMade(string $url): void;
 
@@ -19,7 +19,7 @@ interface AssertsStreamsInterface
      * Assert that a streaming request was made with a chunk callback.
      *
      * @param string $url The URL that was streamed
-     * @throws MockAssertionException
+     * @throws MockAssertionError
      */
     public function assertStreamWithCallback(string $url): void;
 
@@ -28,7 +28,7 @@ interface AssertsStreamsInterface
      *
      * @param string $url The URL that was streamed
      * @param array<string, string> $expectedHeaders Expected headers
-     * @throws MockAssertionException
+     * @throws MockAssertionError
      */
     public function assertStreamWithHeaders(string $url, array $expectedHeaders): void;
 
@@ -37,14 +37,14 @@ interface AssertsStreamsInterface
      *
      * @param string $url The URL that was streamed
      * @param string $method Expected HTTP method
-     * @throws MockAssertionException
+     * @throws MockAssertionError
      */
     public function assertStreamWithMethod(string $url, string $method): void;
 
     /**
      * Assert that no streaming requests were made.
      *
-     * @throws MockAssertionException
+     * @throws MockAssertionError
      */
     public function assertNoStreamsMade(): void;
 
@@ -52,7 +52,7 @@ interface AssertsStreamsInterface
      * Assert a specific number of streaming requests were made.
      *
      * @param int $expected Expected number of streams
-     * @throws MockAssertionException
+     * @throws MockAssertionError
      */
     public function assertStreamCount(int $expected): void;
 
