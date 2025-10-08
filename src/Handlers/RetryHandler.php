@@ -7,7 +7,7 @@ use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Response;
 use Hibla\HttpClient\RetryConfig;
 use Hibla\Promise\CancellablePromise;
-use Hibla\Promise\Interfaces\PromiseInterface;
+use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 
 /**
  * Handles HTTP requests with automatic retry logic.
@@ -23,9 +23,9 @@ class RetryHandler
      * @param string $url The target URL.
      * @param array<int|string, mixed> $curlOptions cURL options.
      * @param RetryConfig $retryConfig Retry configuration.
-     * @return PromiseInterface<Response>
+     * @return CancellablePromiseInterface<Response>
      */
-    public function execute(string $url, array $curlOptions, RetryConfig $retryConfig): PromiseInterface
+    public function execute(string $url, array $curlOptions, RetryConfig $retryConfig): CancellablePromiseInterface
     {
         /** @var CancellablePromise<Response> $promise */
         $promise = new CancellablePromise();

@@ -6,7 +6,7 @@ use Hibla\EventLoop\EventLoop;
 use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Response;
 use Hibla\Promise\CancellablePromise;
-use Hibla\Promise\Interfaces\PromiseInterface;
+use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 
 /**
  * Executes basic HTTP requests without any additional logic.
@@ -20,9 +20,9 @@ class RequestExecutorHandler
      *
      * @param string $url The target URL.
      * @param array<int|string, mixed> $curlOptions cURL options.
-     * @return PromiseInterface<Response>
+     * @return CancellablePromiseInterface<Response>
      */
-    public function execute(string $url, array $curlOptions): PromiseInterface
+    public function execute(string $url, array $curlOptions): CancellablePromiseInterface
     {
         /** @var CancellablePromise<Response> $promise */
         $promise = new CancellablePromise();
