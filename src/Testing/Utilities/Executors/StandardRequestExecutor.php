@@ -40,7 +40,7 @@ class StandardRequestExecutor
         $this->requestRecorder = $requestRecorder;
         $this->cacheHandler = $cacheHandler;
         $this->validator = $validator;
-        
+
         $this->retryExecutor = new RetryableRequestExecutor(
             $requestMatcher,
             $responseFactory,
@@ -75,6 +75,7 @@ class StandardRequestExecutor
         if ($this->cacheHandler->tryServeFromCache($url, $method, $cacheConfig)) {
             /** @var Response $cachedResponse */
             $cachedResponse = $this->cacheHandler->getCachedResponse($url, $cacheConfig);
+
             return Promise::resolved($cachedResponse);
         }
 
@@ -147,6 +148,7 @@ class StandardRequestExecutor
             }
             /** @var PromiseInterface<Response> $result */
             $result = $parentSendRequest($url, $curlOptions, $cacheConfig, $retryConfig);
+
             return $result;
         }
 
@@ -173,6 +175,7 @@ class StandardRequestExecutor
         return $promise->then(function (Response $response) use ($curlOptions, $url, $cacheConfig, $method) {
             $this->processCookies($response, $curlOptions, $url);
             $this->cacheHandler->cacheIfNeeded($url, $response, $cacheConfig, $method);
+
             return $response;
         });
     }
@@ -184,7 +187,7 @@ class StandardRequestExecutor
     {
         $rawHeaders = $response->getHeaders();
         $transformedHeaders = [];
-        
+
         foreach ($rawHeaders as $key => $value) {
             if (is_string($key)) {
                 $transformedHeaders[$key] = is_array($value) ? $value : [$value];
@@ -223,14 +226,15 @@ class StandardRequestExecutor
         }
 
         $this->requestRecorder->recordRequest($method, $url, $curlOnlyOptions);
-        
+
         $match = $this->requestMatcher->findMatchingMock($mockedRequests, $method, $url, $curlOnlyOptions);
 
         if ($match !== null) {
             $mock = $match['mock'];
-            if (!$mock->isPersistent()) {
+            if (! $mock->isPersistent()) {
                 array_splice($mockedRequests, $match['index'], 1);
             }
+
             return $this->responseFactory->createMockedResponse($mock);
         }
 
@@ -256,6 +260,7 @@ class StandardRequestExecutor
             }
             /** @var PromiseInterface<Response> $result */
             $result = $parentSendRequest($url, $curlOptions, null, $retryConfig);
+
             return $result;
         }
 

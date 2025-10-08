@@ -17,7 +17,8 @@ describe('Advanced Retry Mocking', function () {
             ->url('/timeout-test')
             ->timeoutUntilAttempt(3)
             ->respondJson(['status' => 'ok'])
-            ->register();
+            ->register()
+        ;
 
         $response = Http::retry(3, 0.01)->get('/timeout-test')->await();
 
@@ -30,7 +31,8 @@ describe('Advanced Retry Mocking', function () {
             ->url('/status-fail')
             ->statusFailuresUntilAttempt(4, 503) // 3 failures, 4th succeeds
             ->respondJson(['status' => 'recovered'])
-            ->register();
+            ->register()
+        ;
 
         $response = Http::retry(3, 0.01)->get('/status-fail')->await();
 
@@ -48,8 +50,9 @@ describe('Advanced SSE Mocking', function () {
                 ['id' => '1', 'data' => 'first'],
                 ['id' => '2', 'data' => 'second'],
             ], 1) // 1 keepalive event between data events
-            ->register();
-        
+            ->register()
+        ;
+
         $events = [];
         Http::sse('/sse-keepalive', function (SSEEvent $event) use (&$events) {
             $events[] = $event;
@@ -66,8 +69,9 @@ describe('Advanced SSE Mocking', function () {
         Http::mock()
             ->url('/sse-retry-directive')
             ->sseWithRetryDirective(5000, [['data' => 'message']])
-            ->register();
-            
+            ->register()
+        ;
+
         $events = [];
         Http::sse('/sse-retry-directive', function (SSEEvent $event) use (&$events) {
             $events[] = $event;

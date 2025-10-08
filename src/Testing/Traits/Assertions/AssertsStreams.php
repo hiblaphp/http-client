@@ -84,6 +84,7 @@ trait AssertsStreams
 
                     if ($headerValue === null || $headerValue !== $value) {
                         $matches = false;
+
                         break;
                     }
                 }
@@ -236,6 +237,7 @@ trait AssertsStreams
     public function streamHasCallback(RecordedRequest $request): bool
     {
         $options = $request->getOptions();
+
         return isset($options['on_chunk']);
     }
 
@@ -250,16 +252,17 @@ trait AssertsStreams
 
         if ($streams === []) {
             echo "No streams recorded\n";
+
             return;
         }
 
-        echo "=== Streams (" . count($streams) . ") ===\n";
+        echo '=== Streams (' . count($streams) . ") ===\n";
 
         foreach ($streams as $index => $request) {
             $options = $request->getOptions();
 
             echo "\n[{$index}] {$request->getMethod()} {$request->getUrl()}\n";
-            echo "    Has callback: " . (isset($options['on_chunk']) ? "Yes" : "No") . "\n";
+            echo '    Has callback: ' . (isset($options['on_chunk']) ? 'Yes' : 'No') . "\n";
 
             $headers = $request->getHeaders();
             if ($headers !== []) {
@@ -285,6 +288,7 @@ trait AssertsStreams
 
         if ($stream === null) {
             echo "No streams recorded\n";
+
             return;
         }
 
@@ -293,7 +297,7 @@ trait AssertsStreams
         echo "=== Last Stream ===\n";
         echo "Method: {$stream->getMethod()}\n";
         echo "URL: {$stream->getUrl()}\n";
-        echo "Has callback: " . (isset($options['on_chunk']) ? "Yes" : "No") . "\n";
+        echo 'Has callback: ' . (isset($options['on_chunk']) ? 'Yes' : 'No') . "\n";
 
         echo "\nHeaders:\n";
         foreach ($stream->getHeaders() as $name => $value) {

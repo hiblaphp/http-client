@@ -103,6 +103,7 @@ trait AssertsDownloads
 
                     if ($headerValue === null || $headerValue !== $value) {
                         $matches = false;
+
                         break;
                     }
                 }
@@ -173,7 +174,7 @@ trait AssertsDownloads
         $this->registerAssertion();
         $this->assertFileDownloaded($destination);
 
-        if (!file_exists($destination)) {
+        if (! file_exists($destination)) {
             $this->failAssertion(
                 "Download was recorded but file does not exist: {$destination}"
             );
@@ -201,7 +202,7 @@ trait AssertsDownloads
 
         if ($actualContent !== $expectedContent) {
             $this->failAssertion(
-                "Downloaded file content does not match expected content"
+                'Downloaded file content does not match expected content'
             );
         }
     }
@@ -225,7 +226,7 @@ trait AssertsDownloads
             );
         }
 
-        if (!str_contains($actualContent, $needle)) {
+        if (! str_contains($actualContent, $needle)) {
             $this->failAssertion(
                 "Downloaded file does not contain expected string: {$needle}"
             );
@@ -377,6 +378,7 @@ trait AssertsDownloads
             if ($request->getUrl() === $url && isset($options['download'])) {
                 /** @var mixed $destination */
                 $destination = $options['download'];
+
                 return is_string($destination) ? $destination : null;
             }
         }
@@ -395,10 +397,11 @@ trait AssertsDownloads
 
         if ($downloads === []) {
             echo "No downloads recorded\n";
+
             return;
         }
 
-        echo "=== Downloads (" . count($downloads) . ") ===\n";
+        echo '=== Downloads (' . count($downloads) . ") ===\n";
 
         foreach ($downloads as $index => $request) {
             $options = $request->getOptions();
@@ -411,7 +414,7 @@ trait AssertsDownloads
 
             if (isset($options['download']) && is_string($options['download']) && file_exists($destinationStr)) {
                 $size = filesize($destinationStr);
-                $sizeStr = $size !== false ? $size . " bytes" : "unknown";
+                $sizeStr = $size !== false ? $size . ' bytes' : 'unknown';
                 echo "    File exists: Yes\n";
                 echo "    File size: {$sizeStr}\n";
             } else {
@@ -442,6 +445,7 @@ trait AssertsDownloads
 
         if ($download === null) {
             echo "No downloads recorded\n";
+
             return;
         }
 
@@ -457,7 +461,7 @@ trait AssertsDownloads
 
         if (is_string($destination) && file_exists($destination)) {
             $size = filesize($destination);
-            $sizeStr = $size !== false ? $size . " bytes" : "unknown";
+            $sizeStr = $size !== false ? $size . ' bytes' : 'unknown';
             echo "File exists: Yes\n";
             echo "File size: {$sizeStr}\n";
         } else {

@@ -4,12 +4,13 @@ namespace Hibla\HttpClient;
 
 use Hibla\HttpClient\Handlers\HttpHandler;
 use Hibla\HttpClient\Handlers\OptionsBuilderHandler;
+use Hibla\HttpClient\Handlers\RequestInterceptorHandler;
+use Hibla\HttpClient\Handlers\ResponseInterceptorHandler;
 use Hibla\HttpClient\Interfaces\CompleteHttpClientInterface;
 use Hibla\HttpClient\Interfaces\CookieJarInterface;
 use Hibla\HttpClient\SSE\SSEEvent;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
 use Hibla\HttpClient\SSE\SSEResponse;
-use Hibla\HttpClient\Traits\InterceptorTrait;
 use Hibla\HttpClient\Traits\StreamTrait;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
@@ -31,7 +32,6 @@ use Psr\Http\Message\UriInterface;
 class Request extends Message implements CompleteHttpClientInterface
 {
     use StreamTrait;
-    use InterceptorTrait;
 
     private HttpHandler $handler;
     private OptionsBuilderHandler $optionsBuilder;
@@ -62,6 +62,8 @@ class Request extends Message implements CompleteHttpClientInterface
     private ?string $sseDataFormat = null;
     /** @var (callable(mixed): mixed)|null */
     private $sseMapper = null;
+    private ?RequestInterceptorHandler $requestInterceptorHandler = null;
+    private ?ResponseInterceptorHandler $responseInterceptorHandler = null;
 
     /**
      * Initializes a new Request builder instance.
@@ -945,7 +947,7 @@ class Request extends Message implements CompleteHttpClientInterface
         return $this->getRequestInterceptorHandler()
             ->processInterceptors($initialRequest, $this->requestInterceptors)
             ->then(
-                fn($processedRequest) => $this->executeRequest($processedRequest)
+                fn ($processedRequest) => $this->executeRequest($processedRequest)
             )
         ;
     }
@@ -1299,7 +1301,7 @@ class Request extends Message implements CompleteHttpClientInterface
                 $reserved = $matches[1] === '+';
                 $key = $matches[2];
 
-                if (!isset($this->urlParameters[$key])) {
+                if (! isset($this->urlParameters[$key])) {
                     return $matches[0];
                 }
 
@@ -1369,7 +1371,7 @@ class Request extends Message implements CompleteHttpClientInterface
         }
 
         return $httpPromise->then(
-            fn($response) => $this->getResponseInterceptorHandler()
+            fn ($response) => $this->getResponseInterceptorHandler()
                 ->processInterceptors($response, $processedRequest->responseInterceptors)
         );
     }
@@ -1492,5 +1494,29 @@ class Request extends Message implements CompleteHttpClientInterface
         $parsed = json_decode($event->data, true);
 
         return json_last_error() === JSON_ERROR_NONE ? $parsed : $event->data;
+    }
+
+    /**
+     * Get or create the request interceptor handler.
+     */
+    private function getRequestInterceptorHandler(): RequestInterceptorHandler
+    {
+        if ($this->requestInterceptorHandler === null) {
+            $this->requestInterceptorHandler = new RequestInterceptorHandler();
+        }
+
+        return $this->requestInterceptorHandler;
+    }
+
+    /**
+     * Get or create the response interceptor handler.
+     */
+    private function getResponseInterceptorHandler(): ResponseInterceptorHandler
+    {
+        if ($this->responseInterceptorHandler === null) {
+            $this->responseInterceptorHandler = new ResponseInterceptorHandler();
+        }
+
+        return $this->responseInterceptorHandler;
     }
 }

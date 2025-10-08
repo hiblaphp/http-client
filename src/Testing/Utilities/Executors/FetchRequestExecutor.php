@@ -3,8 +3,6 @@
 namespace Hibla\HttpClient\Testing\Utilities\Executors;
 
 use Hibla\HttpClient\CacheConfig;
-use Hibla\HttpClient\Response;
-use Hibla\HttpClient\StreamingResponse;
 use Hibla\HttpClient\Testing\Exceptions\UnexpectedRequestException;
 use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Testing\Utilities\FileManager;
@@ -128,6 +126,7 @@ class FetchRequestExecutor
     private function extractMethod(array $options): string
     {
         $methodValue = $options['method'] ?? 'GET';
+
         return is_string($methodValue) ? strtoupper($methodValue) : 'GET';
     }
 
@@ -148,7 +147,7 @@ class FetchRequestExecutor
 
         if ($match !== null) {
             $mock = $match['mock'];
-            if (!$mock->isPersistent()) {
+            if (! $mock->isPersistent()) {
                 array_splice($mockedRequests, $match['index'], 1);
             }
 
@@ -186,7 +185,7 @@ class FetchRequestExecutor
         ?callable $parentFetch,
         ?callable $createStream
     ): PromiseInterface|CancellablePromiseInterface {
-      $this->requestRecorder->recordRequest($method, $url, array_merge($options, $curlOnlyOptions));
+        $this->requestRecorder->recordRequest($method, $url, array_merge($options, $curlOnlyOptions));
 
         $match = $this->requestMatcher->findMatchingMock($mockedRequests, $method, $url, $curlOnlyOptions);
 
@@ -234,7 +233,7 @@ class FetchRequestExecutor
             throw UnexpectedRequestException::noMatchFound($method, $url, $curlOnlyOptions, $mockedRequests);
         }
 
-        if (!(bool)($globalSettings['allow_passthrough'] ?? false)) {
+        if (! (bool)($globalSettings['allow_passthrough'] ?? false)) {
             throw UnexpectedRequestException::noMatchFound($method, $url, $curlOnlyOptions, $mockedRequests);
         }
 
@@ -244,6 +243,7 @@ class FetchRequestExecutor
 
         /** @var PromiseInterface<mixed>|CancellablePromiseInterface<mixed> $result */
         $result = $parentFetch($url, $options);
+
         return $result;
     }
 }

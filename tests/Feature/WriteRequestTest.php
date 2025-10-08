@@ -16,7 +16,8 @@ describe('DELETE Method', function () {
         Http::mock()
             ->url('/users/1')
             ->respondWithStatus(204)
-            ->register();
+            ->register()
+        ;
 
         $response = Http::request()->delete('/users/1')->await();
 

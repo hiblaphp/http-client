@@ -82,8 +82,7 @@ class RecordedRequest
     {
         if (isset($this->options[CURLOPT_POSTFIELDS]) && is_string($this->options[CURLOPT_POSTFIELDS])) {
             $this->body = $this->options[CURLOPT_POSTFIELDS];
-        } 
-        elseif (isset($this->options['body']) && is_string($this->options['body'])) {
+        } elseif (isset($this->options['body']) && is_string($this->options['body'])) {
             $this->body = $this->options['body'];
         }
 

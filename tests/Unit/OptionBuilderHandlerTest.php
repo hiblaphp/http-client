@@ -13,7 +13,18 @@ test('it builds basic GET request options correctly', function () {
         'https://api.example.com',
         ['Accept' => ['application/json']],
         $stream,
-        30, 10, true, 5, true, 'Test-Agent', '1.1', null, null, null, null, []
+        30,
+        10,
+        true,
+        5,
+        true,
+        'Test-Agent',
+        '1.1',
+        null,
+        null,
+        null,
+        null,
+        []
     );
 
     expect($options)->toHaveKey(CURLOPT_URL, 'https://api.example.com');
@@ -33,7 +44,18 @@ test('it builds POST request options with a JSON body', function () {
         'https://api.example.com',
         $headers,
         $stream,
-        30, 10, true, 5, true, 'Test-Agent', '1.1', null, null, null, null, []
+        30,
+        10,
+        true,
+        5,
+        true,
+        'Test-Agent',
+        '1.1',
+        null,
+        null,
+        null,
+        null,
+        []
     );
 
     expect($options)->toHaveKey(CURLOPT_CUSTOMREQUEST, 'POST');
@@ -51,7 +73,18 @@ test('it configures basic authentication correctly', function () {
         'https://api.example.com',
         [],
         $stream,
-        30, 10, true, 5, true, null, '1.1', null, null, null, $auth, []
+        30,
+        10,
+        true,
+        5,
+        true,
+        null,
+        '1.1',
+        null,
+        null,
+        null,
+        $auth,
+        []
     );
 
     expect($options)->toHaveKey(CURLOPT_USERPWD, 'testuser:testpass');
@@ -68,7 +101,18 @@ test('it configures an HTTP proxy correctly', function () {
         'https://api.example.com',
         [],
         $stream,
-        30, 10, true, 5, true, null, '1.1', null, null, $proxy, null, []
+        30,
+        10,
+        true,
+        5,
+        true,
+        null,
+        '1.1',
+        null,
+        null,
+        $proxy,
+        null,
+        []
     );
 
     expect($options)->toHaveKey(CURLOPT_PROXY, 'proxy.example.com:8080');

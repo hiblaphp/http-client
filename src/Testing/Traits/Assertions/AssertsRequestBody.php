@@ -269,12 +269,12 @@ trait AssertsRequestBody
     private function arrayContains(array $array, array $expected): bool
     {
         foreach ($expected as $key => $value) {
-            if (!array_key_exists($key, $array)) {
+            if (! array_key_exists($key, $array)) {
                 return false;
             }
 
             if (is_array($value) && is_array($array[$key])) {
-                if (!$this->arrayContains($array[$key], $value)) {
+                if (! $this->arrayContains($array[$key], $value)) {
                     return false;
                 }
             } elseif ($array[$key] !== $value) {
@@ -298,7 +298,7 @@ trait AssertsRequestBody
         $current = $json;
 
         foreach ($keys as $key) {
-            if (!is_array($current) || !array_key_exists($key, $current)) {
+            if (! is_array($current) || ! array_key_exists($key, $current)) {
                 return null;
             }
             $current = $current[$key];

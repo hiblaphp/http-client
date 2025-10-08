@@ -6,17 +6,20 @@ use Hibla\EventLoop\EventLoop;
 use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Response;
 use Hibla\HttpClient\RetryConfig;
+use Hibla\HttpClient\Traits\NormalizeHeaderTrait;
 use Hibla\Promise\CancellablePromise;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 
 /**
  * Handles HTTP requests with automatic retry logic.
- * 
+ *
  * This handler wraps HTTP requests and automatically retries them based on
  * configurable retry policies when transient failures occur.
  */
 class RetryHandler
 {
+    use NormalizeHeaderTrait;
+
     /**
      * Executes an HTTP request with retry logic.
      *
@@ -56,8 +59,7 @@ class RetryHandler
             $requestId = EventLoop::getInstance()->addHttpRequest(
                 $url,
                 $curlOnlyOptions,
-                function (?string $error, ?string $responseBody, ?int $httpCode, array $headers = [], ?string $httpVersion = null) 
-                use ($url, $retryConfig, $promise, &$attempt, &$totalAttempts, &$executeRequest, $cookieJar) {
+                function (?string $error, ?string $responseBody, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $retryConfig, $promise, &$attempt, &$totalAttempts, &$executeRequest, $cookieJar) {
                     if ($promise->isCancelled()) {
                         return;
                     }
@@ -69,6 +71,7 @@ class RetryHandler
                         $attempt++;
                         $delay = $retryConfig->getDelay($attempt);
                         EventLoop::getInstance()->addTimer($delay, $executeRequest);
+
                         return;
                     }
 
@@ -80,6 +83,7 @@ class RetryHandler
                             $url,
                             $error
                         ));
+
                         return;
                     }
 
@@ -109,32 +113,5 @@ class RetryHandler
         });
 
         return $promise;
-    }
-
-    /**
-     * Normalizes headers array to the expected format.
-     *
-     * @param array<mixed> $headers The headers to normalize.
-     * @return array<string, array<string>|string> Normalized headers.
-     */
-    private function normalizeHeaders(array $headers): array
-    {
-        /** @var array<string, array<string>|string> $normalized */
-        $normalized = [];
-
-        foreach ($headers as $key => $value) {
-            if (is_string($key)) {
-                if (is_string($value)) {
-                    $normalized[$key] = $value;
-                } elseif (is_array($value)) {
-                    $stringValues = array_filter($value, 'is_string');
-                    if (count($stringValues) > 0) {
-                        $normalized[$key] = array_values($stringValues);
-                    }
-                }
-            }
-        }
-
-        return $normalized;
     }
 }

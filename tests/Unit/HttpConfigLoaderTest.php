@@ -27,10 +27,10 @@ test('it loads configuration files from the config directory', function () {
     $root = $loader->getRootPath();
 
     $configDir = $root . '/config/http';
-    if (!is_dir($configDir)) {
+    if (! is_dir($configDir)) {
         mkdir($configDir, 0777, true);
     }
-    
+
     $clientConfigPath = $configDir . '/client.php';
     file_put_contents($clientConfigPath, "<?php return ['timeout' => 99];");
 

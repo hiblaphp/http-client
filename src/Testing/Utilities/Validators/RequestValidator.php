@@ -23,12 +23,12 @@ class RequestValidator
      */
     private function isSSERequest(array $curlOptions): bool
     {
-        if (!isset($curlOptions[CURLOPT_HTTPHEADER])) {
+        if (! isset($curlOptions[CURLOPT_HTTPHEADER])) {
             return false;
         }
 
         $headers = $curlOptions[CURLOPT_HTTPHEADER];
-        if (!is_array($headers)) {
+        if (! is_array($headers)) {
             return false;
         }
 

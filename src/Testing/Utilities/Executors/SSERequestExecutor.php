@@ -133,11 +133,11 @@ class SSERequestExecutor
     ): CancellablePromiseInterface {
         $mock = $match['mock'];
 
-        if (!$mock->isPersistent()) {
+        if (! $mock->isPersistent()) {
             array_splice($mockedRequests, $match['index'], 1);
         }
 
-        if (!$mock->isSSE()) {
+        if (! $mock->isSSE()) {
             throw new \RuntimeException(
                 'Mock matched for SSE request but is not configured as SSE. ' .
                     'Use ->respondWithSSE() or ->sseInfiniteStream() or other SSE methods'
@@ -169,7 +169,7 @@ class SSERequestExecutor
             throw UnexpectedRequestException::noMatchFound($method, $url, $curlOptions, $mockedRequests);
         }
 
-        if (!(bool)($globalSettings['allow_passthrough'] ?? false)) {
+        if (! (bool)($globalSettings['allow_passthrough'] ?? false)) {
             throw UnexpectedRequestException::noMatchFound($method, $url, $curlOptions, $mockedRequests);
         }
 
@@ -179,6 +179,7 @@ class SSERequestExecutor
 
         /** @var CancellablePromiseInterface<\Hibla\HttpClient\SSE\SSEResponse> $result */
         $result = $parentSSE($url, [], $onEvent, $onError, $reconnectConfig);
+
         return $result;
     }
 
@@ -241,11 +242,11 @@ class SSERequestExecutor
             $mock = $match['mock'];
             $this->requestRecorder->recordRequest($method, $url, $modifiedOptions);
 
-            if (!$mock->isPersistent()) {
+            if (! $mock->isPersistent()) {
                 array_splice($mockedRequests, $match['index'], 1);
             }
 
-            if (!$mock->isSSE()) {
+            if (! $mock->isSSE()) {
                 throw new \RuntimeException(
                     'Mock matched for SSE request but is not configured as SSE. ' .
                         'Use ->respondWithSSE() instead of ->respondWith() or ->respondJson()'
@@ -267,7 +268,7 @@ class SSERequestExecutor
         }
 
         $headers = $curlOptions[CURLOPT_HTTPHEADER] ?? [];
-        if (!is_array($headers)) {
+        if (! is_array($headers)) {
             $headers = [];
         }
         $headers[] = "Last-Event-ID: {$lastEventId}";

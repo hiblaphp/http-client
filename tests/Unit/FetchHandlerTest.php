@@ -2,7 +2,6 @@
 
 use Hibla\HttpClient\Handlers\FetchHandler;
 use Hibla\HttpClient\ProxyConfig;
-use Hibla\HttpClient\RetryConfig;
 
 test('it normalizes basic method and headers', function () {
     $handler = new FetchHandler();

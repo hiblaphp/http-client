@@ -84,7 +84,7 @@ class OptionsBuilderHandler
 
         $stringKeyOptions = array_filter(
             $additionalOptions,
-            fn($key) => is_string($key),
+            fn ($key) => is_string($key),
             ARRAY_FILTER_USE_KEY
         );
 

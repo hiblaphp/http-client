@@ -1,7 +1,6 @@
 <?php
 
 use Hibla\HttpClient\Http;
-use Hibla\HttpClient\Response;
 
 beforeEach(function () {
     Http::startTesting();
@@ -30,7 +29,8 @@ describe('HTTP Client Caching', function () {
             ->url('/slow-endpoint')
             ->delay(1)
             ->respondJson(['data' => 'slow response'])
-            ->register();
+            ->register()
+        ;
 
         $start1 = microtime(true);
         $response1 = Http::cache(60)->get('/slow-endpoint')->await();
@@ -68,10 +68,11 @@ describe('HTTP Client Caching', function () {
 
     it('respects a custom cache key', function () {
         Http::mock()
-            ->url('*') 
+            ->url('*')
             ->persistent()
             ->respondJson(['data' => 'shared'])
-            ->register();
+            ->register()
+        ;
 
         $response1 = Http::cacheWithKey('my-shared-key')->get('/any-url')->await();
         $response2 = Http::cacheWithKey('my-shared-key')->get('/another-url')->await();

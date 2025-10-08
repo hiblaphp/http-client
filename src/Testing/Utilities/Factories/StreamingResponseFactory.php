@@ -2,6 +2,8 @@
 
 namespace Hibla\HttpClient\Testing\Utilities\Factories;
 
+use function Hibla\delay;
+
 use Hibla\HttpClient\Exceptions\HttpException;
 use Hibla\HttpClient\Exceptions\HttpStreamException;
 use Hibla\HttpClient\StreamingResponse;
@@ -10,9 +12,8 @@ use Hibla\HttpClient\Testing\Utilities\Handlers\DelayCalculator;
 use Hibla\HttpClient\Testing\Utilities\Handlers\NetworkSimulationHandler;
 use Hibla\Promise\CancellablePromise;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
-use Psr\Http\Message\StreamInterface;
 
-use function Hibla\delay;
+use Psr\Http\Message\StreamInterface;
 
 class StreamingResponseFactory
 {
@@ -27,7 +28,7 @@ class StreamingResponseFactory
 
     /**
      * Creates a streaming response with the given configuration.
-     * 
+     *
      * @return CancellablePromiseInterface<StreamingResponse>
      */
     public function create(

@@ -55,7 +55,7 @@ class SSEEventFormatter
     public function createSSEEvent(array $eventData): SSEEvent
     {
         $rawFields = [];
-        
+
         if (isset($eventData['id'])) {
             $rawFields['id'] = [$eventData['id']];
         }

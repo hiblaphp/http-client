@@ -175,18 +175,19 @@ trait AssertsSSE
             if ($request->getUrl() === $url || fnmatch($url, $request->getUrl())) {
                 $accept = $request->getHeader('accept');
                 $lastEventId = $request->getHeader('last-event-id');
-                
+
                 if ($accept !== null && $lastEventId !== null && (
                     (is_string($accept) && str_contains($accept, 'text/event-stream')) ||
                     (is_array($accept) && in_array('text/event-stream', $accept, true))
                 )) {
                     $hasReconnection = true;
+
                     break;
                 }
             }
         }
 
-        if (!$hasReconnection) {
+        if (! $hasReconnection) {
             $this->failAssertion(
                 "Expected SSE reconnection with Last-Event-ID header to {$url}, but none found"
             );
@@ -219,6 +220,7 @@ trait AssertsSSE
                             "SSE connection header '{$headerName}' mismatch. Expected: '{$expectedValue}', Got: '{$actualValue}'"
                         );
                     }
+
                     return;
                 }
             }
@@ -246,6 +248,7 @@ trait AssertsSSE
                             "SSE connection to {$url} should not have header '{$headerName}', but it was found"
                         );
                     }
+
                     return;
                 }
             }
@@ -256,7 +259,7 @@ trait AssertsSSE
 
     /**
      * Assert that multiple SSE connections were made to different URLs.
-     * 
+     *
      * @param array<string> $urls
      */
     public function assertSSEConnectionsMadeToMultipleUrls(array $urls): void
@@ -271,8 +274,8 @@ trait AssertsSSE
                 (is_array($accept) && in_array('text/event-stream', $accept, true))
             )) {
                 foreach ($urls as $url) {
-                    if (($request->getUrl() === $url || fnmatch($url, $request->getUrl())) 
-                        && !in_array($url, $foundUrls, true)) {
+                    if (($request->getUrl() === $url || fnmatch($url, $request->getUrl()))
+                        && ! in_array($url, $foundUrls, true)) {
                         $foundUrls[] = $url;
                     }
                 }
@@ -282,14 +285,14 @@ trait AssertsSSE
         $missingUrls = array_diff($urls, $foundUrls);
         if ($missingUrls !== []) {
             $this->failAssertion(
-                "Expected SSE connections to all URLs, but missing: " . implode(', ', $missingUrls)
+                'Expected SSE connections to all URLs, but missing: ' . implode(', ', $missingUrls)
             );
         }
     }
 
     /**
      * Assert that SSE connections were made in a specific order.
-     * 
+     *
      * @param array<string> $urls
      */
     public function assertSSEConnectionsInOrder(array $urls): void
@@ -317,11 +320,12 @@ trait AssertsSSE
                     $matchedCount++;
                     $sseIndex = $i + 1;
                     $found = true;
+
                     break;
                 }
             }
 
-            if (!$found) {
+            if (! $found) {
                 $this->failAssertion(
                     "SSE connections not in expected order. Expected '{$expectedUrl}' after position {$matchedCount}"
                 );
@@ -351,12 +355,13 @@ trait AssertsSSE
 
                     if ($expectedToken !== null) {
                         $actualToken = is_array($authHeader) ? $authHeader[0] : $authHeader;
-                        if (!str_contains($actualToken, $expectedToken)) {
+                        if (! str_contains($actualToken, $expectedToken)) {
                             $this->failAssertion(
                                 "SSE connection Authorization token mismatch. Expected token containing '{$expectedToken}', Got: '{$actualToken}'"
                             );
                         }
                     }
+
                     return;
                 }
             }
@@ -390,7 +395,7 @@ trait AssertsSSE
 
         if (count($eventIds) < 2) {
             $this->failAssertion(
-                "Not enough SSE reconnections with Last-Event-ID to verify progression. Found: " . count($eventIds)
+                'Not enough SSE reconnections with Last-Event-ID to verify progression. Found: ' . count($eventIds)
             );
         }
 
@@ -399,7 +404,7 @@ trait AssertsSSE
             if (is_numeric($eventIds[$i]) && is_numeric($eventIds[$i - 1])) {
                 if ((int)$eventIds[$i] <= (int)$eventIds[$i - 1]) {
                     $this->failAssertion(
-                        "SSE reconnection Last-Event-IDs are not progressing. " .
+                        'SSE reconnection Last-Event-IDs are not progressing. ' .
                         "Event ID {$eventIds[$i]} at position {$i} is not greater than previous {$eventIds[$i - 1]}"
                     );
                 }
@@ -430,12 +435,13 @@ trait AssertsSSE
                         );
                     }
                     $foundFirst = true;
+
                     break;
                 }
             }
         }
 
-        if (!$foundFirst) {
+        if (! $foundFirst) {
             $this->failAssertion("No SSE connection found to {$url}");
         }
     }
@@ -458,13 +464,14 @@ trait AssertsSSE
                     $cacheControl = $request->getHeader('cache-control');
                     if ($cacheControl !== null) {
                         $cacheValue = is_array($cacheControl) ? $cacheControl[0] : $cacheControl;
-                        if (!str_contains(strtolower($cacheValue), 'no-cache') && 
-                            !str_contains(strtolower($cacheValue), 'no-store')) {
+                        if (! str_contains(strtolower($cacheValue), 'no-cache') &&
+                            ! str_contains(strtolower($cacheValue), 'no-store')) {
                             $this->failAssertion(
                                 "SSE connection to {$url} should have Cache-Control: no-cache or no-store"
                             );
                         }
                     }
+
                     return;
                 }
             }
@@ -475,7 +482,7 @@ trait AssertsSSE
 
     /**
      * Get all SSE connection attempts for a specific URL.
-     * 
+     *
      * @return array<int, \Hibla\HttpClient\Testing\Utilities\RecordedRequest>
      */
     public function getSSEConnectionAttempts(string $url): array

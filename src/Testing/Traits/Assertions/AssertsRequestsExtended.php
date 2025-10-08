@@ -91,7 +91,7 @@ trait AssertsRequestsExtended
         $this->registerAssertion();
         $history = $this->getRequestHistory();
 
-        if (!isset($history[$index])) {
+        if (! isset($history[$index])) {
             $this->failAssertion(
                 "No request found at index {$index}"
             );
@@ -233,6 +233,7 @@ trait AssertsRequestsExtended
 
         if ($requests === []) {
             echo "No {$method} requests recorded\n";
+
             return;
         }
 
@@ -252,9 +253,9 @@ trait AssertsRequestsExtended
 
             $body = $request->getBody();
             if ($body !== null && $body !== '') {
-                echo "  Body: " . substr($body, 0, 100);
+                echo '  Body: ' . substr($body, 0, 100);
                 if (strlen($body) > 100) {
-                    echo "...";
+                    echo '...';
                 }
                 echo "\n";
             }

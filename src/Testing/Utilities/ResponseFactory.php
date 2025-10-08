@@ -34,7 +34,7 @@ class ResponseFactory
         ?TestingHttpHandler $handler = null
     ) {
         $this->networkHandler = new NetworkSimulationHandler($networkSimulator, $handler);
-        
+
         $this->standardFactory = new StandardResponseFactory($this->networkHandler);
         $this->retryableFactory = new RetryableResponseFactory($this->networkHandler);
         $this->streamingFactory = new StreamingResponseFactory($this->networkHandler);

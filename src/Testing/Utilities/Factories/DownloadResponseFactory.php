@@ -2,6 +2,8 @@
 
 namespace Hibla\HttpClient\Testing\Utilities\Factories;
 
+use function Hibla\delay;
+
 use Hibla\HttpClient\Exceptions\HttpStreamException;
 use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Testing\MockedRequest;
@@ -9,9 +11,8 @@ use Hibla\HttpClient\Testing\Utilities\FileManager;
 use Hibla\HttpClient\Testing\Utilities\Handlers\DelayCalculator;
 use Hibla\HttpClient\Testing\Utilities\Handlers\NetworkSimulationHandler;
 use Hibla\Promise\CancellablePromise;
-use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 
-use function Hibla\delay;
+use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 
 class DownloadResponseFactory
 {
@@ -26,7 +27,7 @@ class DownloadResponseFactory
 
     /**
      * Creates a download response with the given configuration.
-     * 
+     *
      * @return CancellablePromiseInterface<array{file: string, status: int, headers: array<string, string>, size: int, protocol_version: string}>
      */
     public function create(
@@ -71,6 +72,7 @@ class DownloadResponseFactory
             try {
                 if ($mock->shouldFail()) {
                     $error = $mock->getError() ?? 'Mocked failure';
+
                     throw new NetworkException($error, 0, null, null, $error);
                 }
 
@@ -95,11 +97,12 @@ class DownloadResponseFactory
     private function ensureDirectoryExists(string $destination, FileManager $fileManager): void
     {
         $directory = dirname($destination);
-        
+
         if (! is_dir($directory)) {
             if (! mkdir($directory, 0755, true) && ! is_dir($directory)) {
                 $exception = new HttpStreamException("Cannot create directory: {$directory}");
                 $exception->setStreamState('directory_creation_failed');
+
                 throw $exception;
             }
             $fileManager->trackDirectory($directory);
@@ -111,6 +114,7 @@ class DownloadResponseFactory
         if (file_put_contents($destination, $content) === false) {
             $exception = new HttpStreamException("Cannot write to file: {$destination}");
             $exception->setStreamState('file_write_failed');
+
             throw $exception;
         }
 

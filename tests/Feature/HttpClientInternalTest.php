@@ -17,13 +17,15 @@ describe('Basic Requests', function () {
         Http::mock()
             ->url('https://api.example.com/posts/1')
             ->respondJson(['id' => 1, 'title' => 'Test Post'])
-            ->register();
+            ->register()
+        ;
 
         $response = Http::get('https://api.example.com/posts/1')->await();
 
         expect($response)->toBeInstanceOf(Response::class)
             ->and($response->ok())->toBeTrue()
-            ->and($response->json())->toBe(['id' => 1, 'title' => 'Test Post']);
+            ->and($response->json())->toBe(['id' => 1, 'title' => 'Test Post'])
+        ;
 
         Http::assertRequestMade('GET', 'https://api.example.com/posts/1');
         Http::assertRequestCount(1);
@@ -34,12 +36,14 @@ describe('Basic Requests', function () {
             ->url('https://api.example.com/posts')
             ->respondJson(['id' => 2])
             ->status(201)
-            ->register();
+            ->register()
+        ;
 
         $response = Http::post('https://api.example.com/posts', ['title' => 'New Post'])->await();
 
         expect($response->status())->toBe(201)
-            ->and($response->json())->toBe(['id' => 2]);
+            ->and($response->json())->toBe(['id' => 2])
+        ;
 
         Http::assertRequestMade('POST', 'https://api.example.com/posts');
         Http::assertRequestWithJson('POST', 'https://api.example.com/posts', ['title' => 'New Post']);
@@ -52,7 +56,7 @@ describe('Headers', function () {
 
         Http::withHeaders([
             'X-Custom-Header' => 'MyValue',
-            'X-Another' => 'AnotherValue'
+            'X-Another' => 'AnotherValue',
         ])->get('/')->await();
 
         Http::assertHeaderSent('X-Custom-Header', 'MyValue');
@@ -107,12 +111,14 @@ describe('Retries', function () {
             ->url('/retry-test')
             ->failUntilAttempt(3)
             ->respondWith('Finally succeeded on attempt 3')
-            ->register();
+            ->register()
+        ;
 
         $response = Http::retry(3)->get('/retry-test')->await();
 
         expect($response->ok())->toBeTrue()
-            ->and($response->body())->toBe('Finally succeeded on attempt 3');
+            ->and($response->body())->toBe('Finally succeeded on attempt 3')
+        ;
 
         Http::assertRequestCount(3);
     });
@@ -123,7 +129,8 @@ describe('Caching', function () {
         Http::mock()
             ->url('/cached-endpoint')
             ->respondJson(['data' => 'live data'])
-            ->register();
+            ->register()
+        ;
 
         $response1 = Http::cache(60)->get('/cached-endpoint')->await();
         $response2 = Http::cache(60)->get('/cached-endpoint')->await();
@@ -143,7 +150,8 @@ describe('Server-Sent Events (SSE)', function () {
                 ['event' => 'greeting', 'data' => 'hello'],
                 ['id' => '123', 'data' => 'world'],
             ])
-            ->register();
+            ->register()
+        ;
 
         $receivedEvents = [];
 
@@ -166,7 +174,8 @@ describe('Error Handling', function () {
             ->url('/not-found')
             ->status(404)
             ->respondWith('Not Found')
-            ->register();
+            ->register()
+        ;
 
         $response = Http::get('/not-found')->await();
 
@@ -181,7 +190,8 @@ describe('Error Handling', function () {
             ->url('/server-error')
             ->status(500)
             ->respondWith('Server Error')
-            ->register();
+            ->register()
+        ;
 
         $response = Http::get('/server-error')->await();
 

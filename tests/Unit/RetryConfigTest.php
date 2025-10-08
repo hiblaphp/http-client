@@ -29,7 +29,7 @@ test('it respects the max delay setting', function () {
     expect($config->getDelay(4))->toBe(5.0);
 });
 
-test('isRetryableError identifies retryable exceptions', function() {
+test('isRetryableError identifies retryable exceptions', function () {
     $config = new RetryConfig(
         retryableExceptions: ['Connection timed out', 'connection failed']
     );

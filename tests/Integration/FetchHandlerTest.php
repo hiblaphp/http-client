@@ -1,9 +1,9 @@
 <?php
 
 use Hibla\EventLoop\EventLoop;
+use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Handlers\RequestExecutorHandler;
 use Hibla\HttpClient\Response;
-use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\Promise\CancellablePromise;
 
 beforeEach(function () {
@@ -13,7 +13,6 @@ beforeEach(function () {
 afterEach(function () {
     EventLoop::reset();
 });
-
 
 it('executes a basic HTTP request successfully', function () {
     $handler = new RequestExecutorHandler();

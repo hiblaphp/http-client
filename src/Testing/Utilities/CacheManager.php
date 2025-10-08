@@ -21,7 +21,6 @@ class CacheManager
         self::$defaultCache = null;
     }
 
-
     public function getCachedResponse(string $url, CacheConfig $cacheConfig): ?Response
     {
         $cache = $cacheConfig->cache ?? $this->getDefaultCache();

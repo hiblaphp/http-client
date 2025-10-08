@@ -1,9 +1,9 @@
 <?php
 
 use Hibla\EventLoop\EventLoop;
+use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Handlers\RequestExecutorHandler;
 use Hibla\HttpClient\Response;
-use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\Promise\CancellablePromise;
 
 beforeEach(function () {
@@ -138,8 +138,6 @@ it('sets HTTP version on response when provided', function () {
     expect($response)->toBeInstanceOf(Response::class);
     expect($response->getHttpVersion())->not->toBeNull();
 })->skipOnCI();
-
-
 
 it('does not resolve cancelled promises', function () {
     $handler = new RequestExecutorHandler();

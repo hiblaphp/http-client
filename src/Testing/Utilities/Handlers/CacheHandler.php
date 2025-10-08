@@ -5,7 +5,6 @@ namespace Hibla\HttpClient\Testing\Utilities\Handlers;
 use Hibla\HttpClient\CacheConfig;
 use Hibla\HttpClient\Response;
 use Hibla\HttpClient\Testing\Utilities\CacheManager;
-use Hibla\HttpClient\Testing\Utilities\RequestRecorder;
 
 class CacheHandler
 {

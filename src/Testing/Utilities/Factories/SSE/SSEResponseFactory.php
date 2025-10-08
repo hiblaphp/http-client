@@ -32,7 +32,7 @@ class SSEResponseFactory
 
     /**
      * Creates an SSE response with the given configuration.
-     * 
+     *
      * @return CancellablePromiseInterface<SSEResponse>
      */
     public function create(
@@ -111,6 +111,7 @@ class SSEResponseFactory
                     if ($onError !== null) {
                         $onError($error);
                     }
+
                     throw new NetworkException($error);
                 }
 
@@ -208,8 +209,8 @@ class SSEResponseFactory
         }
 
         $autoClose = isset($config['auto_close']) && is_bool($config['auto_close']) ? $config['auto_close'] : false;
-        
-        if ($mock->shouldFail() && !$autoClose) {
+
+        if ($mock->shouldFail() && ! $autoClose) {
             $initialTimerId = EventLoop::getInstance()->addTimer($initialDelay, function () use (
                 $promise,
                 $mock,

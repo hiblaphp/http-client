@@ -9,7 +9,15 @@ describe('Cookie Class Logic', function () {
     test('it can be created and accessors work', function () {
         $expires = time() + 3600;
         $cookie = new Cookie(
-            'name', 'value', $expires, '.example.com', '/path', true, true, 3600, 'Lax'
+            'name',
+            'value',
+            $expires,
+            '.example.com',
+            '/path',
+            true,
+            true,
+            3600,
+            'Lax'
         );
 
         expect($cookie->getName())->toBe('name');
@@ -125,7 +133,7 @@ describe('CookieJar (In-Memory)', function () {
         expect($header)->not->toContain('c4=v4-other-domain');
     });
 
-    test('clearExpired removes only the expired cookies', function() {
+    test('clearExpired removes only the expired cookies', function () {
         $jar = new CookieJar();
         $jar->setCookie(new Cookie('valid', 'data', time() + 3600));
         $jar->setCookie(new Cookie('expired', 'data', time() - 3600));
@@ -136,7 +144,7 @@ describe('CookieJar (In-Memory)', function () {
         expect($jar->getAllCookies()[0]->getName())->toBe('valid');
     });
 
-    test('clear removes all cookies', function() {
+    test('clear removes all cookies', function () {
         $jar = new CookieJar();
         $jar->setCookie(new Cookie('c1', 'v1'));
         $jar->setCookie(new Cookie('c2', 'v2'));
@@ -194,7 +202,7 @@ describe('FileCookieJar (Persistence)', function () {
     test('clearing the jar also empties the file', function () use (&$tempFile) {
         $jar = new FileCookieJar($tempFile, true);
         $jar->setCookie(new Cookie('test', 'data'));
-        
+
         $jar->clear();
         unset($jar);
 

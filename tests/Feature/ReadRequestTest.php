@@ -16,7 +16,8 @@ describe('Read-Oriented HTTP Methods', function () {
         Http::mock()
             ->url('/users')
             ->respondJson(['data' => 'user list'])
-            ->register();
+            ->register()
+        ;
 
         $response = Http::request()->get('/users')->await();
 
@@ -29,7 +30,8 @@ describe('Read-Oriented HTTP Methods', function () {
         Http::mock()
             ->url('/users?status=active')
             ->respondJson(['data' => 'active users'])
-            ->register();
+            ->register()
+        ;
 
         $response = Http::request()->get('/users', ['status' => 'active'])->await();
 
@@ -42,7 +44,8 @@ describe('Read-Oriented HTTP Methods', function () {
             ->url('/resource')
             ->respondWith('') // HEAD responses have no body
             ->respondWithHeader('Content-Length', '12345')
-            ->register();
+            ->register()
+        ;
 
         $response = Http::request()->head('/resource')->await();
 
@@ -56,7 +59,8 @@ describe('Read-Oriented HTTP Methods', function () {
         Http::mock()
             ->url('/resource')
             ->respondWithHeader('Allow', 'GET, POST, OPTIONS')
-            ->register();
+            ->register()
+        ;
 
         $response = Http::request()->options('/resource')->await();
 
@@ -68,7 +72,8 @@ describe('Read-Oriented HTTP Methods', function () {
         Http::mock('TRACE')
             ->url('/debug')
             ->respondWith('Trace complete')
-            ->register();
+            ->register()
+        ;
 
         $response = Http::request()->send('TRACE', '/debug')->await();
 

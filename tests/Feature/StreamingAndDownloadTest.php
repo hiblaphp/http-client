@@ -16,7 +16,8 @@ describe('Streaming Features', function () {
         Http::mock()
             ->url('/stream')
             ->respondWithChunks(['first chunk', ' second chunk', ' last chunk'])
-            ->register();
+            ->register()
+        ;
 
         $receivedChunks = [];
         $onChunkCallback = function (string $chunk) use (&$receivedChunks) {
@@ -34,7 +35,8 @@ describe('Streaming Features', function () {
         Http::mock()
             ->url('/download/file.txt')
             ->downloadFile($mockedContent, 'file.txt')
-            ->register();
+            ->register()
+        ;
 
         /** @var TestingHttpHandler $handler */
         $handler = Http::getTestingHandler();

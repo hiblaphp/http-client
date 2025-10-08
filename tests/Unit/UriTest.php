@@ -2,8 +2,6 @@
 
 use Hibla\HttpClient\Uri;
 
-
-
 test('parses all components of a complex URI correctly', function () {
     $uriString = 'https://user:pass@example.com:8080/path/to/resource?param1=value1¶m2=value2#section1';
     $uri = new Uri($uriString);
@@ -66,7 +64,8 @@ test('with... methods work for all components', function () {
         ->withUserInfo('testuser', 'testpass')
         ->withPath('/api/v1')
         ->withQuery('sort=asc')
-        ->withFragment('results');
+        ->withFragment('results')
+    ;
 
     expect($newUri->getScheme())->toBe('https');
     expect($newUri->getHost())->toBe('example.org');
@@ -89,7 +88,8 @@ test('__toString reassembles the URI correctly', function () {
         ->withUserInfo('admin', 'secret')
         ->withPath('/some/path')
         ->withQuery('key=val')
-        ->withFragment('frag');
+        ->withFragment('frag')
+    ;
 
     expect((string) $reassembledUri)->toBe($expectedUri);
 });

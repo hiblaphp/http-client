@@ -36,21 +36,21 @@ describe('Advanced Asynchronous Features', function () {
         Http::mock()->url('/cancellable')->delay(2)->respondWith('Too late')->register();
 
         $promise = Http::get('/cancellable');
-        
+
         $timedPromise = Promise::timeout($promise, 0.1);
 
-        expect(fn() => $timedPromise->await())->toThrow(Exception::class);
+        expect(fn () => $timedPromise->await())->toThrow(Exception::class);
 
         Http::assertRequestCount(1);
     });
 
-    it('correctly uses the fetch API with options', function() {
+    it('correctly uses the fetch API with options', function () {
         Http::mock()->url('/fetch-test')->respondWith('OK')->register();
 
         Http::fetch('/fetch-test', [
             'method' => 'POST',
             'headers' => ['X-Is-Fetch' => 'true'],
-            'body' => 'raw body'
+            'body' => 'raw body',
         ])->await();
 
         Http::dumpLastRequest();

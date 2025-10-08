@@ -1,8 +1,8 @@
 <?php
 
+use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Http;
 use Hibla\HttpClient\Response;
-use Hibla\HttpClient\Exceptions\NetworkException;
 
 beforeEach(function () {
     Http::startTesting();
@@ -45,8 +45,9 @@ describe('Response and Exception Handling', function () {
 
         $promise = Http::get('/network-error');
 
-        expect(fn() => $promise->await())
-            ->toThrow(NetworkException::class, 'Connection refused');
+        expect(fn () => $promise->await())
+            ->toThrow(NetworkException::class, 'Connection refused')
+        ;
     });
 
 });

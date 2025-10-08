@@ -79,14 +79,14 @@ class PeriodicSSEEmitter
         float $jitter,
         ?string &$periodicTimerId
     ): void {
-        if (!isset($config['event_generator'])) {
+        if (! isset($config['event_generator'])) {
             return;
         }
 
         $eventGenerator = $config['event_generator'];
-        
+
         // Validate it's callable
-        if (!is_callable($eventGenerator)) {
+        if (! is_callable($eventGenerator)) {
             return;
         }
 
@@ -109,6 +109,7 @@ class PeriodicSSEEmitter
                         EventLoop::getInstance()->cancelTimer($periodicTimerId);
                         $periodicTimerId = null;
                     }
+
                     return;
                 }
 
@@ -150,7 +151,7 @@ class PeriodicSSEEmitter
         ?string &$periodicTimerId
     ): void {
         $events = $config['events'] ?? [];
-        if (!is_array($events)) {
+        if (! is_array($events)) {
             $events = [];
         }
 
@@ -162,7 +163,7 @@ class PeriodicSSEEmitter
             }
         }
         $events = $validatedEvents;
-        
+
         $eventIndex = 0;
         $totalEvents = count($events);
         $autoClose = isset($config['auto_close']) && is_bool($config['auto_close']) ? $config['auto_close'] : false;
@@ -193,6 +194,7 @@ class PeriodicSSEEmitter
                             $onError($error);
                         }
                     }
+
                     return;
                 }
 
@@ -215,7 +217,7 @@ class PeriodicSSEEmitter
      */
     private function getConfigValue(array $config, string $key, float $default): float
     {
-        if (!isset($config[$key])) {
+        if (! isset($config[$key])) {
             return $default;
         }
 
@@ -235,7 +237,7 @@ class PeriodicSSEEmitter
 
         $jitterAmount = $interval * $jitter;
         $randomJitter = (mt_rand() / mt_getrandmax()) * 2 * $jitterAmount - $jitterAmount;
-        
+
         if ($randomJitter > 0) {
             usleep((int)($randomJitter * 1000000));
         }

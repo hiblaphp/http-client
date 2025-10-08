@@ -5,7 +5,7 @@ namespace Hibla\HttpClient\Testing\Traits\RequestBuilder;
 trait BuildsRealisticSSEMocks
 {
     abstract protected function getRequest();
-    
+
     abstract public function respondWithHeader(string $name, string $value): static;
 
     /**
@@ -48,7 +48,7 @@ trait BuildsRealisticSSEMocks
         ?callable $eventGenerator = null
     ): static {
         $events = [];
-        
+
         for ($i = 0; $i < $eventCount; $i++) {
             if ($eventGenerator !== null) {
                 $events[] = $eventGenerator($i);
@@ -122,7 +122,7 @@ trait BuildsRealisticSSEMocks
         ?callable $eventGenerator = null
     ): static {
         $events = [];
-        
+
         for ($i = 0; $i < $eventCount; $i++) {
             if ($eventGenerator !== null) {
                 $events[] = $eventGenerator($i);
@@ -145,7 +145,7 @@ trait BuildsRealisticSSEMocks
             'jitter' => 0.0,
             'auto_close' => true,
         ]);
-        
+
         $this->getRequest()->setError($disconnectError);
         $this->getRequest()->setRetryable(true);
 

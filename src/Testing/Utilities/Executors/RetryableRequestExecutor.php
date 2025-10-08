@@ -52,6 +52,7 @@ class RetryableRequestExecutor
         $curlOnlyOptions = array_filter($curlOptions, 'is_int', ARRAY_FILTER_USE_KEY);
 
         $mockProvider = $this->createMockProvider($method, $url, $curlOnlyOptions, $mockedRequests);
+
         return $this->responseFactory->createRetryableMockedResponse($retryConfig, $mockProvider);
     }
 
@@ -71,7 +72,7 @@ class RetryableRequestExecutor
     ): PromiseInterface {
         /** @var CancellablePromise<Response|StreamingResponse|array<string, mixed>> $finalPromise */
         $finalPromise = new CancellablePromise();
-        
+
         $curlOptions = $this->normalizeFetchOptions($url, $options);
         /** @var array<int, mixed> $curlOnlyOptions */
         $curlOnlyOptions = array_filter($curlOptions, 'is_int', ARRAY_FILTER_USE_KEY);
@@ -80,7 +81,7 @@ class RetryableRequestExecutor
         $retryPromise = $this->responseFactory->createRetryableMockedResponse($retryConfig, $mockProvider);
 
         /** @var array<string, mixed> $stringKeyedOptions */
-        $stringKeyedOptions = array_filter($options, fn($key) => is_string($key), ARRAY_FILTER_USE_KEY);
+        $stringKeyedOptions = array_filter($options, fn ($key) => is_string($key), ARRAY_FILTER_USE_KEY);
 
         $retryPromise->then(
             function (Response $successfulResponse) use ($stringKeyedOptions, $finalPromise, $createStream, $fileManager): void {
@@ -92,7 +93,7 @@ class RetryableRequestExecutor
         );
 
         if ($retryPromise instanceof CancellablePromiseInterface) {
-            $finalPromise->setCancelHandler(fn() => $retryPromise->cancel());
+            $finalPromise->setCancelHandler(fn () => $retryPromise->cancel());
         }
 
         return $finalPromise;
@@ -118,7 +119,7 @@ class RetryableRequestExecutor
             $mock = $match['mock'];
             $this->requestRecorder->recordRequest($method, $url, $curlOnlyOptions);
 
-            if (!$mock->isPersistent()) {
+            if (! $mock->isPersistent()) {
                 array_splice($mockedRequests, $match['index'], 1);
             }
 
@@ -156,12 +157,12 @@ class RetryableRequestExecutor
         CancellablePromise $finalPromise,
         ?FileManager $fileManager
     ): void {
-        $destPath = is_string($options['download']) 
-            ? $options['download'] 
+        $destPath = is_string($options['download'])
+            ? $options['download']
             : ($fileManager !== null ? $fileManager->createTempFile() : sys_get_temp_dir() . '/download_' . uniqid());
-            
+
         file_put_contents($destPath, $successfulResponse->body());
-        
+
         $finalPromise->resolve([
             'file' => $destPath,
             'status' => $successfulResponse->status(),
@@ -189,10 +190,10 @@ class RetryableRequestExecutor
             $onChunk($body);
         }
 
-        $createStreamFn = $createStream ?? fn(string $b): StreamInterface => (new HttpHandler())->createStream($b);
+        $createStreamFn = $createStream ?? fn (string $b): StreamInterface => (new HttpHandler())->createStream($b);
         /** @var StreamInterface $stream */
         $stream = $createStreamFn($body);
-        
+
         $finalPromise->resolve(
             new StreamingResponse($stream, $successfulResponse->status(), $successfulResponse->headers())
         );

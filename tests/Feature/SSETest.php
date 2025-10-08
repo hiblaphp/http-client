@@ -17,9 +17,10 @@ describe('Server-Sent Events Features', function () {
         Http::mock()
             ->url('/sse-stream')
             ->sseFailUntilAttempt(2, [
-                ['event' => 'reconnected', 'data' => 'hello again', 'id' => '2']
+                ['event' => 'reconnected', 'data' => 'hello again', 'id' => '2'],
             ])
-            ->register();
+            ->register()
+        ;
 
         $events = [];
         $reconnectConfig = new SSEReconnectConfig(
@@ -40,11 +41,11 @@ describe('Server-Sent Events Features', function () {
         Http::mock()
             ->url('/sse-reconnect')
             ->sseFailWithSequence([
-                ['error' => 'Connection lost', 'retryable' => true]
+                ['error' => 'Connection lost', 'retryable' => true],
             ])
             ->respondWithSSE([['id' => 'event-2', 'data' => 'reconnected successfully']])
-            ->register();
-
+            ->register()
+        ;
 
         $events = [];
         $reconnectConfig = new SSEReconnectConfig(maxAttempts: 2, initialDelay: 0.01);

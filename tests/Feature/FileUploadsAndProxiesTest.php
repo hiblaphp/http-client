@@ -58,7 +58,8 @@ describe('Proxy Configuration', function () {
 
         Http::withProxy('proxy.example.com', 8080, 'user', 'pass')
             ->get('/proxied')
-            ->await();
+            ->await()
+        ;
 
         $lastRequest = Http::getLastRequest();
         $options = $lastRequest->getOptions();
@@ -73,7 +74,8 @@ describe('Proxy Configuration', function () {
 
         Http::withSocks5Proxy('socks.example.com', 1080)
             ->get('/proxied')
-            ->await();
+            ->await()
+        ;
 
         $lastRequest = Http::getLastRequest();
         $options = $lastRequest->getOptions();

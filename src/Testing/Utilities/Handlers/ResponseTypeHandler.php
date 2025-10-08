@@ -46,7 +46,7 @@ class ResponseTypeHandler
     ): PromiseInterface|CancellablePromiseInterface {
         $mock = $match['mock'];
 
-        if (!$mock->isPersistent()) {
+        if (! $mock->isPersistent()) {
             array_splice($mockedRequests, $match['index'], 1);
         }
 
@@ -68,7 +68,7 @@ class ResponseTypeHandler
     private function handleDownload(MockedRequest $mock, array $options): CancellablePromiseInterface
     {
         $destination = is_string($options['download']) ? $options['download'] : '';
-        
+
         if ($destination === '') {
             throw new \InvalidArgumentException('Download destination must be a non-empty string');
         }
@@ -86,7 +86,7 @@ class ResponseTypeHandler
         $onChunkRaw = $options['on_chunk'] ?? $options['onChunk'] ?? null;
         $onChunk = is_callable($onChunkRaw) ? $onChunkRaw : null;
 
-        $createStreamFn = $createStream ?? fn(string $body): StreamInterface => (new HttpHandler())->createStream($body);
+        $createStreamFn = $createStream ?? fn (string $body): StreamInterface => (new HttpHandler())->createStream($body);
 
         return $this->responseFactory->createMockedStream($mock, $onChunk, $createStreamFn);
     }
@@ -103,6 +103,7 @@ class ResponseTypeHandler
 
         return $responsePromise->then(function (Response $response) use ($cacheConfig, $url) {
             $this->cacheHandler->cacheResponse($url, $response, $cacheConfig);
+
             return $response;
         });
     }

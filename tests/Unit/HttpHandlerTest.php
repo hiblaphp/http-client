@@ -21,18 +21,19 @@ it('delegates stream calls to the StreamingHandler', function () {
     $fetchHandlerMock
         ->shouldReceive('normalizeFetchOptions')
         ->once()
-        ->andReturn([]);
+        ->andReturn([])
+    ;
 
     $streamingHandlerMock
         ->shouldReceive('streamRequest')
         ->once()
         ->with('https://example.com/stream', Mockery::type('array'), null)
-        ->andReturn(new CancellablePromise());
-
+        ->andReturn(new CancellablePromise())
+    ;
 
     $handler = new HttpHandler($streamingHandlerMock, $fetchHandlerMock);
     $handler->stream('https://example.com/stream');
-    
+
     expect(true)->toBeTrue();
 });
 
@@ -43,13 +44,15 @@ it('delegates download calls to the StreamingHandler', function () {
     $fetchHandlerMock
         ->shouldReceive('normalizeFetchOptions')
         ->once()
-        ->andReturn([]);
+        ->andReturn([])
+    ;
 
     $streamingHandlerMock
         ->shouldReceive('downloadFile')
         ->once()
         ->with('https://example.com/file.zip', '/tmp/file.zip', Mockery::type('array'))
-        ->andReturn(new CancellablePromise());
+        ->andReturn(new CancellablePromise())
+    ;
 
     $handler = new HttpHandler($streamingHandlerMock, $fetchHandlerMock);
     $handler->download('https://example.com/file.zip', '/tmp/file.zip');
@@ -65,7 +68,8 @@ it('delegates fetch calls to the FetchHandler', function () {
         ->shouldReceive('fetch')
         ->once()
         ->with('https://example.com/fetch', ['method' => 'GET'])
-        ->andReturn(new Promise());
+        ->andReturn(new Promise())
+    ;
 
     $handler = new HttpHandler($streamingHandlerMock, $fetchHandlerMock);
     $handler->fetch('https://example.com/fetch', ['method' => 'GET']);
@@ -73,31 +77,33 @@ it('delegates fetch calls to the FetchHandler', function () {
     expect(true)->toBeTrue();
 });
 
-it('sends request without retry when no retry is configured', function() {
+it('sends request without retry when no retry is configured', function () {
     $requestExecutorMock = Mockery::mock(RequestExecutorHandler::class);
-    
+
     $requestExecutorMock
         ->shouldReceive('execute')
         ->once()
         ->with('https://example.com', [CURLOPT_CUSTOMREQUEST => 'POST'])
-        ->andReturn(Promise::resolved(new Response('', 200, [])));
-        
+        ->andReturn(Promise::resolved(new Response('', 200, [])))
+    ;
+
     $handler = new HttpHandler(null, null, $requestExecutorMock);
     $handler->sendRequest('https://example.com', [CURLOPT_CUSTOMREQUEST => 'POST'], null, null);
 
     expect(true)->toBeTrue();
 });
 
-it('sends request with retry when retry is configured', function() {
+it('sends request with retry when retry is configured', function () {
     $retryHandlerMock = Mockery::mock(RetryHandler::class);
     $retryConfig = new RetryConfig();
-    
+
     $retryHandlerMock
         ->shouldReceive('execute')
         ->once()
         ->with('https://example.com', [CURLOPT_CUSTOMREQUEST => 'POST'], $retryConfig)
-        ->andReturn(Promise::resolved(new Response('', 200, [])));
-    
+        ->andReturn(Promise::resolved(new Response('', 200, [])))
+    ;
+
     $handler = new HttpHandler(null, null, null, $retryHandlerMock);
     $handler->sendRequest('https://example.com', [CURLOPT_CUSTOMREQUEST => 'POST'], null, $retryConfig);
 

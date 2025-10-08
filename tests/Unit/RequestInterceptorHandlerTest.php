@@ -71,11 +71,11 @@ test('it rejects the promise if an interceptor throws an exception', function ()
 
     $interceptors = [
         function (Request $request) {
-            throw new \Exception('Interceptor failed');
+            throw new Exception('Interceptor failed');
         },
     ];
 
     $promise = $handler->processInterceptors($initialRequest, $interceptors);
 
-    expect(fn() => $promise->await())->toThrow(Exception::class, 'Interceptor failed');
+    expect(fn () => $promise->await())->toThrow(Exception::class, 'Interceptor failed');
 });

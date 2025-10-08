@@ -3,6 +3,9 @@
 namespace Hibla\HttpClient\Testing\Utilities\Factories\SSE;
 
 use Exception;
+
+use function Hibla\delay;
+
 use Hibla\EventLoop\EventLoop;
 use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
@@ -13,9 +16,8 @@ use Hibla\HttpClient\Testing\Utilities\Handlers\DelayCalculator;
 use Hibla\HttpClient\Testing\Utilities\Handlers\NetworkSimulationHandler;
 use Hibla\Promise\CancellablePromise;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
-use Throwable;
 
-use function Hibla\delay;
+use Throwable;
 
 class RetryableSSEResponseFactory
 {
@@ -32,7 +34,7 @@ class RetryableSSEResponseFactory
 
     /**
      * Creates a retryable SSE response with the given configuration.
-     * 
+     *
      * @return CancellablePromiseInterface<SSEResponse>
      */
     public function create(
@@ -91,6 +93,7 @@ class RetryableSSEResponseFactory
                 }
             } catch (Exception $e) {
                 $promise->reject(new MockException('Mock provider error: ' . $e->getMessage()));
+
                 return;
             }
 
@@ -196,7 +199,7 @@ class RetryableSSEResponseFactory
         } elseif ($mock->shouldFail()) {
             $shouldFail = true;
             $errorMessage = $mock->getError() ?? 'SSE connection failed';
-            $isRetryable = $reconnectConfig->isRetryableError(new Exception($errorMessage)) 
+            $isRetryable = $reconnectConfig->isRetryableError(new Exception($errorMessage))
                 || $mock->isRetryableFailure();
         }
 

@@ -1,8 +1,8 @@
 <?php
 
 use Hibla\HttpClient\Http;
-use Hibla\HttpClient\Response;
 use Hibla\HttpClient\Request;
+use Hibla\HttpClient\Response;
 
 beforeEach(function () {
     Http::startTesting();
@@ -21,7 +21,8 @@ describe('Request Class Configuration', function () {
             ->connectTimeout(5)
             ->withUserAgent('MyTestAgent/1.0')
             ->get('/test')
-            ->await();
+            ->await()
+        ;
 
         $request = Http::getLastRequest();
         $options = $request->getOptions();
@@ -124,7 +125,8 @@ describe('Cookie Helpers', function () {
             ->withCookie('c1', 'v1')
             ->withCookie('c2', 'v2')
             ->get('/test')
-            ->await();
+            ->await()
+        ;
 
         Http::assertHeaderSent('Cookie', 'c1=v1; c2=v2');
         expect(true)->toBeTrue();
@@ -139,7 +141,8 @@ describe('Interceptors', function () {
                 return $request->withHeader('X-Interceptor', 'Applied');
             })
             ->get('/test')
-            ->await();
+            ->await()
+        ;
 
         Http::assertHeaderSent('X-Interceptor', 'Applied');
         expect(true)->toBeTrue();
@@ -151,7 +154,8 @@ describe('Interceptors', function () {
                 return $response->withHeader('X-Response-Interceptor', 'Modified');
             })
             ->get('/test')
-            ->await();
+            ->await()
+        ;
 
         expect($response->header('X-Response-Interceptor'))->toBe('Modified');
     });

@@ -17,7 +17,7 @@ use Symfony\Component\Cache\Psr16Cache;
 
 /**
  * Handles HTTP response caching with support for cache validation.
- * 
+ *
  * This handler implements HTTP caching semantics including ETags,
  * Last-Modified headers, and Cache-Control directives.
  */
@@ -127,7 +127,7 @@ class CacheHandler
      */
     private function addConditionalHeaders(array $curlOptions, array $cachedItem): array
     {
-        if (!isset($cachedItem['headers']) || !is_array($cachedItem['headers'])) {
+        if (! isset($cachedItem['headers']) || ! is_array($cachedItem['headers'])) {
             return $curlOptions;
         }
 
@@ -154,6 +154,7 @@ class CacheHandler
         }
 
         $curlOptions[CURLOPT_HTTPHEADER] = $httpHeaders;
+
         return $curlOptions;
     }
 
@@ -288,8 +289,8 @@ class CacheHandler
                     : sys_get_temp_dir() . '/hibla_http_cache';
             }
 
-            if (!is_dir($cacheDirectory)) {
-                if (!mkdir($cacheDirectory, 0775, true) && !is_dir($cacheDirectory)) {
+            if (! is_dir($cacheDirectory)) {
+                if (! mkdir($cacheDirectory, 0775, true) && ! is_dir($cacheDirectory)) {
                     throw new RuntimeException(sprintf('Cache directory "%s" could not be created', $cacheDirectory));
                 }
             }

@@ -60,7 +60,7 @@ test('it processes a mix of synchronous and asynchronous interceptors', function
     ];
 
     $finalResponse = $handler->processInterceptors($initialResponse, $interceptors)->await();
-    
+
     expect($finalResponse->getHeaders())->toHaveKeys(['X-Sync-1', 'X-Async-2', 'X-Sync-3']);
 });
 
@@ -70,11 +70,11 @@ test('it rejects the promise if an interceptor throws an exception', function ()
 
     $interceptors = [
         function (Response $response) {
-            throw new \Exception('Interceptor failed');
+            throw new Exception('Interceptor failed');
         },
     ];
 
     $promise = $handler->processInterceptors($initialResponse, $interceptors);
 
-    expect(fn() => $promise->await())->toThrow(Exception::class, 'Interceptor failed');
+    expect(fn () => $promise->await())->toThrow(Exception::class, 'Interceptor failed');
 });

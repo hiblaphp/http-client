@@ -3,15 +3,17 @@
 namespace Hibla\HttpClient\Testing\Utilities\Factories;
 
 use Exception;
+
+use function Hibla\delay;
+
 use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Response;
 use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Testing\Utilities\Handlers\DelayCalculator;
 use Hibla\HttpClient\Testing\Utilities\Handlers\NetworkSimulationHandler;
 use Hibla\Promise\CancellablePromise;
-use Hibla\Promise\Interfaces\PromiseInterface;
 
-use function Hibla\delay;
+use Hibla\Promise\Interfaces\PromiseInterface;
 
 class StandardResponseFactory
 {
@@ -26,7 +28,7 @@ class StandardResponseFactory
 
     /**
      * Creates a standard response with the given configuration.
-     * 
+     *
      * @return PromiseInterface<Response>
      */
     public function create(MockedRequest $mock): PromiseInterface

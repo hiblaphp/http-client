@@ -15,7 +15,7 @@ class DelayCalculator
         float $globalDelay
     ): float {
         $mockDelay = $mock->getDelay();
-        
+
         return max(
             $mockDelay,
             $globalDelay,
