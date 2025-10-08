@@ -2,20 +2,14 @@
 
 use Hibla\HttpClient\Http;
 use Hibla\HttpClient\Request;
+use Hibla\HttpClient\Testing\TestingHttpHandler;
 use Hibla\HttpClient\Uri;
 
 require 'vendor/autoload.php';
 
-Http::startTesting()
-    ->mock()
-    ->url("*")
-    ->register();
-
+$testHandler = new TestingHttpHandler();
 $response = Http::request()
-    ->interceptRequest(function (Request $request) {
-        return $request->withUri(new Uri('https://laravel.com/docs/12.x/validationsss'));
-    })
-    ->get('https://laravel.com/docs/12.x')
+    ->get('https://httpbin.org/get')
     ->await();
 
-Http::dumpLastRequest();
+$testHandler->dumpLastRequest();

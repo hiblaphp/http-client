@@ -1289,11 +1289,11 @@ class Request extends Message implements CompleteHttpClientInterface
      */
     private function expandUriTemplate(string $template): string
     {
-        if (empty($this->urlParameters)) {
+        if ($this->urlParameters === []) {
             return $template;
         }
 
-        return preg_replace_callback(
+        $result = preg_replace_callback(
             '/\{([+]?)([a-zA-Z0-9_]+)\}/',
             function ($matches) {
                 $reserved = $matches[1] === '+';
@@ -1303,7 +1303,17 @@ class Request extends Message implements CompleteHttpClientInterface
                     return $matches[0];
                 }
 
-                $value = (string) $this->urlParameters[$key];
+                $paramValue = $this->urlParameters[$key];
+
+                if (
+                    is_scalar($paramValue)
+                    || (is_object($paramValue)
+                        && method_exists($paramValue, '__toString'))
+                ) {
+                    $value = (string) $paramValue;
+                } else {
+                    return $matches[0];
+                }
 
                 if ($reserved) {
                     return $value;
@@ -1313,6 +1323,8 @@ class Request extends Message implements CompleteHttpClientInterface
             },
             $template
         );
+
+        return $result ?? $template;
     }
 
     /**
