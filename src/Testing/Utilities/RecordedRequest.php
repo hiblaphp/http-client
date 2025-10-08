@@ -8,7 +8,7 @@ class RecordedRequest
     public string $url;
 
     /**
-     * @var array<int, mixed>
+     * @var array<int|string, mixed>
      */
     public array $options;
 
@@ -25,7 +25,7 @@ class RecordedRequest
     private ?array $parsedJson = null;
 
     /**
-     * @param array<int, mixed> $options
+     * @param array<int|string, mixed> $options
      */
     public function __construct(string $method, string $url, array $options)
     {
@@ -186,7 +186,7 @@ class RecordedRequest
     /**
      * Get raw cURL options.
      *
-     * @return array<int, mixed>
+     * @return array<int|string, mixed>
      */
     public function getOptions(): array
     {

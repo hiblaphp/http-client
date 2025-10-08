@@ -2,11 +2,13 @@
 
 use Hibla\HttpClient\Handlers\FetchHandler;
 use Hibla\HttpClient\Handlers\HttpHandler;
+use Hibla\HttpClient\Handlers\RequestExecutorHandler;
+use Hibla\HttpClient\Handlers\RetryHandler;
 use Hibla\HttpClient\Handlers\StreamingHandler;
+use Hibla\HttpClient\Response;
 use Hibla\HttpClient\RetryConfig;
 use Hibla\Promise\CancellablePromise;
 use Hibla\Promise\Promise;
-use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 
 afterEach(function () {
     Mockery::close();
@@ -71,45 +73,33 @@ it('delegates fetch calls to the FetchHandler', function () {
     expect(true)->toBeTrue();
 });
 
-it('dispatches request to executeBasicFetch when no retry is configured', function() {
-    $streamingHandlerMock = Mockery::mock(StreamingHandler::class);
-    $fetchHandlerMock = Mockery::mock(FetchHandler::class);
+it('sends request without retry when no retry is configured', function() {
+    $requestExecutorMock = Mockery::mock(RequestExecutorHandler::class);
     
-    $fetchHandlerMock
-        ->shouldReceive('executeBasicFetch')
+    $requestExecutorMock
+        ->shouldReceive('execute')
         ->once()
-        ->with('https://example.com', Mockery::type('array'))
-        ->andReturn(new Promise());
-    
-    $fetchHandlerMock->shouldNotReceive('fetchWithRetry');
+        ->with('https://example.com', [CURLOPT_CUSTOMREQUEST => 'POST'])
+        ->andReturn(Promise::resolved(new Response('', 200, [])));
         
-    $handler = new HttpHandler($streamingHandlerMock, $fetchHandlerMock);
-    
-    $reflection = new ReflectionClass(HttpHandler::class);
-    $method = $reflection->getMethod('dispatchRequest');
-    $method->invoke($handler, 'https://example.com', [], null);
+    $handler = new HttpHandler(null, null, $requestExecutorMock);
+    $handler->sendRequest('https://example.com', [CURLOPT_CUSTOMREQUEST => 'POST'], null, null);
 
     expect(true)->toBeTrue();
 });
 
-it('dispatches request to fetchWithRetry when retry is configured', function() {
-    $streamingHandlerMock = Mockery::mock(StreamingHandler::class);
-    $fetchHandlerMock = Mockery::mock(FetchHandler::class);
+it('sends request with retry when retry is configured', function() {
+    $retryHandlerMock = Mockery::mock(RetryHandler::class);
     $retryConfig = new RetryConfig();
     
-    $fetchHandlerMock
-        ->shouldReceive('fetchWithRetry')
+    $retryHandlerMock
+        ->shouldReceive('execute')
         ->once()
-        ->with('https://example.com', Mockery::type('array'), $retryConfig)
-        ->andReturn(new Promise());
-
-    $fetchHandlerMock->shouldNotReceive('executeBasicFetch');
+        ->with('https://example.com', [CURLOPT_CUSTOMREQUEST => 'POST'], $retryConfig)
+        ->andReturn(Promise::resolved(new Response('', 200, [])));
     
-    $handler = new HttpHandler($streamingHandlerMock, $fetchHandlerMock);
-    
-    $reflection = new ReflectionClass(HttpHandler::class);
-    $method = $reflection->getMethod('dispatchRequest');
-    $method->invoke($handler, 'https://example.com', [], $retryConfig);
+    $handler = new HttpHandler(null, null, null, $retryHandlerMock);
+    $handler->sendRequest('https://example.com', [CURLOPT_CUSTOMREQUEST => 'POST'], null, $retryConfig);
 
     expect(true)->toBeTrue();
 });

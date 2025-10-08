@@ -10,12 +10,10 @@ use Hibla\HttpClient\Testing\Utilities\RequestRecorder;
 class CacheHandler
 {
     private CacheManager $cacheManager;
-    private RequestRecorder $requestRecorder;
 
-    public function __construct(CacheManager $cacheManager, RequestRecorder $requestRecorder)
+    public function __construct(CacheManager $cacheManager)
     {
         $this->cacheManager = $cacheManager;
-        $this->requestRecorder = $requestRecorder;
     }
 
     public function tryServeFromCache(string $url, string $method, ?CacheConfig $cacheConfig): bool

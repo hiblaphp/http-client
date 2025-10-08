@@ -62,6 +62,7 @@ class CacheHandler
             $cachedItem = $cache->get($cacheKey);
 
             if ($this->isCachedItemValid($cachedItem)) {
+                /** @var array{body: string, status: int, headers: array<string, array<string>|string>, expires_at: int} $cachedItem */
                 return new Response($cachedItem['body'], $cachedItem['status'], $cachedItem['headers']);
             }
 
@@ -167,11 +168,11 @@ class CacheHandler
         if (is_string($headerValue)) {
             return $headerValue;
         }
-        
+
         if (is_array($headerValue) && isset($headerValue[0]) && is_string($headerValue[0])) {
             return $headerValue[0];
         }
-        
+
         return null;
     }
 
@@ -214,7 +215,7 @@ class CacheHandler
         CacheConfig $cacheConfig
     ): void {
         $expiry = $this->calculateExpiry($response, $cacheConfig);
-        
+
         if ($expiry > time()) {
             $ttl = $expiry - time();
             $cache->set($cacheKey, [
@@ -270,10 +271,11 @@ class CacheHandler
             $httpConfig = $httpConfigLoader->get('client', []);
 
             $cacheDirectory = null;
-            if (is_array($httpConfig) 
-                && isset($httpConfig['cache']) 
-                && is_array($httpConfig['cache']) 
-                && isset($httpConfig['cache']['path']) 
+            if (
+                is_array($httpConfig)
+                && isset($httpConfig['cache'])
+                && is_array($httpConfig['cache'])
+                && isset($httpConfig['cache']['path'])
                 && is_string($httpConfig['cache']['path'])
             ) {
                 $cacheDirectory = $httpConfig['cache']['path'];

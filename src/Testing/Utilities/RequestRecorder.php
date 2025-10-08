@@ -12,7 +12,7 @@ class RequestRecorder
     private bool $recordRequests = true;
 
     /**
-     * @param array<int, mixed> $options
+     * @param array<int|string, mixed> $options
      */
     public function recordRequest(string $method, string $url, array $options): void
     {

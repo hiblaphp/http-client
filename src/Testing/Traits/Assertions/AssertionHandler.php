@@ -12,7 +12,9 @@ trait AssertionHandler
      */
     protected function registerAssertion(): void
     {
+       
         if (class_exists(Assert::class)) {
+             /*@phpstan-ignore-next-line*/
             Assert::assertTrue(true);
         }
     }

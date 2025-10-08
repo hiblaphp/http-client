@@ -53,7 +53,7 @@ class RequestExecutor
 
     private function initializeExecutors(): void
     {
-        $this->cacheHandler = new CacheHandler($this->cacheManager, $this->requestRecorder);
+        $this->cacheHandler = new CacheHandler($this->cacheManager);
         $this->validator = new RequestValidator();
 
         $this->standardExecutor = new StandardRequestExecutor(
