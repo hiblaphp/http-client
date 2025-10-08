@@ -224,16 +224,16 @@ class Stream implements StreamInterface
      */
     public function seek(int $offset, int $whence = SEEK_SET): void
     {
-        if (! $this->isSeekable()) {
-            throw new HttpStreamException('Stream is not seekable');
-        }
-
         if (! is_resource($this->resource)) {
             throw new HttpStreamException('Stream is detached');
         }
 
+        if (! $this->isSeekable()) {
+            throw new HttpStreamException('Stream is not seekable');
+        }
+
         if (fseek($this->resource, $offset, $whence) === -1) {
-            throw new HttpStreamException('Unable to seek to stream position '.$offset.' with whence '.var_export($whence, true));
+            throw new HttpStreamException('Unable to seek to stream position ' . $offset . ' with whence ' . var_export($whence, true));
         }
     }
 
@@ -258,12 +258,12 @@ class Stream implements StreamInterface
      */
     public function write(string $string): int
     {
-        if (! $this->isWritable()) {
-            throw new HttpStreamException('Cannot write to a non-writable stream');
-        }
-
         if (! is_resource($this->resource)) {
             throw new HttpStreamException('Stream is detached');
+        }
+
+        if (! $this->isWritable()) {
+            throw new HttpStreamException('Cannot write to a non-writable stream');
         }
 
         $this->size = null; // Invalidate cached size
@@ -289,6 +289,10 @@ class Stream implements StreamInterface
      */
     public function read(int $length): string
     {
+        if (! is_resource($this->resource)) {
+            throw new HttpStreamException('Stream is detached');
+        }
+
         if (! $this->isReadable()) {
             throw new HttpStreamException('Cannot read from non-readable stream');
         }
@@ -299,10 +303,6 @@ class Stream implements StreamInterface
 
         if ($length === 0) {
             return '';
-        }
-
-        if (! is_resource($this->resource)) {
-            throw new HttpStreamException('Stream is detached');
         }
 
         $result = fread($this->resource, $length);
@@ -318,12 +318,12 @@ class Stream implements StreamInterface
      */
     public function getContents(): string
     {
-        if (! $this->isReadable()) {
-            throw new HttpStreamException('Cannot read from non-readable stream');
-        }
-
         if (! is_resource($this->resource)) {
             throw new HttpStreamException('Stream is detached');
+        }
+
+        if (! $this->isReadable()) {
+            throw new HttpStreamException('Cannot read from non-readable stream');
         }
 
         $contents = stream_get_contents($this->resource);

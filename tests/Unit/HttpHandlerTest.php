@@ -5,7 +5,6 @@ use Hibla\HttpClient\Handlers\HttpHandler;
 use Hibla\HttpClient\Handlers\RequestExecutorHandler;
 use Hibla\HttpClient\Handlers\RetryHandler;
 use Hibla\HttpClient\Handlers\StreamingHandler;
-use Hibla\HttpClient\Response;
 use Hibla\HttpClient\RetryConfig;
 use Hibla\Promise\CancellablePromise;
 use Hibla\Promise\Promise;
@@ -84,7 +83,7 @@ it('sends request without retry when no retry is configured', function () {
         ->shouldReceive('execute')
         ->once()
         ->with('https://example.com', [CURLOPT_CUSTOMREQUEST => 'POST'])
-        ->andReturn(Promise::resolved(new Response('', 200, [])))
+        ->andReturn(new CancellablePromise())
     ;
 
     $handler = new HttpHandler(null, null, $requestExecutorMock);
@@ -101,7 +100,7 @@ it('sends request with retry when retry is configured', function () {
         ->shouldReceive('execute')
         ->once()
         ->with('https://example.com', [CURLOPT_CUSTOMREQUEST => 'POST'], $retryConfig)
-        ->andReturn(Promise::resolved(new Response('', 200, [])))
+        ->andReturn(new CancellablePromise())
     ;
 
     $handler = new HttpHandler(null, null, null, $retryHandlerMock);

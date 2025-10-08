@@ -81,7 +81,7 @@ class SSEResponse extends StreamingResponse
      */
     private function parseEvent(string $eventData): ?SSEEvent
     {
-        $lines = preg_split('/\r?\n/', trim($eventData));
+        $lines = preg_split('/\r?\n/', $eventData);
         if ($lines === false) {
             return null;
         }
@@ -96,7 +96,10 @@ class SSEResponse extends StreamingResponse
 
             if (str_contains($line, ':')) {
                 [$field, $value] = explode(':', $line, 2);
-                $value = ltrim($value);
+                if (str_starts_with($value, ' ')) {
+                    $value = substr($value, 1);
+                }
+                $value = ltrim($value, ' ');
             } else {
                 $field = $line;
                 $value = '';
