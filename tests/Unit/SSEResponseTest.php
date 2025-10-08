@@ -277,13 +277,6 @@ it('trims leading space from field value', function () {
     $response = new SSEResponse($stream, 200);
 
     $events = iterator_to_array($response->parseEvents($sseData));
-    
-    if (count($events) > 0) {
-        echo "Event[0] data: " . var_export($events[0]->data, true) . "\n";
-        echo "Event[0] data length: " . strlen($events[0]->data) . "\n";
-        echo "Event[0] data hex: " . bin2hex($events[0]->data) . "\n";
-        echo "Event[0] rawFields: " . var_export($events[0]->rawFields, true) . "\n";
-    }
 
     expect($events[0]->data)->toBe('Value with spaces  ');
 });

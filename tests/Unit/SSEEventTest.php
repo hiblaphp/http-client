@@ -146,13 +146,4 @@ describe('SSEEvent', function () {
             ->and((new SSEEvent(retry: 1000))->retry)->toBe(1000)
             ->and((new SSEEvent(retry: 999999))->retry)->toBe(999999);
     });
-
-    it('is immutable through readonly properties', function () {
-        $event = new SSEEvent(id: '123', data: 'test');
-        
-        expect($event->id)->toBe('123');
-        
-        // This would cause an error if attempted:
-        // $event->id = '456';
-    })->skip('Cannot test readonly enforcement directly');
 });

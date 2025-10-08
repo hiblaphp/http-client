@@ -53,8 +53,6 @@ describe('Advanced Asynchronous Features', function () {
             'body' => 'raw body',
         ])->await();
 
-        Http::dumpLastRequest();
-
         Http::assertRequestMade('POST', '/fetch-test');
         Http::assertHeaderSent('X-Is-Fetch', 'true');
         Http::assertRequestWithBody('POST', '/fetch-test', 'raw body');
