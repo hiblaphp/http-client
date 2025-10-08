@@ -83,7 +83,7 @@ it('normalizes headers correctly', function () {
     $promise->then(function ($res) use (&$response) {
         $response = $res;
         EventLoop::getInstance()->stop();
-    })->catch(function ($err) {
+    })->catch(function () {
         EventLoop::getInstance()->stop();
     });
 
@@ -130,7 +130,7 @@ it('sets HTTP version on response when provided', function () {
     $promise->then(function ($res) use (&$response) {
         $response = $res;
         EventLoop::getInstance()->stop();
-    })->catch(function ($err) {
+    })->catch(function () {
         EventLoop::getInstance()->stop();
     });
 
