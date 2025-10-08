@@ -25,6 +25,26 @@ interface HttpClientBuilderInterface extends RequestInterface
      */
     public function accept(string $type): self;
 
+   /**
+     * Set a single URL parameter for URI template substitution.
+     *
+     * @param  string  $key  The parameter name
+     * @param  mixed  $value  The parameter value
+     * @return self For fluent method chaining.
+     */
+    public function withUrlParameter(string $key, $value): self;
+
+    /**
+     * Set URL parameters for URI template substitution.
+     *
+     * Supports both simple substitution {param} and reserved expansion {+param}.
+     * Reserved expansion preserves special characters in the value.
+     *
+     * @param  array<string, mixed>  $parameters  The URL parameters
+     * @return self For fluent method chaining.
+     */
+    public function withUrlParameters(array $parameters): self;
+
     /**
      * Set a Bearer token for authorization.
      */

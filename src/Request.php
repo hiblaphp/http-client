@@ -49,6 +49,8 @@ class Request extends Message implements CompleteHttpClientInterface
     private ?string $userAgent = null;
     /** @var array{0: string, 1: string, 2: string}|null */
     private ?array $auth = null;
+    /** @var array<string, mixed> */
+    private array $urlParameters = [];
     private ?RetryConfig $retryConfig = null;
     private ?CacheConfig $cacheConfig = null;
     /** @var array<int, callable(Request): Request> Callbacks to intercept the request before it is sent. */
@@ -219,11 +221,11 @@ class Request extends Message implements CompleteHttpClientInterface
      */
     public function withHeaders(array $headers): self
     {
-        $new = clone $this; 
+        $new = clone $this;
         foreach ($headers as $name => $value) {
             $new = $new->withHeader($name, $value);
         }
-        
+
         return $new;
     }
 
@@ -935,7 +937,9 @@ class Request extends Message implements CompleteHttpClientInterface
      */
     public function send(string $method, string $url): PromiseInterface
     {
-        $initialRequest = $this->withMethod($method)->withUri(new Uri($url));
+        $expandedUrl = $this->expandUriTemplate($url);
+
+        $initialRequest = $this->withMethod($method)->withUri(new Uri($expandedUrl));
 
         // Process request interceptors
         return $this->getRequestInterceptorHandler()
@@ -1239,6 +1243,76 @@ class Request extends Message implements CompleteHttpClientInterface
         }
 
         return $new;
+    }
+
+    /**
+     * Set URL parameters for URI template substitution.
+     *
+     * Supports both simple substitution {param} and reserved expansion {+param}.
+     * Reserved expansion preserves special characters in the value.
+     *
+     * @param  array<string, mixed>  $parameters  The URL parameters
+     * @return self For fluent method chaining.
+     */
+    public function withUrlParameters(array $parameters): self
+    {
+        $new = clone $this;
+        $new->urlParameters = array_merge($new->urlParameters, $parameters);
+
+        return $new;
+    }
+
+    /**
+     * Set a single URL parameter for URI template substitution.
+     *
+     * @param  string  $key  The parameter name
+     * @param  mixed  $value  The parameter value
+     * @return self For fluent method chaining.
+     */
+    public function withUrlParameter(string $key, $value): self
+    {
+        $new = clone $this;
+        $new->urlParameters[$key] = $value;
+
+        return $new;
+    }
+
+    /**
+     * Expand URI template with configured URL parameters.
+     *
+     * Supports:
+     * - Simple expansion: {param}
+     * - Reserved expansion: {+param} (preserves special chars like /, ?, #)
+     *
+     * @param  string  $template  The URI template
+     * @return string The expanded URI
+     */
+    private function expandUriTemplate(string $template): string
+    {
+        if (empty($this->urlParameters)) {
+            return $template;
+        }
+
+        return preg_replace_callback(
+            '/\{([+]?)([a-zA-Z0-9_]+)\}/',
+            function ($matches) {
+                $reserved = $matches[1] === '+';
+                $key = $matches[2];
+
+                if (!isset($this->urlParameters[$key])) {
+                    return $matches[0];
+                }
+
+                $value = (string) $this->urlParameters[$key];
+
+                if ($reserved) {
+                    return $value;
+                }
+
+                return rawurlencode($value);
+            },
+            $template
+        );
     }
 
     /**
