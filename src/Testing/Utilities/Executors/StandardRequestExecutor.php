@@ -71,7 +71,6 @@ class StandardRequestExecutor
 
         $method = $this->extractMethod($curlOptions);
 
-        // Try cache first
         if ($this->cacheHandler->tryServeFromCache($url, $method, $cacheConfig)) {
             /** @var Response $cachedResponse */
             $cachedResponse = $this->cacheHandler->getCachedResponse($url, $cacheConfig);
@@ -79,7 +78,6 @@ class StandardRequestExecutor
             return Promise::resolved($cachedResponse);
         }
 
-        // Find matching mock
         $matchedMock = $this->requestMatcher->findMatchingMock(
             $mockedRequests,
             $method,
