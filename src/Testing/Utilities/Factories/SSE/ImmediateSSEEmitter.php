@@ -49,18 +49,20 @@ class ImmediateSSEEmitter
             $mock->getHeaders()
         );
 
-        if ($onEvent !== null) {
-            foreach ($mock->getSSEEvents() as $eventData) {
-                $event = $this->formatter->createSSEEvent($eventData);
+        // Process events and update lastEventId/retryInterval regardless of onEvent callback
+        foreach ($mock->getSSEEvents() as $eventData) {
+            $event = $this->formatter->createSSEEvent($eventData);
 
-                if ($event->id !== null) {
-                    $lastEventId = $event->id;
-                }
+            if ($event->id !== null) {
+                $lastEventId = $event->id;
+            }
 
-                if ($event->retry !== null) {
-                    $retryInterval = $event->retry;
-                }
+            if ($event->retry !== null) {
+                $retryInterval = $event->retry;
+            }
 
+            // Call the event callback if provided
+            if ($onEvent !== null) {
                 $onEvent($event);
             }
         }

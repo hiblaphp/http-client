@@ -161,6 +161,10 @@ class NetworkSimulator
      */
     private function generateAggressiveRandomFloat(float $min, float $max): float
     {
+        if ($min > $max) {
+            [$min, $max] = [$max, $min];
+        }
+
         $precision = 1000000;
         $randomInt = random_int(
             (int) ($min * $precision),

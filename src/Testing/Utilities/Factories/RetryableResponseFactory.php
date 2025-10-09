@@ -32,9 +32,9 @@ class RetryableResponseFactory
     /**
      * Creates a retryable response with the given configuration.
      *
-     * @return PromiseInterface<Response>
+     * @return CancellablePromiseInterface<Response>
      */
-    public function create(RetryConfig $retryConfig, callable $mockProvider): PromiseInterface
+    public function create(RetryConfig $retryConfig, callable $mockProvider): CancellablePromiseInterface
     {
         /** @var CancellablePromise<Response> $promise */
         $promise = new CancellablePromise();

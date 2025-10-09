@@ -111,7 +111,7 @@ class StreamingResponse extends Response
      */
     public function saveToFile(string $path): bool
     {
-        $file = fopen($path, 'wb');
+        $file = @fopen($path, 'wb');
         if ($file === false) {
             return false;
         }
@@ -126,10 +126,14 @@ class StreamingResponse extends Response
                 if ($chunk === '') {
                     break;
                 }
-                fwrite($file, $chunk);
+                if (fwrite($file, $chunk) === false) {
+                    return false;
+                }
             }
 
             return true;
+        } catch (\Throwable $e) {
+            return false;
         } finally {
             fclose($file);
         }
@@ -169,11 +173,13 @@ class StreamingResponse extends Response
                 if ($chunk === '') {
                     break;
                 }
-                fwrite($destination, $chunk);
+                if (@fwrite($destination, $chunk) === false) {
+                    return false;
+                }
             }
 
             return true;
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             return false;
         }
     }

@@ -8,7 +8,7 @@ describe('Utilities Integration', function () {
         $fileManager = createFileManager();
         $cookieManager = createCookieManager();
         
-        $cookieFile = $fileManager->createTempFile('cookies.json', '[]');
+        $cookieFile = $fileManager->createTempFile('cookies_' . uniqid() . '.json', '[]');
         $jar = $cookieManager->createFileCookieJar($cookieFile);
         
         $cookieManager->addCookie('test', 'value', jarName: 'default');
@@ -26,7 +26,7 @@ describe('Utilities Integration', function () {
         $cookieManager = createCookieManager();
         $cacheManager = createCacheManager();
         
-        $file = $fileManager->createTempFile('test.txt', 'content');
+        $file = $fileManager->createTempFile('independence_' . uniqid() . '.txt', 'content');
         $cookieManager->addCookie('test', 'value');
         
         expect(file_exists($file))->toBeTrue()
@@ -49,10 +49,9 @@ describe('Utilities Integration', function () {
         $cookieManager = createCookieManager();
         $cacheManager = createCacheManager();
         
-        $file = $fileManager->createTempFile('test.txt');
+        $fileManager->createTempFile('idempotent_' . uniqid() . '.txt');
         $cookieManager->addCookie('test', 'value');
         
-        // Multiple cleanups should not cause errors
         $fileManager->cleanup();
         $fileManager->cleanup();
         
@@ -62,7 +61,7 @@ describe('Utilities Integration', function () {
         $cacheManager->reset();
         $cacheManager->reset();
         
-        expect(true)->toBeTrue(); // If we got here, no exceptions were thrown
+        expect(true)->toBeTrue(); 
     });
 
     test('FileManager tracks cookie files created by CookieManager', function () {
@@ -91,7 +90,8 @@ describe('Utilities Integration', function () {
         
         $files = [];
         foreach ($managers as $index => $manager) {
-            $files[$index] = $manager->createTempFile("concurrent_{$index}.txt", "content_{$index}");
+            // Use unique prefix to avoid conflicts
+            $files[$index] = $manager->createTempFile("concurrent_" . uniqid() . "_{$index}.txt", "content_{$index}");
         }
         
         foreach ($files as $file) {
@@ -111,7 +111,7 @@ describe('Utilities Integration', function () {
         $fileManager = createFileManager();
         $cacheManager = createCacheManager();
         
-        $file = $fileManager->createTempFile('cache_test.txt', 'content');
+        $file = $fileManager->createTempFile('cache_test_' . uniqid() . '.txt', 'content');
         
         $cacheManager->reset();
         

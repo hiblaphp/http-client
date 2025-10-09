@@ -71,11 +71,16 @@ describe('StreamingResponse', function () {
         $stream = Stream::fromString('test');
         $response = new StreamingResponse($stream, 200);
 
+        $tempDir = sys_get_temp_dir() . '/test_dir_' . uniqid();
+        mkdir($tempDir);
+
         set_error_handler(function () {});
-        $result = $response->saveToFile('/invalid/path/file.txt');
+        $result = $response->saveToFile($tempDir);
         restore_error_handler();
 
         expect($result)->toBeFalse();
+
+        rmdir($tempDir);
     });
 
     it('saves large content to file in chunks', function () {
@@ -182,7 +187,7 @@ describe('StreamingResponse', function () {
         $response = new StreamingResponse($stream, 200);
 
         $destination = fopen('php://temp', 'r+');
-        fclose($destination); 
+        fclose($destination);
 
         $result = $response->streamTo($destination);
 

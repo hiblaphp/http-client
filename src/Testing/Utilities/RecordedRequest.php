@@ -76,7 +76,13 @@ class RecordedRequest
     }
 
     /**
-     * Parse request body.
+     * Parse request body from cURL or fetch-style options.
+     * 
+     * Priority order:
+     * 1. CURLOPT_POSTFIELDS (cURL format) - takes precedence
+     * 2. body option (fetch format) - fallback
+     * 
+     * Only string bodies are supported. Array/object bodies are ignored.
      */
     private function parseBody(): void
     {

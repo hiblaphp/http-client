@@ -12,7 +12,7 @@ use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Testing\Utilities\Handlers\DelayCalculator;
 use Hibla\HttpClient\Testing\Utilities\Handlers\NetworkSimulationHandler;
 use Hibla\Promise\CancellablePromise;
-
+use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
 class StandardResponseFactory
@@ -29,9 +29,9 @@ class StandardResponseFactory
     /**
      * Creates a standard response with the given configuration.
      *
-     * @return PromiseInterface<Response>
+     * @return CancellablePromiseInterface<Response>
      */
-    public function create(MockedRequest $mock): PromiseInterface
+    public function create(MockedRequest $mock): CancellablePromiseInterface
     {
         /** @var CancellablePromise<Response> $promise */
         $promise = new CancellablePromise();
