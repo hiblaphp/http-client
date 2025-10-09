@@ -15,6 +15,7 @@ use Hibla\HttpClient\Testing\Utilities\Factories\SSE\PeriodicSSEEmitter;
 use Hibla\HttpClient\Testing\Utilities\FileManager;
 use Hibla\HttpClient\Testing\Utilities\Handlers\NetworkSimulationHandler;
 use Hibla\HttpClient\Testing\Utilities\NetworkSimulator;
+use Hibla\Promise\CancellablePromise;
 
 pest()->extend(Tests\TestCase::class)->in('Feature');
 pest()->extend(Tests\TestCase::class)->in('Unit');
@@ -102,9 +103,19 @@ function createImmediateSSEEmitter(): ImmediateSSEEmitter
     return new ImmediateSSEEmitter();
 }
 
-function createPeriodicSSEEmitter(): PeriodicSSEEmitter
+function createPeriodicEmitter(): PeriodicSSEEmitter
 {
     return new PeriodicSSEEmitter();
+}
+
+function createCancellablePromise(): CancellablePromise
+{
+    return new CancellablePromise();
+}
+
+function createMockRequest(): MockedRequest
+{
+    return new MockedRequest(); // Use the real class
 }
 
 

@@ -3,31 +3,29 @@
 use Hibla\EventLoop\EventLoop;
 use Hibla\HttpClient\SSE\SSEResponse;
 use Hibla\HttpClient\Testing\MockedRequest;
-use Hibla\HttpClient\Testing\Utilities\Factories\SSE\PeriodicSSEEmitter;
-use Hibla\Promise\CancellablePromise;
 
 beforeEach(function () {
     EventLoop::reset();
-    $this->emitter = new PeriodicSSEEmitter();
-    $this->promise = new CancellablePromise();
-    $this->mock = Mockery::mock(MockedRequest::class);
 });
 
 afterEach(function () {
     EventLoop::reset();
-    Mockery::close();
 });
+
+
 
 describe('PeriodicSSEEmitter', function () {
 
     it('throws exception when SSE config is missing', function () {
-        $this->mock->shouldReceive('getSSEStreamConfig')->andReturn(null);
+        $emitter = createPeriodicEmitter();
+        $promise = createCancellablePromise();
+        $mock = createMockRequest();
 
         $timerId = null;
 
-        expect(fn() => $this->emitter->emit(
-            $this->promise,
-            $this->mock,
+        expect(fn() => $emitter->emit(
+            $promise,
+            $mock,
             null,
             null,
             $timerId
@@ -35,24 +33,26 @@ describe('PeriodicSSEEmitter', function () {
     });
 
     it('resolves promise with SSEResponse', function () {
-        $this->mock->shouldReceive('getSSEStreamConfig')->andReturn([
+        $emitter = createPeriodicEmitter();
+        $promise = createCancellablePromise();
+        $mock = createMockRequest();
+
+        $mock->setSSEStreamConfig([
             'type' => 'periodic',
             'events' => []
         ]);
-
-        $this->mock->shouldReceive('getStatusCode')->andReturn(200);
-        $this->mock->shouldReceive('getHeaders')->andReturn([]);
+        $mock->setStatusCode(200);
 
         $timerId = null;
         $resolved = false;
         $response = null;
 
-        $this->promise->then(function ($res) use (&$resolved, &$response) {
+        $promise->then(function ($res) use (&$resolved, &$response) {
             $resolved = true;
             $response = $res;
         });
 
-        $this->emitter->emit($this->promise, $this->mock, null, null, $timerId);
+        $emitter->emit($promise, $mock, null, null, $timerId);
 
         $loop = EventLoop::getInstance();
         $loop->nextTick(function () use ($loop) {
@@ -67,18 +67,21 @@ describe('PeriodicSSEEmitter', function () {
     describe('Finite Event Stream', function () {
 
         it('emits finite events with default interval', function () {
+            $emitter = createPeriodicEmitter();
+            $promise = createCancellablePromise();
+            $mock = createMockRequest();
+
             $events = [
                 ['data' => 'event1', 'event' => 'test'],
                 ['data' => 'event2', 'event' => 'test'],
             ];
 
-            $this->mock->shouldReceive('getSSEStreamConfig')->andReturn([
+            $mock->setSSEStreamConfig([
                 'type' => 'periodic',
                 'events' => $events,
                 'interval' => 0.01,
             ]);
-            $this->mock->shouldReceive('getStatusCode')->andReturn(200);
-            $this->mock->shouldReceive('getHeaders')->andReturn([]);
+            $mock->setStatusCode(200);
 
             $receivedEvents = [];
             $onEvent = function ($event) use (&$receivedEvents) {
@@ -86,11 +89,10 @@ describe('PeriodicSSEEmitter', function () {
             };
 
             $timerId = null;
-            $this->emitter->emit($this->promise, $this->mock, $onEvent, null, $timerId);
+            $emitter->emit($promise, $mock, $onEvent, null, $timerId);
 
             expect($timerId)->toBeString();
 
-            // Run event loop in background fiber
             $loop = EventLoop::getInstance();
             $stopTimer = $loop->addTimer(0.5, function () use ($loop) {
                 $loop->stop();
@@ -102,12 +104,15 @@ describe('PeriodicSSEEmitter', function () {
         });
 
         it('applies custom interval', function () {
-            $this->mock->shouldReceive('getSSEStreamConfig')->andReturn([
+            $emitter = createPeriodicEmitter();
+            $promise = createCancellablePromise();
+            $mock = createMockRequest();
+
+            $mock->setSSEStreamConfig([
                 'events' => [['data' => 'test']],
                 'interval' => 0.05,
             ]);
-            $this->mock->shouldReceive('getStatusCode')->andReturn(200);
-            $this->mock->shouldReceive('getHeaders')->andReturn([]);
+            $mock->setStatusCode(200);
 
             $timerId = null;
             $startTime = microtime(true);
@@ -117,7 +122,7 @@ describe('PeriodicSSEEmitter', function () {
                 $eventTime = microtime(true);
             };
 
-            $this->emitter->emit($this->promise, $this->mock, $onEvent, null, $timerId);
+            $emitter->emit($promise, $mock, $onEvent, null, $timerId);
 
             $loop = EventLoop::getInstance();
             $loop->addTimer(0.5, function () use ($loop) {
@@ -131,15 +136,20 @@ describe('PeriodicSSEEmitter', function () {
         });
 
         it('uses default error message when not provided', function () {
-            $this->mock->shouldReceive('getSSEStreamConfig')->andReturn([
+            $emitter = createPeriodicEmitter();
+            $promise = createCancellablePromise();
+
+            $mock = Mockery::mock(MockedRequest::class);
+
+            $mock->shouldReceive('getSSEStreamConfig')->andReturn([
                 'events' => [],
                 'interval' => 0.01,
                 'auto_close' => true,
             ]);
-            $this->mock->shouldReceive('getStatusCode')->andReturn(200);
-            $this->mock->shouldReceive('getHeaders')->andReturn([]);
-            $this->mock->shouldReceive('shouldFail')->andReturn(true);
-            $this->mock->shouldReceive('getError')->andReturn(null);
+            $mock->shouldReceive('getStatusCode')->andReturn(200);
+            $mock->shouldReceive('getHeaders')->andReturn([]);
+            $mock->shouldReceive('shouldFail')->andReturn(true);
+            $mock->shouldReceive('getError')->andReturn(null); 
 
             $errorReceived = null;
             $onError = function ($error) use (&$errorReceived) {
@@ -147,7 +157,7 @@ describe('PeriodicSSEEmitter', function () {
             };
 
             $timerId = null;
-            $this->emitter->emit($this->promise, $this->mock, null, $onError, $timerId);
+            $emitter->emit($promise, $mock, null, $onError, $timerId);
 
             $loop = EventLoop::getInstance();
             $loop->addTimer(0.2, function () use ($loop) {
@@ -157,24 +167,29 @@ describe('PeriodicSSEEmitter', function () {
             $loop->run();
 
             expect($errorReceived)->toBe('Connection closed');
+
+            Mockery::close();
         });
     });
 
     describe('Infinite Event Stream', function () {
 
         it('emits infinite events using generator', function () {
+            $emitter = createPeriodicEmitter();
+            $promise = createCancellablePromise();
+            $mock = createMockRequest();
+
             $generator = function (int $index) {
                 return ['data' => "event{$index}", 'event' => 'test'];
             };
 
-            $this->mock->shouldReceive('getSSEStreamConfig')->andReturn([
+            $mock->setSSEStreamConfig([
                 'type' => 'infinite',
                 'event_generator' => $generator,
                 'interval' => 0.01,
                 'max_events' => 3,
             ]);
-            $this->mock->shouldReceive('getStatusCode')->andReturn(200);
-            $this->mock->shouldReceive('getHeaders')->andReturn([]);
+            $mock->setStatusCode(200);
 
             $receivedEvents = [];
             $onEvent = function ($event) use (&$receivedEvents) {
@@ -182,7 +197,7 @@ describe('PeriodicSSEEmitter', function () {
             };
 
             $timerId = null;
-            $this->emitter->emit($this->promise, $this->mock, $onEvent, null, $timerId);
+            $emitter->emit($promise, $mock, $onEvent, null, $timerId);
 
             $loop = EventLoop::getInstance();
             $loop->addTimer(0.5, function () use ($loop) {
@@ -195,18 +210,21 @@ describe('PeriodicSSEEmitter', function () {
         });
 
         it('stops after max_events reached', function () {
+            $emitter = createPeriodicEmitter();
+            $promise = createCancellablePromise();
+            $mock = createMockRequest();
+
             $generator = function (int $index) {
                 return ['data' => "event{$index}"];
             };
 
-            $this->mock->shouldReceive('getSSEStreamConfig')->andReturn([
+            $mock->setSSEStreamConfig([
                 'type' => 'infinite',
                 'event_generator' => $generator,
                 'interval' => 0.01,
                 'max_events' => 2,
             ]);
-            $this->mock->shouldReceive('getStatusCode')->andReturn(200);
-            $this->mock->shouldReceive('getHeaders')->andReturn([]);
+            $mock->setStatusCode(200);
 
             $eventCount = 0;
             $onEvent = function () use (&$eventCount) {
@@ -214,7 +232,7 @@ describe('PeriodicSSEEmitter', function () {
             };
 
             $timerId = null;
-            $this->emitter->emit($this->promise, $this->mock, $onEvent, null, $timerId);
+            $emitter->emit($promise, $mock, $onEvent, null, $timerId);
 
             $loop = EventLoop::getInstance();
             $loop->addTimer(0.3, function () use ($loop) {
@@ -227,17 +245,20 @@ describe('PeriodicSSEEmitter', function () {
         });
 
         it('does not require max_events', function () {
+            $emitter = createPeriodicEmitter();
+            $promise = createCancellablePromise();
+            $mock = createMockRequest();
+
             $generator = function (int $index) {
                 return ['data' => "event{$index}"];
             };
 
-            $this->mock->shouldReceive('getSSEStreamConfig')->andReturn([
+            $mock->setSSEStreamConfig([
                 'type' => 'infinite',
                 'event_generator' => $generator,
                 'interval' => 0.01,
             ]);
-            $this->mock->shouldReceive('getStatusCode')->andReturn(200);
-            $this->mock->shouldReceive('getHeaders')->andReturn([]);
+            $mock->setStatusCode(200);
 
             $eventCount = 0;
             $onEvent = function () use (&$eventCount) {
@@ -245,13 +266,12 @@ describe('PeriodicSSEEmitter', function () {
             };
 
             $timerId = null;
-            $this->emitter->emit($this->promise, $this->mock, $onEvent, null, $timerId);
+            $emitter->emit($promise, $mock, $onEvent, null, $timerId);
 
             expect($timerId)->toBeString();
 
             $loop = EventLoop::getInstance();
 
-            // Let it run for a bit, then stop
             $loop->addTimer(0.1, function () use ($loop, $timerId) {
                 EventLoop::getInstance()->cancelTimer($timerId);
                 $loop->stop();
@@ -259,19 +279,20 @@ describe('PeriodicSSEEmitter', function () {
 
             $loop->run();
 
-            // Should have emitted some events
             expect($eventCount)->toBeGreaterThan(0);
         });
 
         it('ignores non-callable event_generator', function () {
-            $this->mock->shouldReceive('getSSEStreamConfig')->andReturn([
+            $emitter = createPeriodicEmitter();
+            $promise = createCancellablePromise();
+            $mock = createMockRequest();
+
+            $mock->setSSEStreamConfig([
                 'type' => 'infinite',
                 'event_generator' => 'not-callable',
                 'interval' => 0.01,
             ]);
-            $this->mock->shouldReceive('getStatusCode')->andReturn(200);
-            $this->mock->shouldReceive('getHeaders')->andReturn([]);
-            $this->mock->shouldReceive('shouldFail')->andReturn(false);
+            $mock->setStatusCode(200);
 
             $eventCount = 0;
             $onEvent = function () use (&$eventCount) {
@@ -279,7 +300,7 @@ describe('PeriodicSSEEmitter', function () {
             };
 
             $timerId = null;
-            $this->emitter->emit($this->promise, $this->mock, $onEvent, null, $timerId);
+            $emitter->emit($promise, $mock, $onEvent, null, $timerId);
 
             expect($timerId)->toBeString();
 
@@ -297,13 +318,16 @@ describe('PeriodicSSEEmitter', function () {
     describe('Jitter Application', function () {
 
         it('applies jitter to event timing', function () {
-            $this->mock->shouldReceive('getSSEStreamConfig')->andReturn([
+            $emitter = createPeriodicEmitter();
+            $promise = createCancellablePromise();
+            $mock = createMockRequest();
+
+            $mock->setSSEStreamConfig([
                 'events' => [['data' => 'test1'], ['data' => 'test2']],
                 'interval' => 0.1,
-                'jitter' => 0.5, 
+                'jitter' => 0.5,
             ]);
-            $this->mock->shouldReceive('getStatusCode')->andReturn(200);
-            $this->mock->shouldReceive('getHeaders')->andReturn([]);
+            $mock->setStatusCode(200);
 
             $eventTimes = [];
             $onEvent = function () use (&$eventTimes) {
@@ -311,7 +335,7 @@ describe('PeriodicSSEEmitter', function () {
             };
 
             $timerId = null;
-            $this->emitter->emit($this->promise, $this->mock, $onEvent, null, $timerId);
+            $emitter->emit($promise, $mock, $onEvent, null, $timerId);
 
             $loop = EventLoop::getInstance();
             $loop->addTimer(1.0, function () use ($loop) {
@@ -324,13 +348,16 @@ describe('PeriodicSSEEmitter', function () {
         });
 
         it('handles zero jitter', function () {
-            $this->mock->shouldReceive('getSSEStreamConfig')->andReturn([
+            $emitter = createPeriodicEmitter();
+            $promise = createCancellablePromise();
+            $mock = createMockRequest();
+
+            $mock->setSSEStreamConfig([
                 'events' => [['data' => 'test']],
                 'interval' => 0.01,
                 'jitter' => 0.0,
             ]);
-            $this->mock->shouldReceive('getStatusCode')->andReturn(200);
-            $this->mock->shouldReceive('getHeaders')->andReturn([]);
+            $mock->setStatusCode(200);
 
             $eventReceived = false;
             $onEvent = function () use (&$eventReceived) {
@@ -338,7 +365,7 @@ describe('PeriodicSSEEmitter', function () {
             };
 
             $timerId = null;
-            $this->emitter->emit($this->promise, $this->mock, $onEvent, null, $timerId);
+            $emitter->emit($promise, $mock, $onEvent, null, $timerId);
 
             $loop = EventLoop::getInstance();
             $loop->addTimer(0.5, function () use ($loop) {
@@ -354,49 +381,61 @@ describe('PeriodicSSEEmitter', function () {
     describe('Configuration Handling', function () {
 
         it('uses default interval when not specified', function () {
-            $this->mock->shouldReceive('getSSEStreamConfig')->andReturn([
+            $emitter = createPeriodicEmitter();
+            $promise = createCancellablePromise();
+            $mock = createMockRequest();
+
+            $mock->setSSEStreamConfig([
                 'events' => [['data' => 'test']],
             ]);
-            $this->mock->shouldReceive('getStatusCode')->andReturn(200);
-            $this->mock->shouldReceive('getHeaders')->andReturn([]);
+            $mock->setStatusCode(200);
 
             $timerId = null;
-            $this->emitter->emit($this->promise, $this->mock, null, null, $timerId);
+            $emitter->emit($promise, $mock, null, null, $timerId);
 
             expect($timerId)->toBeString();
         });
 
         it('handles invalid interval values', function () {
-            $this->mock->shouldReceive('getSSEStreamConfig')->andReturn([
+            $emitter = createPeriodicEmitter();
+            $promise = createCancellablePromise();
+            $mock = createMockRequest();
+
+            $mock->setSSEStreamConfig([
                 'events' => [['data' => 'test']],
                 'interval' => 'invalid',
             ]);
-            $this->mock->shouldReceive('getStatusCode')->andReturn(200);
-            $this->mock->shouldReceive('getHeaders')->andReturn([]);
+            $mock->setStatusCode(200);
 
             $timerId = null;
-            $this->emitter->emit($this->promise, $this->mock, null, null, $timerId);
+            $emitter->emit($promise, $mock, null, null, $timerId);
 
-            // Should use default interval
             expect($timerId)->toBeString();
         });
 
         it('handles invalid jitter values', function () {
-            $this->mock->shouldReceive('getSSEStreamConfig')->andReturn([
+            $emitter = createPeriodicEmitter();
+            $promise = createCancellablePromise();
+            $mock = createMockRequest();
+
+            $mock->setSSEStreamConfig([
                 'events' => [['data' => 'test']],
                 'jitter' => 'invalid',
             ]);
-            $this->mock->shouldReceive('getStatusCode')->andReturn(200);
-            $this->mock->shouldReceive('getHeaders')->andReturn([]);
+            $mock->setStatusCode(200);
 
             $timerId = null;
-            $this->emitter->emit($this->promise, $this->mock, null, null, $timerId);
+            $emitter->emit($promise, $mock, null, null, $timerId);
 
             expect($timerId)->toBeString();
         });
 
         it('filters out non-array events', function () {
-            $this->mock->shouldReceive('getSSEStreamConfig')->andReturn([
+            $emitter = createPeriodicEmitter();
+            $promise = createCancellablePromise();
+            $mock = createMockRequest();
+
+            $mock->setSSEStreamConfig([
                 'events' => [
                     ['data' => 'valid'],
                     'invalid',
@@ -405,8 +444,7 @@ describe('PeriodicSSEEmitter', function () {
                 ],
                 'interval' => 0.01,
             ]);
-            $this->mock->shouldReceive('getStatusCode')->andReturn(200);
-            $this->mock->shouldReceive('getHeaders')->andReturn([]);
+            $mock->setStatusCode(200);
 
             $eventCount = 0;
             $onEvent = function () use (&$eventCount) {
@@ -414,7 +452,7 @@ describe('PeriodicSSEEmitter', function () {
             };
 
             $timerId = null;
-            $this->emitter->emit($this->promise, $this->mock, $onEvent, null, $timerId);
+            $emitter->emit($promise, $mock, $onEvent, null, $timerId);
 
             $loop = EventLoop::getInstance();
             $loop->addTimer(0.5, function () use ($loop) {
@@ -427,27 +465,32 @@ describe('PeriodicSSEEmitter', function () {
         });
 
         it('handles empty events array', function () {
-            $this->mock->shouldReceive('getSSEStreamConfig')->andReturn([
+            $emitter = createPeriodicEmitter();
+            $promise = createCancellablePromise();
+            $mock = createMockRequest();
+
+            $mock->setSSEStreamConfig([
                 'events' => [],
                 'interval' => 0.01,
             ]);
-            $this->mock->shouldReceive('getStatusCode')->andReturn(200);
-            $this->mock->shouldReceive('getHeaders')->andReturn([]);
+            $mock->setStatusCode(200);
 
             $timerId = null;
-            $this->emitter->emit($this->promise, $this->mock, null, null, $timerId);
+            $emitter->emit($promise, $mock, null, null, $timerId);
 
             expect($timerId)->toBeString();
         });
 
         it('handles non-array events configuration', function () {
-            $this->mock->shouldReceive('getSSEStreamConfig')->andReturn([
+            $emitter = createPeriodicEmitter();
+            $promise = createCancellablePromise();
+            $mock = createMockRequest();
+
+            $mock->setSSEStreamConfig([
                 'events' => 'not-an-array',
                 'interval' => 0.01,
             ]);
-            $this->mock->shouldReceive('getStatusCode')->andReturn(200);
-            $this->mock->shouldReceive('getHeaders')->andReturn([]);
-            $this->mock->shouldReceive('shouldFail')->andReturn(false);
+            $mock->setStatusCode(200);
 
             $eventCount = 0;
             $onEvent = function () use (&$eventCount) {
@@ -455,7 +498,7 @@ describe('PeriodicSSEEmitter', function () {
             };
 
             $timerId = null;
-            $this->emitter->emit($this->promise, $this->mock, $onEvent, null, $timerId);
+            $emitter->emit($promise, $mock, $onEvent, null, $timerId);
 
             $loop = EventLoop::getInstance();
             $loop->addTimer(0.1, function () use ($loop) {
@@ -471,26 +514,32 @@ describe('PeriodicSSEEmitter', function () {
     describe('Timer Management', function () {
 
         it('sets timer ID via reference parameter', function () {
-            $this->mock->shouldReceive('getSSEStreamConfig')->andReturn([
+            $emitter = createPeriodicEmitter();
+            $promise = createCancellablePromise();
+            $mock = createMockRequest();
+
+            $mock->setSSEStreamConfig([
                 'events' => [['data' => 'test']],
                 'interval' => 0.01,
             ]);
-            $this->mock->shouldReceive('getStatusCode')->andReturn(200);
-            $this->mock->shouldReceive('getHeaders')->andReturn([]);
+            $mock->setStatusCode(200);
 
             $timerId = null;
-            $this->emitter->emit($this->promise, $this->mock, null, null, $timerId);
+            $emitter->emit($promise, $mock, null, null, $timerId);
 
             expect($timerId)->toBeString()->not->toBeEmpty();
         });
 
         it('allows timer cancellation', function () {
-            $this->mock->shouldReceive('getSSEStreamConfig')->andReturn([
+            $emitter = createPeriodicEmitter();
+            $promise = createCancellablePromise();
+            $mock = createMockRequest();
+
+            $mock->setSSEStreamConfig([
                 'events' => [['data' => 'test1'], ['data' => 'test2']],
                 'interval' => 0.1,
             ]);
-            $this->mock->shouldReceive('getStatusCode')->andReturn(200);
-            $this->mock->shouldReceive('getHeaders')->andReturn([]);
+            $mock->setStatusCode(200);
 
             $eventCount = 0;
             $onEvent = function () use (&$eventCount) {
@@ -498,9 +547,8 @@ describe('PeriodicSSEEmitter', function () {
             };
 
             $timerId = null;
-            $this->emitter->emit($this->promise, $this->mock, $onEvent, null, $timerId);
+            $emitter->emit($promise, $mock, $onEvent, null, $timerId);
 
-            // Cancel immediately
             $cancelled = EventLoop::getInstance()->cancelTimer($timerId);
 
             expect($cancelled)->toBeTrue();
@@ -519,18 +567,21 @@ describe('PeriodicSSEEmitter', function () {
     describe('Callback Handling', function () {
 
         it('works without onEvent callback', function () {
-            $this->mock->shouldReceive('getSSEStreamConfig')->andReturn([
+            $emitter = createPeriodicEmitter();
+            $promise = createCancellablePromise();
+            $mock = createMockRequest();
+
+            $mock->setSSEStreamConfig([
                 'events' => [['data' => 'test']],
                 'interval' => 0.01,
             ]);
-            $this->mock->shouldReceive('getStatusCode')->andReturn(200);
-            $this->mock->shouldReceive('getHeaders')->andReturn([]);
+            $mock->setStatusCode(200);
 
             $timerId = null;
 
-            expect(fn() => $this->emitter->emit(
-                $this->promise,
-                $this->mock,
+            expect(fn() => $emitter->emit(
+                $promise,
+                $mock,
                 null,
                 null,
                 $timerId
@@ -538,21 +589,23 @@ describe('PeriodicSSEEmitter', function () {
         });
 
         it('works without onError callback', function () {
-            $this->mock->shouldReceive('getSSEStreamConfig')->andReturn([
+            $emitter = createPeriodicEmitter();
+            $promise = createCancellablePromise();
+            $mock = createMockRequest();
+
+            $mock->setSSEStreamConfig([
                 'events' => [],
                 'interval' => 0.01,
                 'auto_close' => true,
             ]);
-            $this->mock->shouldReceive('getStatusCode')->andReturn(200);
-            $this->mock->shouldReceive('getHeaders')->andReturn([]);
-            $this->mock->shouldReceive('shouldFail')->andReturn(true);
-            $this->mock->shouldReceive('getError')->andReturn('Test error');
+            $mock->setStatusCode(200);
+            $mock->setError('Test error');
 
             $timerId = null;
 
-            expect(fn() => $this->emitter->emit(
-                $this->promise,
-                $this->mock,
+            expect(fn() => $emitter->emit(
+                $promise,
+                $mock,
                 null,
                 null,
                 $timerId
