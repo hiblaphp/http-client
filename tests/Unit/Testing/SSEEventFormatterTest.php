@@ -1,7 +1,7 @@
 <?php
 
-use Hibla\HttpClient\Testing\Utilities\Formatters\SSEEventFormatter;
 use Hibla\HttpClient\SSE\SSEEvent;
+use Hibla\HttpClient\Testing\Utilities\Formatters\SSEEventFormatter;
 
 describe('SSEEventFormatter', function () {
 
@@ -70,7 +70,8 @@ describe('SSEEventFormatter', function () {
 
             expect($result)->toContain("id: 1\ndata: Message 1\n\n")
                 ->and($result)->toContain("event: update\ndata: Message 2\n\n")
-                ->and($result)->toContain("id: 3\nevent: notification\ndata: Message 3\n\n");
+                ->and($result)->toContain("id: 3\nevent: notification\ndata: Message 3\n\n")
+            ;
         });
 
         it('formats multiline data across multiple events', function () {
@@ -255,7 +256,8 @@ describe('SSEEventFormatter', function () {
                 ->and($event->id)->toBe('123')
                 ->and($event->event)->toBe('message')
                 ->and($event->data)->toBe('Hello World')
-                ->and($event->retry)->toBe(3000);
+                ->and($event->retry)->toBe(3000)
+            ;
         });
 
         it('creates SSEEvent with only data', function () {
@@ -268,7 +270,8 @@ describe('SSEEventFormatter', function () {
                 ->and($event->id)->toBeNull()
                 ->and($event->event)->toBeNull()
                 ->and($event->data)->toBe('Simple message')
-                ->and($event->retry)->toBeNull();
+                ->and($event->retry)->toBeNull()
+            ;
         });
 
         it('creates SSEEvent with no fields', function () {
@@ -281,7 +284,8 @@ describe('SSEEventFormatter', function () {
                 ->and($event->id)->toBeNull()
                 ->and($event->event)->toBeNull()
                 ->and($event->data)->toBeNull()
-                ->and($event->retry)->toBeNull();
+                ->and($event->retry)->toBeNull()
+            ;
         });
 
         it('creates SSEEvent with only id', function () {
@@ -291,7 +295,8 @@ describe('SSEEventFormatter', function () {
             $event = $formatter->createSSEEvent($eventData);
 
             expect($event->id)->toBe('event-456')
-                ->and($event->data)->toBeNull();
+                ->and($event->data)->toBeNull()
+            ;
         });
 
         it('creates SSEEvent with only event type', function () {
@@ -301,7 +306,8 @@ describe('SSEEventFormatter', function () {
             $event = $formatter->createSSEEvent($eventData);
 
             expect($event->event)->toBe('notification')
-                ->and($event->data)->toBeNull();
+                ->and($event->data)->toBeNull()
+            ;
         });
 
         it('creates SSEEvent with only retry', function () {
@@ -311,7 +317,8 @@ describe('SSEEventFormatter', function () {
             $event = $formatter->createSSEEvent($eventData);
 
             expect($event->retry)->toBe(5000)
-                ->and($event->data)->toBeNull();
+                ->and($event->data)->toBeNull()
+            ;
         });
 
         it('creates SSEEvent with multiline data', function () {
@@ -330,7 +337,8 @@ describe('SSEEventFormatter', function () {
             $event = $formatter->createSSEEvent($eventData);
 
             expect($event->rawFields)->toHaveKey('id')
-                ->and($event->rawFields['id'])->toBe(['789']);
+                ->and($event->rawFields['id'])->toBe(['789'])
+            ;
         });
 
         it('includes rawFields with event', function () {
@@ -340,7 +348,8 @@ describe('SSEEventFormatter', function () {
             $event = $formatter->createSSEEvent($eventData);
 
             expect($event->rawFields)->toHaveKey('event')
-                ->and($event->rawFields['event'])->toBe(['update']);
+                ->and($event->rawFields['event'])->toBe(['update'])
+            ;
         });
 
         it('includes rawFields with data', function () {
@@ -350,7 +359,8 @@ describe('SSEEventFormatter', function () {
             $event = $formatter->createSSEEvent($eventData);
 
             expect($event->rawFields)->toHaveKey('data')
-                ->and($event->rawFields['data'])->toBe(['Test data']);
+                ->and($event->rawFields['data'])->toBe(['Test data'])
+            ;
         });
 
         it('includes rawFields with retry as string', function () {
@@ -360,7 +370,8 @@ describe('SSEEventFormatter', function () {
             $event = $formatter->createSSEEvent($eventData);
 
             expect($event->rawFields)->toHaveKey('retry')
-                ->and($event->rawFields['retry'])->toBe(['7000']);
+                ->and($event->rawFields['retry'])->toBe(['7000'])
+            ;
         });
 
         it('includes all fields in rawFields', function () {
@@ -381,7 +392,8 @@ describe('SSEEventFormatter', function () {
                 ->and($event->rawFields['id'])->toBe(['100'])
                 ->and($event->rawFields['event'])->toBe(['custom'])
                 ->and($event->rawFields['data'])->toBe(['Data here'])
-                ->and($event->rawFields['retry'])->toBe(['2000']);
+                ->and($event->rawFields['retry'])->toBe(['2000'])
+            ;
         });
     });
 
@@ -434,7 +446,7 @@ describe('SSEEventFormatter', function () {
 
             $result = $formatter->formatEvents($events);
 
-            expect($result)->toContain("id: id-with-special-chars-@#$%");
+            expect($result)->toContain('id: id-with-special-chars-@#$%');
         });
 
         it('handles special characters in event type', function () {
@@ -443,7 +455,7 @@ describe('SSEEventFormatter', function () {
 
             $result = $formatter->formatEvents($events);
 
-            expect($result)->toContain("event: event:type/special");
+            expect($result)->toContain('event: event:type/special');
         });
 
         it('handles unicode characters in data', function () {
@@ -486,7 +498,7 @@ describe('SSEEventFormatter', function () {
 
             $result = $formatter->formatEvents($events);
 
-            expect($result)->toBe("\n\n");  
+            expect($result)->toBe("\n\n");
         });
 
         it('handles null values in event data for createSSEEvent', function () {
@@ -504,7 +516,8 @@ describe('SSEEventFormatter', function () {
             expect($event->id)->toBeNull()
                 ->and($event->event)->toBeNull()
                 ->and($event->data)->toBeNull()
-                ->and($event->retry)->toBeNull();
+                ->and($event->retry)->toBeNull()
+            ;
         });
     });
 
@@ -521,7 +534,8 @@ describe('SSEEventFormatter', function () {
 
             expect($result)->toContain("id: 1\nevent: message\ndata: User joined\n\n")
                 ->and($result)->toContain("id: 2\nevent: message\ndata: Hello everyone!\n\n")
-                ->and($result)->toContain("id: 3\nevent: message\ndata: How are you?\n\n");
+                ->and($result)->toContain("id: 3\nevent: message\ndata: How are you?\n\n")
+            ;
         });
 
         it('formats a progress update stream', function () {
@@ -538,7 +552,8 @@ describe('SSEEventFormatter', function () {
             expect($result)->toContain('event: progress')
                 ->and($result)->toContain('event: complete')
                 ->and($result)->toContain('data: {"percent": 0}')
-                ->and($result)->toContain('data: Done!');
+                ->and($result)->toContain('data: Done!')
+            ;
         });
 
         it('creates SSEEvent objects for a stream', function () {
@@ -550,14 +565,15 @@ describe('SSEEventFormatter', function () {
             ];
 
             $events = array_map(
-                fn($eventData) => $formatter->createSSEEvent($eventData),
+                fn ($eventData) => $formatter->createSSEEvent($eventData),
                 $eventsData
             );
 
             expect($events)->toHaveCount(3);
             foreach ($events as $index => $event) {
                 expect($event)->toBeInstanceOf(SSEEvent::class)
-                    ->and($event->id)->toBe((string)($index + 1));
+                    ->and($event->id)->toBe((string)($index + 1))
+                ;
             }
         });
 
@@ -586,9 +602,9 @@ describe('SSEEventFormatter', function () {
             $result = $formatter->formatEvents($events);
 
             expect($result)->toContain("retry: 3000\n\n")
-                ->and($result)->toContain("event: start")
-                ->and($result)->toContain("event: update")
-                ->and($result)->toContain("event: end");
+                ->and($result)->toContain('event: start')
+                ->and($result)->toContain('event: update')
+                ->and($result)->toContain('event: end');
         });
     });
 });

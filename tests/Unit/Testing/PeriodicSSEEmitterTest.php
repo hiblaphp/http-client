@@ -12,8 +12,6 @@ afterEach(function () {
     EventLoop::reset();
 });
 
-
-
 describe('PeriodicSSEEmitter', function () {
 
     it('throws exception when SSE config is missing', function () {
@@ -23,7 +21,7 @@ describe('PeriodicSSEEmitter', function () {
 
         $timerId = null;
 
-        expect(fn() => $emitter->emit(
+        expect(fn () => $emitter->emit(
             $promise,
             $mock,
             null,
@@ -39,7 +37,7 @@ describe('PeriodicSSEEmitter', function () {
 
         $mock->setSSEStreamConfig([
             'type' => 'periodic',
-            'events' => []
+            'events' => [],
         ]);
         $mock->setStatusCode(200);
 
@@ -149,7 +147,7 @@ describe('PeriodicSSEEmitter', function () {
             $mock->shouldReceive('getStatusCode')->andReturn(200);
             $mock->shouldReceive('getHeaders')->andReturn([]);
             $mock->shouldReceive('shouldFail')->andReturn(true);
-            $mock->shouldReceive('getError')->andReturn(null); 
+            $mock->shouldReceive('getError')->andReturn(null);
 
             $errorReceived = null;
             $onError = function ($error) use (&$errorReceived) {
@@ -579,7 +577,7 @@ describe('PeriodicSSEEmitter', function () {
 
             $timerId = null;
 
-            expect(fn() => $emitter->emit(
+            expect(fn () => $emitter->emit(
                 $promise,
                 $mock,
                 null,
@@ -603,7 +601,7 @@ describe('PeriodicSSEEmitter', function () {
 
             $timerId = null;
 
-            expect(fn() => $emitter->emit(
+            expect(fn () => $emitter->emit(
                 $promise,
                 $mock,
                 null,

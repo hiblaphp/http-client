@@ -38,10 +38,10 @@ describe('ProxyConfig Value Object', function () {
         $proxy = ProxyConfig::http('proxy.example.com', 8080);
         expect($proxy->getProxyUrl())->toBe('http://proxy.example.com:8080');
     });
-    
+
     it('handles a null password correctly in the URL string', function () {
         $proxy = new ProxyConfig('proxy.example.com', 8080, 'user', null, 'http');
         expect($proxy->getProxyUrl())->toBe('http://user@proxy.example.com:8080');
     });
-    
+
 });

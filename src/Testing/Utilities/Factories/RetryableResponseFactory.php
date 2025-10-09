@@ -16,8 +16,6 @@ use Hibla\HttpClient\Testing\Utilities\Handlers\NetworkSimulationHandler;
 use Hibla\Promise\CancellablePromise;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 
-use Hibla\Promise\Interfaces\PromiseInterface;
-
 class RetryableResponseFactory
 {
     private NetworkSimulationHandler $networkHandler;

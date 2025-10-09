@@ -23,17 +23,19 @@ pest()->extend(Tests\TestCase::class)->in('Integration');
 
 function getPrivateProperty($object, string $property)
 {
-    $reflection = new \ReflectionClass($object);
+    $reflection = new ReflectionClass($object);
     $prop = $reflection->getProperty($property);
     $prop->setAccessible(true);
+
     return $prop->getValue($object);
 }
 
 function callPrivateMethod($object, string $method, array $args = [])
 {
-    $reflection = new \ReflectionClass($object);
+    $reflection = new ReflectionClass($object);
     $method = $reflection->getMethod($method);
     $method->setAccessible(true);
+
     return $method->invoke($object, ...$args);
 }
 
@@ -64,6 +66,7 @@ function createNetworkSimulatorWithFailure(float $failureRate = 1.0, ?string $er
         'failure_rate' => $failureRate,
         'default_delay' => 0.0,
     ]);
+
     return $simulator;
 }
 
@@ -75,6 +78,7 @@ function createNetworkSimulatorWithTimeout(float $timeoutRate = 1.0, float $time
         'timeout_delay' => $timeoutDelay,
         'default_delay' => 0.0,
     ]);
+
     return $simulator;
 }
 
@@ -85,6 +89,7 @@ function createNetworkSimulatorWithRetryableFailure(float $retryableFailureRate 
         'retryable_failure_rate' => $retryableFailureRate,
         'default_delay' => 0.0,
     ]);
+
     return $simulator;
 }
 
@@ -117,7 +122,6 @@ function createMockRequest(): MockedRequest
 {
     return new MockedRequest(); // Use the real class
 }
-
 
 function createMockedSSERequest(
     array $events = [],
@@ -154,7 +158,7 @@ function createTempDir(): string
 
 function cleanupTempDir(string $dir): void
 {
-    if (!is_dir($dir)) {
+    if (! is_dir($dir)) {
         return;
     }
 

@@ -18,6 +18,7 @@ function createSSEResponseFactory(?NetworkSimulator $simulator = null): SSERespo
 {
     $simulator ??= new NetworkSimulator();
     $handler = createNetworkHandler($simulator);
+
     return new SSEResponseFactory($handler);
 }
 
@@ -63,8 +64,9 @@ describe('SSEResponseFactory', function () {
 
             $promise = $factory->create($mock, null, $onError);
 
-            expect(fn() => $promise->await())
-                ->toThrow(NetworkException::class); // Remove specific message check
+            expect(fn () => $promise->await())
+                ->toThrow(NetworkException::class) // Remove specific message check
+            ;
             expect($errorCallbackCalled)->toBeTrue();
         });
 
@@ -83,8 +85,9 @@ describe('SSEResponseFactory', function () {
 
             $promise = $factory->create($mock, null, $onError);
 
-            expect(fn() => $promise->await())
-                ->toThrow(NetworkException::class);
+            expect(fn () => $promise->await())
+                ->toThrow(NetworkException::class)
+            ;
             expect($errorCallbackCalled)->toBeTrue();
         });
 
@@ -224,8 +227,9 @@ describe('SSEResponseFactory', function () {
 
             $promise = $factory->create($mock, null, null);
 
-            expect(fn() => $promise->await())
-                ->toThrow(NetworkException::class); // Remove specific message check
+            expect(fn () => $promise->await())
+                ->toThrow(NetworkException::class) // Remove specific message check
+            ;
         });
 
         it('handles mock failure in periodic SSE without auto_close', function () {
@@ -242,8 +246,9 @@ describe('SSEResponseFactory', function () {
 
             $promise = $factory->create($mock, null, null);
 
-            expect(fn() => $promise->await())
-                ->toThrow(NetworkException::class);
+            expect(fn () => $promise->await())
+                ->toThrow(NetworkException::class)
+            ;
         });
 
         it('allows mock failure with auto_close', function () {

@@ -52,7 +52,7 @@ class RetryHandler
             &$totalAttempts,
             &$requestId,
             &$executeRequest,
-            $cookieJar
+            $cookieJar,
         ) {
             $totalAttempts++;
 

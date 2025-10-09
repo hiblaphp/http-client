@@ -10,14 +10,16 @@ describe('RecordedRequest', function () {
 
             expect($request->method)->toBe('GET')
                 ->and($request->url)->toBe('https://example.com')
-                ->and($request->options)->toBe([]);
+                ->and($request->options)->toBe([])
+            ;
         });
 
         it('converts method to uppercase', function () {
             $request = new RecordedRequest('post', 'https://example.com', []);
 
             expect($request->method)->toBe('POST')
-                ->and($request->getMethod())->toBe('POST');
+                ->and($request->getMethod())->toBe('POST')
+            ;
         });
 
         it('exposes public properties', function () {
@@ -26,7 +28,8 @@ describe('RecordedRequest', function () {
 
             expect($request->method)->toBe('PUT')
                 ->and($request->url)->toBe('https://api.example.com')
-                ->and($request->options)->toBe($options);
+                ->and($request->options)->toBe($options)
+            ;
         });
     });
 
@@ -42,7 +45,8 @@ describe('RecordedRequest', function () {
             expect($request->hasHeader('Content-Type'))->toBeTrue()
                 ->and($request->hasHeader('Accept'))->toBeTrue()
                 ->and($request->getHeader('content-type'))->toBe('application/json')
-                ->and($request->getHeader('accept'))->toBe('application/json');
+                ->and($request->getHeader('accept'))->toBe('application/json')
+            ;
         });
 
         it('handles header names with spaces', function () {
@@ -54,7 +58,8 @@ describe('RecordedRequest', function () {
             ]);
 
             expect($request->getHeader('content-type'))->toBe('application/json')
-                ->and($request->getHeader('accept'))->toBe('text/html');
+                ->and($request->getHeader('accept'))->toBe('text/html')
+            ;
         });
 
         it('handles multiple values for the same header', function () {
@@ -72,7 +77,8 @@ describe('RecordedRequest', function () {
                 ->and($acceptHeader)->toHaveCount(3)
                 ->and($acceptHeader)->toContain('application/json')
                 ->and($acceptHeader)->toContain('text/html')
-                ->and($acceptHeader)->toContain('application/xml');
+                ->and($acceptHeader)->toContain('application/xml')
+            ;
         });
 
         it('ignores invalid header entries', function () {
@@ -87,7 +93,8 @@ describe('RecordedRequest', function () {
 
             expect($request->hasHeader('Valid-Header'))->toBeTrue()
                 ->and($request->hasHeader('InvalidHeaderNoColon'))->toBeFalse()
-                ->and($request->getHeaders())->toHaveCount(1);
+                ->and($request->getHeaders())->toHaveCount(1)
+            ;
         });
 
         it('handles headers with colons in the value', function () {
@@ -99,7 +106,8 @@ describe('RecordedRequest', function () {
             ]);
 
             expect($request->getHeader('authorization'))->toBe('Bearer token:with:colons')
-                ->and($request->getHeader('x-custom'))->toBe('key:value:pair');
+                ->and($request->getHeader('x-custom'))->toBe('key:value:pair')
+            ;
         });
     });
 
@@ -115,7 +123,8 @@ describe('RecordedRequest', function () {
             expect($request->hasHeader('Content-Type'))->toBeTrue()
                 ->and($request->hasHeader('Authorization'))->toBeTrue()
                 ->and($request->getHeader('content-type'))->toBe('application/json')
-                ->and($request->getHeader('authorization'))->toBe('Bearer token123');
+                ->and($request->getHeader('authorization'))->toBe('Bearer token123')
+            ;
         });
 
         it('normalizes fetch-style header names to lowercase', function () {
@@ -127,7 +136,8 @@ describe('RecordedRequest', function () {
             ]);
 
             expect($request->getHeader('content-type'))->toBe('text/html')
-                ->and($request->getHeader('x-custom-header'))->toBe('custom-value');
+                ->and($request->getHeader('x-custom-header'))->toBe('custom-value')
+            ;
         });
 
         it('handles headers with spaces in fetch format', function () {
@@ -139,7 +149,8 @@ describe('RecordedRequest', function () {
             ]);
 
             expect($request->getHeader('content-type'))->toBe('application/json')
-                ->and($request->getHeader('accept'))->toBe('text/html');
+                ->and($request->getHeader('accept'))->toBe('text/html')
+            ;
         });
 
         it('ignores non-scalar header values in fetch format', function () {
@@ -154,7 +165,8 @@ describe('RecordedRequest', function () {
             expect($request->hasHeader('Valid-Header'))->toBeTrue()
                 ->and($request->hasHeader('Array-Header'))->toBeFalse()
                 ->and($request->hasHeader('Object-Header'))->toBeFalse()
-                ->and($request->getHeaders())->toHaveCount(1);
+                ->and($request->getHeaders())->toHaveCount(1)
+            ;
         });
     });
 
@@ -172,7 +184,8 @@ describe('RecordedRequest', function () {
             expect($request->hasHeader('Content-Type'))->toBeTrue()
                 ->and($request->hasHeader('Authorization'))->toBeTrue()
                 ->and($request->getHeader('content-type'))->toBe('application/json')
-                ->and($request->getHeader('authorization'))->toBe('Bearer token123');
+                ->and($request->getHeader('authorization'))->toBe('Bearer token123')
+            ;
         });
 
         it('fetch format headers override cURL format for same header', function () {
@@ -198,14 +211,16 @@ describe('RecordedRequest', function () {
             expect($request->hasHeader('content-type'))->toBeTrue()
                 ->and($request->hasHeader('Content-Type'))->toBeTrue()
                 ->and($request->hasHeader('CONTENT-TYPE'))->toBeTrue()
-                ->and($request->hasHeader('CoNtEnT-tYpE'))->toBeTrue();
+                ->and($request->hasHeader('CoNtEnT-tYpE'))->toBeTrue()
+            ;
         });
 
         it('getHeader returns null for non-existent headers', function () {
             $request = new RecordedRequest('GET', 'https://example.com', []);
 
             expect($request->getHeader('Non-Existent'))->toBeNull()
-                ->and($request->hasHeader('Non-Existent'))->toBeFalse();
+                ->and($request->hasHeader('Non-Existent'))->toBeFalse()
+            ;
         });
 
         it('getHeaderLine joins array values with comma', function () {
@@ -249,7 +264,8 @@ describe('RecordedRequest', function () {
                 ->and($headers)->toHaveCount(3)
                 ->and($headers)->toHaveKey('content-type')
                 ->and($headers)->toHaveKey('authorization')
-                ->and($headers)->toHaveKey('accept');
+                ->and($headers)->toHaveKey('accept')
+            ;
         });
     });
 
@@ -260,12 +276,12 @@ describe('RecordedRequest', function () {
                 'body' => 'fetch body',
             ]);
 
-            expect($request->getBody())->toBe('curl body'); 
+            expect($request->getBody())->toBe('curl body');
         });
 
         it('uses body option when CURLOPT_POSTFIELDS is not a string', function () {
             $request = new RecordedRequest('POST', 'https://example.com', [
-                CURLOPT_POSTFIELDS => ['array' => 'data'], 
+                CURLOPT_POSTFIELDS => ['array' => 'data'],
                 'body' => 'fetch body',
             ]);
 
@@ -299,7 +315,8 @@ describe('RecordedRequest', function () {
 
             expect($request->getBody())->toBe(json_encode($data))
                 ->and($request->isJson())->toBeTrue()
-                ->and($request->getJson())->toBe($data);
+                ->and($request->getJson())->toBe($data)
+            ;
         });
 
         it('ignores non-string body option', function () {
@@ -326,7 +343,8 @@ describe('RecordedRequest', function () {
             ]);
 
             expect($request->isJson())->toBeFalse()
-                ->and($request->getJson())->toBeNull();
+                ->and($request->getJson())->toBeNull()
+            ;
         });
 
         it('does not detect non-array JSON as valid', function () {
@@ -335,7 +353,8 @@ describe('RecordedRequest', function () {
             ]);
 
             expect($request->isJson())->toBeFalse()
-                ->and($request->getJson())->toBeNull();
+                ->and($request->getJson())->toBeNull()
+            ;
         });
 
         it('parses complex nested JSON', function () {
@@ -357,7 +376,8 @@ describe('RecordedRequest', function () {
             expect($request->isJson())->toBeTrue()
                 ->and($request->getJson())->toBe($data)
                 ->and($request->getJson()['user']['name'])->toBe('John')
-                ->and($request->getJson()['items'])->toBe([1, 2, 3]);
+                ->and($request->getJson()['items'])->toBe([1, 2, 3])
+            ;
         });
 
         it('parses empty JSON object', function () {
@@ -366,7 +386,8 @@ describe('RecordedRequest', function () {
             ]);
 
             expect($request->isJson())->toBeTrue()
-                ->and($request->getJson())->toBe([]);
+                ->and($request->getJson())->toBe([])
+            ;
         });
 
         it('parses empty JSON array', function () {
@@ -375,7 +396,8 @@ describe('RecordedRequest', function () {
             ]);
 
             expect($request->isJson())->toBeTrue()
-                ->and($request->getJson())->toBe([]);
+                ->and($request->getJson())->toBe([])
+            ;
         });
     });
 
@@ -442,7 +464,8 @@ describe('RecordedRequest', function () {
                 ->and($array['url'])->toBe('https://example.com')
                 ->and($array['headers'])->toHaveCount(2)
                 ->and($array['body'])->toBe(json_encode($data))
-                ->and($array['json'])->toBe($data);
+                ->and($array['json'])->toBe($data)
+            ;
         });
 
         it('includes null values in array', function () {
@@ -452,7 +475,8 @@ describe('RecordedRequest', function () {
 
             expect($array['body'])->toBeNull()
                 ->and($array['json'])->toBeNull()
-                ->and($array['headers'])->toBe([]);
+                ->and($array['headers'])->toBe([])
+            ;
         });
 
         it('represents request with multiple header values correctly', function () {
@@ -466,7 +490,8 @@ describe('RecordedRequest', function () {
             $array = $request->toArray();
 
             expect($array['headers']['accept'])->toBeArray()
-                ->and($array['headers']['accept'])->toHaveCount(2);
+                ->and($array['headers']['accept'])->toHaveCount(2)
+            ;
         });
     });
 
@@ -477,7 +502,8 @@ describe('RecordedRequest', function () {
             expect($request->getHeaders())->toBe([])
                 ->and($request->getBody())->toBeNull()
                 ->and($request->getJson())->toBeNull()
-                ->and($request->isJson())->toBeFalse();
+                ->and($request->isJson())->toBeFalse()
+            ;
         });
 
         it('handles URL with query parameters', function () {
@@ -500,7 +526,8 @@ describe('RecordedRequest', function () {
             ]);
 
             expect($request->getBody())->toBe('')
-                ->and($request->isJson())->toBeFalse();
+                ->and($request->isJson())->toBeFalse()
+            ;
         });
 
         it('handles whitespace-only body', function () {
@@ -509,7 +536,8 @@ describe('RecordedRequest', function () {
             ]);
 
             expect($request->getBody())->toBe('   ')
-                ->and($request->isJson())->toBeFalse();
+                ->and($request->isJson())->toBeFalse()
+            ;
         });
 
         it('handles special characters in headers', function () {
@@ -529,7 +557,8 @@ describe('RecordedRequest', function () {
             ]);
 
             expect($request->isJson())->toBeTrue()
-                ->and($request->getJson())->toBe($data);
+                ->and($request->getJson())->toBe($data)
+            ;
         });
 
         it('handles numeric string in body', function () {
@@ -538,7 +567,8 @@ describe('RecordedRequest', function () {
             ]);
 
             expect($request->getBody())->toBe('12345')
-                ->and($request->isJson())->toBeFalse();
+                ->and($request->isJson())->toBeFalse()
+            ;
         });
 
         it('handles boolean values in JSON', function () {
@@ -549,7 +579,8 @@ describe('RecordedRequest', function () {
 
             expect($request->getJson())->toBe($data)
                 ->and($request->getJson()['active'])->toBeTrue()
-                ->and($request->getJson()['deleted'])->toBeFalse();
+                ->and($request->getJson()['deleted'])->toBeFalse()
+            ;
         });
 
         it('handles null values in JSON', function () {
@@ -559,7 +590,8 @@ describe('RecordedRequest', function () {
             ]);
 
             expect($request->getJson())->toBe($data)
-                ->and($request->getJson()['value'])->toBeNull();
+                ->and($request->getJson()['value'])->toBeNull()
+            ;
         });
     });
 
@@ -576,7 +608,8 @@ describe('RecordedRequest', function () {
             expect($request->getMethod())->toBe('GET')
                 ->and($request->hasHeader('Accept'))->toBeTrue()
                 ->and($request->hasHeader('Authorization'))->toBeTrue()
-                ->and($request->getBody())->toBeNull();
+                ->and($request->getBody())->toBeNull()
+            ;
         });
 
         it('handles typical POST request with JSON body', function () {
@@ -597,7 +630,8 @@ describe('RecordedRequest', function () {
             expect($request->getMethod())->toBe('POST')
                 ->and($request->isJson())->toBeTrue()
                 ->and($request->getJson())->toBe($payload)
-                ->and($request->getHeader('content-type'))->toBe('application/json');
+                ->and($request->getHeader('content-type'))->toBe('application/json')
+            ;
         });
 
         it('handles PATCH request with partial update', function () {
@@ -610,7 +644,8 @@ describe('RecordedRequest', function () {
 
             expect($request->getMethod())->toBe('PATCH')
                 ->and($request->getJson())->toHaveKey('name')
-                ->and($request->getJson()['name'])->toBe('Updated Name');
+                ->and($request->getJson()['name'])->toBe('Updated Name')
+            ;
         });
 
         it('handles DELETE request', function () {
@@ -622,7 +657,8 @@ describe('RecordedRequest', function () {
 
             expect($request->getMethod())->toBe('DELETE')
                 ->and($request->hasHeader('Authorization'))->toBeTrue()
-                ->and($request->getBody())->toBeNull();
+                ->and($request->getBody())->toBeNull()
+            ;
         });
 
         it('handles form-encoded body', function () {

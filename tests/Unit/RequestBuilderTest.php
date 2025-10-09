@@ -1,12 +1,12 @@
 <?php
 
+use Hibla\HttpClient\CacheConfig;
+use Hibla\HttpClient\CookieJar;
 use Hibla\HttpClient\Handlers\HttpHandler;
+use Hibla\HttpClient\ProxyConfig;
 use Hibla\HttpClient\Request;
 use Hibla\HttpClient\Response;
 use Hibla\HttpClient\RetryConfig;
-use Hibla\HttpClient\CacheConfig;
-use Hibla\HttpClient\ProxyConfig;
-use Hibla\HttpClient\CookieJar;
 
 $baseHandler = new HttpHandler();
 
@@ -111,7 +111,8 @@ describe('Request Builder: Body', function () use ($baseHandler) {
     it('sets multipart data and removes Content-Type header', function () use ($baseHandler) {
         $request = (new Request($baseHandler))
             ->contentType('should-be-removed')
-            ->withMultipart(['field' => 'value']);
+            ->withMultipart(['field' => 'value'])
+        ;
 
         $options = getPrivateProperty($request, 'options');
         expect($request->hasHeader('Content-Type'))->toBeFalse();
@@ -139,21 +140,24 @@ describe('Request Builder: Advanced Features', function () use ($baseHandler) {
         $request = (new Request($baseHandler))->withProxy('proxy.host', 8080);
         $proxyConfig = getPrivateProperty($request, 'proxyConfig');
         expect($proxyConfig)->toBeInstanceOf(ProxyConfig::class)
-            ->and($proxyConfig->type)->toBe('http');
+            ->and($proxyConfig->type)->toBe('http')
+        ;
     });
 
     it('configures a SOCKS4 proxy', function () use ($baseHandler) {
         $request = (new Request($baseHandler))->withSocks4Proxy('proxy.host', 1080);
         $proxyConfig = getPrivateProperty($request, 'proxyConfig');
         expect($proxyConfig)->toBeInstanceOf(ProxyConfig::class)
-            ->and($proxyConfig->type)->toBe('socks4');
+            ->and($proxyConfig->type)->toBe('socks4')
+        ;
     });
 
     it('configures a SOCKS5 proxy', function () use ($baseHandler) {
         $request = (new Request($baseHandler))->withSocks5Proxy('proxy.host', 1080);
         $proxyConfig = getPrivateProperty($request, 'proxyConfig');
         expect($proxyConfig)->toBeInstanceOf(ProxyConfig::class)
-            ->and($proxyConfig->type)->toBe('socks5');
+            ->and($proxyConfig->type)->toBe('socks5')
+        ;
     });
 
     it('configures a custom cookie jar', function () use ($baseHandler) {
@@ -163,8 +167,8 @@ describe('Request Builder: Advanced Features', function () use ($baseHandler) {
     });
 
     it('configures interceptors', function () use ($baseHandler) {
-        $reqInt = fn(Request $r) => $r;
-        $resInt = fn(Response $r) => $r;
+        $reqInt = fn (Request $r) => $r;
+        $resInt = fn (Response $r) => $r;
         $request = (new Request($baseHandler))->interceptRequest($reqInt)->interceptResponse($resInt);
 
         expect(getPrivateProperty($request, 'requestInterceptors'))->toContain($reqInt);

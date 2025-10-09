@@ -38,7 +38,7 @@ describe('Body', function () {
     it('is immutable when changing the body', function () {
         $stream1 = new Stream(fopen('php://memory', 'r+'));
         $stream2 = new Stream(fopen('php://memory', 'r+'));
-        
+
         $message1 = new ConcreteMessage();
         $message1 = $message1->withBody($stream1);
         $message2 = $message1->withBody($stream2);
@@ -59,7 +59,7 @@ describe('Headers', function () {
         $message = new ConcreteMessage(['X-Foo' => 'Bar', 'Accept' => ['application/json', 'text/plain']]);
         $expected = [
             'X-Foo' => ['Bar'],
-            'Accept' => ['application/json', 'text/plain']
+            'Accept' => ['application/json', 'text/plain'],
         ];
         expect($message->getHeaders())->toBe($expected);
     });
@@ -89,7 +89,7 @@ describe('Headers', function () {
         expect($message1->getHeaderLine('X-Foo'))->toBe('Bar');
         expect($message2->getHeaderLine('X-Foo'))->toBe('Baz');
     });
-    
+
     it('withAddedHeader is immutable and appends to existing headers', function () {
         $message1 = new ConcreteMessage(['X-Foo' => 'Bar']);
         $message2 = $message1->withAddedHeader('x-foo', 'Baz');
@@ -120,7 +120,7 @@ describe('Headers', function () {
     it('preserves header name casing', function () {
         $message = new ConcreteMessage(['X-CUSTOM-HeAdEr' => 'Value']);
         $headers = $message->getHeaders();
-        
+
         expect(array_key_exists('X-CUSTOM-HeAdEr', $headers))->toBeTrue();
     });
 });

@@ -57,11 +57,11 @@ describe('UploadedFile Construction and Getters', function () use (&$tempFile, $
 
     it('handles upload errors in the constructor', function () {
         $file = new UploadedFile(null, 0, UPLOAD_ERR_NO_FILE);
-        
+
         expect($file->getError())->toBe(UPLOAD_ERR_NO_FILE);
         expect($file->getErrorMessage())->toContain('No file was uploaded');
-        
-        expect(fn() => $file->getStream())->toThrow(HttpStreamException::class);
+
+        expect(fn () => $file->getStream())->toThrow(HttpStreamException::class);
     });
 });
 
@@ -69,11 +69,11 @@ describe('moveTo Operation', function () use (&$tempFile, &$targetDir, $tempFile
     it('moves a file from a path to a target destination', function () use (&$tempFile, &$targetDir, $tempFileContent) {
         $file = new UploadedFile($tempFile, null, UPLOAD_ERR_OK);
         $targetPath = $targetDir . '/moved.txt';
-        
+
         $file->moveTo($targetPath);
 
-        expect(file_exists($tempFile))->toBeFalse(); 
-        expect(file_exists($targetPath))->toBeTrue(); 
+        expect(file_exists($tempFile))->toBeFalse();
+        expect(file_exists($targetPath))->toBeTrue();
         expect(file_get_contents($targetPath))->toBe($tempFileContent);
     });
 
@@ -81,7 +81,7 @@ describe('moveTo Operation', function () use (&$tempFile, &$targetDir, $tempFile
         $stream = Stream::fromString($tempFileContent);
         $file = new UploadedFile($stream);
         $targetPath = $targetDir . '/streamed.txt';
-        
+
         $file->moveTo($targetPath);
 
         expect(file_exists($targetPath))->toBeTrue();
@@ -93,8 +93,9 @@ describe('moveTo Operation', function () use (&$tempFile, &$targetDir, $tempFile
         $targetPath = $targetDir . '/first-move.txt';
         $file->moveTo($targetPath);
 
-        expect(fn() => $file->moveTo($targetDir . '/second-move.txt'))
-            ->toThrow(HttpStreamException::class, 'File has already been moved');
+        expect(fn () => $file->moveTo($targetDir . '/second-move.txt'))
+            ->toThrow(HttpStreamException::class, 'File has already been moved')
+        ;
     });
 
     it('throws an exception if trying to get stream after move', function () use (&$tempFile, &$targetDir) {
@@ -102,8 +103,9 @@ describe('moveTo Operation', function () use (&$tempFile, &$targetDir, $tempFile
         $targetPath = $targetDir . '/moved.txt';
         $file->moveTo($targetPath);
 
-        expect(fn() => $file->getStream())
-            ->toThrow(HttpStreamException::class, 'Cannot retrieve stream after it has been moved');
+        expect(fn () => $file->getStream())
+            ->toThrow(HttpStreamException::class, 'Cannot retrieve stream after it has been moved')
+        ;
     });
 
     it('throws an exception if target directory is not writable', function () use (&$tempFile) {
@@ -111,7 +113,8 @@ describe('moveTo Operation', function () use (&$tempFile, &$targetDir, $tempFile
         $targetPath = $targetDir . '/file.txt';
         $file = new UploadedFile($tempFile);
 
-        expect(fn() => $file->moveTo($targetPath))
-            ->toThrow(HttpStreamException::class, 'Target directory is not writable');
+        expect(fn () => $file->moveTo($targetPath))
+            ->toThrow(HttpStreamException::class, 'Target directory is not writable')
+        ;
     });
 });

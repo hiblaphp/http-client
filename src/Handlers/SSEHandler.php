@@ -242,7 +242,6 @@ class SSEHandler
                     return strlen($header);
                 }
 
-                // Ensure $ch is a CurlHandle to satisfy phpstan
                 if (! ($ch instanceof \CurlHandle)) {
                     return strlen($header);
                 }

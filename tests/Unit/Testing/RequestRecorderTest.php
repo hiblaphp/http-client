@@ -1,7 +1,7 @@
 <?php
 
-use Hibla\HttpClient\Testing\Utilities\RequestRecorder;
 use Hibla\HttpClient\Testing\Utilities\RecordedRequest;
+use Hibla\HttpClient\Testing\Utilities\RequestRecorder;
 
 describe('RequestRecorder', function () {
 
@@ -15,7 +15,8 @@ describe('RequestRecorder', function () {
             expect($history)->toHaveCount(1)
                 ->and($history[0])->toBeInstanceOf(RecordedRequest::class)
                 ->and($history[0]->method)->toBe('GET')
-                ->and($history[0]->url)->toBe('https://api.example.com/users');
+                ->and($history[0]->url)->toBe('https://api.example.com/users')
+            ;
         });
 
         it('records multiple requests in order', function () {
@@ -32,7 +33,8 @@ describe('RequestRecorder', function () {
                 ->and($history[1]->method)->toBe('POST')
                 ->and($history[1]->url)->toBe('https://api.example.com/posts')
                 ->and($history[2]->method)->toBe('PUT')
-                ->and($history[2]->url)->toBe('https://api.example.com/comments');
+                ->and($history[2]->url)->toBe('https://api.example.com/comments')
+            ;
         });
 
         it('records request options', function () {
@@ -48,7 +50,8 @@ describe('RequestRecorder', function () {
 
             expect($history[0]->options)->toBe($options)
                 ->and($history[0]->options['headers'])->toBe(['Authorization' => 'Bearer token'])
-                ->and($history[0]->options['json'])->toBe(['name' => 'John Doe']);
+                ->and($history[0]->options['json'])->toBe(['name' => 'John Doe'])
+            ;
         });
 
         it('records requests with empty options', function () {
@@ -109,7 +112,8 @@ describe('RequestRecorder', function () {
             $history = $recorder->getRequestHistory();
 
             expect($history)->toBeArray()
-                ->and($history)->toBeEmpty();
+                ->and($history)->toBeEmpty()
+            ;
         });
 
         it('maintains request history across multiple recordings', function () {
@@ -136,7 +140,7 @@ describe('RequestRecorder', function () {
 
             expect($history)->toHaveCount(10);
             foreach ($history as $index => $request) {
-                expect($request->url)->toBe("https://api.example.com/resource/" . ($index + 1));
+                expect($request->url)->toBe('https://api.example.com/resource/' . ($index + 1));
             }
         });
     });
@@ -165,27 +169,29 @@ describe('RequestRecorder', function () {
             $recorder = new RequestRecorder();
             $recorder->setRecordRequests(false);
             $recorder->recordRequest('GET', 'https://api.example.com/ignored', []);
-            
+
             $recorder->setRecordRequests(true);
             $recorder->recordRequest('POST', 'https://api.example.com/recorded', []);
 
             $history = $recorder->getRequestHistory();
 
             expect($history)->toHaveCount(1)
-                ->and($history[0]->url)->toBe('https://api.example.com/recorded');
+                ->and($history[0]->url)->toBe('https://api.example.com/recorded')
+            ;
         });
 
         it('can disable recording after enabling', function () {
             $recorder = new RequestRecorder();
             $recorder->recordRequest('GET', 'https://api.example.com/recorded', []);
-            
+
             $recorder->setRecordRequests(false);
             $recorder->recordRequest('POST', 'https://api.example.com/ignored', []);
 
             $history = $recorder->getRequestHistory();
 
             expect($history)->toHaveCount(1)
-                ->and($history[0]->url)->toBe('https://api.example.com/recorded');
+                ->and($history[0]->url)->toBe('https://api.example.com/recorded')
+            ;
         });
 
         it('toggles recording multiple times', function () {
@@ -203,7 +209,8 @@ describe('RequestRecorder', function () {
 
             expect($history)->toHaveCount(2)
                 ->and($history[0]->url)->toBe('https://api.example.com/1')
-                ->and($history[1]->url)->toBe('https://api.example.com/3');
+                ->and($history[1]->url)->toBe('https://api.example.com/3')
+            ;
         });
     });
 
@@ -230,7 +237,8 @@ describe('RequestRecorder', function () {
             $history = $recorder->getRequestHistory();
 
             expect($history)->toHaveCount(1)
-                ->and($history[0]->url)->toBe('https://api.example.com/new');
+                ->and($history[0]->url)->toBe('https://api.example.com/new')
+            ;
         });
 
         it('can be called multiple times', function () {
@@ -285,7 +293,8 @@ describe('RequestRecorder', function () {
 
             expect($lastRequest)->toBeInstanceOf(RecordedRequest::class)
                 ->and($lastRequest->method)->toBe('GET')
-                ->and($lastRequest->url)->toBe('https://api.example.com/users');
+                ->and($lastRequest->url)->toBe('https://api.example.com/users')
+            ;
         });
 
         it('returns the most recent request when multiple recorded', function () {
@@ -298,7 +307,8 @@ describe('RequestRecorder', function () {
 
             expect($lastRequest)->toBeInstanceOf(RecordedRequest::class)
                 ->and($lastRequest->method)->toBe('PUT')
-                ->and($lastRequest->url)->toBe('https://api.example.com/last');
+                ->and($lastRequest->url)->toBe('https://api.example.com/last')
+            ;
         });
 
         it('updates after new request is recorded', function () {
@@ -338,7 +348,8 @@ describe('RequestRecorder', function () {
 
             expect($firstRequest)->toBeInstanceOf(RecordedRequest::class)
                 ->and($firstRequest->method)->toBe('GET')
-                ->and($firstRequest->url)->toBe('https://api.example.com/users');
+                ->and($firstRequest->url)->toBe('https://api.example.com/users')
+            ;
         });
 
         it('returns the first request when multiple recorded', function () {
@@ -351,7 +362,8 @@ describe('RequestRecorder', function () {
 
             expect($firstRequest)->toBeInstanceOf(RecordedRequest::class)
                 ->and($firstRequest->method)->toBe('GET')
-                ->and($firstRequest->url)->toBe('https://api.example.com/first');
+                ->and($firstRequest->url)->toBe('https://api.example.com/first')
+            ;
         });
 
         it('remains unchanged when new requests are recorded', function () {
@@ -410,7 +422,8 @@ describe('RequestRecorder', function () {
 
             expect($request)->toBeInstanceOf(RecordedRequest::class)
                 ->and($request->method)->toBe('GET')
-                ->and($request->url)->toBe('https://api.example.com/first');
+                ->and($request->url)->toBe('https://api.example.com/first')
+            ;
         });
 
         it('returns request at specific index', function () {
@@ -423,7 +436,8 @@ describe('RequestRecorder', function () {
 
             expect($request)->toBeInstanceOf(RecordedRequest::class)
                 ->and($request->method)->toBe('POST')
-                ->and($request->url)->toBe('https://api.example.com/1');
+                ->and($request->url)->toBe('https://api.example.com/1')
+            ;
         });
 
         it('returns different requests for different indices', function () {
@@ -434,7 +448,8 @@ describe('RequestRecorder', function () {
 
             expect($recorder->getRequest(0)->url)->toBe('https://api.example.com/first')
                 ->and($recorder->getRequest(1)->url)->toBe('https://api.example.com/second')
-                ->and($recorder->getRequest(2)->url)->toBe('https://api.example.com/third');
+                ->and($recorder->getRequest(2)->url)->toBe('https://api.example.com/third')
+            ;
         });
 
         it('returns last request using count-1 as index', function () {
@@ -446,7 +461,8 @@ describe('RequestRecorder', function () {
             $request = $recorder->getRequest(2);
 
             expect($request)->toBeInstanceOf(RecordedRequest::class)
-                ->and($request->url)->toBe('https://api.example.com/last');
+                ->and($request->url)->toBe('https://api.example.com/last')
+            ;
         });
     });
 
@@ -462,7 +478,8 @@ describe('RequestRecorder', function () {
 
             expect($history)->toHaveCount(1000)
                 ->and($recorder->getFirstRequest()->url)->toBe('https://api.example.com/resource/0')
-                ->and($recorder->getLastRequest()->url)->toBe('https://api.example.com/resource/999');
+                ->and($recorder->getLastRequest()->url)->toBe('https://api.example.com/resource/999')
+            ;
         });
 
         it('handles empty strings in method and URL', function () {
@@ -472,7 +489,8 @@ describe('RequestRecorder', function () {
             $history = $recorder->getRequestHistory();
 
             expect($history[0]->method)->toBe('')
-                ->and($history[0]->url)->toBe('');
+                ->and($history[0]->url)->toBe('')
+            ;
         });
 
         it('handles special characters in URLs', function () {
@@ -528,7 +546,8 @@ describe('RequestRecorder', function () {
 
             expect($history[0]->options[0])->toBe('numeric key')
                 ->and($history[0]->options['string'])->toBe('string key')
-                ->and($history[0]->options[1])->toBe('another numeric');
+                ->and($history[0]->options[1])->toBe('another numeric')
+            ;
         });
     });
 
@@ -558,20 +577,21 @@ describe('RequestRecorder', function () {
 
             expect($history)->toHaveCount(4)
                 ->and($recorder->getFirstRequest()->url)->toBe('https://api.example.com/login')
-                ->and($recorder->getLastRequest()->url)->toBe('https://api.example.com/logout');
+                ->and($recorder->getLastRequest()->url)->toBe('https://api.example.com/logout')
+            ;
         });
 
         it('can pause recording during sensitive operations', function () {
             $recorder = new RequestRecorder();
 
             $recorder->recordRequest('GET', 'https://api.example.com/public', []);
-            
+
             // Pause recording for sensitive request
             $recorder->setRecordRequests(false);
             $recorder->recordRequest('POST', 'https://api.example.com/sensitive', [
                 'password' => 'secret',
             ]);
-            
+
             // Resume recording
             $recorder->setRecordRequests(true);
             $recorder->recordRequest('GET', 'https://api.example.com/public2', []);
@@ -580,7 +600,8 @@ describe('RequestRecorder', function () {
 
             expect($history)->toHaveCount(2)
                 ->and($history[0]->url)->toBe('https://api.example.com/public')
-                ->and($history[1]->url)->toBe('https://api.example.com/public2');
+                ->and($history[1]->url)->toBe('https://api.example.com/public2')
+            ;
         });
 
         it('can reset between test scenarios', function () {

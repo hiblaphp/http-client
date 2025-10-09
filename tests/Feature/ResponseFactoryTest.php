@@ -4,6 +4,7 @@ use Hibla\HttpClient\CacheConfig;
 use Hibla\HttpClient\Exceptions\HttpException;
 use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Response;
+use Hibla\HttpClient\RetryConfig;
 use Hibla\HttpClient\StreamingResponse;
 use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Testing\Utilities\CacheManager;
@@ -15,7 +16,6 @@ use Hibla\HttpClient\Testing\Utilities\Handlers\CacheHandler;
 use Hibla\HttpClient\Testing\Utilities\Handlers\DelayCalculator;
 use Hibla\HttpClient\Testing\Utilities\Handlers\NetworkSimulationHandler;
 use Hibla\HttpClient\Testing\Utilities\NetworkSimulator;
-use Hibla\HttpClient\RetryConfig;
 use Psr\Http\Message\StreamInterface;
 
 beforeEach(function () {
@@ -45,7 +45,8 @@ describe('StandardResponseFactory', function () {
         expect($response)->toBeInstanceOf(Response::class)
             ->and($response->body())->toBe('test body')
             ->and($response->status())->toBe(200)
-            ->and($response->headers())->toBe(['content-type' => 'application/json']);
+            ->and($response->headers())->toBe(['content-type' => 'application/json'])
+        ;
     });
 
     test('handles mock failure', function () {
@@ -60,8 +61,9 @@ describe('StandardResponseFactory', function () {
 
         $promise = $factory->create($mock);
 
-        expect(fn() => $promise->await())
-            ->toThrow(NetworkException::class, 'Custom error message');
+        expect(fn () => $promise->await())
+            ->toThrow(NetworkException::class, 'Custom error message')
+        ;
     });
 
     test('handles network failure', function () {
@@ -74,8 +76,9 @@ describe('StandardResponseFactory', function () {
 
         $promise = $factory->create($mock);
 
-        expect(fn() => $promise->await())
-            ->toThrow(NetworkException::class);
+        expect(fn () => $promise->await())
+            ->toThrow(NetworkException::class)
+        ;
     });
 
     test('handles network simulation failure', function () {
@@ -88,8 +91,9 @@ describe('StandardResponseFactory', function () {
 
         $promise = $factory->create($mock);
 
-        expect(fn() => $promise->await())
-            ->toThrow(NetworkException::class);
+        expect(fn () => $promise->await())
+            ->toThrow(NetworkException::class)
+        ;
     });
 
     test('can be cancelled', function () {
@@ -125,7 +129,8 @@ describe('StandardResponseFactory', function () {
         $duration = microtime(true) - $startTime;
 
         expect($response->body())->toBe('delayed response')
-            ->and($duration)->toBeGreaterThan(0.04);
+            ->and($duration)->toBeGreaterThan(0.04)
+        ;
     });
 
     test('applies network delay', function () {
@@ -147,7 +152,8 @@ describe('StandardResponseFactory', function () {
         $duration = microtime(true) - $startTime;
 
         expect($response->body())->toBe('response')
-            ->and($duration)->toBeGreaterThan(0.04);
+            ->and($duration)->toBeGreaterThan(0.04)
+        ;
     });
 });
 
@@ -177,7 +183,8 @@ describe('DownloadResponseFactory', function () {
             ->and($result['size'])->toBe(12)
             ->and($result['protocol_version'])->toBe('2.0')
             ->and(file_exists($destination))->toBeTrue()
-            ->and(file_get_contents($destination))->toBe('file content');
+            ->and(file_get_contents($destination))->toBe('file content')
+        ;
 
         $fileManager->cleanup();
         cleanupTempDir($tempDir);
@@ -203,7 +210,8 @@ describe('DownloadResponseFactory', function () {
         $promise->await();
 
         expect(is_dir($tempDir . '/nested/dir'))->toBeTrue()
-            ->and(file_exists($destination))->toBeTrue();
+            ->and(file_exists($destination))->toBeTrue()
+        ;
 
         $fileManager->cleanup();
         cleanupTempDir($tempDir);
@@ -223,8 +231,9 @@ describe('DownloadResponseFactory', function () {
         $destination = $tempDir . '/test.txt';
         $promise = $factory->create($mock, $destination, $fileManager);
 
-        expect(fn() => $promise->await())
-            ->toThrow(NetworkException::class);
+        expect(fn () => $promise->await())
+            ->toThrow(NetworkException::class)
+        ;
 
         $fileManager->cleanup();
         cleanupTempDir($tempDir);
@@ -246,8 +255,9 @@ describe('DownloadResponseFactory', function () {
         $destination = $tempDir . '/test.txt';
         $promise = $factory->create($mock, $destination, $fileManager);
 
-        expect(fn() => $promise->await())
-            ->toThrow(NetworkException::class, 'Download failed');
+        expect(fn () => $promise->await())
+            ->toThrow(NetworkException::class, 'Download failed')
+        ;
 
         $fileManager->cleanup();
         cleanupTempDir($tempDir);
@@ -299,7 +309,8 @@ describe('DownloadResponseFactory', function () {
         $fileManager->cleanup();
 
         expect(file_exists($destination))->toBeFalse()
-            ->and(is_dir($tempDir . '/tracked'))->toBeFalse();
+            ->and(is_dir($tempDir . '/tracked'))->toBeFalse()
+        ;
 
         cleanupTempDir($tempDir);
     });
@@ -320,14 +331,15 @@ describe('StreamingResponseFactory', function () {
         $mock->shouldReceive('getBodySequence')->andReturn([]);
 
         $stream = Mockery::mock(StreamInterface::class);
-        $createStream = fn($body) => $stream;
+        $createStream = fn ($body) => $stream;
 
         $promise = $factory->create($mock, null, $createStream);
         $response = $promise->await();
 
         expect($response)->toBeInstanceOf(StreamingResponse::class)
             ->and($response->status())->toBe(200)
-            ->and($response->headers())->toBe(['content-type' => 'text/event-stream']);
+            ->and($response->headers())->toBe(['content-type' => 'text/event-stream'])
+        ;
     });
 
     test('processes chunks with callback', function () {
@@ -349,7 +361,7 @@ describe('StreamingResponseFactory', function () {
         $mock->shouldReceive('getBodySequence')->andReturn(['chunk1', 'chunk2', 'chunk3']);
 
         $stream = Mockery::mock(StreamInterface::class);
-        $createStream = fn($body) => $stream;
+        $createStream = fn ($body) => $stream;
 
         $promise = $factory->create($mock, $onChunk, $createStream);
         $promise->await();
@@ -376,7 +388,7 @@ describe('StreamingResponseFactory', function () {
         $mock->shouldReceive('getBodySequence')->andReturn([]);
 
         $stream = Mockery::mock(StreamInterface::class);
-        $createStream = fn($body) => $stream;
+        $createStream = fn ($body) => $stream;
 
         $promise = $factory->create($mock, $onChunk, $createStream);
         $promise->await();
@@ -393,12 +405,13 @@ describe('StreamingResponseFactory', function () {
         $mock->shouldReceive('getDelay')->andReturn(0.0);
 
         $stream = Mockery::mock(StreamInterface::class);
-        $createStream = fn($body) => $stream;
+        $createStream = fn ($body) => $stream;
 
         $promise = $factory->create($mock, null, $createStream);
 
-        expect(fn() => $promise->await())
-            ->toThrow(HttpException::class);
+        expect(fn () => $promise->await())
+            ->toThrow(HttpException::class)
+        ;
     });
 
     test('handles mock failure', function () {
@@ -412,12 +425,13 @@ describe('StreamingResponseFactory', function () {
         $mock->shouldReceive('getError')->andReturn('Stream error');
 
         $stream = Mockery::mock(StreamInterface::class);
-        $createStream = fn($body) => $stream;
+        $createStream = fn ($body) => $stream;
 
         $promise = $factory->create($mock, null, $createStream);
 
-        expect(fn() => $promise->await())
-            ->toThrow(HttpException::class, 'Stream error');
+        expect(fn () => $promise->await())
+            ->toThrow(HttpException::class, 'Stream error')
+        ;
     });
 
     test('can be cancelled', function () {
@@ -430,7 +444,7 @@ describe('StreamingResponseFactory', function () {
         $mock->shouldReceive('getDelay')->andReturn(0.0);
 
         $stream = Mockery::mock(StreamInterface::class);
-        $createStream = fn($body) => $stream;
+        $createStream = fn ($body) => $stream;
 
         $promise = $factory->create($mock, null, $createStream);
         $promise->cancel();
@@ -452,7 +466,7 @@ describe('StreamingResponseFactory', function () {
         $mock->shouldReceive('getBodySequence')->andReturn([]);
 
         $stream = Mockery::mock(StreamInterface::class);
-        $createStream = fn($body) => $stream;
+        $createStream = fn ($body) => $stream;
 
         $promise = $factory->create($mock, null, $createStream);
         $response = $promise->await();
@@ -475,14 +489,15 @@ describe('RetryableResponseFactory', function () {
         $mock->shouldReceive('getHeaders')->andReturn([]);
 
         $retryConfig = new RetryConfig(maxRetries: 3);
-        $mockProvider = fn($attempt) => $mock;
+        $mockProvider = fn ($attempt) => $mock;
 
         $promise = $factory->create($retryConfig, $mockProvider);
         $response = $promise->await();
 
         expect($response)->toBeInstanceOf(Response::class)
             ->and($response->body())->toBe('success')
-            ->and($response->status())->toBe(200);
+            ->and($response->status())->toBe(200)
+        ;
     });
 
     test('retries on network failure and succeeds', function () {
@@ -527,7 +542,8 @@ describe('RetryableResponseFactory', function () {
         $response = $promise->await();
 
         expect($response)->toBeInstanceOf(Response::class)
-            ->and($attemptCount)->toBe(3);
+            ->and($attemptCount)->toBe(3)
+        ;
     });
 
     test('retries on retryable status code', function () {
@@ -559,7 +575,8 @@ describe('RetryableResponseFactory', function () {
         $response = $promise->await();
 
         expect($response->status())->toBe(200)
-            ->and($attemptCount)->toBe(3);
+            ->and($attemptCount)->toBe(3)
+        ;
     });
 
     test('retries on mock retryable failure', function () {
@@ -595,7 +612,8 @@ describe('RetryableResponseFactory', function () {
         $response = $promise->await();
 
         expect($response->status())->toBe(200)
-            ->and($attemptCount)->toBe(3);
+            ->and($attemptCount)->toBe(3)
+        ;
     });
 
     test('fails after max retries', function () {
@@ -621,8 +639,9 @@ describe('RetryableResponseFactory', function () {
 
         $promise = $factory->create($retryConfig, $mockProvider);
 
-        expect(fn() => $promise->await())
-            ->toThrow(NetworkException::class, 'HTTP Request failed after 4 attempt(s)');
+        expect(fn () => $promise->await())
+            ->toThrow(NetworkException::class, 'HTTP Request failed after 4 attempt(s)')
+        ;
     });
 
     test('does not retry non-retryable errors', function () {
@@ -647,8 +666,9 @@ describe('RetryableResponseFactory', function () {
 
         $promise = $factory->create($retryConfig, $mockProvider);
 
-        expect(fn() => $promise->await())
-            ->toThrow(NetworkException::class, 'HTTP Request failed after 1 attempt(s): Fatal error');
+        expect(fn () => $promise->await())
+            ->toThrow(NetworkException::class, 'HTTP Request failed after 1 attempt(s): Fatal error')
+        ;
     });
 
     test('does not retry non-retryable status codes', function () {
@@ -672,8 +692,9 @@ describe('RetryableResponseFactory', function () {
 
         $promise = $factory->create($retryConfig, $mockProvider);
 
-        expect(fn() => $promise->await())
-            ->toThrow(NetworkException::class, 'HTTP Request failed after 1 attempt(s): Mock responded with status 404');
+        expect(fn () => $promise->await())
+            ->toThrow(NetworkException::class, 'HTTP Request failed after 1 attempt(s): Mock responded with status 404')
+        ;
     });
 
     test('can be cancelled during retry', function () {
@@ -740,7 +761,8 @@ describe('RetryableResponseFactory', function () {
         // Total delay should be: 0.02 + 0.04 + 0.08 = 0.14
         expect($response->status())->toBe(200)
             ->and($duration)->toBeGreaterThan(0.13)
-            ->and($attemptCount)->toBe(4);
+            ->and($attemptCount)->toBe(4)
+        ;
     });
 
     test('handles mock provider exception', function () {
@@ -749,12 +771,13 @@ describe('RetryableResponseFactory', function () {
         $factory = new RetryableResponseFactory($networkHandler);
 
         $retryConfig = new RetryConfig(maxRetries: 3);
-        $mockProvider = fn($attempt) => throw new Exception('Provider error');
+        $mockProvider = fn ($attempt) => throw new Exception('Provider error');
 
         $promise = $factory->create($retryConfig, $mockProvider);
 
-        expect(fn() => $promise->await())
-            ->toThrow(Exception::class, 'Mock provider error: Provider error');
+        expect(fn () => $promise->await())
+            ->toThrow(Exception::class, 'Mock provider error: Provider error')
+        ;
     });
 
     test('handles mock provider returning invalid type', function () {
@@ -763,12 +786,13 @@ describe('RetryableResponseFactory', function () {
         $factory = new RetryableResponseFactory($networkHandler);
 
         $retryConfig = new RetryConfig(maxRetries: 3);
-        $mockProvider = fn($attempt) => 'not a mock';
+        $mockProvider = fn ($attempt) => 'not a mock';
 
         $promise = $factory->create($retryConfig, $mockProvider);
 
-        expect(fn() => $promise->await())
-            ->toThrow(Exception::class, 'Mock provider must return a MockedRequest instance');
+        expect(fn () => $promise->await())
+            ->toThrow(Exception::class, 'Mock provider must return a MockedRequest instance')
+        ;
     });
 
     test('retries with retryable network failure', function () {
@@ -793,9 +817,10 @@ describe('RetryableResponseFactory', function () {
 
         $promise = $factory->create($retryConfig, $mockProvider);
 
-        expect(fn() => $promise->await())
+        expect(fn () => $promise->await())
             ->toThrow(NetworkException::class)
-            ->and($attemptCount)->toBeGreaterThan(1);
+            ->and($attemptCount)->toBeGreaterThan(1)
+        ;
     });
 });
 
@@ -881,7 +906,8 @@ describe('RetryConfig', function () {
             ->and($config->backoffMultiplier)->toBe(2.0)
             ->and($config->jitter)->toBeTrue()
             ->and($config->retryableStatusCodes)->toBe([408, 429, 500, 502, 503, 504])
-            ->and($config->retryableExceptions)->toContain('timeout');
+            ->and($config->retryableExceptions)->toContain('timeout')
+        ;
     });
 
     test('creates with custom values', function () {
@@ -901,14 +927,16 @@ describe('RetryConfig', function () {
             ->and($config->backoffMultiplier)->toBe(3.0)
             ->and($config->jitter)->toBeFalse()
             ->and($config->retryableStatusCodes)->toBe([500, 503])
-            ->and($config->retryableExceptions)->toBe(['custom error']);
+            ->and($config->retryableExceptions)->toBe(['custom error'])
+        ;
     });
 
     test('shouldRetry returns false when max retries exceeded', function () {
         $config = new RetryConfig(maxRetries: 3);
 
         expect($config->shouldRetry(4))->toBeFalse()
-            ->and($config->shouldRetry(5))->toBeFalse();
+            ->and($config->shouldRetry(5))->toBeFalse()
+        ;
     });
 
     test('shouldRetry returns true for retryable status codes', function () {
@@ -916,7 +944,8 @@ describe('RetryConfig', function () {
 
         expect($config->shouldRetry(1, 503))->toBeTrue()
             ->and($config->shouldRetry(1, 429))->toBeTrue()
-            ->and($config->shouldRetry(1, 404))->toBeFalse();
+            ->and($config->shouldRetry(1, 404))->toBeFalse()
+        ;
     });
 
     test('shouldRetry returns true for retryable errors', function () {
@@ -924,7 +953,8 @@ describe('RetryConfig', function () {
 
         expect($config->shouldRetry(1, null, 'Connection timeout occurred'))->toBeTrue()
             ->and($config->shouldRetry(1, null, 'The connection failed unexpectedly'))->toBeTrue()
-            ->and($config->shouldRetry(1, null, 'Not found'))->toBeFalse();
+            ->and($config->shouldRetry(1, null, 'Not found'))->toBeFalse()
+        ;
     });
 
     test('shouldRetry is case insensitive for errors', function () {
@@ -932,7 +962,8 @@ describe('RetryConfig', function () {
 
         expect($config->shouldRetry(1, null, 'TIMEOUT ERROR'))->toBeTrue()
             ->and($config->shouldRetry(1, null, 'Timeout'))->toBeTrue()
-            ->and($config->shouldRetry(1, null, 'timeout'))->toBeTrue();
+            ->and($config->shouldRetry(1, null, 'timeout'))->toBeTrue()
+        ;
     });
 
     test('isRetryableError checks for substring match', function () {
@@ -940,7 +971,8 @@ describe('RetryConfig', function () {
 
         expect($config->isRetryableError('Connection timeout'))->toBeTrue()
             ->and($config->isRetryableError('Request timed out'))->toBeFalse()
-            ->and($config->isRetryableError('timeout'))->toBeTrue();
+            ->and($config->isRetryableError('timeout'))->toBeTrue()
+        ;
     });
 
     test('getDelay calculates exponential backoff', function () {
@@ -953,7 +985,8 @@ describe('RetryConfig', function () {
         expect($config->getDelay(1))->toBe(1.0)
             ->and($config->getDelay(2))->toBe(2.0)
             ->and($config->getDelay(3))->toBe(4.0)
-            ->and($config->getDelay(4))->toBe(8.0);
+            ->and($config->getDelay(4))->toBe(8.0)
+        ;
     });
 
     test('getDelay respects max delay', function () {
@@ -968,7 +1001,8 @@ describe('RetryConfig', function () {
             ->and($config->getDelay(2))->toBe(2.0)
             ->and($config->getDelay(3))->toBe(4.0)
             ->and($config->getDelay(4))->toBe(5.0)
-            ->and($config->getDelay(5))->toBe(5.0);
+            ->and($config->getDelay(5))->toBe(5.0)
+        ;
     });
 
     test('getDelay applies jitter', function () {
@@ -988,7 +1022,8 @@ describe('RetryConfig', function () {
 
         foreach ($delays as $delay) {
             expect($delay)->toBeGreaterThanOrEqual(1.5)
-                ->and($delay)->toBeLessThanOrEqual(2.5);
+                ->and($delay)->toBeLessThanOrEqual(2.5)
+            ;
         }
     });
 
@@ -1012,7 +1047,8 @@ describe('RetryConfig', function () {
 
         expect($config->getDelay(1))->toBe(1.0)
             ->and($config->getDelay(2))->toBe(3.0)
-            ->and($config->getDelay(3))->toBe(9.0);
+            ->and($config->getDelay(3))->toBe(9.0)
+        ;
     });
 
     test('retryableExceptions contains expected default errors', function () {
@@ -1021,7 +1057,8 @@ describe('RetryConfig', function () {
         expect($config->retryableExceptions)->toContain('timeout')
             ->and($config->retryableExceptions)->toContain('cURL error')
             ->and($config->retryableExceptions)->toContain('connection failed')
-            ->and($config->retryableExceptions)->toContain('Could not resolve host');
+            ->and($config->retryableExceptions)->toContain('Could not resolve host')
+        ;
     });
 
     test('shouldRetry prioritizes status code check', function () {
@@ -1032,7 +1069,8 @@ describe('RetryConfig', function () {
 
         // Should retry even without error message
         expect($config->shouldRetry(1, 503))->toBeTrue()
-            ->and($config->shouldRetry(1, 503, null))->toBeTrue();
+            ->and($config->shouldRetry(1, 503, null))->toBeTrue()
+        ;
     });
 
     test('shouldRetry with both status code and error', function () {
@@ -1044,7 +1082,8 @@ describe('RetryConfig', function () {
 
         expect($config->shouldRetry(1, 503, 'Some error'))->toBeTrue()
             ->and($config->shouldRetry(1, 404, 'timeout'))->toBeTrue()
-            ->and($config->shouldRetry(1, 404, 'not found'))->toBeFalse();
+            ->and($config->shouldRetry(1, 404, 'not found'))->toBeFalse()
+        ;
     });
 });
 
@@ -1056,7 +1095,8 @@ describe('NetworkSimulator', function () {
         expect($result['should_fail'])->toBeFalse()
             ->and($result['should_timeout'])->toBeFalse()
             ->and($result['error_message'])->toBeNull()
-            ->and($result['delay'])->toBe(0.0);
+            ->and($result['delay'])->toBe(0.0)
+        ;
     });
 
     test('simulates network failure', function () {
@@ -1066,7 +1106,8 @@ describe('NetworkSimulator', function () {
         $result = $simulator->simulate();
 
         expect($result['should_fail'])->toBeTrue()
-            ->and($result['error_message'])->toBe('Simulated network failure');
+            ->and($result['error_message'])->toBe('Simulated network failure')
+        ;
     });
 
     test('simulates timeout', function () {
@@ -1076,7 +1117,8 @@ describe('NetworkSimulator', function () {
         $result = $simulator->simulate();
 
         expect($result['should_timeout'])->toBeTrue()
-            ->and($result['error_message'])->toContain('timed out');
+            ->and($result['error_message'])->toContain('timed out')
+        ;
     });
 
     test('simulates retryable failure', function () {
@@ -1086,7 +1128,8 @@ describe('NetworkSimulator', function () {
         $result = $simulator->simulate();
 
         expect($result['should_fail'])->toBeTrue()
-            ->and($result['error_message'])->not->toBeNull();
+            ->and($result['error_message'])->not->toBeNull()
+        ;
     });
 
     test('simulates connection failure', function () {
@@ -1096,7 +1139,8 @@ describe('NetworkSimulator', function () {
         $result = $simulator->simulate();
 
         expect($result['should_fail'])->toBeTrue()
-            ->and($result['error_message'])->toContain('Connection refused');
+            ->and($result['error_message'])->toContain('Connection refused')
+        ;
     });
 
     test('applies default delay', function () {
@@ -1116,7 +1160,8 @@ describe('NetworkSimulator', function () {
         $result = $simulator->simulate();
 
         expect($result['delay'])->toBeGreaterThanOrEqual(0.1)
-            ->and($result['delay'])->toBeLessThanOrEqual(0.3);
+            ->and($result['delay'])->toBeLessThanOrEqual(0.3)
+        ;
     });
 
     test('getDefaultDelay returns configured delay', function () {
@@ -1163,7 +1208,8 @@ describe('NetworkSimulationHandler', function () {
 
         expect($result)->toHaveKey('should_fail')
             ->and($result)->toHaveKey('delay')
-            ->and($result['should_fail'])->toBeTrue();
+            ->and($result['should_fail'])->toBeTrue()
+        ;
     });
 
     test('handles successful simulation', function () {
@@ -1173,7 +1219,8 @@ describe('NetworkSimulationHandler', function () {
         $result = $handler->simulate();
 
         expect($result['should_fail'])->toBeFalse()
-            ->and($result['delay'])->toBe(0.0);
+            ->and($result['delay'])->toBe(0.0)
+        ;
     });
 
     test('generateGlobalRandomDelay returns zero without handler', function () {
@@ -1187,7 +1234,7 @@ describe('NetworkSimulationHandler', function () {
         $networkSimulator = new NetworkSimulator();
         $networkSimulator->enable([
             'failure_rate' => 1.0,
-            'default_delay' => 0.0
+            'default_delay' => 0.0,
         ]);
 
         $handler = new NetworkSimulationHandler($networkSimulator);
@@ -1196,14 +1243,15 @@ describe('NetworkSimulationHandler', function () {
         expect($result)->toHaveKey('should_fail')
             ->and($result['should_fail'])->toBeTrue()
             ->and($result)->toHaveKey('error_message')
-            ->and($result['error_message'])->toBe('Simulated network failure');
+            ->and($result['error_message'])->toBe('Simulated network failure')
+        ;
     });
 
     test('preserves error message for retryable failure', function () {
         $networkSimulator = new NetworkSimulator();
         $networkSimulator->enable([
             'retryable_failure_rate' => 1.0,
-            'default_delay' => 0.0
+            'default_delay' => 0.0,
         ]);
 
         $handler = new NetworkSimulationHandler($networkSimulator);
@@ -1212,14 +1260,15 @@ describe('NetworkSimulationHandler', function () {
         expect($result)->toHaveKey('should_fail')
             ->and($result['should_fail'])->toBeTrue()
             ->and($result)->toHaveKey('error_message')
-            ->and($result['error_message'])->toContain('network simulation');
+            ->and($result['error_message'])->toContain('network simulation')
+        ;
     });
 
     test('preserves error message for connection failure', function () {
         $networkSimulator = new NetworkSimulator();
         $networkSimulator->enable([
             'connection_failure_rate' => 1.0,
-            'default_delay' => 0.0
+            'default_delay' => 0.0,
         ]);
 
         $handler = new NetworkSimulationHandler($networkSimulator);
@@ -1228,7 +1277,8 @@ describe('NetworkSimulationHandler', function () {
         expect($result)->toHaveKey('should_fail')
             ->and($result['should_fail'])->toBeTrue()
             ->and($result)->toHaveKey('error_message')
-            ->and($result['error_message'])->toContain('Connection refused');
+            ->and($result['error_message'])->toContain('Connection refused')
+        ;
     });
 });
 
@@ -1276,7 +1326,8 @@ describe('CacheHandler', function () {
         $cachedResponse = $handler->getCachedResponse('http://example.com', $cacheConfig);
 
         expect($cachedResponse)->toBeInstanceOf(Response::class)
-            ->and($cachedResponse->body())->toBe('cached content');
+            ->and($cachedResponse->body())->toBe('cached content')
+        ;
     });
 
     test('cacheIfNeeded caches successful GET responses', function () {
@@ -1289,7 +1340,8 @@ describe('CacheHandler', function () {
 
         $cached = $cacheManager->getCachedResponse('http://example.com', $cacheConfig);
         expect($cached)->not->toBeNull()
-            ->and($cached->body())->toBe('new content');
+            ->and($cached->body())->toBe('new content')
+        ;
     });
 
     test('cacheIfNeeded does not cache POST requests', function () {
@@ -1303,7 +1355,6 @@ describe('CacheHandler', function () {
         $cached = $cacheManager->getCachedResponse('http://example.com', $cacheConfig);
         expect($cached)->toBeNull();
     });
-
 
     test('cacheIfNeeded does not cache failed responses', function () {
         $cacheManager = createCacheManager();

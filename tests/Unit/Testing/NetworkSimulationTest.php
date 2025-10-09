@@ -12,7 +12,8 @@ describe('NetworkSimulator', function () {
             expect($result['should_timeout'])->toBeFalse()
                 ->and($result['should_fail'])->toBeFalse()
                 ->and($result['error_message'])->toBeNull()
-                ->and($result['delay'])->toBe(0.0);
+                ->and($result['delay'])->toBe(0.0)
+            ;
         });
 
         it('can be enabled', function () {
@@ -24,7 +25,8 @@ describe('NetworkSimulator', function () {
                 ->and($result)->toHaveKey('should_timeout')
                 ->and($result)->toHaveKey('should_fail')
                 ->and($result)->toHaveKey('error_message')
-                ->and($result)->toHaveKey('delay');
+                ->and($result)->toHaveKey('delay')
+            ;
         });
 
         it('can be disabled after being enabled', function () {
@@ -52,7 +54,8 @@ describe('NetworkSimulator', function () {
 
             expect($result['should_timeout'])->toBeTrue()
                 ->and($result['error_message'])->toContain('Connection timed out')
-                ->and($result['error_message'])->toContain('simulated network timeout');
+                ->and($result['error_message'])->toContain('simulated network timeout')
+            ;
         });
 
         it('never times out when timeout_rate is 0.0', function () {
@@ -74,7 +77,8 @@ describe('NetworkSimulator', function () {
             $result = $simulator->simulate();
 
             expect($result['delay'])->toBe(45.0)
-                ->and($result['error_message'])->toContain('45.0s');
+                ->and($result['error_message'])->toContain('45.0s')
+            ;
         });
 
         it('supports random timeout delay range', function () {
@@ -86,7 +90,8 @@ describe('NetworkSimulator', function () {
             $result = $simulator->simulate();
 
             expect($result['delay'])->toBeGreaterThanOrEqual(30.0)
-                ->and($result['delay'])->toBeLessThanOrEqual(60.0);
+                ->and($result['delay'])->toBeLessThanOrEqual(60.0)
+            ;
         });
 
         it('timeout takes precedence over other failures', function () {
@@ -99,7 +104,8 @@ describe('NetworkSimulator', function () {
             $result = $simulator->simulate();
 
             expect($result['should_timeout'])->toBeTrue()
-                ->and($result['error_message'])->toContain('timed out');
+                ->and($result['error_message'])->toContain('timed out')
+            ;
         });
     });
 
@@ -113,7 +119,8 @@ describe('NetworkSimulator', function () {
             $result = $simulator->simulate();
 
             expect($result['should_fail'])->toBeTrue()
-                ->and($result['error_message'])->toContain('network simulation');
+                ->and($result['error_message'])->toContain('network simulation')
+            ;
         });
 
         it('returns various retryable error messages', function () {
@@ -173,7 +180,8 @@ describe('NetworkSimulator', function () {
 
             expect($result['should_fail'])->toBeTrue()
                 ->and($result['error_message'])->not->toBe('Simulated network failure')
-                ->and($result['error_message'])->not->toBe('Connection refused (network simulation)');
+                ->and($result['error_message'])->not->toBe('Connection refused (network simulation)')
+            ;
         });
     });
 
@@ -188,7 +196,8 @@ describe('NetworkSimulator', function () {
             $result = $simulator->simulate();
 
             expect($result['should_fail'])->toBeTrue()
-                ->and($result['error_message'])->toBe('Simulated network failure');
+                ->and($result['error_message'])->toBe('Simulated network failure')
+            ;
         });
 
         it('never fails when failure_rate is 0.0', function () {
@@ -227,7 +236,8 @@ describe('NetworkSimulator', function () {
             $result = $simulator->simulate();
 
             expect($result['should_fail'])->toBeTrue()
-                ->and($result['error_message'])->toBe('Connection refused (network simulation)');
+                ->and($result['error_message'])->toBe('Connection refused (network simulation)')
+            ;
         });
 
         it('never fails connection when connection_failure_rate is 0.0', function () {
@@ -239,6 +249,7 @@ describe('NetworkSimulator', function () {
                 $result = $simulator->simulate();
                 if ($result['should_fail'] && str_contains($result['error_message'], 'Connection refused')) {
                     $hasConnectionRefusedError = true;
+
                     break;
                 }
             }
@@ -278,7 +289,8 @@ describe('NetworkSimulator', function () {
             $result = $simulator->simulate();
 
             expect($result['delay'])->toBeGreaterThanOrEqual(1.0)
-                ->and($result['delay'])->toBeLessThanOrEqual(5.0);
+                ->and($result['delay'])->toBeLessThanOrEqual(5.0)
+            ;
         });
 
         it('generates different random delays in range', function () {
@@ -328,7 +340,8 @@ describe('NetworkSimulator', function () {
             $result = $simulator->simulate();
 
             expect($result['delay'])->toBeGreaterThanOrEqual(5.0)
-                ->and($result['delay'])->toBeLessThanOrEqual(10.0);
+                ->and($result['delay'])->toBeLessThanOrEqual(10.0)
+            ;
         });
     });
 
@@ -340,7 +353,8 @@ describe('NetworkSimulator', function () {
             $result = $simulator->simulate();
 
             expect($result['delay'])->toBeGreaterThanOrEqual(2.0)
-                ->and($result['delay'])->toBeLessThanOrEqual(8.0);
+                ->and($result['delay'])->toBeLessThanOrEqual(8.0)
+            ;
         });
 
         it('setRandomDelay overrides default_delay', function () {
@@ -350,7 +364,8 @@ describe('NetworkSimulator', function () {
             $result = $simulator->simulate();
 
             expect($result['delay'])->not->toBe(1.0)
-                ->and($result['delay'])->toBeGreaterThanOrEqual(5.0);
+                ->and($result['delay'])->toBeGreaterThanOrEqual(5.0)
+            ;
         });
     });
 
@@ -368,7 +383,8 @@ describe('NetworkSimulator', function () {
             $delay = $simulator->getDefaultDelay();
 
             expect($delay)->toBeGreaterThanOrEqual(1.0)
-                ->and($delay)->toBeLessThanOrEqual(5.0);
+                ->and($delay)->toBeLessThanOrEqual(5.0)
+            ;
         });
 
         it('getDefaultDelay respects random_delay priority', function () {
@@ -380,7 +396,8 @@ describe('NetworkSimulator', function () {
             $delay = $simulator->getDefaultDelay();
 
             expect($delay)->toBeGreaterThanOrEqual(5.0)
-                ->and($delay)->toBeLessThanOrEqual(10.0);
+                ->and($delay)->toBeLessThanOrEqual(10.0)
+            ;
         });
 
         it('getTimeoutDelay returns the timeout delay', function () {
@@ -396,7 +413,8 @@ describe('NetworkSimulator', function () {
             $delay = $simulator->getTimeoutDelay();
 
             expect($delay)->toBeGreaterThanOrEqual(30.0)
-                ->and($delay)->toBeLessThanOrEqual(60.0);
+                ->and($delay)->toBeLessThanOrEqual(60.0)
+            ;
         });
 
         it('getTimeoutDelay returns default 30.0 when not configured', function () {
@@ -429,7 +447,8 @@ describe('NetworkSimulator', function () {
 
             // Allow for statistical variance (30-70% range for 50% rate)
             expect($failures)->toBeGreaterThan(30)
-                ->and($failures)->toBeLessThan(70);
+                ->and($failures)->toBeLessThan(70)
+            ;
         });
 
         it('respects approximate timeout rate', function () {
@@ -450,7 +469,8 @@ describe('NetworkSimulator', function () {
 
             // Allow for statistical variance (15-45% range for 30% rate)
             expect($timeouts)->toBeGreaterThan(15)
-                ->and($timeouts)->toBeLessThan(45);
+                ->and($timeouts)->toBeLessThan(45)
+            ;
         });
     });
 
@@ -468,7 +488,8 @@ describe('NetworkSimulator', function () {
                 $result = $simulator->simulate();
                 expect($result['should_timeout'])->toBeFalse()
                     ->and($result['should_fail'])->toBeFalse()
-                    ->and($result['error_message'])->toBeNull();
+                    ->and($result['error_message'])->toBeNull()
+                ;
             }
         });
 
@@ -486,7 +507,8 @@ describe('NetworkSimulator', function () {
             $result = $simulator->simulate();
 
             expect($result['delay'])->toBeGreaterThanOrEqual(0.001)
-                ->and($result['delay'])->toBeLessThanOrEqual(0.002);
+                ->and($result['delay'])->toBeLessThanOrEqual(0.002)
+            ;
         });
 
         it('handles very large delay values', function () {
@@ -504,7 +526,8 @@ describe('NetworkSimulator', function () {
 
             // Should still work, generating value between 5.0 and 10.0
             expect($result['delay'])->toBeGreaterThanOrEqual(5.0)
-                ->and($result['delay'])->toBeLessThanOrEqual(10.0);
+                ->and($result['delay'])->toBeLessThanOrEqual(10.0)
+            ;
         });
 
         it('handles array with non-numeric values', function () {
@@ -569,7 +592,8 @@ describe('NetworkSimulator', function () {
 
             expect($timeouts)->toBeGreaterThan(0)
                 ->and($failures)->toBeGreaterThan(0)
-                ->and($successes)->toBeGreaterThan(0);
+                ->and($successes)->toBeGreaterThan(0)
+            ;
         });
 
         it('simulates high latency network', function () {
@@ -587,7 +611,8 @@ describe('NetworkSimulator', function () {
 
             foreach ($delays as $delay) {
                 expect($delay)->toBeGreaterThanOrEqual(2.0)
-                    ->and($delay)->toBeLessThanOrEqual(5.0);
+                    ->and($delay)->toBeLessThanOrEqual(5.0)
+                ;
             }
         });
 
@@ -603,7 +628,8 @@ describe('NetworkSimulator', function () {
                 $result = $simulator->simulate();
                 expect($result['should_timeout'])->toBeFalse()
                     ->and($result['should_fail'])->toBeFalse()
-                    ->and($result['delay'])->toBe(3.0);
+                    ->and($result['delay'])->toBe(3.0)
+                ;
             }
         });
 
@@ -629,7 +655,8 @@ describe('NetworkSimulator', function () {
             }
 
             expect($failures)->toBeGreaterThan(5)
-                ->and($fastResponses)->toBeGreaterThan(40);
+                ->and($fastResponses)->toBeGreaterThan(40)
+            ;
         });
     });
 

@@ -5,7 +5,6 @@ use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
 use Hibla\HttpClient\SSE\SSEResponse;
 use Hibla\HttpClient\Testing\Exceptions\MockException;
-use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Testing\Utilities\Factories\SSE\RetryableSSEResponseFactory;
 use Hibla\HttpClient\Testing\Utilities\NetworkSimulator;
 
@@ -21,6 +20,7 @@ function createRetryableSSEResponseFactory(?NetworkSimulator $simulator = null):
 {
     $simulator ??= new NetworkSimulator();
     $handler = createNetworkHandler($simulator);
+
     return new RetryableSSEResponseFactory($handler);
 }
 
@@ -46,6 +46,7 @@ describe('RetryableSSEResponseFactory', function () {
                 ['data' => 'message1', 'event' => 'test'],
             ]);
             $mock->setStatusCode(200);
+
             return $mock;
         };
 
@@ -69,7 +70,7 @@ describe('RetryableSSEResponseFactory', function () {
         $mockProvider = function (int $attempt) use (&$attemptCount) {
             $attemptCount++;
             $mock = createMockRequest();
-            
+
             if ($attempt < 3) {
                 $mock->setError('Temporary failure');
                 $mock->setRetryable(true);
@@ -77,7 +78,7 @@ describe('RetryableSSEResponseFactory', function () {
                 $mock->setSSEEvents([['data' => 'success']]);
                 $mock->setStatusCode(200);
             }
-            
+
             return $mock;
         };
 
@@ -104,13 +105,15 @@ describe('RetryableSSEResponseFactory', function () {
             $mock = createMockRequest();
             $mock->setError('Persistent failure');
             $mock->setRetryable(true);
+
             return $mock;
         };
 
         $promise = $factory->create($reconnectConfig, $mockProvider, null, null);
 
-        expect(fn() => $promise->await())
-            ->toThrow(NetworkException::class);
+        expect(fn () => $promise->await())
+            ->toThrow(NetworkException::class)
+        ;
         // It makes maxAttempts + 1 attempts (initial + retries)
         expect($attemptCount)->toBe(3); // Changed from 2 to 3
     });
@@ -125,13 +128,15 @@ describe('RetryableSSEResponseFactory', function () {
             $mock = createMockRequest();
             $mock->setError('Fatal error');
             $mock->setRetryable(false);
+
             return $mock;
         };
 
         $promise = $factory->create($reconnectConfig, $mockProvider, null, null);
 
-        expect(fn() => $promise->await())
-            ->toThrow(NetworkException::class);
+        expect(fn () => $promise->await())
+            ->toThrow(NetworkException::class)
+        ;
         expect($attemptCount)->toBe(1); // Only one attempt
     });
 
@@ -146,13 +151,15 @@ describe('RetryableSSEResponseFactory', function () {
             $mock = createMockRequest();
             $mock->setSSEEvents([['data' => 'test']]);
             $mock->setStatusCode(200);
+
             return $mock;
         };
 
         $promise = $factory->create($reconnectConfig, $mockProvider, null, null);
 
-        expect(fn() => $promise->await())
-            ->toThrow(NetworkException::class);
+        expect(fn () => $promise->await())
+            ->toThrow(NetworkException::class)
+        ;
         // Network failures also happen on initial attempt, but the mock provider is not called
         // because the network simulator fails before the mock is evaluated
         expect($attemptCount)->toBeGreaterThanOrEqual(1); // Changed from toBe(3)
@@ -166,6 +173,7 @@ describe('RetryableSSEResponseFactory', function () {
             $mock = createMockRequest();
             $mock->setError('Test error');
             $mock->setRetryable(true);
+
             return $mock;
         };
 
@@ -176,8 +184,9 @@ describe('RetryableSSEResponseFactory', function () {
 
         $promise = $factory->create($reconnectConfig, $mockProvider, null, $onError);
 
-        expect(fn() => $promise->await())
-            ->toThrow(NetworkException::class);
+        expect(fn () => $promise->await())
+            ->toThrow(NetworkException::class)
+        ;
         // Error is called for each attempt (initial + retries)
         expect($errorMessages)->toHaveCount(3); // Changed from 2 to 3
     });
@@ -188,7 +197,7 @@ describe('RetryableSSEResponseFactory', function () {
 
         $mockProvider = function (int $attempt) {
             $mock = createMockRequest();
-            
+
             if ($attempt < 2) {
                 $mock->setError('Retry error');
                 $mock->setRetryable(true);
@@ -196,7 +205,7 @@ describe('RetryableSSEResponseFactory', function () {
                 $mock->setSSEEvents([['data' => 'success']]);
                 $mock->setStatusCode(200);
             }
-            
+
             return $mock;
         };
 
@@ -229,8 +238,9 @@ describe('RetryableSSEResponseFactory', function () {
 
         $promise = $factory->create($reconnectConfig, $mockProvider, null, null);
 
-        expect(fn() => $promise->await())
-            ->toThrow(MockException::class);
+        expect(fn () => $promise->await())
+            ->toThrow(MockException::class)
+        ;
     });
 
     it('throws MockException when provider throws', function () {
@@ -238,13 +248,14 @@ describe('RetryableSSEResponseFactory', function () {
         $reconnectConfig = createReconnectConfig();
 
         $mockProvider = function (int $attempt) {
-            throw new \RuntimeException('Provider error');
+            throw new RuntimeException('Provider error');
         };
 
         $promise = $factory->create($reconnectConfig, $mockProvider, null, null);
 
-        expect(fn() => $promise->await())
-            ->toThrow(MockException::class, 'Mock provider error');
+        expect(fn () => $promise->await())
+            ->toThrow(MockException::class, 'Mock provider error')
+        ;
     });
 
     it('works with periodic SSE stream', function () {
@@ -262,6 +273,7 @@ describe('RetryableSSEResponseFactory', function () {
                 'interval' => 0.05,
             ]);
             $mock->setStatusCode(200);
+
             return $mock;
         };
 
@@ -285,6 +297,7 @@ describe('RetryableSSEResponseFactory', function () {
             $mock = createMockRequest();
             $mock->setSSEEvents([['data' => 'test']]);
             $mock->setStatusCode(200);
+
             return $mock;
         };
 

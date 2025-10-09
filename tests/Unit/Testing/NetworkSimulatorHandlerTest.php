@@ -1,11 +1,11 @@
 <?php
 
+use Hibla\HttpClient\Testing\TestingHttpHandler;
 use Hibla\HttpClient\Testing\Utilities\Handlers\NetworkSimulationHandler;
 use Hibla\HttpClient\Testing\Utilities\NetworkSimulator;
-use Hibla\HttpClient\Testing\TestingHttpHandler;
 
 describe('NetworkSimulationHandler', function () {
-    
+
     describe('simulate', function () {
         it('returns should_fail false and delay 0 when no failure', function () {
             $simulator = Mockery::mock(NetworkSimulator::class);
@@ -21,7 +21,8 @@ describe('NetworkSimulationHandler', function () {
 
             expect($result['should_fail'])->toBeFalse()
                 ->and($result['delay'])->toBe(0.0)
-                ->and($result)->not->toHaveKey('error_message');
+                ->and($result)->not->toHaveKey('error_message')
+            ;
         });
 
         it('returns should_fail true with error message on failure', function () {
@@ -38,7 +39,8 @@ describe('NetworkSimulationHandler', function () {
 
             expect($result['should_fail'])->toBeTrue()
                 ->and($result['delay'])->toBe(2.5)
-                ->and($result['error_message'])->toBe('Network error');
+                ->and($result['error_message'])->toBe('Network error')
+            ;
         });
 
         it('includes delay from simulator', function () {

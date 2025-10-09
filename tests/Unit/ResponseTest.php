@@ -46,8 +46,8 @@ describe('Immutability', function () {
 
     it('withStatus throws an exception for invalid status codes', function () {
         $response = new Response();
-        expect(fn() => $response->withStatus(99))->toThrow(InvalidArgumentException::class);
-        expect(fn() => $response->withStatus(600))->toThrow(InvalidArgumentException::class);
+        expect(fn () => $response->withStatus(99))->toThrow(InvalidArgumentException::class);
+        expect(fn () => $response->withStatus(600))->toThrow(InvalidArgumentException::class);
     });
 });
 
@@ -71,7 +71,7 @@ describe('Body Helpers', function () {
 describe('Header Helpers', function () {
     $response = new Response('', 200, [
         'Content-Type' => 'application/json',
-        'X-Request-ID' => 'abc-123'
+        'X-Request-ID' => 'abc-123',
     ]);
 
     it('headers() returns a lowercase-keyed map of headers', function () use ($response) {
@@ -102,7 +102,7 @@ describe('Status Helpers', function () {
         expect($response->ok())->toBeTrue();
         expect($response->successful())->toBeTrue();
     })->with('ok_statuses');
-    
+
     it('ok() and successful() are false for non-2xx statuses', function ($status) {
         $response = new Response('', $status);
         expect($response->ok())->toBeFalse();
@@ -118,7 +118,7 @@ describe('Status Helpers', function () {
         $response = new Response('', $status);
         expect($response->clientError())->toBeFalse();
     })->with('ok_statuses', 'server_error_statuses', 'other_statuses');
-    
+
     it('serverError() is true for 5xx statuses', function ($status) {
         $response = new Response('', $status);
         expect($response->serverError())->toBeTrue();
@@ -138,13 +138,13 @@ describe('Cookie Helpers', function () {
         expect($cookies[0])->toBeInstanceOf(Cookie::class);
         expect($cookies[0]->getName())->toBe('user');
     });
-    
+
     it('getCookies() parses multiple Set-Cookie headers', function () {
         $response = new Response('', 200, [
             'Set-Cookie' => [
                 'user=john; path=/',
-                'session=abc; path=/; secure'
-            ]
+                'session=abc; path=/; secure',
+            ],
         ]);
         $cookies = $response->getCookies();
         expect($cookies)->toHaveCount(2);
@@ -153,18 +153,18 @@ describe('Cookie Helpers', function () {
 
     it('applyCookiesToJar() calls setCookie on the jar for each cookie', function () {
         $cookieJarMock = Mockery::mock(CookieJarInterface::class);
-        
+
         $cookieJarMock->shouldReceive('setCookie')->twice()->with(Mockery::type(Cookie::class));
-        
+
         $response = new Response('', 200, [
             'Set-Cookie' => [
                 'user=john; path=/',
-                'session=abc; path=/; secure'
-            ]
+                'session=abc; path=/; secure',
+            ],
         ]);
-        
+
         $response->applyCookiesToJar($cookieJarMock);
-        
-        expect(true)->toBeTrue(); 
+
+        expect(true)->toBeTrue();
     });
 });

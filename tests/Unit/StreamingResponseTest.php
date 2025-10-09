@@ -9,7 +9,8 @@ describe('StreamingResponse', function () {
         $response = new StreamingResponse($stream, 200, ['Content-Type' => 'text/plain']);
 
         expect($response->getStatusCode())->toBe(200)
-            ->and($response->getHeaderLine('Content-Type'))->toBe('text/plain');
+            ->and($response->getHeaderLine('Content-Type'))->toBe('text/plain')
+        ;
     });
 
     it('gets response body as string', function () {
@@ -28,7 +29,8 @@ describe('StreamingResponse', function () {
         $second = $response->body();
 
         expect($first)->toBe($second)
-            ->and($first)->toBe('test content');
+            ->and($first)->toBe('test content')
+        ;
     });
 
     it('parses JSON response', function () {
@@ -62,7 +64,8 @@ describe('StreamingResponse', function () {
         $result = $response->saveToFile($tempFile);
 
         expect($result)->toBeTrue()
-            ->and(file_get_contents($tempFile))->toBe($content);
+            ->and(file_get_contents($tempFile))->toBe($content)
+        ;
 
         unlink($tempFile);
     });
@@ -92,7 +95,8 @@ describe('StreamingResponse', function () {
         $result = $response->saveToFile($tempFile);
 
         expect($result)->toBeTrue()
-            ->and(file_get_contents($tempFile))->toBe($content);
+            ->and(file_get_contents($tempFile))->toBe($content)
+        ;
 
         unlink($tempFile);
     });
@@ -106,7 +110,8 @@ describe('StreamingResponse', function () {
         $result = $response->streamTo($tempFile);
 
         expect($result)->toBeTrue()
-            ->and(file_get_contents($tempFile))->toBe($content);
+            ->and(file_get_contents($tempFile))->toBe($content)
+        ;
 
         unlink($tempFile);
     });
@@ -121,7 +126,8 @@ describe('StreamingResponse', function () {
         rewind($destination);
 
         expect($result)->toBeTrue()
-            ->and(stream_get_contents($destination))->toBe($content);
+            ->and(stream_get_contents($destination))->toBe($content)
+        ;
 
         fclose($destination);
     });
@@ -132,7 +138,8 @@ describe('StreamingResponse', function () {
 
         expect($response->streamTo(123))->toBeFalse()
             ->and($response->streamTo(['array']))->toBeFalse()
-            ->and($response->streamTo(null))->toBeFalse();
+            ->and($response->streamTo(null))->toBeFalse()
+        ;
     });
 
     it('handles empty stream', function () {
@@ -140,7 +147,8 @@ describe('StreamingResponse', function () {
         $response = new StreamingResponse($stream, 200);
 
         expect($response->body())->toBe('')
-            ->and($response->json())->toBe([]);
+            ->and($response->json())->toBe([])
+        ;
     });
 
     it('gets underlying stream interface', function () {
@@ -148,7 +156,8 @@ describe('StreamingResponse', function () {
         $response = new StreamingResponse($stream, 200);
 
         expect($response->getStream())->toBe($stream)
-            ->and($response->getStream())->toBeInstanceOf(\Psr\Http\Message\StreamInterface::class);
+            ->and($response->getStream())->toBeInstanceOf(Psr\Http\Message\StreamInterface::class)
+        ;
     });
 
     it('rewinds seekable stream before saving to file', function () {

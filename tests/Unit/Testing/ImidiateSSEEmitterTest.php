@@ -29,7 +29,8 @@ it('emits SSE events immediately', function () {
         ->and($receivedEvents[0]->data)->toBe('Hello')
         ->and($receivedEvents[0]->event)->toBe('message')
         ->and($receivedEvents[1]->data)->toBe('World')
-        ->and($receivedEvents[1]->event)->toBe('update');
+        ->and($receivedEvents[1]->event)->toBe('update')
+    ;
 });
 
 it('resolves promise with SSEResponse', function () {
@@ -136,7 +137,8 @@ it('creates stream with formatted SSE content', function () {
     $resolvedResponse = $promise->await();
 
     expect($resolvedResponse)->toBeInstanceOf(SSEResponse::class)
-        ->and($resolvedResponse->getStream())->not->toBeNull();
+        ->and($resolvedResponse->getStream())->not->toBeNull()
+    ;
 });
 
 it('handles multiple event updates correctly', function () {
@@ -158,7 +160,8 @@ it('handles multiple event updates correctly', function () {
     $emitter->emit($promise, $mock, null, $lastEventId, $retryInterval);
 
     expect($lastEventId)->toBe('4')
-        ->and($retryInterval)->toBe(2000);
+        ->and($retryInterval)->toBe(2000)
+    ;
 });
 
 it('passes correct status code and headers to SSEResponse', function () {
@@ -177,7 +180,8 @@ it('passes correct status code and headers to SSEResponse', function () {
     expect($resolvedResponse)->toBeInstanceOf(SSEResponse::class)
         ->and($resolvedResponse->getStatusCode())->toBe(201)
         ->and($resolvedResponse->getHeader('Content-Type'))->toBe(['text/event-stream'])
-        ->and($resolvedResponse->getHeader('X-Custom'))->toBe(['value']);
+        ->and($resolvedResponse->getHeader('X-Custom'))->toBe(['value'])
+    ;
 });
 
 it('handles events with only data field', function () {
@@ -204,7 +208,8 @@ it('handles events with only data field', function () {
         ->and($receivedEvents[0]->data)->toBe('Simple event')
         ->and($receivedEvents[0]->event)->toBeNull()
         ->and($receivedEvents[0]->id)->toBeNull()
-        ->and($receivedEvents[0]->retry)->toBeNull();
+        ->and($receivedEvents[0]->retry)->toBeNull()
+    ;
 });
 
 it('preserves lastEventId when subsequent events have no id', function () {

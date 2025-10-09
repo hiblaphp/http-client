@@ -1,10 +1,10 @@
 <?php
 
-use Hibla\HttpClient\Testing\Utilities\Handlers\DelayCalculator;
 use Hibla\HttpClient\Testing\MockedRequest;
+use Hibla\HttpClient\Testing\Utilities\Handlers\DelayCalculator;
 
 describe('DelayCalculator', function () {
-    
+
     it('returns mock delay when it is the highest', function () {
         $calculator = new DelayCalculator();
         $mock = Mockery::mock(MockedRequest::class);

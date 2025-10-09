@@ -80,19 +80,16 @@ class FetchRequestExecutor
         $retryConfig = $this->extractRetryConfig($options);
         $cacheConfig = $this->extractCacheConfig($options);
 
-        // Handle SSE requests
         if ($this->validator->isSSERequested($options)) {
             /** @var CancellablePromiseInterface<mixed> */
             return $this->handleSSERequest($url, $options, $method, $curlOnlyOptions, $mockedRequests);
         }
 
-        // Try cache
         if ($this->cacheHandler->tryServeFromCache($url, $method, $cacheConfig)) {
             /** @var PromiseInterface<mixed> */
             return Promise::resolved($this->cacheHandler->getCachedResponse($url, $cacheConfig));
         }
 
-        // Handle retry
         if ($retryConfig !== null) {
             /** @var PromiseInterface<mixed>|CancellablePromiseInterface<mixed> */
             return $this->retryExecutor->executeWithMockRetry(
@@ -106,7 +103,6 @@ class FetchRequestExecutor
             );
         }
 
-        // Standard execution
         return $this->executeStandard(
             $url,
             $options,

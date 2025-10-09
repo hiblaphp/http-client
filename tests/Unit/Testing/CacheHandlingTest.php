@@ -1,12 +1,12 @@
 <?php
 
-use Hibla\HttpClient\Testing\Utilities\Handlers\CacheHandler;
-use Hibla\HttpClient\Testing\Utilities\CacheManager;
 use Hibla\HttpClient\CacheConfig;
 use Hibla\HttpClient\Response;
+use Hibla\HttpClient\Testing\Utilities\CacheManager;
+use Hibla\HttpClient\Testing\Utilities\Handlers\CacheHandler;
 
 describe('CacheHandler', function () {
-    
+
     describe('tryServeFromCache', function () {
         it('returns false when cache config is null', function () {
             $cacheManager = Mockery::mock(CacheManager::class);
@@ -27,9 +27,9 @@ describe('CacheHandler', function () {
             $cacheManager = Mockery::mock(CacheManager::class);
             $cacheConfig = Mockery::mock(CacheConfig::class);
             $response = Mockery::mock(Response::class);
-            
+
             $cacheManager->shouldReceive('getCachedResponse')->andReturn($response);
-            
+
             $handler = new CacheHandler($cacheManager);
 
             expect($handler->tryServeFromCache('https://example.com', 'GET', $cacheConfig))->toBeTrue();
@@ -38,9 +38,9 @@ describe('CacheHandler', function () {
         it('returns false when no cached response exists', function () {
             $cacheManager = Mockery::mock(CacheManager::class);
             $cacheConfig = Mockery::mock(CacheConfig::class);
-            
+
             $cacheManager->shouldReceive('getCachedResponse')->andReturn(null);
-            
+
             $handler = new CacheHandler($cacheManager);
 
             expect($handler->tryServeFromCache('https://example.com', 'GET', $cacheConfig))->toBeFalse();
@@ -59,9 +59,9 @@ describe('CacheHandler', function () {
             $cacheManager = Mockery::mock(CacheManager::class);
             $cacheConfig = Mockery::mock(CacheConfig::class);
             $response = Mockery::mock(Response::class);
-            
+
             $cacheManager->shouldReceive('getCachedResponse')->andReturn($response);
-            
+
             $handler = new CacheHandler($cacheManager);
 
             expect($handler->getCachedResponse('https://example.com', $cacheConfig))->toBe($response);
@@ -70,13 +70,14 @@ describe('CacheHandler', function () {
         it('throws exception when cache indicates availability but returns null', function () {
             $cacheManager = Mockery::mock(CacheManager::class);
             $cacheConfig = Mockery::mock(CacheConfig::class);
-            
+
             $cacheManager->shouldReceive('getCachedResponse')->andReturn(null);
-            
+
             $handler = new CacheHandler($cacheManager);
 
-            expect(fn() => $handler->getCachedResponse('https://example.com', $cacheConfig))
-                ->toThrow(\RuntimeException::class, 'Cache indicated response available but returned null');
+            expect(fn () => $handler->getCachedResponse('https://example.com', $cacheConfig))
+                ->toThrow(RuntimeException::class, 'Cache indicated response available but returned null')
+            ;
         });
     });
 
@@ -85,10 +86,10 @@ describe('CacheHandler', function () {
             $cacheManager = Mockery::mock(CacheManager::class);
             $cacheConfig = Mockery::mock(CacheConfig::class);
             $response = Mockery::mock(Response::class);
-            
+
             $response->shouldReceive('ok')->andReturn(true);
             $cacheManager->shouldReceive('cacheResponse')->once();
-            
+
             $handler = new CacheHandler($cacheManager);
             $handler->cacheIfNeeded('https://example.com', $response, $cacheConfig, 'GET');
         });
@@ -96,9 +97,9 @@ describe('CacheHandler', function () {
         it('does not cache when config is null', function () {
             $cacheManager = Mockery::mock(CacheManager::class);
             $response = Mockery::mock(Response::class);
-            
+
             $cacheManager->shouldReceive('cacheResponse')->never();
-            
+
             $handler = new CacheHandler($cacheManager);
             $handler->cacheIfNeeded('https://example.com', $response, null, 'GET');
         });
@@ -107,9 +108,9 @@ describe('CacheHandler', function () {
             $cacheManager = Mockery::mock(CacheManager::class);
             $cacheConfig = Mockery::mock(CacheConfig::class);
             $response = Mockery::mock(Response::class);
-            
+
             $cacheManager->shouldReceive('cacheResponse')->never();
-            
+
             $handler = new CacheHandler($cacheManager);
             $handler->cacheIfNeeded('https://example.com', $response, $cacheConfig, 'POST');
         });
@@ -118,10 +119,10 @@ describe('CacheHandler', function () {
             $cacheManager = Mockery::mock(CacheManager::class);
             $cacheConfig = Mockery::mock(CacheConfig::class);
             $response = Mockery::mock(Response::class);
-            
+
             $response->shouldReceive('ok')->andReturn(false);
             $cacheManager->shouldReceive('cacheResponse')->never();
-            
+
             $handler = new CacheHandler($cacheManager);
             $handler->cacheIfNeeded('https://example.com', $response, $cacheConfig, 'GET');
         });
@@ -132,10 +133,10 @@ describe('CacheHandler', function () {
             $cacheManager = Mockery::mock(CacheManager::class);
             $cacheConfig = Mockery::mock(CacheConfig::class);
             $response = Mockery::mock(Response::class);
-            
+
             $response->shouldReceive('ok')->andReturn(true);
             $cacheManager->shouldReceive('cacheResponse')->once();
-            
+
             $handler = new CacheHandler($cacheManager);
             $handler->cacheResponse('https://example.com', $response, $cacheConfig);
         });
@@ -143,9 +144,9 @@ describe('CacheHandler', function () {
         it('does not cache when config is null', function () {
             $cacheManager = Mockery::mock(CacheManager::class);
             $response = Mockery::mock(Response::class);
-            
+
             $cacheManager->shouldReceive('cacheResponse')->never();
-            
+
             $handler = new CacheHandler($cacheManager);
             $handler->cacheResponse('https://example.com', $response, null);
         });
@@ -154,10 +155,10 @@ describe('CacheHandler', function () {
             $cacheManager = Mockery::mock(CacheManager::class);
             $cacheConfig = Mockery::mock(CacheConfig::class);
             $response = Mockery::mock(Response::class);
-            
+
             $response->shouldReceive('ok')->andReturn(false);
             $cacheManager->shouldReceive('cacheResponse')->never();
-            
+
             $handler = new CacheHandler($cacheManager);
             $handler->cacheResponse('https://example.com', $response, $cacheConfig);
         });

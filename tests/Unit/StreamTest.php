@@ -1,7 +1,7 @@
 <?php
 
-use Hibla\HttpClient\Stream;
 use Hibla\HttpClient\Exceptions\HttpStreamException;
+use Hibla\HttpClient\Stream;
 
 describe('Stream', function () {
     it('creates a stream from a resource', function () {
@@ -10,7 +10,8 @@ describe('Stream', function () {
 
         expect($stream)->toBeInstanceOf(Stream::class)
             ->and($stream->isReadable())->toBeTrue()
-            ->and($stream->isWritable())->toBeTrue();
+            ->and($stream->isWritable())->toBeTrue()
+        ;
     });
 
     it('creates a stream from string content', function () {
@@ -32,7 +33,8 @@ describe('Stream', function () {
         $stream->rewind();
 
         expect($written)->toBe(12)
-            ->and($stream->getContents())->toBe('test content');
+            ->and($stream->getContents())->toBe('test content')
+        ;
     });
 
     it('reads from a readable stream', function () {
@@ -40,7 +42,8 @@ describe('Stream', function () {
 
         expect($stream->read(5))->toBe('Hello')
             ->and($stream->read(2))->toBe(', ')
-            ->and($stream->read(6))->toBe('World!');
+            ->and($stream->read(6))->toBe('World!')
+        ;
     });
 
     it('checks if stream is at end', function () {
@@ -62,7 +65,8 @@ describe('Stream', function () {
         $stream->seek(7);
 
         expect($stream->tell())->toBe(7)
-            ->and($stream->read(5))->toBe('World');
+            ->and($stream->read(5))->toBe('World')
+        ;
     });
 
     it('rewinds stream to beginning', function () {
@@ -71,7 +75,8 @@ describe('Stream', function () {
         $stream->rewind();
 
         expect($stream->tell())->toBe(0)
-            ->and($stream->read(5))->toBe('Hello');
+            ->and($stream->read(5))->toBe('Hello')
+        ;
     });
 
     it('converts stream to string', function () {
@@ -98,7 +103,8 @@ describe('Stream', function () {
             ->and($stream->getSize())->toBeNull()
             ->and($stream->isReadable())->toBeFalse()
             ->and($stream->isWritable())->toBeFalse()
-            ->and($stream->isSeekable())->toBeFalse();
+            ->and($stream->isSeekable())->toBeFalse()
+        ;
 
         fclose($detached);
     });
@@ -196,7 +202,8 @@ describe('Stream', function () {
 
         expect($metadata)->toBeArray()
             ->and($metadata['mode'])->toBe('w+b')
-            ->and($metadata['seekable'])->toBeTrue();
+            ->and($metadata['seekable'])->toBeTrue()
+        ;
     });
 
     it('gets specific metadata key', function () {
@@ -204,7 +211,8 @@ describe('Stream', function () {
         $stream = new Stream($resource);
 
         expect($stream->getMetadata('mode'))->toBe('w+b')
-            ->and($stream->getMetadata('seekable'))->toBeTrue();
+            ->and($stream->getMetadata('seekable'))->toBeTrue()
+        ;
     });
 
     it('returns null for non-existent metadata key', function () {

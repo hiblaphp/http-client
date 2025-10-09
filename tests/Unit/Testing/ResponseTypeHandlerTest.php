@@ -1,12 +1,12 @@
 <?php
 
-use Hibla\HttpClient\Testing\Utilities\Handlers\ResponseTypeHandler;
-use Hibla\HttpClient\Testing\Utilities\ResponseFactory;
-use Hibla\HttpClient\Testing\Utilities\FileManager;
-use Hibla\HttpClient\Testing\Utilities\Handlers\CacheHandler;
-use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\CacheConfig;
 use Hibla\HttpClient\Response;
+use Hibla\HttpClient\Testing\MockedRequest;
+use Hibla\HttpClient\Testing\Utilities\FileManager;
+use Hibla\HttpClient\Testing\Utilities\Handlers\CacheHandler;
+use Hibla\HttpClient\Testing\Utilities\Handlers\ResponseTypeHandler;
+use Hibla\HttpClient\Testing\Utilities\ResponseFactory;
 use Hibla\Promise\Promise;
 
 describe('ResponseTypeHandler', function () {
@@ -24,14 +24,14 @@ describe('ResponseTypeHandler', function () {
             $mockedRequests = [$mock];
             $match = ['mock' => $mock, 'index' => 0];
 
-            expect(fn() => $handler->handleMockedResponse(
+            expect(fn () => $handler->handleMockedResponse(
                 $match,
                 ['download' => ''],
                 $mockedRequests,
                 null,
                 'https://example.com',
                 'GET'
-            ))->toThrow(\InvalidArgumentException::class, 'Download destination must be a non-empty string');
+            ))->toThrow(InvalidArgumentException::class, 'Download destination must be a non-empty string');
         });
 
         it('removes non-persistent mocks after use', function () {
@@ -124,7 +124,6 @@ describe('ResponseTypeHandler', function () {
                 'https://example.com',
                 'GET'
             );
-
 
             $resultPromise->await();
         });

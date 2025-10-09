@@ -97,7 +97,6 @@ class Response extends Message implements EnhancedResponseInterface
             if (is_string($body)) {
                 $resource = fopen('php://temp', 'r+');
 
-                // Check if fopen succeeded
                 if ($resource === false) {
                     throw new \RuntimeException('Unable to create temporary stream');
                 }
@@ -113,7 +112,6 @@ class Response extends Message implements EnhancedResponseInterface
                 }
                 $body = new Stream($resource);
             } else {
-                // Default to an empty stream if body is not a recognizable type
                 $resource = fopen('php://temp', 'r+');
                 if ($resource === false) {
                     throw new \RuntimeException('Unable to create temporary stream');
