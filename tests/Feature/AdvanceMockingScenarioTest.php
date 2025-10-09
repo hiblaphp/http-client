@@ -22,7 +22,7 @@ describe('Advanced Retry Mocking', function () {
 
         $response = Http::retry(3, 0.01)->get('/timeout-test')->await();
 
-        expect($response->ok())->toBeTrue();
+        expect($response->successful())->toBeTrue();
         Http::assertRequestCount(3);
     });
 
@@ -36,7 +36,7 @@ describe('Advanced Retry Mocking', function () {
 
         $response = Http::retry(3, 0.01)->get('/status-fail')->await();
 
-        expect($response->ok())->toBeTrue();
+        expect($response->successful())->toBeTrue();
         expect($response->json())->toBe(['status' => 'recovered']);
         Http::assertRequestCount(4);
     });

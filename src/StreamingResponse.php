@@ -85,18 +85,29 @@ class StreamingResponse extends Response
     }
 
     /**
-     * Parse the response body as JSON and return as an array.
+     * Get the response body decoded from JSON.
      *
      * This method attempts to decode the response body as JSON.
-     * If the JSON is invalid or the result is not an array, an empty array is returned.
+     * Supports dot notation for accessing nested values (e.g., 'user.profile.name').
+     * If the JSON is invalid, the key doesn't exist, or decoding fails, the default value is returned.
      *
-     * @return array<mixed> The decoded JSON as an associative array, or empty array on failure
+     * @param string|null $key Optional dot-notation key to extract a specific value
+     * @param mixed $default Default value to return if key is not found or JSON decode fails
+     * @return mixed The decoded JSON data, specific value, or default
      */
-    public function json(): array
+    public function json(?string $key = null, mixed $default = null): mixed
     {
         $decoded = json_decode($this->body(), true);
 
-        return is_array($decoded) ? $decoded : [];
+        if (!is_array($decoded)) {
+            return $default;
+        }
+
+        if ($key === null) {
+            return $decoded;
+        }
+
+        return $this->getValueByKey($decoded, $key, $default);
     }
 
     /**

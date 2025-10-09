@@ -22,28 +22,25 @@ trait BuildsAdvancedScenarios
         for ($i = 1; $i < $successAttempt; $i++) {
             $delay = $maxDelay * (($successAttempt - $i) / ($successAttempt - 1));
 
+            $mock = new MockedRequest($this->getRequest()->method ?? '*');
+            $urlPattern = $this->getRequest()->urlPattern;
+            if ($urlPattern !== null) {
+                $mock->setUrlPattern($urlPattern);
+            }
+
             if ($delay > 5.0) {
-                $mock = new MockedRequest($this->getRequest()->method ?? '*');
-                $urlPattern = $this->getRequest()->urlPattern;
-                if ($urlPattern !== null) {
-                    $mock->setUrlPattern($urlPattern);
-                }
                 $mock->setTimeout($delay);
-                $mock->setRetryable(true);
             } else {
-                $mock = new MockedRequest($this->getRequest()->method ?? '*');
-                $urlPattern = $this->getRequest()->urlPattern;
-                if ($urlPattern !== null) {
-                    $mock->setUrlPattern($urlPattern);
-                }
-                $mock->setStatusCode(200);
-                $body = json_encode(['attempt' => $i, 'delay' => $delay, 'status' => 'slow']);
+                $mock->setStatusCode(503);
+                $body = json_encode(['attempt' => $i, 'delay' => $delay, 'status' => 'slow', 'error' => 'Service temporarily degraded']);
                 if ($body !== false) {
                     $mock->setBody($body);
                 }
                 $mock->setDelay($delay);
+                $mock->addResponseHeader('Content-Type', 'application/json');
             }
 
+            $mock->setRetryable(true);
             $this->getHandler()->addMockedRequest($mock);
         }
 

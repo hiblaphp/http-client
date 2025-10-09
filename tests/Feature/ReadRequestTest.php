@@ -22,7 +22,7 @@ describe('Read-Oriented HTTP Methods', function () {
         $response = Http::request()->get('/users')->await();
 
         Http::assertRequestMade('GET', '/users');
-        expect($response->ok())->toBeTrue();
+        expect($response->successful())->toBeTrue();
         expect($response->json())->toBe(['data' => 'user list']);
     });
 
@@ -50,7 +50,7 @@ describe('Read-Oriented HTTP Methods', function () {
         $response = Http::request()->head('/resource')->await();
 
         Http::assertRequestMade('HEAD', '/resource');
-        expect($response->ok())->toBeTrue();
+        expect($response->successful())->toBeTrue();
         expect($response->body())->toBeEmpty();
         expect($response->header('Content-Length'))->toBe('12345');
     });

@@ -4,7 +4,6 @@ namespace Hibla\HttpClient\Interfaces;
 
 use Hibla\HttpClient\CacheConfig;
 use Hibla\HttpClient\ProxyConfig;
-use Hibla\HttpClient\Response;
 use Hibla\HttpClient\RetryConfig;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
 use Hibla\HttpClient\SSE\SSEResponse;

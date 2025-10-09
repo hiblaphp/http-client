@@ -20,9 +20,9 @@ interface EnhancedResponseInterface extends ResponseInterface
     /**
      * Get the response body decoded from JSON.
      *
-     * @return array<string|int, mixed> The decoded JSON data. Returns an empty array on failure.
+     * @return mixed The decoded JSON data. 
      */
-    public function json(): array;
+    public function json(): mixed;
 
     /**
      * Get the HTTP status code.
@@ -43,11 +43,6 @@ interface EnhancedResponseInterface extends ResponseInterface
 
     /**
      * Determine if the response has a successful status code (2xx).
-     */
-    public function ok(): bool;
-
-    /**
-     * Determine if the response was successful. Alias for `ok()`.
      */
     public function successful(): bool;
 

@@ -33,24 +33,6 @@ describe('FileManager', function () {
         $fileManager->cleanup();
     });
 
-    test('throws exception when directory cannot be created', function () {
-        $fileManager = new class () extends FileManager {
-            public function createFailingDirectory(): string
-            {
-                $tempDir = '/invalid/path/that/does/not/exist/'.uniqid();
-                if (! @mkdir($tempDir, 0755, true)) {
-                    throw new Exception("Cannot create temp directory: {$tempDir}");
-                }
-
-                return $tempDir;
-            }
-        };
-
-        expect(fn () => $fileManager->createFailingDirectory())
-            ->toThrow(Exception::class, 'Cannot create temp directory')
-        ;
-    })->skip('Skipping due to permission issues');
-
     test('can create temporary file with default name', function () {
         $fileManager = createFileManager();
 

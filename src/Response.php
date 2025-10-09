@@ -212,23 +212,23 @@ class Response extends Message implements EnhancedResponseInterface
     /**
      * Get the response body decoded from JSON.
      *
-     * @return array<mixed> The decoded JSON data. Returns an empty array on failure.
+     * @param string|null $key Optional dot-notation key to extract a specific value
+     * @param mixed $default Default value to return if key is not found or JSON decode fails
+     * @return mixed The decoded JSON data, specific value, or default
      */
-    public function json(): array
+    public function json(?string $key = null, mixed $default = null): mixed
     {
         $decoded = json_decode((string) $this->body, true);
 
-        return is_array($decoded) ? $decoded : [];
-    }
+        if (!is_array($decoded)) {
+            return $default;
+        }
 
-    /**
-     * Alias for `json()`.
-     *
-     * @return array<mixed> The decoded JSON data.
-     */
-    public function getJson(): array
-    {
-        return $this->json();
+        if ($key === null) {
+            return $decoded;
+        }
+
+        return $this->getValueByKey($decoded, $key, $default);
     }
 
     /**
@@ -237,16 +237,6 @@ class Response extends Message implements EnhancedResponseInterface
      * @return int The status code.
      */
     public function status(): int
-    {
-        return $this->statusCode;
-    }
-
-    /**
-     * Alias for `status()`.
-     *
-     * @return int The status code.
-     */
-    public function getStatus(): int
     {
         return $this->statusCode;
     }
@@ -284,19 +274,9 @@ class Response extends Message implements EnhancedResponseInterface
      *
      * @return bool True if the status code is between 200 and 299.
      */
-    public function ok(): bool
-    {
-        return $this->statusCode >= 200 && $this->statusCode < 300;
-    }
-
-    /**
-     * Alias for `ok()`.
-     *
-     * @return bool True if the response was successful.
-     */
     public function successful(): bool
     {
-        return $this->ok();
+        return $this->statusCode >= 200 && $this->statusCode < 300;
     }
 
     /**
@@ -338,6 +318,8 @@ class Response extends Message implements EnhancedResponseInterface
     }
 
     /**
+     * @internal
+     * 
      * Set the negotiated HTTP version (called internally)
      */
     public function setHttpVersion(?string $version): void
@@ -353,6 +335,32 @@ class Response extends Message implements EnhancedResponseInterface
      */
     public function getHttpVersionString(): string
     {
-        return $this->negotiatedHttpVersion ?? 'HTTP/'.$this->protocol;
+        return $this->negotiatedHttpVersion ?? 'HTTP/' . $this->protocol;
+    }
+
+    /**
+     * Get a value from an array using dot notation.
+     * If a direct key match exists, it takes priority over dot notation.
+     *
+     * @param array<mixed> $array
+     * @param string $key
+     * @param mixed $default
+     * @return mixed
+     */
+    protected function getValueByKey(array $array, string $key, mixed $default = null): mixed
+    {
+        if (array_key_exists($key, $array)) {
+            return $array[$key];
+        }
+
+        foreach (explode('.', $key) as $segment) {
+            if (is_array($array) && array_key_exists($segment, $array)) {
+                $array = $array[$segment];
+            } else {
+                return $default;
+            }
+        }
+
+        return $array;
     }
 }

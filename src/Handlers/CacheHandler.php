@@ -76,7 +76,7 @@ class CacheHandler
                 return $this->handleNotModified($response, $cachedItem, $cache, $cacheKey, $cacheConfig);
             }
 
-            if ($response->ok()) {
+            if ($response->successful()) {
                 $this->cacheResponse($response, $cache, $cacheKey, $cacheConfig);
             }
 

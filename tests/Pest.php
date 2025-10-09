@@ -8,6 +8,7 @@
 
 use Hibla\HttpClient\Handlers\CacheHandler;
 use Hibla\HttpClient\Testing\MockedRequest;
+use Hibla\HttpClient\Testing\TestingHttpHandler;
 use Hibla\HttpClient\Testing\Utilities\CacheManager;
 use Hibla\HttpClient\Testing\Utilities\CookieManager;
 use Hibla\HttpClient\Testing\Utilities\Executors\FetchRequestExecutor;
@@ -28,6 +29,11 @@ use Hibla\Promise\CancellablePromise;
 pest()->extend(Tests\TestCase::class)->in('Feature');
 pest()->extend(Tests\TestCase::class)->in('Unit');
 pest()->extend(Tests\TestCase::class)->in('Integration');
+
+function testingHttpHandler(): TestingHttpHandler
+{
+    return new TestingHttpHandler();
+}
 
 function getPrivateProperty($object, string $property)
 {

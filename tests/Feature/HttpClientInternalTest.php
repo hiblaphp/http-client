@@ -23,7 +23,7 @@ describe('Basic Requests', function () {
         $response = Http::get('https://api.example.com/posts/1')->await();
 
         expect($response)->toBeInstanceOf(Response::class)
-            ->and($response->ok())->toBeTrue()
+            ->and($response->successful())->toBeTrue()
             ->and($response->json())->toBe(['id' => 1, 'title' => 'Test Post'])
         ;
 
@@ -116,7 +116,7 @@ describe('Retries', function () {
 
         $response = Http::retry(3)->get('/retry-test')->await();
 
-        expect($response->ok())->toBeTrue()
+        expect($response->successful())->toBeTrue()
             ->and($response->body())->toBe('Finally succeeded on attempt 3')
         ;
 
@@ -179,7 +179,7 @@ describe('Error Handling', function () {
 
         $response = Http::get('/not-found')->await();
 
-        expect($response->ok())->toBeFalse();
+        expect($response->successful())->toBeFalse();
         expect($response->clientError())->toBeTrue();
         expect($response->serverError())->toBeFalse();
         expect($response->status())->toBe(404);
@@ -195,7 +195,7 @@ describe('Error Handling', function () {
 
         $response = Http::get('/server-error')->await();
 
-        expect($response->ok())->toBeFalse();
+        expect($response->successful())->toBeFalse();
         expect($response->clientError())->toBeFalse();
         expect($response->serverError())->toBeTrue();
         expect($response->status())->toBe(500);

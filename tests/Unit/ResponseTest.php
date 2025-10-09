@@ -99,13 +99,13 @@ describe('Status Helpers', function () {
 
     it('ok() and successful() are true for 2xx statuses', function ($status) {
         $response = new Response('', $status);
-        expect($response->ok())->toBeTrue();
+        expect($response->successful())->toBeTrue();
         expect($response->successful())->toBeTrue();
     })->with('ok_statuses');
 
     it('ok() and successful() are false for non-2xx statuses', function ($status) {
         $response = new Response('', $status);
-        expect($response->ok())->toBeFalse();
+        expect($response->successful())->toBeFalse();
         expect($response->successful())->toBeFalse();
     })->with('client_error_statuses', 'server_error_statuses', 'other_statuses');
 

@@ -20,7 +20,7 @@ describe('Response and Exception Handling', function () {
         $response = Http::get('/client-error')->await();
 
         expect($response)->toBeInstanceOf(Response::class);
-        expect($response->ok())->toBeFalse();
+        expect($response->successful())->toBeFalse();
         expect($response->clientError())->toBeTrue();
         expect($response->serverError())->toBeFalse();
         expect($response->status())->toBe(404);
@@ -33,7 +33,7 @@ describe('Response and Exception Handling', function () {
         $response = Http::get('/server-error')->await();
 
         expect($response)->toBeInstanceOf(Response::class);
-        expect($response->ok())->toBeFalse();
+        expect($response->successful())->toBeFalse();
         expect($response->clientError())->toBeFalse();
         expect($response->serverError())->toBeTrue();
         expect($response->status())->toBe(503);

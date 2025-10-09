@@ -47,14 +47,14 @@ class CacheHandler
 
     public function cacheIfNeeded(string $url, Response $response, ?CacheConfig $cacheConfig, string $method): void
     {
-        if ($cacheConfig !== null && $method === 'GET' && $response->ok()) {
+        if ($cacheConfig !== null && $method === 'GET' && $response->successful()) {
             $this->cacheManager->cacheResponse($url, $response, $cacheConfig);
         }
     }
 
     public function cacheResponse(string $url, Response $response, ?CacheConfig $cacheConfig): void
     {
-        if ($cacheConfig !== null && $response->ok()) {
+        if ($cacheConfig !== null && $response->successful()) {
             $this->cacheManager->cacheResponse($url, $response, $cacheConfig);
         }
     }

@@ -274,14 +274,17 @@ class Request extends Message implements CompleteHttpClientInterface
     }
 
     /**
-     * Attach a bearer token to the Authorization header.
+     * Attach a token to the Authorization header.
      *
-     * @param  string  $token  The bearer token.
+     * @param  string  $token  The token value (without "Bearer" prefix).
+     * @param  string  $type  The token type (default: 'Bearer').
      * @return self For fluent method chaining.
      */
-    public function withToken(string $token): self
+    public function withToken(string $token, string $type = 'Bearer'): self
     {
-        return $this->withHeader('Authorization', "Bearer {$token}");
+        $token = $this->normalizeToken($token, $type);
+
+        return $this->withHeader('Authorization', "{$type} {$token}");
     }
 
     /**
@@ -947,7 +950,7 @@ class Request extends Message implements CompleteHttpClientInterface
         return $this->getRequestInterceptorHandler()
             ->processInterceptors($initialRequest, $this->requestInterceptors)
             ->then(
-                fn ($processedRequest) => $this->executeRequest($processedRequest)
+                fn($processedRequest) => $this->executeRequest($processedRequest)
             )
         ;
     }
@@ -1280,6 +1283,25 @@ class Request extends Message implements CompleteHttpClientInterface
     }
 
     /**
+     * Normalize token by removing duplicate type prefix.
+     *
+     * @param  string  $token  The token value.
+     * @param  string  $type  The expected token type.
+     * @return string The normalized token without type prefix.
+     */
+    private function normalizeToken(string $token, string $type): string
+    {
+        $token = trim($token);
+        $typePrefix = $type . ' ';
+
+        if (stripos($token, $typePrefix) === 0) {
+            return trim(substr($token, strlen($typePrefix)));
+        }
+
+        return $token;
+    }
+
+    /**
      * Expand URI template with configured URL parameters.
      *
      * Supports:
@@ -1371,7 +1393,7 @@ class Request extends Message implements CompleteHttpClientInterface
         }
 
         return $httpPromise->then(
-            fn ($response) => $this->getResponseInterceptorHandler()
+            fn($response) => $this->getResponseInterceptorHandler()
                 ->processInterceptors($response, $processedRequest->responseInterceptors)
         );
     }
