@@ -17,6 +17,8 @@ use Hibla\HttpClient\Testing\Exceptions\UnexpectedRequestException;
 use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\Promise\Promise;
 
+uses()->group('sequential');
+
 function createStandardExecutor(): StandardRequestExecutor
 {
     return new StandardRequestExecutor(
