@@ -46,7 +46,7 @@ class RequestExecutorHandler
 
                 if ($error !== null) {
                     $promise->reject(new NetworkException(
-                        "HTTP Request failed: {$error}",
+                        "HTTP Request failed in {$url}: {$error}",
                         0,
                         null,
                         $url,

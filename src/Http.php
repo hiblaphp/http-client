@@ -45,7 +45,7 @@ use Psr\Http\Message\UploadedFileInterface;
  * @method static Request accept(string $type) Start building a request with Accept header.
  * @method static Request asJson() Start building a request with Content-Type: application/json.
  * @method static Request asForm() Start building a request with Content-Type: application/x-www-form-urlencoded.
- * @method static Request withToken(string $token) Start building a request with bearer token.
+ * @method static Request withToken(string $token, $type = 'Bearer') Start building a request with a token.
  * @method static Request withBasicAuth(string $username, string $password) Start building a request with basic auth.
  * @method static Request withDigestAuth(string $username, string $password) Start building a request with digest auth.
  * @method static Request withHeaders(array<string, string|string[]> $headers) Start building a request with multiple headers.

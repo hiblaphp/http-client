@@ -77,7 +77,7 @@ class RetryHandler
 
                     if ($error !== null) {
                         $promise->reject(new NetworkException(
-                            "HTTP Request failed after {$totalAttempts} attempts: {$error}",
+                            "HTTP Request failed after {$totalAttempts} attempts in {$url}: {$error}",
                             0,
                             null,
                             $url,

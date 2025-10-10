@@ -95,7 +95,7 @@ class StreamingResponse extends Response
      * @param mixed $default Default value to return if key is not found or JSON decode fails
      * @return mixed The decoded JSON data, specific value, or default
      */
-    public function json(?string $key = null, mixed $default = null): mixed
+    public function json(?string $key = null, $default = null): mixed
     {
         $decoded = json_decode($this->body(), true);
 

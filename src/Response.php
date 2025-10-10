@@ -2,6 +2,7 @@
 
 namespace Hibla\HttpClient;
 
+use Hibla\HttpClient\Exceptions\HttpStreamException;
 use Hibla\HttpClient\Interfaces\CookieJarInterface;
 use Hibla\HttpClient\Interfaces\EnhancedResponseInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -87,6 +88,8 @@ class Response extends Message implements EnhancedResponseInterface
      * @param  string|StreamInterface  $body  The response body. Can be a string or a StreamInterface object.
      * @param  int  $status  The HTTP status code.
      * @param  array<string, string|string[]>  $headers  An associative array of response headers.
+     *
+     * @throws HttpStreamException
      */
     public function __construct($body = 'php://memory', int $status = 200, array $headers = [])
     {
@@ -94,12 +97,11 @@ class Response extends Message implements EnhancedResponseInterface
         $this->reasonPhrase = self::PHRASES[$status] ?? 'Unknown Status Code';
 
         if (! ($body instanceof StreamInterface)) {
+            $resource = fopen('php://temp', 'r+');
+            if ($resource === false) {
+                throw new \RuntimeException('Unable to create temporary stream');
+            }
             if (is_string($body)) {
-                $resource = fopen('php://temp', 'r+');
-
-                if ($resource === false) {
-                    throw new \RuntimeException('Unable to create temporary stream');
-                }
 
                 if ($body !== '') {
                     $writeResult = fwrite($resource, $body);
@@ -110,14 +112,8 @@ class Response extends Message implements EnhancedResponseInterface
                     }
                     rewind($resource);
                 }
-                $body = new Stream($resource);
-            } else {
-                $resource = fopen('php://temp', 'r+');
-                if ($resource === false) {
-                    throw new \RuntimeException('Unable to create temporary stream');
-                }
-                $body = new Stream($resource);
             }
+            $body = new Stream($resource);
         }
 
         $this->body = $body;
@@ -212,15 +208,15 @@ class Response extends Message implements EnhancedResponseInterface
     /**
      * Get the response body decoded from JSON.
      *
-     * @param string|null $key Optional dot-notation key to extract a specific value
-     * @param mixed $default Default value to return if key is not found or JSON decode fails
+     * @param  string|null  $key  Optional dot-notation key to extract a specific value
+     * @param  mixed  $default  Default value to return if key is not found or JSON decode fails
      * @return mixed The decoded JSON data, specific value, or default
      */
-    public function json(?string $key = null, mixed $default = null): mixed
+    public function json(?string $key = null, $default = null): mixed
     {
         $decoded = json_decode((string) $this->body, true);
 
-        if (!is_array($decoded)) {
+        if (! is_array($decoded)) {
             return $default;
         }
 
@@ -319,7 +315,7 @@ class Response extends Message implements EnhancedResponseInterface
 
     /**
      * @internal
-     * 
+     *
      * Set the negotiated HTTP version (called internally)
      */
     public function setHttpVersion(?string $version): void
@@ -335,19 +331,16 @@ class Response extends Message implements EnhancedResponseInterface
      */
     public function getHttpVersionString(): string
     {
-        return $this->negotiatedHttpVersion ?? 'HTTP/' . $this->protocol;
+        return $this->negotiatedHttpVersion ?? 'HTTP/'.$this->protocol;
     }
 
     /**
      * Get a value from an array using dot notation.
      * If a direct key match exists, it takes priority over dot notation.
      *
-     * @param array<mixed> $array
-     * @param string $key
-     * @param mixed $default
-     * @return mixed
+     * @param  array<mixed>  $array
      */
-    protected function getValueByKey(array $array, string $key, mixed $default = null): mixed
+    protected function getValueByKey(array $array, string $key, mixed $default): mixed
     {
         if (array_key_exists($key, $array)) {
             return $array[$key];

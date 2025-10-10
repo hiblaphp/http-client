@@ -20,9 +20,16 @@ interface EnhancedResponseInterface extends ResponseInterface
     /**
      * Get the response body decoded from JSON.
      *
-     * @return mixed The decoded JSON data. 
+     * @return mixed The decoded JSON data.
      */
-    public function json(): mixed;
+    /**
+     * Get the response body decoded from JSON.
+     *
+     * @param  string|null  $key  Optional dot-notation key to extract a specific value
+     * @param  mixed  $default  Default value to return if key is not found or JSON decode fails
+     * @return mixed The decoded JSON data, specific value, or default
+     */
+    public function json(?string $key, $default = null): mixed;
 
     /**
      * Get the HTTP status code.
