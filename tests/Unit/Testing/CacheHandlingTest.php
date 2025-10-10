@@ -87,7 +87,7 @@ describe('CacheHandler', function () {
             $cacheConfig = Mockery::mock(CacheConfig::class);
             $response = Mockery::mock(Response::class);
 
-            $response->shouldReceive('ok')->andReturn(true);
+            $response->shouldReceive('successful')->andReturn(true);
             $cacheManager->shouldReceive('cacheResponse')->once();
 
             $handler = new CacheHandler($cacheManager);
@@ -120,7 +120,7 @@ describe('CacheHandler', function () {
             $cacheConfig = Mockery::mock(CacheConfig::class);
             $response = Mockery::mock(Response::class);
 
-            $response->shouldReceive('ok')->andReturn(false);
+            $response->shouldReceive('successful')->andReturn(false);
             $cacheManager->shouldReceive('cacheResponse')->never();
 
             $handler = new CacheHandler($cacheManager);
@@ -134,7 +134,7 @@ describe('CacheHandler', function () {
             $cacheConfig = Mockery::mock(CacheConfig::class);
             $response = Mockery::mock(Response::class);
 
-            $response->shouldReceive('ok')->andReturn(true);
+            $response->shouldReceive('successful')->andReturn(true);
             $cacheManager->shouldReceive('cacheResponse')->once();
 
             $handler = new CacheHandler($cacheManager);
@@ -156,7 +156,7 @@ describe('CacheHandler', function () {
             $cacheConfig = Mockery::mock(CacheConfig::class);
             $response = Mockery::mock(Response::class);
 
-            $response->shouldReceive('ok')->andReturn(false);
+            $response->shouldReceive('successful')->andReturn(false);
             $cacheManager->shouldReceive('cacheResponse')->never();
 
             $handler = new CacheHandler($cacheManager);

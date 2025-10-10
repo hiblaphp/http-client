@@ -9,8 +9,7 @@ describe('StreamingResponse', function () {
         $response = new StreamingResponse($stream, 200, ['Content-Type' => 'text/plain']);
 
         expect($response->getStatusCode())->toBe(200)
-            ->and($response->getHeaderLine('Content-Type'))->toBe('text/plain')
-        ;
+            ->and($response->getHeaderLine('Content-Type'))->toBe('text/plain');
     });
 
     it('gets response body as string', function () {
@@ -29,8 +28,7 @@ describe('StreamingResponse', function () {
         $second = $response->body();
 
         expect($first)->toBe($second)
-            ->and($first)->toBe('test content')
-        ;
+            ->and($first)->toBe('test content');
     });
 
     it('parses JSON response', function () {
@@ -41,18 +39,34 @@ describe('StreamingResponse', function () {
         expect($response->json())->toBe($data);
     });
 
-    it('returns empty array for invalid JSON', function () {
+    it('returns null for invalid JSON when no default provided', function () {
         $stream = Stream::fromString('invalid json');
         $response = new StreamingResponse($stream, 200);
 
-        expect($response->json())->toBe([]);
+        expect($response->json())->toBeNull();
     });
 
-    it('returns empty array for non-array JSON', function () {
+    it('returns default value for invalid JSON', function () {
+        $stream = Stream::fromString('invalid json');
+        $response = new StreamingResponse($stream, 200);
+
+        expect($response->json(null, []))->toBe([])
+            ->and($response->json(null, 'error'))->toBe('error')
+            ->and($response->json(null, 0))->toBe(0);
+    });
+
+    it('returns null for non-array JSON when no default provided', function () {
         $stream = Stream::fromString('"just a string"');
         $response = new StreamingResponse($stream, 200);
 
-        expect($response->json())->toBe([]);
+        expect($response->json())->toBeNull();
+    });
+
+    it('returns default value for non-array JSON', function () {
+        $stream = Stream::fromString('"just a string"');
+        $response = new StreamingResponse($stream, 200);
+
+        expect($response->json(null, []))->toBe([]);
     });
 
     it('saves stream to file', function () {
@@ -64,8 +78,7 @@ describe('StreamingResponse', function () {
         $result = $response->saveToFile($tempFile);
 
         expect($result)->toBeTrue()
-            ->and(file_get_contents($tempFile))->toBe($content)
-        ;
+            ->and(file_get_contents($tempFile))->toBe($content);
 
         unlink($tempFile);
     });
@@ -95,8 +108,7 @@ describe('StreamingResponse', function () {
         $result = $response->saveToFile($tempFile);
 
         expect($result)->toBeTrue()
-            ->and(file_get_contents($tempFile))->toBe($content)
-        ;
+            ->and(file_get_contents($tempFile))->toBe($content);
 
         unlink($tempFile);
     });
@@ -110,8 +122,7 @@ describe('StreamingResponse', function () {
         $result = $response->streamTo($tempFile);
 
         expect($result)->toBeTrue()
-            ->and(file_get_contents($tempFile))->toBe($content)
-        ;
+            ->and(file_get_contents($tempFile))->toBe($content);
 
         unlink($tempFile);
     });
@@ -126,8 +137,7 @@ describe('StreamingResponse', function () {
         rewind($destination);
 
         expect($result)->toBeTrue()
-            ->and(stream_get_contents($destination))->toBe($content)
-        ;
+            ->and(stream_get_contents($destination))->toBe($content);
 
         fclose($destination);
     });
@@ -138,8 +148,7 @@ describe('StreamingResponse', function () {
 
         expect($response->streamTo(123))->toBeFalse()
             ->and($response->streamTo(['array']))->toBeFalse()
-            ->and($response->streamTo(null))->toBeFalse()
-        ;
+            ->and($response->streamTo(null))->toBeFalse();
     });
 
     it('handles empty stream', function () {
@@ -147,8 +156,8 @@ describe('StreamingResponse', function () {
         $response = new StreamingResponse($stream, 200);
 
         expect($response->body())->toBe('')
-            ->and($response->json())->toBe([])
-        ;
+            ->and($response->json())->toBeNull()
+            ->and($response->json(null, []))->toBe([]);
     });
 
     it('gets underlying stream interface', function () {
@@ -156,8 +165,7 @@ describe('StreamingResponse', function () {
         $response = new StreamingResponse($stream, 200);
 
         expect($response->getStream())->toBe($stream)
-            ->and($response->getStream())->toBeInstanceOf(Psr\Http\Message\StreamInterface::class)
-        ;
+            ->and($response->getStream())->toBeInstanceOf(Psr\Http\Message\StreamInterface::class);
     });
 
     it('rewinds seekable stream before saving to file', function () {
@@ -214,5 +222,42 @@ describe('StreamingResponse', function () {
         expect($response->getStatusCode())->toBe(201)
             ->and($response->getHeaderLine('Content-Type'))->toBe('application/json')
             ->and($response->getHeaderLine('X-Custom-Header'))->toBe('custom-value');
+    });
+
+    // Additional tests for dot notation support
+    it('supports dot notation for nested JSON access', function () {
+        $data = ['user' => ['name' => 'John', 'email' => 'john@example.com']];
+        $stream = Stream::fromString(json_encode($data));
+        $response = new StreamingResponse($stream, 200);
+
+        expect($response->json('user.name'))->toBe('John')
+            ->and($response->json('user.email'))->toBe('john@example.com');
+    });
+
+    it('returns default for missing nested keys', function () {
+        $data = ['user' => ['name' => 'John']];
+        $stream = Stream::fromString(json_encode($data));
+        $response = new StreamingResponse($stream, 200);
+
+        expect($response->json('user.email', 'no-email@example.com'))->toBe('no-email@example.com')
+            ->and($response->json('missing.key', 'default'))->toBe('default');
+    });
+
+    it('handles deeply nested JSON with dot notation', function () {
+        $data = [
+            'data' => [
+                'user' => [
+                    'profile' => [
+                        'address' => [
+                            'city' => 'New York',
+                        ],
+                    ],
+                ],
+            ],
+        ];
+        $stream = Stream::fromString(json_encode($data));
+        $response = new StreamingResponse($stream, 200);
+
+        expect($response->json('data.user.profile.address.city'))->toBe('New York');
     });
 });

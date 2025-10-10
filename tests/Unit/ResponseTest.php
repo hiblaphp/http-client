@@ -57,14 +57,35 @@ describe('Body Helpers', function () {
         expect($response->json())->toBe(['user' => ['id' => 1, 'name' => 'John']]);
     });
 
-    it('json() returns an empty array for invalid JSON', function () {
+    it('json() returns null for invalid JSON when no default provided', function () {
         $response = new Response('this is not json');
-        expect($response->json())->toBe([]);
+        expect($response->json())->toBeNull();
     });
 
-    it('json() returns an empty array for an empty body', function () {
+    it('json() returns default value for invalid JSON', function () {
+        $response = new Response('this is not json');
+        expect($response->json(null, []))->toBe([]);
+        expect($response->json(null, 'error'))->toBe('error');
+    });
+
+    it('json() returns null for an empty body when no default provided', function () {
         $response = new Response('');
-        expect($response->json())->toBe([]);
+        expect($response->json())->toBeNull();
+    });
+
+    it('json() returns default value for an empty body', function () {
+        $response = new Response('');
+        expect($response->json(null, []))->toBe([]);
+    });
+
+    it('json() with key returns null for invalid JSON', function () {
+        $response = new Response('this is not json');
+        expect($response->json('user.name'))->toBeNull();
+    });
+
+    it('json() with key returns default for invalid JSON', function () {
+        $response = new Response('this is not json');
+        expect($response->json('user.name', 'Unknown'))->toBe('Unknown');
     });
 });
 
