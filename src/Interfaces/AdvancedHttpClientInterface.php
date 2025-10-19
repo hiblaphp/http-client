@@ -163,22 +163,19 @@ interface AdvancedHttpClientInterface extends HttpClientBuilderInterface
     public function sseMap(callable $mapper): self;
 
     /**
-     * Configure SSE reconnection behavior with simple parameters.
+     * Enable SSE reconnection with exponential backoff.
      *
-     * @param list<string> $retryableErrors Error message substrings that trigger reconnection
-     * @param (callable(int, float, \Throwable): void)|null $onReconnect Callback before each reconnection attempt
-     * @param (callable(\Exception): bool)|null $shouldReconnect Custom logic to determine if reconnection should occur
+     * @param  int  $maxAttempts  Maximum reconnection attempts
+     * @param  float  $initialDelay  Initial delay before first reconnection (in seconds)
+     * @param  float  $maxDelay  Maximum delay between attempts (in seconds)
+     * @param  float  $backoffMultiplier  Exponential backoff multiplier
+     * @return self For fluent method chaining.
      */
     public function sseReconnect(
-        bool $enabled = true,
         int $maxAttempts = 10,
         float $initialDelay = 1.0,
         float $maxDelay = 30.0,
-        float $backoffMultiplier = 2.0,
-        bool $jitter = true,
-        array $retryableErrors = [],
-        ?callable $onReconnect = null,
-        ?callable $shouldReconnect = null
+        float $backoffMultiplier = 2.0
     ): self;
 
     /**

@@ -555,52 +555,40 @@ class Request extends Message implements CompleteHttpClientInterface
     }
 
     /**
-     * Configure SSE reconnection behavior.
+     * Enable SSE reconnection with exponential backoff.
      *
-     * @param  bool  $enabled  Whether reconnection is enabled
      * @param  int  $maxAttempts  Maximum reconnection attempts
-     * @param  float  $initialDelay  Initial delay before first reconnection
-     * @param  float  $maxDelay  Maximum delay between attempts
+     * @param  float  $initialDelay  Initial delay before first reconnection (in seconds)
+     * @param  float  $maxDelay  Maximum delay between attempts (in seconds)
      * @param  float  $backoffMultiplier  Exponential backoff multiplier
-     * @param  bool  $jitter  Add random jitter to delays
-     * @param  list<string>  $retryableErrors  List of retryable error messages
-     * @param  (callable(int, float, \Throwable): void)|null  $onReconnect  Callback called before each reconnection attempt
-     * @param  (callable(\Exception): bool)|null  $shouldReconnect  Custom logic to determine if reconnection should occur
      * @return self For fluent method chaining.
      */
     public function sseReconnect(
-        bool $enabled = true,
         int $maxAttempts = 10,
         float $initialDelay = 1.0,
         float $maxDelay = 30.0,
-        float $backoffMultiplier = 2.0,
-        bool $jitter = true,
-        array $retryableErrors = [
-            'Connection refused',
-            'Connection reset',
-            'Connection timed out',
-            'Could not resolve host',
-            'Resolving timed out',
-            'SSL connection timeout',
-            'Operation timed out',
-            'Network is unreachable',
-        ],
-        ?callable $onReconnect = null,
-        ?callable $shouldReconnect = null
+        float $backoffMultiplier = 2.0
     ): self {
         $new = clone $this;
-        // Ensure $retryableErrors is a list
-        $retryableErrorsList = array_values($retryableErrors);
         $new->sseReconnectConfig = new SSEReconnectConfig(
-            enabled: $enabled,
+            enabled: true,
             maxAttempts: $maxAttempts,
             initialDelay: $initialDelay,
             maxDelay: $maxDelay,
             backoffMultiplier: $backoffMultiplier,
-            jitter: $jitter,
-            retryableErrors: $retryableErrorsList,
-            onReconnect: $onReconnect,
-            shouldReconnect: $shouldReconnect
+            jitter: true,
+            retryableErrors: [
+                'Connection refused',
+                'Connection reset',
+                'Connection timed out',
+                'Could not resolve host',
+                'Resolving timed out',
+                'SSL connection timeout',
+                'Operation timed out',
+                'Network is unreachable',
+            ],
+            onReconnect: null,
+            shouldReconnect: null
         );
 
         return $new;

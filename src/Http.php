@@ -96,8 +96,7 @@ use Psr\Http\Message\UploadedFileInterface;
  * @method static CancellablePromiseInterface<SSEResponse> sse(string $url, ?callable $onEvent = null, ?callable $onError = null, ?SSEReconnectConfig $reconnectConfig = null) Start an SSE connection.
  * @method static Request sseDataFormat(string $format = 'json') Start building a request with SSE data format configuration.
  * @method static Request sseMap(callable $mapper) Start building a request with custom SSE event mapper.
- * @method static Request sseReconnect(bool $enabled = true, int $maxAttempts = 10, float $initialDelay = 1.0, float $maxDelay = 30.0, float $backoffMultiplier = 2.0, bool $jitter = true, list<string> $retryableErrors = [], ?callable $onReconnect = null, ?callable $shouldReconnect = null) Start building a request with SSE reconnection configuration.
- * @method static Request sseReconnectWith(SSEReconnectConfig $config) Start building a request with custom SSE reconnection configuration.
+ * @method static Request sseReconnect(int $maxAttempts = 10, float $initialDelay = 1.0, float $maxDelay = 30.0, float $backoffMultiplier = 2.0) Start building a request with SSE reconnection configuration.
  * @method static Request noSseReconnect() Start building a request with SSE reconnection disabled.
  *
  * Advanced cURL methods:
@@ -484,7 +483,7 @@ class Http
             if (! self::$isTesting || self::$testingInstance === null) {
                 throw new \RuntimeException(
                     "Cannot call assertion method '{$method}' outside of testing mode. " .
-                    'Call Http::startTesting() first.'
+                        'Call Http::startTesting() first.'
                 );
             }
 
