@@ -1,20 +1,20 @@
 <?php
 
+use Hibla\HttpClient\CacheConfig;
 use Hibla\HttpClient\Response;
+use Hibla\HttpClient\RetryConfig;
+use Hibla\HttpClient\SSE\SSEReconnectConfig;
 use Hibla\HttpClient\SSE\SSEResponse;
 use Hibla\HttpClient\Stream;
 use Hibla\HttpClient\Testing\MockedRequest;
+use Hibla\HttpClient\Testing\Utilities\CacheManager;
+use Hibla\HttpClient\Testing\Utilities\CookieManager;
+use Hibla\HttpClient\Testing\Utilities\FileManager;
+use Hibla\HttpClient\Testing\Utilities\NetworkSimulator;
 use Hibla\HttpClient\Testing\Utilities\RequestExecutor;
 use Hibla\HttpClient\Testing\Utilities\RequestMatcher;
-use Hibla\HttpClient\Testing\Utilities\ResponseFactory;
-use Hibla\HttpClient\Testing\Utilities\FileManager;
-use Hibla\HttpClient\Testing\Utilities\CookieManager;
 use Hibla\HttpClient\Testing\Utilities\RequestRecorder;
-use Hibla\HttpClient\Testing\Utilities\CacheManager;
-use Hibla\HttpClient\Testing\Utilities\NetworkSimulator;
-use Hibla\HttpClient\CacheConfig;
-use Hibla\HttpClient\RetryConfig;
-use Hibla\HttpClient\SSE\SSEReconnectConfig;
+use Hibla\HttpClient\Testing\Utilities\ResponseFactory;
 use Hibla\Promise\CancellablePromise;
 use Hibla\Promise\Promise;
 
@@ -33,7 +33,7 @@ function createRequestExecutor(): RequestExecutor
 test('executes standard send request', function () {
     $executor = createRequestExecutor();
     $mocks = [];
-    
+
     $mock = new MockedRequest('GET');
     $mock->setUrlPattern('https://api.example.com/data');
     $mock->setBody('{"result": "success"}');
@@ -52,12 +52,12 @@ test('executes standard send request', function () {
 test('executes SSE request', function () {
     $executor = createRequestExecutor();
     $mocks = [];
-    
+
     $mock = new MockedRequest('GET');
     $mock->setUrlPattern('https://api.example.com/events');
     $mock->asSSE();
     $mock->setSSEEvents([
-        ['event' => 'message', 'data' => 'Hello']
+        ['event' => 'message', 'data' => 'Hello'],
     ]);
     $mocks[] = $mock;
 
@@ -74,7 +74,7 @@ test('executes SSE request', function () {
 test('executes fetch request', function () {
     $executor = createRequestExecutor();
     $mocks = [];
-    
+
     $mock = new MockedRequest('GET');
     $mock->setUrlPattern('https://api.example.com/data');
     $mock->setBody('{"result": "success"}');
@@ -93,7 +93,7 @@ test('executes fetch request', function () {
 test('executes send request with cache config', function () {
     $executor = createRequestExecutor();
     $mocks = [];
-    
+
     $mock = new MockedRequest('GET');
     $mock->setUrlPattern('https://api.example.com/cached');
     $mock->setBody('{"cached": true}');
@@ -115,7 +115,7 @@ test('executes send request with cache config', function () {
 test('executes send request with retry config', function () {
     $executor = createRequestExecutor();
     $mocks = [];
-    
+
     $mock = new MockedRequest('GET');
     $mock->setUrlPattern('https://api.example.com/retry');
     $mock->setBody('{"retry": true}');
@@ -138,12 +138,12 @@ test('executes send request with retry config', function () {
 test('executes SSE with reconnect config', function () {
     $executor = createRequestExecutor();
     $mocks = [];
-    
+
     $mock = new MockedRequest('GET');
     $mock->setUrlPattern('https://api.example.com/stream');
     $mock->asSSE();
     $mock->setSSEEvents([
-        ['event' => 'message', 'data' => 'Reconnectable']
+        ['event' => 'message', 'data' => 'Reconnectable'],
     ]);
     $mocks[] = $mock;
 
@@ -169,15 +169,16 @@ test('executes SSE with reconnect config', function () {
 test('executes send request with parent callback', function () {
     $executor = createRequestExecutor();
     $mocks = [];
-    
+
     $globalSettings = [
         'strict_matching' => false,
-        'allow_passthrough' => true
+        'allow_passthrough' => true,
     ];
 
     $parentCalled = false;
     $parentSendRequest = function () use (&$parentCalled) {
         $parentCalled = true;
+
         return new Promise(function ($resolve) {
             $resolve(new Response('{"passthrough": true}', 200, []));
         });
@@ -194,16 +195,17 @@ test('executes send request with parent callback', function () {
     )->await();
 
     expect($result)->toBeInstanceOf(Response::class)
-        ->and($parentCalled)->toBeTrue();
+        ->and($parentCalled)->toBeTrue()
+    ;
 });
 
 test('executes SSE with parent callback', function () {
     $executor = createRequestExecutor();
     $mocks = [];
-    
+
     $globalSettings = [
         'strict_matching' => false,
-        'allow_passthrough' => true
+        'allow_passthrough' => true,
     ];
 
     $parentCalled = false;
@@ -212,12 +214,11 @@ test('executes SSE with parent callback', function () {
         $resource = fopen('php://memory', 'r');
         $stream = new Stream($resource);
         $response = new SSEResponse($stream, 200, []);
-        
+
         return new CancellablePromise(function ($resolve, $reject) use ($response) {
             $resolve($response);
         });
     };
-
 
     $result = $executor->executeSSE(
         'https://api.example.com/stream',
@@ -230,5 +231,6 @@ test('executes SSE with parent callback', function () {
     )->await();
 
     expect($result)->toBeInstanceOf(SSEResponse::class)
-        ->and($parentCalled)->toBeTrue();
+        ->and($parentCalled)->toBeTrue()
+    ;
 });

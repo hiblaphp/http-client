@@ -616,7 +616,8 @@ describe('RequestRecorder', function () {
             // Second scenario
             $recorder->recordRequest('POST', 'https://api.example.com/scenario2', []);
             expect($recorder->getRequestHistory())->toHaveCount(1)
-                ->and($recorder->getFirstRequest()->url)->toBe('https://api.example.com/scenario2');
+                ->and($recorder->getFirstRequest()->url)->toBe('https://api.example.com/scenario2')
+            ;
         });
     });
 });

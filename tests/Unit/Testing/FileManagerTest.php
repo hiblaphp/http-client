@@ -440,6 +440,7 @@ describe('FileManager', function () {
         $fileManager->cleanup();
 
         expect(is_dir($dir1))->toBeFalse()
-            ->and(is_dir($dir2))->toBeFalse();
+            ->and(is_dir($dir2))->toBeFalse()
+        ;
     });
 });

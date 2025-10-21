@@ -604,7 +604,8 @@ describe('SSEEventFormatter', function () {
             expect($result)->toContain("retry: 3000\n\n")
                 ->and($result)->toContain('event: start')
                 ->and($result)->toContain('event: update')
-                ->and($result)->toContain('event: end');
+                ->and($result)->toContain('event: end')
+            ;
         });
     });
 });

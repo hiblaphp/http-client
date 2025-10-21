@@ -1,8 +1,10 @@
 <?php
 
 use Hibla\HttpClient\CacheConfig;
+use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Response;
 use Hibla\HttpClient\RetryConfig;
+use Hibla\HttpClient\Testing\Exceptions\UnexpectedRequestException;
 use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Testing\Utilities\CacheManager;
 use Hibla\HttpClient\Testing\Utilities\CookieManager;
@@ -13,8 +15,6 @@ use Hibla\HttpClient\Testing\Utilities\RequestMatcher;
 use Hibla\HttpClient\Testing\Utilities\RequestRecorder;
 use Hibla\HttpClient\Testing\Utilities\ResponseFactory;
 use Hibla\HttpClient\Testing\Utilities\Validators\RequestValidator;
-use Hibla\HttpClient\Testing\Exceptions\UnexpectedRequestException;
-use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\Promise\Promise;
 
 uses()->group('sequential');
@@ -34,7 +34,7 @@ function createStandardExecutor(): StandardRequestExecutor
 test('executes basic get request', function () {
     $executor = createStandardExecutor();
     $mocks = [];
-    
+
     $mock = new MockedRequest('GET');
     $mock->setUrlPattern('https://api.example.com/users');
     $mock->setBody('{"users": []}');
@@ -49,13 +49,14 @@ test('executes basic get request', function () {
 
     expect($result)->toBeInstanceOf(Response::class)
         ->and($result->body())->toBe('{"users": []}')
-        ->and($mocks)->toBeEmpty();
+        ->and($mocks)->toBeEmpty()
+    ;
 });
 
 test('executes post request with json body', function () {
     $executor = createStandardExecutor();
     $mocks = [];
-    
+
     $mock = new MockedRequest('POST');
     $mock->setUrlPattern('https://api.example.com/users');
     $mock->setJsonMatcher(['name' => 'John']);
@@ -68,20 +69,21 @@ test('executes post request with json body', function () {
         [
             CURLOPT_CUSTOMREQUEST => 'POST',
             CURLOPT_POSTFIELDS => json_encode(['name' => 'John']),
-            CURLOPT_HTTPHEADER => ['Content-Type: application/json']
+            CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
         ],
         $mocks,
         []
     )->await();
 
     expect($result->status())->toBe(201)
-        ->and($result->body())->toBe('{"id": 1, "name": "John"}');
+        ->and($result->body())->toBe('{"id": 1, "name": "John"}')
+    ;
 });
 
 test('persistent mock remains available', function () {
     $executor = createStandardExecutor();
     $mocks = [];
-    
+
     $mock = new MockedRequest('GET');
     $mock->setUrlPattern('https://api.example.com/data');
     $mock->setBody('{"result": "ok"}');
@@ -108,7 +110,7 @@ test('persistent mock remains available', function () {
 test('non persistent mock is removed', function () {
     $executor = createStandardExecutor();
     $mocks = [];
-    
+
     $mock = new MockedRequest('GET');
     $mock->setUrlPattern('https://api.example.com/data');
     $mock->setBody('{"result": "ok"}');
@@ -126,7 +128,7 @@ test('non persistent mock is removed', function () {
 test('executes with custom headers', function () {
     $executor = createStandardExecutor();
     $mocks = [];
-    
+
     $mock = new MockedRequest('GET');
     $mock->setUrlPattern('https://api.example.com/secure');
     $mock->setBody('{"authenticated": true}');
@@ -136,7 +138,7 @@ test('executes with custom headers', function () {
         'https://api.example.com/secure',
         [
             CURLOPT_CUSTOMREQUEST => 'GET',
-            CURLOPT_HTTPHEADER => ['Authorization: Bearer token123']
+            CURLOPT_HTTPHEADER => ['Authorization: Bearer token123'],
         ],
         $mocks,
         []
@@ -160,10 +162,11 @@ test('throws exception when no mock matches and passthrough disabled', function 
 test('allows passthrough when enabled', function () {
     $executor = createStandardExecutor();
     $mocks = [];
-    
+
     $parentSendCalled = false;
     $parentSend = function () use (&$parentSendCalled) {
         $parentSendCalled = true;
+
         return Promise::resolved(new Response('passthrough', 200, []));
     };
 
@@ -178,13 +181,14 @@ test('allows passthrough when enabled', function () {
     )->await();
 
     expect($parentSendCalled)->toBeTrue()
-        ->and($result->body())->toBe('passthrough');
+        ->and($result->body())->toBe('passthrough')
+    ;
 });
 
 test('executes request with delay', function () {
     $executor = createStandardExecutor();
     $mocks = [];
-    
+
     $mock = new MockedRequest('GET');
     $mock->setUrlPattern('https://api.example.com/slow');
     $mock->setDelay(0.1);
@@ -201,13 +205,14 @@ test('executes request with delay', function () {
     $elapsed = microtime(true) - $start;
 
     expect($elapsed)->toBeGreaterThanOrEqual(0.1)
-        ->and($result->body())->toBe('{"delayed": true}');
+        ->and($result->body())->toBe('{"delayed": true}')
+    ;
 });
 
 test('handles error mock', function () {
     $executor = createStandardExecutor();
     $mocks = [];
-    
+
     $mock = new MockedRequest('GET');
     $mock->setUrlPattern('https://api.example.com/error');
     $mock->setError('Connection failed');
@@ -224,14 +229,14 @@ test('handles error mock', function () {
 test('uses cache config when provided', function () {
     $executor = createStandardExecutor();
     $mocks = [];
-    
+
     $mock = new MockedRequest('GET');
     $mock->setUrlPattern('https://api.example.com/cached');
     $mock->setBody('{"cached": true}');
     $mocks[] = $mock;
 
     $cacheConfig = new CacheConfig(ttlSeconds: 60);
-    
+
     $result1 = $executor->execute(
         'https://api.example.com/cached',
         [CURLOPT_CUSTOMREQUEST => 'GET'],
@@ -256,7 +261,7 @@ test('uses cache config when provided', function () {
 test('matches wildcard method', function () {
     $executor = createStandardExecutor();
     $mocks = [];
-    
+
     $mock = new MockedRequest('*');
     $mock->setUrlPattern('https://api.example.com/any');
     $mock->setBody('{"method": "any"}');
@@ -275,12 +280,12 @@ test('matches wildcard method', function () {
 test('handles multiple mocks with first match priority', function () {
     $executor = createStandardExecutor();
     $mocks = [];
-    
+
     $mock1 = new MockedRequest('GET');
     $mock1->setUrlPattern('https://api.example.com/data');
     $mock1->setBody('{"source": "first"}');
     $mocks[] = $mock1;
-    
+
     $mock2 = new MockedRequest('GET');
     $mock2->setUrlPattern('https://api.example.com/data');
     $mock2->setBody('{"source": "second"}');
@@ -294,13 +299,14 @@ test('handles multiple mocks with first match priority', function () {
     )->await();
 
     expect($result->body())->toBe('{"source": "first"}')
-        ->and($mocks)->toHaveCount(1);
+        ->and($mocks)->toHaveCount(1)
+    ;
 });
 
 test('defaults to GET method when not specified', function () {
     $executor = createStandardExecutor();
     $mocks = [];
-    
+
     $mock = new MockedRequest('GET');
     $mock->setUrlPattern('https://api.example.com/default');
     $mock->setBody('{"default": "GET"}');
@@ -319,7 +325,7 @@ test('defaults to GET method when not specified', function () {
 test('executes with retry config', function () {
     $executor = createStandardExecutor();
     $mocks = [];
-    
+
     $mock = new MockedRequest('GET');
     $mock->setUrlPattern('https://api.example.com/retry');
     $mock->setBody('{"retried": true}');
@@ -342,7 +348,7 @@ test('executes with retry config', function () {
 test('processes cookies from response', function () {
     $executor = createStandardExecutor();
     $mocks = [];
-    
+
     $mock = new MockedRequest('GET');
     $mock->setUrlPattern('https://api.example.com/with-cookies');
     $mock->setBody('{"has_cookies": true}');

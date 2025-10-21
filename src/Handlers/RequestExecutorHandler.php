@@ -49,6 +49,7 @@ class RequestExecutorHandler
                 }
 
                 if ($error !== null) {
+                    // @phpstan-ignore-next-line
                     $exception = $this->createExceptionFromError($error, $url, $timeout, $connectTimeout);
                     $promise->reject($exception);
                 } else {

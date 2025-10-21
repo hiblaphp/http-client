@@ -149,6 +149,7 @@ describe('SSEEvent', function () {
     it('handles numeric retry values', function () {
         expect((new SSEEvent(retry: 0))->retry)->toBe(0)
             ->and((new SSEEvent(retry: 1000))->retry)->toBe(1000)
-            ->and((new SSEEvent(retry: 999999))->retry)->toBe(999999);
+            ->and((new SSEEvent(retry: 999999))->retry)->toBe(999999)
+        ;
     });
 });

@@ -405,6 +405,7 @@ describe('MockedRequest', function () {
         $delay = $request->getDelay();
 
         expect($delay)->toBeGreaterThanOrEqual(2.0)
-            ->and($delay)->toBeLessThanOrEqual(4.0);
+            ->and($delay)->toBeLessThanOrEqual(4.0)
+        ;
     });
 });

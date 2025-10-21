@@ -10,18 +10,20 @@ describe('AssertsStreams', function () {
 
         $handler->stream('https://example.com/stream')->await();
 
-        expect(fn() => $handler->assertStreamMade('https://example.com/stream'))
-            ->not->toThrow(AssertionFailedError::class);
+        expect(fn () => $handler->assertStreamMade('https://example.com/stream'))
+            ->not->toThrow(AssertionFailedError::class)
+        ;
     });
 
     test('assertStreamWithCallback validates stream with callback', function () {
         $handler = testingHttpHandler();
         $handler->mock('GET')->url('https://example.com/stream')->respondWithStatus(200)->register();
 
-        $handler->stream('https://example.com/stream', [], fn() => null)->await();
+        $handler->stream('https://example.com/stream', [], fn () => null)->await();
 
-        expect(fn() => $handler->assertStreamWithCallback('https://example.com/stream'))
-            ->not->toThrow(AssertionFailedError::class);
+        expect(fn () => $handler->assertStreamWithCallback('https://example.com/stream'))
+            ->not->toThrow(AssertionFailedError::class)
+        ;
     });
 
     test('assertNoStreamsMade passes when no streams made', function () {
@@ -29,8 +31,9 @@ describe('AssertsStreams', function () {
         $handler->mock('GET')->url('https://example.com')->respondWithStatus(200)->register();
         $handler->fetch('https://example.com')->await();
 
-        expect(fn() => $handler->assertNoStreamsMade())
-            ->not->toThrow(AssertionFailedError::class);
+        expect(fn () => $handler->assertNoStreamsMade())
+            ->not->toThrow(AssertionFailedError::class)
+        ;
     });
 
     test('assertStreamCount validates stream count', function () {
@@ -41,8 +44,9 @@ describe('AssertsStreams', function () {
         $handler->stream('https://example.com/stream1')->await();
         $handler->stream('https://example.com/stream2')->await();
 
-        expect(fn() => $handler->assertStreamCount(2))
-            ->not->toThrow(AssertionFailedError::class);
+        expect(fn () => $handler->assertStreamCount(2))
+            ->not->toThrow(AssertionFailedError::class)
+        ;
     });
 
     test('getStreamRequests returns all streams', function () {
@@ -53,7 +57,8 @@ describe('AssertsStreams', function () {
         $streams = $handler->getStreamRequests();
 
         expect($streams)->toHaveCount(1)
-            ->and($streams[0])->toBeInstanceOf(RecordedRequest::class);
+            ->and($streams[0])->toBeInstanceOf(RecordedRequest::class)
+        ;
     });
 
     test('getLastStream returns last stream', function () {

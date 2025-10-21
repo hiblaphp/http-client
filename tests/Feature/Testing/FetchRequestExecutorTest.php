@@ -1,7 +1,9 @@
 <?php
 
 use Hibla\HttpClient\CacheConfig;
+use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Response;
+use Hibla\HttpClient\Testing\Exceptions\UnexpectedRequestException;
 use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Testing\Utilities\CacheManager;
 use Hibla\HttpClient\Testing\Utilities\Executors\FetchRequestExecutor;
@@ -12,8 +14,6 @@ use Hibla\HttpClient\Testing\Utilities\RequestMatcher;
 use Hibla\HttpClient\Testing\Utilities\RequestRecorder;
 use Hibla\HttpClient\Testing\Utilities\ResponseFactory;
 use Hibla\HttpClient\Testing\Utilities\Validators\RequestValidator;
-use Hibla\HttpClient\Testing\Exceptions\UnexpectedRequestException;
-use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\Promise\Promise;
 
 function createFetchExcutor(): FetchRequestExecutor
@@ -31,7 +31,7 @@ function createFetchExcutor(): FetchRequestExecutor
 test('executes basic get request', function () {
     $executor = createFetchExcutor();
     $mocks = [];
-    
+
     $mock = new MockedRequest('GET');
     $mock->setUrlPattern('https://api.example.com/users');
     $mock->setBody('{"users": []}');
@@ -46,13 +46,14 @@ test('executes basic get request', function () {
 
     expect($result)->toBeInstanceOf(Response::class)
         ->and($result->body())->toBe('{"users": []}')
-        ->and($mocks)->toBeEmpty();
+        ->and($mocks)->toBeEmpty()
+    ;
 });
 
 test('executes post request with json body', function () {
     $executor = createFetchExcutor();
     $mocks = [];
-    
+
     $mock = new MockedRequest('POST');
     $mock->setUrlPattern('https://api.example.com/users');
     $mock->setJsonMatcher(['name' => 'John']);
@@ -65,20 +66,21 @@ test('executes post request with json body', function () {
         [
             'method' => 'POST',
             'body' => json_encode(['name' => 'John']),
-            'headers' => ['Content-Type: application/json']
+            'headers' => ['Content-Type: application/json'],
         ],
         $mocks,
         []
     )->await();
 
     expect($result->status())->toBe(201)
-        ->and($result->body())->toBe('{"id": 1, "name": "John"}');
+        ->and($result->body())->toBe('{"id": 1, "name": "John"}')
+    ;
 });
 
 test('persistent mock remains available', function () {
     $executor = createFetchExcutor();
     $mocks = [];
-    
+
     $mock = new MockedRequest('GET');
     $mock->setUrlPattern('https://api.example.com/data');
     $mock->setBody('{"result": "ok"}');
@@ -95,7 +97,7 @@ test('persistent mock remains available', function () {
 test('non persistent mock is removed', function () {
     $executor = createFetchExcutor();
     $mocks = [];
-    
+
     $mock = new MockedRequest('GET');
     $mock->setUrlPattern('https://api.example.com/data');
     $mock->setBody('{"result": "ok"}');
@@ -108,7 +110,7 @@ test('non persistent mock is removed', function () {
 test('executes with custom headers', function () {
     $executor = createFetchExcutor();
     $mocks = [];
-    
+
     $mock = new MockedRequest('GET');
     $mock->setUrlPattern('https://api.example.com/secure');
     $mock->setBody('{"authenticated": true}');
@@ -118,7 +120,7 @@ test('executes with custom headers', function () {
         'https://api.example.com/secure',
         [
             'method' => 'GET',
-            'headers' => ['Authorization: Bearer token123']
+            'headers' => ['Authorization: Bearer token123'],
         ],
         $mocks,
         []
@@ -142,10 +144,11 @@ test('throws exception when no mock matches in strict mode', function () {
 test('allows passthrough when enabled', function () {
     $executor = createFetchExcutor();
     $mocks = [];
-    
+
     $parentFetchCalled = false;
     $parentFetch = function () use (&$parentFetchCalled) {
         $parentFetchCalled = true;
+
         return Promise::resolved(new Response('passthrough', 200, []));
     };
 
@@ -158,13 +161,14 @@ test('allows passthrough when enabled', function () {
     )->await();
 
     expect($parentFetchCalled)->toBeTrue()
-        ->and($result->body())->toBe('passthrough');
+        ->and($result->body())->toBe('passthrough')
+    ;
 });
 
 test('executes request with delay', function () {
     $executor = createFetchExcutor();
     $mocks = [];
-    
+
     $mock = new MockedRequest('GET');
     $mock->setUrlPattern('https://api.example.com/slow');
     $mock->setDelay(0.1);
@@ -181,13 +185,14 @@ test('executes request with delay', function () {
     $elapsed = microtime(true) - $start;
 
     expect($elapsed)->toBeGreaterThanOrEqual(0.1)
-        ->and($result->body())->toBe('{"delayed": true}');
+        ->and($result->body())->toBe('{"delayed": true}')
+    ;
 });
 
 test('handles error mock', function () {
     $executor = createFetchExcutor();
     $mocks = [];
-    
+
     $mock = new MockedRequest('GET');
     $mock->setUrlPattern('https://api.example.com/error');
     $mock->setError('Connection failed');
@@ -204,14 +209,14 @@ test('handles error mock', function () {
 test('uses cache config when provided', function () {
     $executor = createFetchExcutor();
     $mocks = [];
-    
+
     $mock = new MockedRequest('GET');
     $mock->setUrlPattern('https://api.example.com/cached');
     $mock->setBody('{"cached": true}');
     $mocks[] = $mock;
 
     $cacheConfig = new CacheConfig(ttlSeconds: 60);
-    
+
     $result1 = $executor->execute(
         'https://api.example.com/cached',
         ['cache' => $cacheConfig],
@@ -234,7 +239,7 @@ test('uses cache config when provided', function () {
 test('matches wildcard method', function () {
     $executor = createFetchExcutor();
     $mocks = [];
-    
+
     $mock = new MockedRequest('*');
     $mock->setUrlPattern('https://api.example.com/any');
     $mock->setBody('{"method": "any"}');
@@ -253,12 +258,12 @@ test('matches wildcard method', function () {
 test('handles multiple mocks with first match priority', function () {
     $executor = createFetchExcutor();
     $mocks = [];
-    
+
     $mock1 = new MockedRequest('GET');
     $mock1->setUrlPattern('https://api.example.com/data');
     $mock1->setBody('{"source": "first"}');
     $mocks[] = $mock1;
-    
+
     $mock2 = new MockedRequest('GET');
     $mock2->setUrlPattern('https://api.example.com/data');
     $mock2->setBody('{"source": "second"}');

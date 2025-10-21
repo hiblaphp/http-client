@@ -99,7 +99,7 @@ class StreamingResponse extends Response
     {
         $decoded = json_decode($this->body(), true);
 
-        if (!is_array($decoded)) {
+        if (! is_array($decoded)) {
             return $default;
         }
 

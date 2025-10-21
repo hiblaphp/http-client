@@ -672,7 +672,8 @@ describe('RecordedRequest', function () {
 
             expect($request->getBody())->toBe($formData)
                 ->and($request->isJson())->toBeFalse()
-                ->and($request->getHeader('content-type'))->toBe('application/x-www-form-urlencoded');
+                ->and($request->getHeader('content-type'))->toBe('application/x-www-form-urlencoded')
+            ;
         });
     });
 });

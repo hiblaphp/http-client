@@ -938,7 +938,7 @@ class Request extends Message implements CompleteHttpClientInterface
         return $this->getRequestInterceptorHandler()
             ->processInterceptors($initialRequest, $this->requestInterceptors)
             ->then(
-                fn($processedRequest) => $this->executeRequest($processedRequest)
+                fn ($processedRequest) => $this->executeRequest($processedRequest)
             )
         ;
     }
@@ -1381,7 +1381,7 @@ class Request extends Message implements CompleteHttpClientInterface
         }
 
         return $httpPromise->then(
-            fn($response) => $this->getResponseInterceptorHandler()
+            fn ($response) => $this->getResponseInterceptorHandler()
                 ->processInterceptors($response, $processedRequest->responseInterceptors)
         );
     }

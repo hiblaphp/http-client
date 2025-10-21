@@ -6,11 +6,11 @@ use function Hibla\async;
 use function Hibla\await;
 
 use Hibla\HttpClient\CacheConfig;
-use Hibla\HttpClient\Config\HttpConfigLoader;
 use Hibla\HttpClient\Response;
 use Hibla\HttpClient\RetryConfig;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Psr\SimpleCache\CacheInterface;
+use Rcalicdan\ConfigLoader\Config;
 use RuntimeException;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\Cache\Psr16Cache;
@@ -266,28 +266,8 @@ class CacheHandler
     public static function getDefaultCache(): CacheInterface
     {
         if (self::$defaultCache === null) {
-            $httpConfigLoader = HttpConfigLoader::getInstance();
-
-            /** @var mixed $httpConfig */
-            $httpConfig = $httpConfigLoader->get('client', []);
-
-            $cacheDirectory = null;
-            if (
-                is_array($httpConfig)
-                && isset($httpConfig['cache'])
-                && is_array($httpConfig['cache'])
-                && isset($httpConfig['cache']['path'])
-                && is_string($httpConfig['cache']['path'])
-            ) {
-                $cacheDirectory = $httpConfig['cache']['path'];
-            }
-
-            if ($cacheDirectory === null) {
-                $rootPath = $httpConfigLoader->getRootPath();
-                $cacheDirectory = is_string($rootPath)
-                    ? $rootPath . '/storage/cache'
-                    : sys_get_temp_dir() . '/hibla_http_cache';
-            }
+            /** @var string $cacheDirectory */
+            $cacheDirectory = Config::get('http-client.cache.path', sys_get_temp_dir() . '/cache');
 
             if (! is_dir($cacheDirectory)) {
                 if (! mkdir($cacheDirectory, 0775, true) && ! is_dir($cacheDirectory)) {
@@ -295,7 +275,7 @@ class CacheHandler
                 }
             }
 
-            $psr6Cache = new FilesystemAdapter('http', 0, $cacheDirectory);
+            $psr6Cache = new FilesystemAdapter('http-client', 0, $cacheDirectory);
             self::$defaultCache = new Psr16Cache($psr6Cache);
         }
 

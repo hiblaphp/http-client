@@ -212,9 +212,9 @@ function createRequestValidator(): RequestValidator
     return mock(RequestValidator::class);
 }
 
-function createMockCacheHandler(): \Hibla\HttpClient\Testing\Utilities\Handlers\CacheHandler
+function createMockCacheHandler(): Hibla\HttpClient\Testing\Utilities\Handlers\CacheHandler
 {
-    return mock(\Hibla\HttpClient\Testing\Utilities\Handlers\CacheHandler::class);
+    return mock(Hibla\HttpClient\Testing\Utilities\Handlers\CacheHandler::class);
 }
 
 function createFetchRequestExecutor(
@@ -222,7 +222,7 @@ function createFetchRequestExecutor(
     ?ResponseFactory $responseFactory = null,
     ?FileManager $fileManager = null,
     ?RequestRecorder $requestRecorder = null,
-    ?\Hibla\HttpClient\Testing\Utilities\Handlers\CacheHandler $cacheHandler = null,
+    ?Hibla\HttpClient\Testing\Utilities\Handlers\CacheHandler $cacheHandler = null,
     ?RequestValidator $validator = null
 ): FetchRequestExecutor {
     return new FetchRequestExecutor(
@@ -264,7 +264,7 @@ function createStandardRequestExecutor(
     ?ResponseFactory $responseFactory = null,
     ?CookieManager $cookieManager = null,
     ?RequestRecorder $requestRecorder = null,
-    ?\Hibla\HttpClient\Testing\Utilities\Handlers\CacheHandler $cacheHandler = null,
+    ?Hibla\HttpClient\Testing\Utilities\Handlers\CacheHandler $cacheHandler = null,
     ?RequestValidator $validator = null
 ): StandardRequestExecutor {
     return new StandardRequestExecutor(

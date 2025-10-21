@@ -14,12 +14,14 @@ describe('Basic Mock Response Tests', function () {
             ->url('https://api.example.com/users  ')
             ->respondWithStatus(201)
             ->respondJson(['id' => 1, 'name' => 'John'])
-            ->register();
+            ->register()
+        ;
 
         $response = $handler->fetch('https://api.example.com/users  ')->await();
 
         expect($response->status())->toBe(201)
-            ->and($response->json())->toBe(['id' => 1, 'name' => 'John']);
+            ->and($response->json())->toBe(['id' => 1, 'name' => 'John'])
+        ;
     });
 
     test('mock responds with json data', function () {
@@ -28,7 +30,8 @@ describe('Basic Mock Response Tests', function () {
         $handler->mock('POST')
             ->url('https://api.example.com/posts  ')
             ->respondJson(['success' => true, 'post_id' => 123])
-            ->register();
+            ->register()
+        ;
 
         $response = $handler->fetch('https://api.example.com/posts  ', [
             'method' => 'POST',
@@ -36,7 +39,8 @@ describe('Basic Mock Response Tests', function () {
         ])->await();
 
         expect($response->json())->toBe(['success' => true, 'post_id' => 123])
-            ->and($response->headers()['content-type'])->toContain('application/json');
+            ->and($response->headers()['content-type'])->toContain('application/json')
+        ;
     });
 
     test('mock responds with plain text', function () {
@@ -45,7 +49,8 @@ describe('Basic Mock Response Tests', function () {
         $handler->mock('GET')
             ->url('https://example.com/text  ')
             ->respondWith('Hello World')
-            ->register();
+            ->register()
+        ;
 
         $response = $handler->fetch('https://example.com/text  ')->await();
 
@@ -61,14 +66,16 @@ describe('Delay Simulation Tests', function () {
             ->url('https://api.example.com/slow  ')
             ->delay(0.5)
             ->respondJson(['data' => 'slow response'])
-            ->register();
+            ->register()
+        ;
 
         $start = microtime(true);
         $response = $handler->fetch('https://api.example.com/slow  ')->await();
         $duration = microtime(true) - $start;
 
         expect($duration)->toBeGreaterThanOrEqual(0.5)
-            ->and($response->json())->toBe(['data' => 'slow response']);
+            ->and($response->json())->toBe(['data' => 'slow response'])
+        ;
     });
 
     test('mock applies random delay within range', function () {
@@ -78,7 +85,8 @@ describe('Delay Simulation Tests', function () {
             ->url('https://api.example.com/random-slow  ')
             ->randomDelay(0.2, 0.4)
             ->respondJson(['data' => 'random delay response'])
-            ->register();
+            ->register()
+        ;
 
         $start = microtime(true);
         $response = $handler->fetch('https://api.example.com/random-slow  ')->await();
@@ -86,7 +94,8 @@ describe('Delay Simulation Tests', function () {
 
         expect($duration)->toBeGreaterThanOrEqual(0.2)
             ->and($duration)->toBeLessThanOrEqual(0.5) // Allow some margin
-            ->and($response->json())->toBe(['data' => 'random delay response']);
+            ->and($response->json())->toBe(['data' => 'random delay response'])
+        ;
     });
 
     test('global random delay affects all requests', function () {
@@ -97,14 +106,16 @@ describe('Delay Simulation Tests', function () {
         $handler->mock('GET')
             ->url('https://api.example.com/test  ')
             ->respondJson(['result' => 'ok'])
-            ->register();
+            ->register()
+        ;
 
         $start = microtime(true);
         $response = $handler->fetch('https://api.example.com/test  ')->await();
         $duration = microtime(true) - $start;
 
         expect($duration)->toBeGreaterThanOrEqual(0.1)
-            ->and($response->json())->toBe(['result' => 'ok']);
+            ->and($response->json())->toBe(['result' => 'ok'])
+        ;
     });
 });
 
@@ -115,10 +126,12 @@ describe('Error Simulation Tests', function () {
         $handler->mock('GET')
             ->url('https://api.example.com/fail  ')
             ->fail('Connection refused')
-            ->register();
+            ->register()
+        ;
 
-        expect(fn() => $handler->fetch('https://api.example.com/fail  ')->await())
-            ->toThrow(Exception::class);
+        expect(fn () => $handler->fetch('https://api.example.com/fail  ')->await())
+            ->toThrow(Exception::class)
+        ;
     });
 
     test('mock simulates timeout', function () {
@@ -127,10 +140,12 @@ describe('Error Simulation Tests', function () {
         $handler->mock('GET')
             ->url('https://api.example.com/timeout  ')
             ->timeout(0.5)
-            ->register();
+            ->register()
+        ;
 
-        expect(fn() => $handler->fetch('https://api.example.com/timeout  ')->await())
-            ->toThrow(Exception::class);
+        expect(fn () => $handler->fetch('https://api.example.com/timeout  ')->await())
+            ->toThrow(Exception::class)
+        ;
     });
 
     test('mock simulates network error', function () {
@@ -139,10 +154,12 @@ describe('Error Simulation Tests', function () {
         $handler->mock('GET')
             ->url('https://api.example.com/network-error  ')
             ->networkError('connection')
-            ->register();
+            ->register()
+        ;
 
-        expect(fn() => $handler->fetch('https://api.example.com/network-error  ')->await())
-            ->toThrow(Exception::class);
+        expect(fn () => $handler->fetch('https://api.example.com/network-error  ')->await())
+            ->toThrow(Exception::class)
+        ;
     });
 });
 
@@ -153,14 +170,16 @@ describe('Retry Sequence Tests', function () {
         $handler->mock('GET')
             ->url('https://api.example.com/retry  ')
             ->failUntilAttempt(3, 'Temporary failure')
-            ->register();
+            ->register()
+        ;
 
         $response = $handler->fetch('https://api.example.com/retry  ', [
             'retry' => new RetryConfig(maxRetries: 5, baseDelay: 0.01),
         ])->await();
 
         expect($response->json())->toHaveKey('success', true)
-            ->and($response->json())->toHaveKey('attempt', 3);
+            ->and($response->json())->toHaveKey('attempt', 3)
+        ;
     });
 
     test('timeout until specified attempt', function () {
@@ -169,7 +188,8 @@ describe('Retry Sequence Tests', function () {
         $handler->mock('GET')
             ->url('https://api.example.com/timeout-retry  ')
             ->timeoutUntilAttempt(2, 0.1)
-            ->register();
+            ->register()
+        ;
 
         $response = $handler->fetch('https://api.example.com/timeout-retry  ', [
             'retry' => new RetryConfig(maxRetries: 5, baseDelay: 0.01),
@@ -188,7 +208,8 @@ describe('Retry Sequence Tests', function () {
                 ['error' => 'Second error', 'delay' => 0.05],
                 ['error' => 'Third error', 'retryable' => true],
             ], ['final' => 'success'])
-            ->register();
+            ->register()
+        ;
 
         $response = $handler->fetch('https://api.example.com/sequence  ', [
             'retry' => new RetryConfig(maxRetries: 5, baseDelay: 0.01),
@@ -198,7 +219,6 @@ describe('Retry Sequence Tests', function () {
     });
 });
 
-
 describe('Advanced Scenario Tests', function () {
     test('simulates rate limiting', function () {
         $handler = testingHttpHandler();
@@ -206,14 +226,16 @@ describe('Advanced Scenario Tests', function () {
         $handler->mock('GET')
             ->url('https://api.example.com/rate-limited  ')
             ->rateLimitedUntilAttempt(2)
-            ->register();
+            ->register()
+        ;
 
         $response = $handler->fetch('https://api.example.com/rate-limited  ', [
             'retry' => new RetryConfig(maxRetries: 5, baseDelay: 0.01),
         ])->await();
 
         expect($response->status())->toBe(200)
-            ->and($response->json())->toHaveKey('success', true);
+            ->and($response->json())->toHaveKey('success', true)
+        ;
     });
 
     test('simulates gradually improving network', function () {
@@ -224,7 +246,8 @@ describe('Advanced Scenario Tests', function () {
             ->failUntilAttempt(2)
             ->respondJson(['success' => true])
             ->persistent()
-            ->register();
+            ->register()
+        ;
 
         $response = $handler->fetch('https://api.example.com/improving', [
             'retry' => new RetryConfig(maxRetries: 5, baseDelay: 0.01),
@@ -243,7 +266,8 @@ describe('Network Simulation Tests', function () {
         $handler->mock('GET')
             ->url('https://api.example.com/test')
             ->respondJson(['data' => 'test'])
-            ->register();
+            ->register()
+        ;
 
         $start = microtime(true);
 
@@ -256,7 +280,8 @@ describe('Network Simulation Tests', function () {
             $duration = microtime(true) - $start;
 
             expect($duration)->toBeGreaterThan(0.1)
-                ->and($e)->toBeInstanceOf(Exception::class);
+                ->and($e)->toBeInstanceOf(Exception::class)
+            ;
         }
     });
     test('enables fast network simulation', function () {
@@ -267,7 +292,8 @@ describe('Network Simulation Tests', function () {
         $handler->mock('GET')
             ->url('https://api.example.com/test  ')
             ->respondJson(['data' => 'test'])
-            ->register();
+            ->register()
+        ;
 
         $start = microtime(true);
         $handler->fetch('https://api.example.com/test  ')->await();
@@ -286,7 +312,8 @@ describe('Network Simulation Tests', function () {
         $handler->mock('GET')
             ->url('https://api.example.com/test  ')
             ->respondJson(['data' => 'test'])
-            ->register();
+            ->register()
+        ;
 
         $response = $handler->fetch('https://api.example.com/test  ')->await();
 
@@ -306,13 +333,15 @@ describe('Header Tests', function () {
                 'X-Rate-Remaining' => '99',
             ])
             ->respondJson(['data' => 'test'])
-            ->register();
+            ->register()
+        ;
 
         $response = $handler->fetch('https://api.example.com/headers  ')->await();
 
         expect($response->headers()['x-custom-header'])->toBe('custom-value')
             ->and($response->headers()['x-rate-limit'])->toBe('100')
-            ->and($response->headers()['x-rate-remaining'])->toBe('99');
+            ->and($response->headers()['x-rate-remaining'])->toBe('99')
+        ;
     });
 
     test('expects specific request headers', function () {
@@ -322,7 +351,8 @@ describe('Header Tests', function () {
             ->url('https://api.example.com/auth  ')
             ->expectHeader('Authorization', 'Bearer token123')
             ->respondJson(['authenticated' => true])
-            ->register();
+            ->register()
+        ;
 
         $response = $handler->fetch('https://api.example.com/auth  ', [
             'headers' => ['Authorization' => 'Bearer token123'],
@@ -339,12 +369,14 @@ describe('Request Recording Tests', function () {
         $handler->mock('GET')
             ->url('https://api.example.com/test1  ')
             ->respondJson(['id' => 1])
-            ->register();
+            ->register()
+        ;
 
         $handler->mock('POST')
             ->url('https://api.example.com/test2  ')
             ->respondJson(['id' => 2])
-            ->register();
+            ->register()
+        ;
 
         $handler->fetch('https://api.example.com/test1  ')->await();
         $handler->fetch('https://api.example.com/test2  ', ['method' => 'POST'])->await();
@@ -353,7 +385,8 @@ describe('Request Recording Tests', function () {
 
         expect($history)->toHaveCount(2)
             ->and($history[0]->url)->toContain('test1')
-            ->and($history[1]->url)->toContain('test2');
+            ->and($history[1]->url)->toContain('test2')
+        ;
     });
 
     test('disables request recording', function () {
@@ -364,7 +397,8 @@ describe('Request Recording Tests', function () {
         $handler->mock('GET')
             ->url('https://api.example.com/test  ')
             ->respondJson(['data' => 'test'])
-            ->register();
+            ->register()
+        ;
 
         $handler->fetch('https://api.example.com/test  ')->await();
 
@@ -382,7 +416,8 @@ describe('Persistent Mock Tests', function () {
             ->url('https://api.example.com/persistent  ')
             ->respondJson(['counter' => 1])
             ->persistent()
-            ->register();
+            ->register()
+        ;
 
         $response1 = $handler->fetch('https://api.example.com/persistent  ')->await();
         $response2 = $handler->fetch('https://api.example.com/persistent  ')->await();
@@ -390,7 +425,8 @@ describe('Persistent Mock Tests', function () {
 
         expect($response1->json())->toBe(['counter' => 1])
             ->and($response2->json())->toBe(['counter' => 1])
-            ->and($response3->json())->toBe(['counter' => 1]);
+            ->and($response3->json())->toBe(['counter' => 1])
+        ;
     });
 });
 
@@ -401,7 +437,8 @@ describe('File Management Tests', function () {
         $tempFile = $handler->createTempFile('test.txt', 'Hello World');
 
         expect(file_exists($tempFile))->toBeTrue()
-            ->and(file_get_contents($tempFile))->toBe('Hello World');
+            ->and(file_get_contents($tempFile))->toBe('Hello World')
+        ;
     });
 
     test('creates temporary directory', function () {
@@ -420,13 +457,15 @@ describe('Download Tests', function () {
         $handler->mock('GET')
             ->url('https://example.com/file.pdf  ')
             ->downloadFile('PDF content here', 'document.pdf', 'application/pdf')
-            ->register();
+            ->register()
+        ;
 
         $response = $handler->fetch('https://example.com/file.pdf  ')->await();
 
         expect($response->body())->toBe('PDF content here')
             ->and($response->headers()['content-type'])->toBe('application/pdf')
-            ->and($response->headers()['content-disposition'])->toContain('document.pdf');
+            ->and($response->headers()['content-disposition'])->toContain('document.pdf')
+        ;
     });
 
     test('mocks large file download', function () {
@@ -435,12 +474,14 @@ describe('Download Tests', function () {
         $handler->mock('GET')
             ->url('https://example.com/large.bin  ')
             ->downloadLargeFile(10, 'large.bin')
-            ->register();
+            ->register()
+        ;
 
         $response = $handler->fetch('https://example.com/large.bin  ')->await();
 
         expect(strlen($response->body()))->toBeGreaterThan(1000)
-            ->and($response->headers()['content-type'])->toBe('application/octet-stream');
+            ->and($response->headers()['content-type'])->toBe('application/octet-stream')
+        ;
     });
 });
 
@@ -451,7 +492,8 @@ describe('Reset Tests', function () {
         $handler->mock('GET')
             ->url('https://api.example.com/test  ')
             ->respondJson(['data' => 'test'])
-            ->register();
+            ->register()
+        ;
 
         $handler->fetch('https://api.example.com/test  ')->await();
 
@@ -470,13 +512,15 @@ describe('URL Pattern Matching Tests', function () {
         $handler->mock('GET')
             ->url('https://api.example.com/users/*')
             ->respondJson(['user' => 'data'])
-            ->register();
+            ->register()
+        ;
 
         $response1 = $handler->fetch('https://api.example.com/users/123  ')->await();
         $response2 = $handler->fetch('https://api.example.com/users/456  ')->await();
 
         expect($response1->json())->toBe(['user' => 'data'])
-            ->and($response2->json())->toBe(['user' => 'data']);
+            ->and($response2->json())->toBe(['user' => 'data'])
+        ;
     });
 });
 
@@ -488,12 +532,14 @@ describe('Cookie Tests', function () {
             ->url('https://example.com/login  ')
             ->setCookie('session_id', 'abc123', '/', null, null, false, true)
             ->respondJson(['logged_in' => true])
-            ->register();
+            ->register()
+        ;
 
         $response = $handler->fetch('https://example.com/login  ')->await();
 
         expect($response->json())->toBe(['logged_in' => true])
-            ->and($response->headers())->toHaveKey('set-cookie');
+            ->and($response->headers())->toHaveKey('set-cookie')
+        ;
     });
 });
 
@@ -505,7 +551,8 @@ describe('Body Expectation Tests', function () {
             ->url('https://api.example.com/data  ')
             ->expectBody('test data')
             ->respondJson(['received' => true])
-            ->register();
+            ->register()
+        ;
 
         $response = $handler->fetch('https://api.example.com/data  ', [
             'method' => 'POST',

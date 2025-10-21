@@ -9,7 +9,8 @@ describe('StreamingResponse', function () {
         $response = new StreamingResponse($stream, 200, ['Content-Type' => 'text/plain']);
 
         expect($response->getStatusCode())->toBe(200)
-            ->and($response->getHeaderLine('Content-Type'))->toBe('text/plain');
+            ->and($response->getHeaderLine('Content-Type'))->toBe('text/plain')
+        ;
     });
 
     it('gets response body as string', function () {
@@ -28,7 +29,8 @@ describe('StreamingResponse', function () {
         $second = $response->body();
 
         expect($first)->toBe($second)
-            ->and($first)->toBe('test content');
+            ->and($first)->toBe('test content')
+        ;
     });
 
     it('parses JSON response', function () {
@@ -52,7 +54,8 @@ describe('StreamingResponse', function () {
 
         expect($response->json(null, []))->toBe([])
             ->and($response->json(null, 'error'))->toBe('error')
-            ->and($response->json(null, 0))->toBe(0);
+            ->and($response->json(null, 0))->toBe(0)
+        ;
     });
 
     it('returns null for non-array JSON when no default provided', function () {
@@ -78,7 +81,8 @@ describe('StreamingResponse', function () {
         $result = $response->saveToFile($tempFile);
 
         expect($result)->toBeTrue()
-            ->and(file_get_contents($tempFile))->toBe($content);
+            ->and(file_get_contents($tempFile))->toBe($content)
+        ;
 
         unlink($tempFile);
     });
@@ -108,7 +112,8 @@ describe('StreamingResponse', function () {
         $result = $response->saveToFile($tempFile);
 
         expect($result)->toBeTrue()
-            ->and(file_get_contents($tempFile))->toBe($content);
+            ->and(file_get_contents($tempFile))->toBe($content)
+        ;
 
         unlink($tempFile);
     });
@@ -122,7 +127,8 @@ describe('StreamingResponse', function () {
         $result = $response->streamTo($tempFile);
 
         expect($result)->toBeTrue()
-            ->and(file_get_contents($tempFile))->toBe($content);
+            ->and(file_get_contents($tempFile))->toBe($content)
+        ;
 
         unlink($tempFile);
     });
@@ -137,7 +143,8 @@ describe('StreamingResponse', function () {
         rewind($destination);
 
         expect($result)->toBeTrue()
-            ->and(stream_get_contents($destination))->toBe($content);
+            ->and(stream_get_contents($destination))->toBe($content)
+        ;
 
         fclose($destination);
     });
@@ -148,7 +155,8 @@ describe('StreamingResponse', function () {
 
         expect($response->streamTo(123))->toBeFalse()
             ->and($response->streamTo(['array']))->toBeFalse()
-            ->and($response->streamTo(null))->toBeFalse();
+            ->and($response->streamTo(null))->toBeFalse()
+        ;
     });
 
     it('handles empty stream', function () {
@@ -157,7 +165,8 @@ describe('StreamingResponse', function () {
 
         expect($response->body())->toBe('')
             ->and($response->json())->toBeNull()
-            ->and($response->json(null, []))->toBe([]);
+            ->and($response->json(null, []))->toBe([])
+        ;
     });
 
     it('gets underlying stream interface', function () {
@@ -165,7 +174,8 @@ describe('StreamingResponse', function () {
         $response = new StreamingResponse($stream, 200);
 
         expect($response->getStream())->toBe($stream)
-            ->and($response->getStream())->toBeInstanceOf(Psr\Http\Message\StreamInterface::class);
+            ->and($response->getStream())->toBeInstanceOf(Psr\Http\Message\StreamInterface::class)
+        ;
     });
 
     it('rewinds seekable stream before saving to file', function () {
@@ -221,7 +231,8 @@ describe('StreamingResponse', function () {
 
         expect($response->getStatusCode())->toBe(201)
             ->and($response->getHeaderLine('Content-Type'))->toBe('application/json')
-            ->and($response->getHeaderLine('X-Custom-Header'))->toBe('custom-value');
+            ->and($response->getHeaderLine('X-Custom-Header'))->toBe('custom-value')
+        ;
     });
 
     // Additional tests for dot notation support
@@ -231,7 +242,8 @@ describe('StreamingResponse', function () {
         $response = new StreamingResponse($stream, 200);
 
         expect($response->json('user.name'))->toBe('John')
-            ->and($response->json('user.email'))->toBe('john@example.com');
+            ->and($response->json('user.email'))->toBe('john@example.com')
+        ;
     });
 
     it('returns default for missing nested keys', function () {
@@ -240,7 +252,8 @@ describe('StreamingResponse', function () {
         $response = new StreamingResponse($stream, 200);
 
         expect($response->json('user.email', 'no-email@example.com'))->toBe('no-email@example.com')
-            ->and($response->json('missing.key', 'default'))->toBe('default');
+            ->and($response->json('missing.key', 'default'))->toBe('default')
+        ;
     });
 
     it('handles deeply nested JSON with dot notation', function () {

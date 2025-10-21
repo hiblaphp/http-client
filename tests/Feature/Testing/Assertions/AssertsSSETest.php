@@ -10,14 +10,16 @@ describe('AssertsSSE', function () {
             ->url('https://example.com/events')
             ->respondWithHeader('Accept', 'text/event-stream')
             ->respondWithSSE([
-                ['event' => 'message', 'data' => 'test']
+                ['event' => 'message', 'data' => 'test'],
             ])
-            ->register();
+            ->register()
+        ;
 
         $handler->sse('https://example.com/events')->await();
 
-        expect(fn() => $handler->assertSSEConnectionMade('https://example.com/events'))
-            ->not->toThrow(AssertionFailedError::class);
+        expect(fn () => $handler->assertSSEConnectionMade('https://example.com/events'))
+            ->not->toThrow(AssertionFailedError::class)
+        ;
     });
 
     test('assertNoSSEConnections passes when no SSE connections made', function () {
@@ -25,8 +27,9 @@ describe('AssertsSSE', function () {
         $handler->mock('GET')->url('https://example.com')->respondWithStatus(200)->register();
         $handler->fetch('https://example.com')->await();
 
-        expect(fn() => $handler->assertNoSSEConnections())
-            ->not->toThrow(AssertionFailedError::class);
+        expect(fn () => $handler->assertNoSSEConnections())
+            ->not->toThrow(AssertionFailedError::class)
+        ;
     });
 
     test('assertNoSSEConnections fails when SSE connection exists', function () {
@@ -35,12 +38,14 @@ describe('AssertsSSE', function () {
             ->url('https://example.com/events')
             ->respondWithHeader('Accept', 'text/event-stream')
             ->respondWithSSE([['event' => 'message', 'data' => 'test']])
-            ->register();
+            ->register()
+        ;
 
         $handler->sse('https://example.com/events')->await();
 
-        expect(fn() => $handler->assertNoSSEConnections())
-            ->toThrow(AssertionFailedError::class);
+        expect(fn () => $handler->assertNoSSEConnections())
+            ->toThrow(AssertionFailedError::class)
+        ;
     });
 
     test('assertSSELastEventId validates Last-Event-ID header', function () {
@@ -49,17 +54,19 @@ describe('AssertsSSE', function () {
             ->url('https://example.com/events')
             ->respondWithHeader('Accept', 'text/event-stream')
             ->respondWithSSE([['event' => 'message', 'data' => 'test']])
-            ->register();
+            ->register()
+        ;
 
         $handler->fetch('https://example.com/events', [
             'headers' => [
                 'Accept' => 'text/event-stream',
-                'Last-Event-ID' => '12345'
-            ]
+                'Last-Event-ID' => '12345',
+            ],
         ])->await();
 
-        expect(fn() => $handler->assertSSELastEventId('12345'))
-            ->not->toThrow(AssertionFailedError::class);
+        expect(fn () => $handler->assertSSELastEventId('12345'))
+            ->not->toThrow(AssertionFailedError::class)
+        ;
     });
 
     test('assertSSEConnectionAttempts validates connection attempt count', function () {
@@ -68,13 +75,15 @@ describe('AssertsSSE', function () {
             ->url('https://example.com/events')
             ->respondWithHeader('Accept', 'text/event-stream')
             ->respondWithSSE([['event' => 'message', 'data' => 'test']])
-            ->register();
+            ->register()
+        ;
 
         $handler->sse('https://example.com/events')->await();
         $handler->sse('https://example.com/events')->await();
 
-        expect(fn() => $handler->assertSSEConnectionAttempts('https://example.com/events', 2))
-            ->not->toThrow(AssertionFailedError::class);
+        expect(fn () => $handler->assertSSEConnectionAttempts('https://example.com/events', 2))
+            ->not->toThrow(AssertionFailedError::class)
+        ;
     });
 
     test('assertSSEConnectionAttemptsAtLeast validates minimum attempts', function () {
@@ -83,14 +92,16 @@ describe('AssertsSSE', function () {
             ->url('https://example.com/events')
             ->respondWithHeader('Accept', 'text/event-stream')
             ->respondWithSSE([['event' => 'message', 'data' => 'test']])
-            ->register();
+            ->register()
+        ;
 
         $handler->sse('https://example.com/events')->await();
         $handler->sse('https://example.com/events')->await();
         $handler->sse('https://example.com/events')->await();
 
-        expect(fn() => $handler->assertSSEConnectionAttemptsAtLeast('https://example.com/events', 2))
-            ->not->toThrow(AssertionFailedError::class);
+        expect(fn () => $handler->assertSSEConnectionAttemptsAtLeast('https://example.com/events', 2))
+            ->not->toThrow(AssertionFailedError::class)
+        ;
     });
 
     test('assertSSEConnectionAttemptsAtMost validates maximum attempts', function () {
@@ -99,12 +110,14 @@ describe('AssertsSSE', function () {
             ->url('https://example.com/events')
             ->respondWithHeader('Accept', 'text/event-stream')
             ->respondWithSSE([['event' => 'message', 'data' => 'test']])
-            ->register();
+            ->register()
+        ;
 
         $handler->sse('https://example.com/events')->await();
 
-        expect(fn() => $handler->assertSSEConnectionAttemptsAtMost('https://example.com/events', 2))
-            ->not->toThrow(AssertionFailedError::class);
+        expect(fn () => $handler->assertSSEConnectionAttemptsAtMost('https://example.com/events', 2))
+            ->not->toThrow(AssertionFailedError::class)
+        ;
     });
 
     test('assertSSEReconnectionOccurred validates reconnection with Last-Event-ID', function () {
@@ -113,17 +126,19 @@ describe('AssertsSSE', function () {
             ->url('https://example.com/events')
             ->respondWithHeader('Accept', 'text/event-stream')
             ->respondWithSSE([['event' => 'message', 'data' => 'test']])
-            ->register();
+            ->register()
+        ;
 
         $handler->fetch('https://example.com/events', [
             'headers' => [
                 'Accept' => 'text/event-stream',
-                'Last-Event-ID' => '123'
-            ]
+                'Last-Event-ID' => '123',
+            ],
         ])->await();
 
-        expect(fn() => $handler->assertSSEReconnectionOccurred('https://example.com/events'))
-            ->not->toThrow(AssertionFailedError::class);
+        expect(fn () => $handler->assertSSEReconnectionOccurred('https://example.com/events'))
+            ->not->toThrow(AssertionFailedError::class)
+        ;
     });
 
     test('assertSSEConnectionHasHeader validates specific header', function () {
@@ -132,17 +147,19 @@ describe('AssertsSSE', function () {
             ->url('https://example.com/events')
             ->respondWithHeader('Accept', 'text/event-stream')
             ->respondWithSSE([['event' => 'message', 'data' => 'test']])
-            ->register();
+            ->register()
+        ;
 
         $handler->fetch('https://example.com/events', [
             'headers' => [
                 'Accept' => 'text/event-stream',
-                'X-Custom' => 'value'
-            ]
+                'X-Custom' => 'value',
+            ],
         ])->await();
 
-        expect(fn() => $handler->assertSSEConnectionHasHeader('https://example.com/events', 'X-Custom', 'value'))
-            ->not->toThrow(AssertionFailedError::class);
+        expect(fn () => $handler->assertSSEConnectionHasHeader('https://example.com/events', 'X-Custom', 'value'))
+            ->not->toThrow(AssertionFailedError::class)
+        ;
     });
 
     test('assertSSEConnectionMissingHeader validates header absence', function () {
@@ -151,14 +168,16 @@ describe('AssertsSSE', function () {
             ->url('https://example.com/events')
             ->respondWithHeader('Accept', 'text/event-stream')
             ->respondWithSSE([['event' => 'message', 'data' => 'test']])
-            ->register();
+            ->register()
+        ;
 
         $handler->fetch('https://example.com/events', [
-            'headers' => ['Accept' => 'text/event-stream']
+            'headers' => ['Accept' => 'text/event-stream'],
         ])->await();
 
-        expect(fn() => $handler->assertSSEConnectionMissingHeader('https://example.com/events', 'X-Missing'))
-            ->not->toThrow(AssertionFailedError::class);
+        expect(fn () => $handler->assertSSEConnectionMissingHeader('https://example.com/events', 'X-Missing'))
+            ->not->toThrow(AssertionFailedError::class)
+        ;
     });
 
     test('assertSSEConnectionsMadeToMultipleUrls validates multiple connections', function () {
@@ -167,20 +186,22 @@ describe('AssertsSSE', function () {
             ->url('https://example.com/events1')
             ->respondWithHeader('Accept', 'text/event-stream')
             ->respondWithSSE([['event' => 'message', 'data' => 'test1']])
-            ->register();
+            ->register()
+        ;
 
         $handler->mock('GET')
             ->url('https://example.com/events2')
             ->respondWithHeader('Accept', 'text/event-stream')
             ->respondWithSSE([['event' => 'message', 'data' => 'test2']])
-            ->register();
+            ->register()
+        ;
 
         $handler->sse('https://example.com/events1')->await();
         $handler->sse('https://example.com/events2')->await();
 
-        expect(fn() => $handler->assertSSEConnectionsMadeToMultipleUrls([
+        expect(fn () => $handler->assertSSEConnectionsMadeToMultipleUrls([
             'https://example.com/events1',
-            'https://example.com/events2'
+            'https://example.com/events2',
         ]))->not->toThrow(AssertionFailedError::class);
     });
 
@@ -190,20 +211,22 @@ describe('AssertsSSE', function () {
             ->url('https://example.com/events1')
             ->respondWithHeader('Accept', 'text/event-stream')
             ->respondWithSSE([['event' => 'message', 'data' => 'test1']])
-            ->register();
+            ->register()
+        ;
 
         $handler->mock('GET')
             ->url('https://example.com/events2')
             ->respondWithHeader('Accept', 'text/event-stream')
             ->respondWithSSE([['event' => 'message', 'data' => 'test2']])
-            ->register();
+            ->register()
+        ;
 
         $handler->sse('https://example.com/events1')->await();
         $handler->sse('https://example.com/events2')->await();
 
-        expect(fn() => $handler->assertSSEConnectionsInOrder([
+        expect(fn () => $handler->assertSSEConnectionsInOrder([
             'https://example.com/events1',
-            'https://example.com/events2'
+            'https://example.com/events2',
         ]))->not->toThrow(AssertionFailedError::class);
     });
 
@@ -213,17 +236,19 @@ describe('AssertsSSE', function () {
             ->url('https://example.com/events')
             ->respondWithHeader('Accept', 'text/event-stream')
             ->respondWithSSE([['event' => 'message', 'data' => 'test']])
-            ->register();
+            ->register()
+        ;
 
         $handler->fetch('https://example.com/events', [
             'headers' => [
                 'Accept' => 'text/event-stream',
-                'Authorization' => 'Bearer secret-token'
-            ]
+                'Authorization' => 'Bearer secret-token',
+            ],
         ])->await();
 
-        expect(fn() => $handler->assertSSEConnectionAuthenticated('https://example.com/events', 'secret-token'))
-            ->not->toThrow(AssertionFailedError::class);
+        expect(fn () => $handler->assertSSEConnectionAuthenticated('https://example.com/events', 'secret-token'))
+            ->not->toThrow(AssertionFailedError::class)
+        ;
     });
 
     test('assertSSEReconnectionProgression validates increasing event IDs', function () {
@@ -232,24 +257,26 @@ describe('AssertsSSE', function () {
             ->url('https://example.com/events')
             ->respondWithHeader('Accept', 'text/event-stream')
             ->respondWithSSE([['event' => 'message', 'data' => 'test']])
-            ->register();
+            ->register()
+        ;
 
         $handler->fetch('https://example.com/events', [
             'headers' => [
                 'Accept' => 'text/event-stream',
-                'Last-Event-ID' => '1'
-            ]
+                'Last-Event-ID' => '1',
+            ],
         ])->await();
 
         $handler->fetch('https://example.com/events', [
             'headers' => [
                 'Accept' => 'text/event-stream',
-                'Last-Event-ID' => '2'
-            ]
+                'Last-Event-ID' => '2',
+            ],
         ])->await();
 
-        expect(fn() => $handler->assertSSEReconnectionProgression('https://example.com/events'))
-            ->not->toThrow(AssertionFailedError::class);
+        expect(fn () => $handler->assertSSEReconnectionProgression('https://example.com/events'))
+            ->not->toThrow(AssertionFailedError::class)
+        ;
     });
 
     test('assertFirstSSEConnectionHasNoLastEventId validates first connection', function () {
@@ -258,14 +285,16 @@ describe('AssertsSSE', function () {
             ->url('https://example.com/events')
             ->respondWithHeader('Accept', 'text/event-stream')
             ->respondWithSSE([['event' => 'message', 'data' => 'test']])
-            ->register();
+            ->register()
+        ;
 
         $handler->fetch('https://example.com/events', [
-            'headers' => ['Accept' => 'text/event-stream']
+            'headers' => ['Accept' => 'text/event-stream'],
         ])->await();
 
-        expect(fn() => $handler->assertFirstSSEConnectionHasNoLastEventId('https://example.com/events'))
-            ->not->toThrow(AssertionFailedError::class);
+        expect(fn () => $handler->assertFirstSSEConnectionHasNoLastEventId('https://example.com/events'))
+            ->not->toThrow(AssertionFailedError::class)
+        ;
     });
 
     test('assertSSEConnectionCount validates exact connection count', function () {
@@ -274,13 +303,15 @@ describe('AssertsSSE', function () {
             ->url('https://example.com/events')
             ->respondWithHeader('Accept', 'text/event-stream')
             ->respondWithSSE([['event' => 'message', 'data' => 'test']])
-            ->register();
+            ->register()
+        ;
 
         $handler->sse('https://example.com/events')->await();
         $handler->sse('https://example.com/events')->await();
 
-        expect(fn() => $handler->assertSSEConnectionCount('https://example.com/events', 2))
-            ->not->toThrow(AssertionFailedError::class);
+        expect(fn () => $handler->assertSSEConnectionCount('https://example.com/events', 2))
+            ->not->toThrow(AssertionFailedError::class)
+        ;
     });
 
     test('getSSEConnectionAttempts returns all attempts', function () {
@@ -289,7 +320,8 @@ describe('AssertsSSE', function () {
             ->url('https://example.com/events')
             ->respondWithHeader('Accept', 'text/event-stream')
             ->respondWithSSE([['event' => 'message', 'data' => 'test']])
-            ->register();
+            ->register()
+        ;
 
         $handler->sse('https://example.com/events')->await();
         $handler->sse('https://example.com/events')->await();

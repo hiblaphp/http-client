@@ -20,10 +20,11 @@ describe('Promise::all() with Mocks using Http Facade', function () {
                     'userId' => 1,
                     'id' => $i,
                     'title' => "Post {$i} title",
-                    'body' => "Post {$i} body"
+                    'body' => "Post {$i} body",
                 ])
                 ->persistent()
-                ->register();
+                ->register()
+            ;
         }
 
         $promises = [
@@ -41,7 +42,8 @@ describe('Promise::all() with Mocks using Http Facade', function () {
             ->and($results[2]->json('id'))->toBe(3)
             ->and($results[0]->successful())->toBeTrue()
             ->and($results[1]->successful())->toBeTrue()
-            ->and($results[2]->successful())->toBeTrue();
+            ->and($results[2]->successful())->toBeTrue()
+        ;
     });
 
     test('fetches multiple different resources concurrently', function () {
@@ -51,36 +53,40 @@ describe('Promise::all() with Mocks using Http Facade', function () {
                 'id' => 1,
                 'title' => 'Post title',
                 'body' => 'Post body',
-                'userId' => 1
+                'userId' => 1,
             ])
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://jsonplaceholder.typicode.com/users/1')
             ->respondJson([
                 'id' => 1,
                 'name' => 'John Doe',
-                'email' => 'john@example.com'
+                'email' => 'john@example.com',
             ])
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://jsonplaceholder.typicode.com/comments/1')
             ->respondJson([
                 'id' => 1,
                 'email' => 'commenter@example.com',
-                'body' => 'Comment body'
+                'body' => 'Comment body',
             ])
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://jsonplaceholder.typicode.com/todos/1')
             ->respondJson([
                 'id' => 1,
                 'completed' => false,
-                'title' => 'Todo title'
+                'title' => 'Todo title',
             ])
-            ->register();
+            ->register()
+        ;
 
         $promises = [
             'post' => Http::get('https://jsonplaceholder.typicode.com/posts/1'),
@@ -96,25 +102,29 @@ describe('Promise::all() with Mocks using Http Facade', function () {
             ->and($results['post']->json())->toHaveKey('title')
             ->and($results['user']->json())->toHaveKey('name')
             ->and($results['comment']->json())->toHaveKey('email')
-            ->and($results['todo']->json())->toHaveKey('completed');
+            ->and($results['todo']->json())->toHaveKey('completed')
+        ;
     });
 
     test('Promise::all() handles when one request fails', function () {
         Http::mock('GET')
             ->url('https://jsonplaceholder.typicode.com/posts/1')
             ->respondJson(['id' => 1, 'title' => 'Post 1'])
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://jsonplaceholder.typicode.com/posts/99999')
             ->respondWithStatus(404)
             ->respondJson(['error' => 'Not found'])
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://jsonplaceholder.typicode.com/posts/3')
             ->respondJson(['id' => 3, 'title' => 'Post 3'])
-            ->register();
+            ->register()
+        ;
 
         $promises = [
             Http::get('https://jsonplaceholder.typicode.com/posts/1'),
@@ -127,7 +137,8 @@ describe('Promise::all() with Mocks using Http Facade', function () {
         expect($results)->toHaveCount(3)
             ->and($results[0]->successful())->toBeTrue()
             ->and($results[1]->status())->toBe(404)
-            ->and($results[2]->successful())->toBeTrue();
+            ->and($results[2]->successful())->toBeTrue()
+        ;
     });
 
     test('fetches 10 posts concurrently', function () {
@@ -138,9 +149,10 @@ describe('Promise::all() with Mocks using Http Facade', function () {
                     'userId' => 1,
                     'id' => $i,
                     'title' => "Post {$i}",
-                    'body' => "Body {$i}"
+                    'body' => "Body {$i}",
                 ])
-                ->register();
+                ->register()
+            ;
         }
 
         $promises = [];
@@ -153,11 +165,13 @@ describe('Promise::all() with Mocks using Http Facade', function () {
         $duration = microtime(true) - $start;
 
         expect($results)->toHaveCount(10)
-            ->and($duration)->toBeLessThan(2.0); // Realistic timing with random delays
+            ->and($duration)->toBeLessThan(2.0) // Realistic timing with random delays
+        ;
 
         foreach ($results as $index => $response) {
             expect($response->successful())->toBeTrue()
-                ->and($response->json('id'))->toBe($index + 1);
+                ->and($response->json('id'))->toBe($index + 1)
+            ;
         }
     });
 });
@@ -167,22 +181,26 @@ describe('Promise::allSettled() with Mocks using Http Facade', function () {
         Http::mock('GET')
             ->url('https://jsonplaceholder.typicode.com/posts/1')
             ->respondJson(['id' => 1, 'title' => 'Post 1'])
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://jsonplaceholder.typicode.com/posts/99999')
             ->respondWithStatus(404)
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://jsonplaceholder.typicode.com/posts/3')
             ->respondJson(['id' => 3, 'title' => 'Post 3'])
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://invalid-domain-that-does-not-exist-12345.com/test')
             ->fail('Could not resolve host')
-            ->register();
+            ->register()
+        ;
 
         $promises = [
             Http::get('https://jsonplaceholder.typicode.com/posts/1'),
@@ -194,24 +212,29 @@ describe('Promise::allSettled() with Mocks using Http Facade', function () {
         $results = Promise::allSettled($promises)->await();
 
         expect($results)->toBeArray()
-            ->and($results)->toHaveCount(4);
+            ->and($results)->toHaveCount(4)
+        ;
 
         // First request - successful
         expect($results[0])->toHaveKey('status', 'fulfilled')
             ->and($results[0])->toHaveKey('value')
-            ->and($results[0]['value']->successful())->toBeTrue();
+            ->and($results[0]['value']->successful())->toBeTrue()
+        ;
 
         // Second request - 404 but fulfilled
         expect($results[1])->toHaveKey('status', 'fulfilled')
-            ->and($results[1]['value']->status())->toBe(404);
+            ->and($results[1]['value']->status())->toBe(404)
+        ;
 
         // Third request - successful
         expect($results[2])->toHaveKey('status', 'fulfilled')
-            ->and($results[2]['value']->successful())->toBeTrue();
+            ->and($results[2]['value']->successful())->toBeTrue()
+        ;
 
         // Fourth request - rejected due to network error
         expect($results[3])->toHaveKey('status', 'rejected')
-            ->and($results[3])->toHaveKey('reason');
+            ->and($results[3])->toHaveKey('reason')
+        ;
     });
 
     test('all requests succeed with allSettled', function () {
@@ -221,9 +244,10 @@ describe('Promise::allSettled() with Mocks using Http Facade', function () {
                 ->respondJson([
                     'id' => $i,
                     'name' => "User {$i}",
-                    'email' => "user{$i}@example.com"
+                    'email' => "user{$i}@example.com",
                 ])
-                ->register();
+                ->register()
+            ;
         }
 
         $promises = [
@@ -238,7 +262,8 @@ describe('Promise::allSettled() with Mocks using Http Facade', function () {
 
         foreach ($results as $result) {
             expect($result)->toHaveKey('status', 'fulfilled')
-                ->and($result['value']->successful())->toBeTrue();
+                ->and($result['value']->successful())->toBeTrue()
+            ;
         }
     });
 });
@@ -250,21 +275,24 @@ describe('Promise::race() with Mocks using Http Facade', function () {
             ->respondJson(['id' => 1, 'title' => 'Post 1'])
             ->delay(0.3)
             ->persistent()
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://jsonplaceholder.typicode.com/posts/2')
             ->respondJson(['id' => 2, 'title' => 'Post 2'])
             ->delay(0.1) // Fastest
             ->persistent()
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://jsonplaceholder.typicode.com/posts/3')
             ->respondJson(['id' => 3, 'title' => 'Post 3'])
             ->delay(0.5)
             ->persistent()
-            ->register();
+            ->register()
+        ;
 
         $promises = [
             Http::get('https://jsonplaceholder.typicode.com/posts/1'),
@@ -276,7 +304,8 @@ describe('Promise::race() with Mocks using Http Facade', function () {
 
         expect($result->successful())->toBeTrue()
             ->and($result->json())->toHaveKey('id')
-            ->and($result->json('id'))->toBe(2); // Post 2 is fastest
+            ->and($result->json('id'))->toBe(2) // Post 2 is fastest
+        ;
     });
 
     test('race with delayed requests', function () {
@@ -285,21 +314,24 @@ describe('Promise::race() with Mocks using Http Facade', function () {
             ->delay(2.0)
             ->respondJson(['speed' => 'slow'])
             ->persistent()
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://api.example.com/fast')
             ->delay(0.1)
             ->respondJson(['speed' => 'fast'])
             ->persistent()
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://api.example.com/medium')
             ->delay(1.0)
             ->respondJson(['speed' => 'medium'])
             ->persistent()
-            ->register();
+            ->register()
+        ;
 
         $promises = [
             Http::get('https://api.example.com/slow'),
@@ -319,7 +351,8 @@ describe('Promise::any() with Mocks using Http Facade', function () {
             Http::mock('GET')
                 ->url("https://jsonplaceholder.typicode.com/posts/{$i}")
                 ->respondJson(['id' => $i, 'title' => "Post {$i}"])
-                ->register();
+                ->register()
+            ;
         }
 
         $promises = [
@@ -331,24 +364,28 @@ describe('Promise::any() with Mocks using Http Facade', function () {
         $result = Promise::any($promises)->await();
 
         expect($result->successful())->toBeTrue()
-            ->and($result->json())->toHaveKey('id');
+            ->and($result->json())->toHaveKey('id')
+        ;
     });
 
     test('succeeds even when some requests fail', function () {
         Http::mock('GET')
             ->url('https://invalid-domain-12345.com/fail')
             ->fail('Could not resolve host')
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://jsonplaceholder.typicode.com/posts/1')
             ->respondJson(['id' => 1, 'title' => 'Post 1'])
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://another-invalid-domain-67890.com/fail')
             ->fail('Connection failed')
-            ->register();
+            ->register()
+        ;
 
         $promises = [
             Http::get('https://invalid-domain-12345.com/fail'),
@@ -359,7 +396,8 @@ describe('Promise::any() with Mocks using Http Facade', function () {
         $result = Promise::any($promises)->await();
 
         expect($result->successful())->toBeTrue()
-            ->and($result->json('id'))->toBe(1);
+            ->and($result->json('id'))->toBe(1)
+        ;
     });
 });
 
@@ -372,14 +410,15 @@ describe('Promise::concurrent() with Mocks using Http Facade', function () {
                     'userId' => 1,
                     'id' => $i,
                     'title' => "Post {$i}",
-                    'body' => "Body {$i}"
+                    'body' => "Body {$i}",
                 ])
-                ->register();
+                ->register()
+            ;
         }
 
         $tasks = [];
         for ($i = 1; $i <= 20; $i++) {
-            $tasks[] = fn() => Http::get("https://jsonplaceholder.typicode.com/posts/{$i}");
+            $tasks[] = fn () => Http::get("https://jsonplaceholder.typicode.com/posts/{$i}");
         }
 
         $start = microtime(true);
@@ -390,7 +429,8 @@ describe('Promise::concurrent() with Mocks using Http Facade', function () {
 
         foreach ($results as $index => $response) {
             expect($response->successful())->toBeTrue()
-                ->and($response->json('id'))->toBe($index + 1);
+                ->and($response->json('id'))->toBe($index + 1)
+            ;
         }
     });
 
@@ -398,40 +438,46 @@ describe('Promise::concurrent() with Mocks using Http Facade', function () {
         Http::mock('GET')
             ->url('https://jsonplaceholder.typicode.com/posts/1')
             ->respondJson(['id' => 1, 'title' => 'Post 1'])
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://jsonplaceholder.typicode.com/users/1')
             ->respondJson(['id' => 1, 'name' => 'User 1'])
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://jsonplaceholder.typicode.com/comments/1')
             ->respondJson(['id' => 1, 'body' => 'Comment 1'])
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://jsonplaceholder.typicode.com/albums/1')
             ->respondJson(['id' => 1, 'title' => 'Album 1'])
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://jsonplaceholder.typicode.com/photos/1')
             ->respondJson(['id' => 1, 'title' => 'Photo 1'])
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://jsonplaceholder.typicode.com/todos/1')
             ->respondJson(['id' => 1, 'title' => 'Todo 1'])
-            ->register();
+            ->register()
+        ;
 
         $tasks = [
-            fn() => Http::get('https://jsonplaceholder.typicode.com/posts/1'),
-            fn() => Http::get('https://jsonplaceholder.typicode.com/users/1'),
-            fn() => Http::get('https://jsonplaceholder.typicode.com/comments/1'),
-            fn() => Http::get('https://jsonplaceholder.typicode.com/albums/1'),
-            fn() => Http::get('https://jsonplaceholder.typicode.com/photos/1'),
-            fn() => Http::get('https://jsonplaceholder.typicode.com/todos/1'),
+            fn () => Http::get('https://jsonplaceholder.typicode.com/posts/1'),
+            fn () => Http::get('https://jsonplaceholder.typicode.com/users/1'),
+            fn () => Http::get('https://jsonplaceholder.typicode.com/comments/1'),
+            fn () => Http::get('https://jsonplaceholder.typicode.com/albums/1'),
+            fn () => Http::get('https://jsonplaceholder.typicode.com/photos/1'),
+            fn () => Http::get('https://jsonplaceholder.typicode.com/todos/1'),
         ];
 
         $results = Promise::concurrent($tasks, 3)->await();
@@ -452,14 +498,15 @@ describe('Promise::concurrent() with Mocks using Http Facade', function () {
                     'id' => 101,
                     'title' => "Post {$i}",
                     'body' => "Body content {$i}",
-                    'userId' => 1
+                    'userId' => 1,
                 ])
-                ->register();
+                ->register()
+            ;
         }
 
         $tasks = [];
         for ($i = 1; $i <= 5; $i++) {
-            $tasks[] = fn() => Http::post('https://jsonplaceholder.typicode.com/posts', [
+            $tasks[] = fn () => Http::post('https://jsonplaceholder.typicode.com/posts', [
                 'title' => "Post {$i}",
                 'body' => "Body content {$i}",
                 'userId' => 1,
@@ -485,14 +532,15 @@ describe('Promise::batch() with Mocks using Http Facade', function () {
                     'userId' => 1,
                     'id' => $i,
                     'title' => "Post {$i}",
-                    'body' => "Body {$i}"
+                    'body' => "Body {$i}",
                 ])
-                ->register();
+                ->register()
+            ;
         }
 
         $tasks = [];
         for ($i = 1; $i <= 15; $i++) {
-            $tasks[] = fn() => Http::get("https://jsonplaceholder.typicode.com/posts/{$i}");
+            $tasks[] = fn () => Http::get("https://jsonplaceholder.typicode.com/posts/{$i}");
         }
 
         $results = Promise::batch($tasks, 5, 3)->await();
@@ -501,7 +549,8 @@ describe('Promise::batch() with Mocks using Http Facade', function () {
 
         foreach ($results as $index => $response) {
             expect($response->successful())->toBeTrue()
-                ->and($response->json('id'))->toBe($index + 1);
+                ->and($response->json('id'))->toBe($index + 1)
+            ;
         }
     });
 
@@ -509,35 +558,40 @@ describe('Promise::batch() with Mocks using Http Facade', function () {
         Http::mock('GET')
             ->url('https://jsonplaceholder.typicode.com/posts/1')
             ->respondJson(['id' => 1, 'title' => 'Post 1'])
-            ->register();
+            ->register()
+        ;
 
         Http::mock('POST')
             ->url('https://jsonplaceholder.typicode.com/posts')
             ->respondWithStatus(201)
             ->respondJson(['id' => 101, 'title' => 'Test'])
-            ->register();
+            ->register()
+        ;
 
         Http::mock('PUT')
             ->url('https://jsonplaceholder.typicode.com/posts/1')
             ->respondJson(['id' => 1, 'title' => 'Updated'])
-            ->register();
+            ->register()
+        ;
 
         Http::mock('DELETE')
             ->url('https://jsonplaceholder.typicode.com/posts/1')
             ->respondJson([])
-            ->register();
+            ->register()
+        ;
 
         Http::mock('PATCH')
             ->url('https://jsonplaceholder.typicode.com/posts/1')
             ->respondJson(['id' => 1, 'title' => 'Patched'])
-            ->register();
+            ->register()
+        ;
 
         $tasks = [
-            fn() => Http::get('https://jsonplaceholder.typicode.com/posts/1'),
-            fn() => Http::post('https://jsonplaceholder.typicode.com/posts', ['title' => 'Test']),
-            fn() => Http::put('https://jsonplaceholder.typicode.com/posts/1', ['title' => 'Updated']),
-            fn() => Http::delete('https://jsonplaceholder.typicode.com/posts/1'),
-            fn() => Http::patch('https://jsonplaceholder.typicode.com/posts/1', ['title' => 'Patched']),
+            fn () => Http::get('https://jsonplaceholder.typicode.com/posts/1'),
+            fn () => Http::post('https://jsonplaceholder.typicode.com/posts', ['title' => 'Test']),
+            fn () => Http::put('https://jsonplaceholder.typicode.com/posts/1', ['title' => 'Updated']),
+            fn () => Http::delete('https://jsonplaceholder.typicode.com/posts/1'),
+            fn () => Http::patch('https://jsonplaceholder.typicode.com/posts/1', ['title' => 'Patched']),
         ];
 
         $results = Promise::batch($tasks, 2, 2)->await();
@@ -548,7 +602,8 @@ describe('Promise::batch() with Mocks using Http Facade', function () {
             ->and($results[1]->status())->toBe(201)
             ->and($results[2]->status())->toBe(200)
             ->and($results[3]->status())->toBe(200)
-            ->and($results[4]->status())->toBe(200);
+            ->and($results[4]->status())->toBe(200)
+        ;
     });
 });
 
@@ -566,28 +621,32 @@ describe('Promise::concurrentSettled() with Mocks using Http Facade', function (
         Http::mock('GET')
             ->url('https://jsonplaceholder.typicode.com/posts/1')
             ->respondJson(['id' => 1, 'title' => 'Post 1'])
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://jsonplaceholder.typicode.com/posts/99999')
             ->respondWithStatus(404)
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://invalid-domain-test-12345.com/fail')
             ->fail('Connection failed')
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://jsonplaceholder.typicode.com/posts/3')
             ->respondJson(['id' => 3, 'title' => 'Post 3'])
-            ->register();
+            ->register()
+        ;
 
         $tasks = [
-            fn() => Http::get('https://jsonplaceholder.typicode.com/posts/1'),
-            fn() => Http::get('https://jsonplaceholder.typicode.com/posts/99999'),
-            fn() => Http::get('https://invalid-domain-test-12345.com/fail'),
-            fn() => Http::get('https://jsonplaceholder.typicode.com/posts/3'),
+            fn () => Http::get('https://jsonplaceholder.typicode.com/posts/1'),
+            fn () => Http::get('https://jsonplaceholder.typicode.com/posts/99999'),
+            fn () => Http::get('https://invalid-domain-test-12345.com/fail'),
+            fn () => Http::get('https://jsonplaceholder.typicode.com/posts/3'),
         ];
 
         $results = Promise::concurrentSettled($tasks, 2)->await();
@@ -596,18 +655,21 @@ describe('Promise::concurrentSettled() with Mocks using Http Facade', function (
 
         // First - fulfilled
         expect($results[0])->toHaveKey('status', 'fulfilled')
-            ->and($results[0]['value']->successful())->toBeTrue();
+            ->and($results[0]['value']->successful())->toBeTrue()
+        ;
 
         // Second - fulfilled but 404
         expect($results[1])->toHaveKey('status', 'fulfilled')
-            ->and($results[1]['value']->status())->toBe(404);
+            ->and($results[1]['value']->status())->toBe(404)
+        ;
 
         // Third - rejected
         expect($results[2])->toHaveKey('status', 'rejected');
 
         // Fourth - fulfilled
         expect($results[3])->toHaveKey('status', 'fulfilled')
-            ->and($results[3]['value']->successful())->toBeTrue();
+            ->and($results[3]['value']->successful())->toBeTrue()
+        ;
     });
 
     test('all tasks succeed with concurrentSettled', function () {
@@ -617,14 +679,15 @@ describe('Promise::concurrentSettled() with Mocks using Http Facade', function (
                 ->respondJson([
                     'id' => $i,
                     'name' => "User {$i}",
-                    'email' => "user{$i}@example.com"
+                    'email' => "user{$i}@example.com",
                 ])
-                ->register();
+                ->register()
+            ;
         }
 
         $tasks = [];
         for ($i = 1; $i <= 10; $i++) {
-            $tasks[] = fn() => Http::get("https://jsonplaceholder.typicode.com/users/{$i}");
+            $tasks[] = fn () => Http::get("https://jsonplaceholder.typicode.com/users/{$i}");
         }
 
         $results = Promise::concurrentSettled($tasks, 5)->await();
@@ -633,7 +696,8 @@ describe('Promise::concurrentSettled() with Mocks using Http Facade', function (
 
         foreach ($results as $result) {
             expect($result)->toHaveKey('status', 'fulfilled')
-                ->and($result['value']->successful())->toBeTrue();
+                ->and($result['value']->successful())->toBeTrue()
+            ;
         }
     });
 });
@@ -652,40 +716,46 @@ describe('Promise::batchSettled() with Mocks using Http Facade', function () {
         Http::mock('GET')
             ->url('https://jsonplaceholder.typicode.com/posts/1')
             ->respondJson(['id' => 1, 'title' => 'Post 1'])
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://jsonplaceholder.typicode.com/posts/2')
             ->respondJson(['id' => 2, 'title' => 'Post 2'])
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://invalid-test-domain-99999.com/fail')
             ->fail('Connection failed')
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://jsonplaceholder.typicode.com/posts/3')
             ->respondJson(['id' => 3, 'title' => 'Post 3'])
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://jsonplaceholder.typicode.com/posts/99999')
             ->respondWithStatus(404)
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://jsonplaceholder.typicode.com/posts/4')
             ->respondJson(['id' => 4, 'title' => 'Post 4'])
-            ->register();
+            ->register()
+        ;
 
         $tasks = [
-            fn() => Http::get('https://jsonplaceholder.typicode.com/posts/1'),
-            fn() => Http::get('https://jsonplaceholder.typicode.com/posts/2'),
-            fn() => Http::get('https://invalid-test-domain-99999.com/fail'),
-            fn() => Http::get('https://jsonplaceholder.typicode.com/posts/3'),
-            fn() => Http::get('https://jsonplaceholder.typicode.com/posts/99999'),
-            fn() => Http::get('https://jsonplaceholder.typicode.com/posts/4'),
+            fn () => Http::get('https://jsonplaceholder.typicode.com/posts/1'),
+            fn () => Http::get('https://jsonplaceholder.typicode.com/posts/2'),
+            fn () => Http::get('https://invalid-test-domain-99999.com/fail'),
+            fn () => Http::get('https://jsonplaceholder.typicode.com/posts/3'),
+            fn () => Http::get('https://jsonplaceholder.typicode.com/posts/99999'),
+            fn () => Http::get('https://jsonplaceholder.typicode.com/posts/4'),
         ];
 
         $results = Promise::batchSettled($tasks, 3, 2)->await();
@@ -704,7 +774,8 @@ describe('Promise::batchSettled() with Mocks using Http Facade', function () {
         }
 
         expect($successCount)->toBeGreaterThan(0)
-            ->and($rejectedCount)->toBeGreaterThan(0);
+            ->and($rejectedCount)->toBeGreaterThan(0)
+        ;
     });
 });
 
@@ -722,13 +793,15 @@ describe('Concurrent Requests with Mocks using Http Facade', function () {
         Http::mock('GET')
             ->url('https://api.example.com/mocked')
             ->respondJson(['source' => 'mock', 'id' => 999])
-            ->register();
+            ->register()
+        ;
 
         // Real API mock
         Http::mock('GET')
             ->url('https://jsonplaceholder.typicode.com/posts/1')
             ->respondJson(['id' => 1, 'title' => 'Real Post', 'body' => 'Real body', 'userId' => 1])
-            ->register();
+            ->register()
+        ;
 
         $promises = [
             'real' => Http::get('https://jsonplaceholder.typicode.com/posts/1'),
@@ -740,29 +813,33 @@ describe('Concurrent Requests with Mocks using Http Facade', function () {
         expect($results)->toHaveCount(2)
             ->and($results['real']->json('id'))->toBe(1)
             ->and($results['mock']->json('source'))->toBe('mock')
-            ->and($results['mock']->json('id'))->toBe(999);
+            ->and($results['mock']->json('id'))->toBe(999)
+        ;
     });
 
     test('concurrent with retry simulation', function () {
         Http::mock('GET')
             ->url('https://api.example.com/retry-test')
             ->failUntilAttempt(3)
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://jsonplaceholder.typicode.com/posts/1')
             ->respondJson(['id' => 1, 'title' => 'Post 1'])
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://jsonplaceholder.typicode.com/posts/2')
             ->respondJson(['id' => 2, 'title' => 'Post 2'])
-            ->register();
+            ->register()
+        ;
 
         $tasks = [
-            fn() => Http::retry(5, 0.01)->get('https://api.example.com/retry-test'),
-            fn() => Http::get('https://jsonplaceholder.typicode.com/posts/1'),
-            fn() => Http::get('https://jsonplaceholder.typicode.com/posts/2'),
+            fn () => Http::retry(5, 0.01)->get('https://api.example.com/retry-test'),
+            fn () => Http::get('https://jsonplaceholder.typicode.com/posts/1'),
+            fn () => Http::get('https://jsonplaceholder.typicode.com/posts/2'),
         ];
 
         $results = Promise::concurrent($tasks, 2)->await();
@@ -770,7 +847,8 @@ describe('Concurrent Requests with Mocks using Http Facade', function () {
         expect($results)->toHaveCount(3)
             ->and($results[0]->successful())->toBeTrue()
             ->and($results[1]->successful())->toBeTrue()
-            ->and($results[2]->successful())->toBeTrue();
+            ->and($results[2]->successful())->toBeTrue()
+        ;
     });
 
     test('batch with rate limiting simulation', function () {
@@ -778,13 +856,15 @@ describe('Concurrent Requests with Mocks using Http Facade', function () {
             Http::mock('GET')
                 ->url("https://api.example.com/rate-limited/{$i}")
                 ->rateLimitedUntilAttempt(2)
-                ->register();
+                ->register()
+            ;
         }
 
         $tasks = [];
         for ($i = 1; $i <= 5; $i++) {
-            $tasks[] = fn() => Http::retry(5, 0.01)
-                ->get("https://api.example.com/rate-limited/{$i}");
+            $tasks[] = fn () => Http::retry(5, 0.01)
+                ->get("https://api.example.com/rate-limited/{$i}")
+            ;
         }
 
         $results = Promise::batch($tasks, 2, 2)->await();
@@ -800,23 +880,27 @@ describe('Concurrent Requests with Mocks using Http Facade', function () {
         Http::mock('GET')
             ->url('https://api.example.com/success')
             ->respondJson(['status' => 'ok'])
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://api.example.com/fail')
             ->fail('Connection failed')
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://api.example.com/slow')
             ->delay(0.5)
             ->respondJson(['status' => 'slow'])
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://jsonplaceholder.typicode.com/posts/1')
             ->respondJson(['id' => 1, 'title' => 'Post 1'])
-            ->register();
+            ->register()
+        ;
 
         $promises = [
             Http::get('https://api.example.com/success'),
@@ -831,7 +915,8 @@ describe('Concurrent Requests with Mocks using Http Facade', function () {
             ->and($results[0]['status'])->toBe('fulfilled')
             ->and($results[1]['status'])->toBe('rejected')
             ->and($results[2]['status'])->toBe('fulfilled')
-            ->and($results[3]['status'])->toBe('fulfilled');
+            ->and($results[3]['status'])->toBe('fulfilled')
+        ;
     });
 });
 
@@ -853,10 +938,11 @@ describe('Concurrency Performance Tests with Mocks using Http Facade', function 
                     'userId' => 1,
                     'id' => $i,
                     'title' => "Post {$i}",
-                    'body' => "Body {$i}"
+                    'body' => "Body {$i}",
                 ])
                 ->persistent()
-                ->register();
+                ->register()
+            ;
         }
 
         // Sequential execution
@@ -887,14 +973,15 @@ describe('Concurrency Performance Tests with Mocks using Http Facade', function 
                     'userId' => 1,
                     'id' => $i,
                     'title' => "Post {$i}",
-                    'body' => "Body {$i}"
+                    'body' => "Body {$i}",
                 ])
-                ->register();
+                ->register()
+            ;
         }
 
         $tasks = [];
         for ($i = 1; $i <= 20; $i++) {
-            $tasks[] = fn() => Http::get("https://jsonplaceholder.typicode.com/posts/{$i}");
+            $tasks[] = fn () => Http::get("https://jsonplaceholder.typicode.com/posts/{$i}");
         }
 
         $start = microtime(true);
@@ -902,7 +989,8 @@ describe('Concurrency Performance Tests with Mocks using Http Facade', function 
         $duration = microtime(true) - $start;
 
         expect($results)->toHaveCount(20)
-            ->and($duration)->toBeLessThan(5.0); // More realistic timeout with random delays
+            ->and($duration)->toBeLessThan(5.0) // More realistic timeout with random delays
+        ;
     });
 });
 
@@ -913,9 +1001,10 @@ describe('Complex Concurrent Workflows with Mocks using Http Facade', function (
             ->respondJson([
                 'id' => 1,
                 'name' => 'John Doe',
-                'email' => 'john@example.com'
+                'email' => 'john@example.com',
             ])
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://jsonplaceholder.typicode.com/posts?userId=1')
@@ -923,7 +1012,8 @@ describe('Complex Concurrent Workflows with Mocks using Http Facade', function (
                 ['id' => 1, 'userId' => 1, 'title' => 'Post 1'],
                 ['id' => 2, 'userId' => 1, 'title' => 'Post 2'],
             ])
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://jsonplaceholder.typicode.com/todos?userId=1')
@@ -931,7 +1021,8 @@ describe('Complex Concurrent Workflows with Mocks using Http Facade', function (
                 ['id' => 1, 'userId' => 1, 'title' => 'Todo 1', 'completed' => false],
                 ['id' => 2, 'userId' => 1, 'title' => 'Todo 2', 'completed' => true],
             ])
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://jsonplaceholder.typicode.com/albums?userId=1')
@@ -939,7 +1030,8 @@ describe('Complex Concurrent Workflows with Mocks using Http Facade', function (
                 ['id' => 1, 'userId' => 1, 'title' => 'Album 1'],
                 ['id' => 2, 'userId' => 1, 'title' => 'Album 2'],
             ])
-            ->register();
+            ->register()
+        ;
 
         $userResponse = Http::get('https://jsonplaceholder.typicode.com/users/1')->await();
         $userId = $userResponse->json('id');
@@ -955,7 +1047,8 @@ describe('Complex Concurrent Workflows with Mocks using Http Facade', function (
         expect($results)->toHaveCount(3)
             ->and($results['posts']->json())->toBeArray()
             ->and($results['todos']->json())->toBeArray()
-            ->and($results['albums']->json())->toBeArray();
+            ->and($results['albums']->json())->toBeArray()
+        ;
     });
 
     test('parallel POST requests with Promise::all()', function () {
@@ -974,9 +1067,10 @@ describe('Complex Concurrent Workflows with Mocks using Http Facade', function (
                     'id' => 101 + $index,
                     'title' => $post['title'],
                     'body' => $post['body'],
-                    'userId' => $post['userId']
+                    'userId' => $post['userId'],
                 ])
-                ->register();
+                ->register()
+            ;
         }
 
         $promises = [];
@@ -990,7 +1084,8 @@ describe('Complex Concurrent Workflows with Mocks using Http Facade', function (
 
         foreach ($results as $index => $response) {
             expect($response->status())->toBe(201)
-                ->and($response->json('title'))->toBe($postsToCreate[$index]['title']);
+                ->and($response->json('title'))->toBe($postsToCreate[$index]['title'])
+            ;
         }
     });
 
@@ -999,19 +1094,22 @@ describe('Complex Concurrent Workflows with Mocks using Http Facade', function (
             ->url('https://jsonplaceholder.typicode.com/posts/1')
             ->respondJson(['id' => 1, 'title' => 'Post 1'])
             ->delay(0.3)
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://jsonplaceholder.typicode.com/users/1')
             ->respondJson(['id' => 1, 'name' => 'User 1'])
             ->delay(0.1) // Fastest
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://jsonplaceholder.typicode.com/comments/1')
             ->respondJson(['id' => 1, 'body' => 'Comment 1'])
             ->delay(0.5)
-            ->register();
+            ->register()
+        ;
 
         $promises = [
             Http::get('https://jsonplaceholder.typicode.com/posts/1'),
@@ -1023,7 +1121,8 @@ describe('Complex Concurrent Workflows with Mocks using Http Facade', function (
 
         expect($winner->successful())->toBeTrue()
             ->and($winner->json())->toHaveKey('id')
-            ->and($winner->json())->toHaveKey('name'); // User endpoint wins
+            ->and($winner->json())->toHaveKey('name') // User endpoint wins
+        ;
     });
 });
 
@@ -1032,23 +1131,27 @@ describe('Error Handling with Concurrent Requests', function () {
         Http::mock('GET')
             ->url('https://api.example.com/endpoint1')
             ->respondJson(['id' => 1, 'status' => 'success'])
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://api.example.com/endpoint2')
             ->fail('Network timeout')
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://api.example.com/endpoint3')
             ->respondWithStatus(500)
             ->respondJson(['error' => 'Internal server error'])
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://api.example.com/endpoint4')
             ->respondJson(['id' => 4, 'status' => 'success'])
-            ->register();
+            ->register()
+        ;
 
         $promises = [
             Http::get('https://api.example.com/endpoint1'),
@@ -1061,11 +1164,12 @@ describe('Error Handling with Concurrent Requests', function () {
 
         expect($results)->toHaveCount(4);
 
-        $fulfilled = array_filter($results, fn($r) => $r['status'] === 'fulfilled');
-        $rejected = array_filter($results, fn($r) => $r['status'] === 'rejected');
+        $fulfilled = array_filter($results, fn ($r) => $r['status'] === 'fulfilled');
+        $rejected = array_filter($results, fn ($r) => $r['status'] === 'rejected');
 
         expect(count($fulfilled))->toBe(3) // endpoints 1, 3, 4 (3 is HTTP error but fulfilled)
-            ->and(count($rejected))->toBe(1); // endpoint 2 (network error)
+            ->and(count($rejected))->toBe(1) // endpoint 2 (network error)
+        ;
     });
 
     test('retry logic works with concurrent requests', function () {
@@ -1073,24 +1177,27 @@ describe('Error Handling with Concurrent Requests', function () {
         Http::mock('GET')
             ->url('https://api.example.com/retry1')
             ->failUntilAttempt(3, 'Temporary failure')
-            ->register();
+            ->register()
+        ;
 
         // Second endpoint: succeeds immediately
         Http::mock('GET')
             ->url('https://api.example.com/retry2')
             ->respondJson(['id' => 2, 'status' => 'immediate success'])
-            ->register();
+            ->register()
+        ;
 
         // Third endpoint: rate limited then succeeds
         Http::mock('GET')
             ->url('https://api.example.com/retry3')
             ->rateLimitedUntilAttempt(2)
-            ->register();
+            ->register()
+        ;
 
         $tasks = [
-            fn() => Http::retry(5, 0.01)->get('https://api.example.com/retry1'),
-            fn() => Http::get('https://api.example.com/retry2'),
-            fn() => Http::retry(5, 0.01)->get('https://api.example.com/retry3'),
+            fn () => Http::retry(5, 0.01)->get('https://api.example.com/retry1'),
+            fn () => Http::get('https://api.example.com/retry2'),
+            fn () => Http::retry(5, 0.01)->get('https://api.example.com/retry3'),
         ];
 
         $results = Promise::concurrent($tasks, 3)->await();
@@ -1107,18 +1214,21 @@ describe('Error Handling with Concurrent Requests', function () {
             ->url('https://api.example.com/fast')
             ->respondJson(['speed' => 'fast'])
             ->delay(0.1)
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://api.example.com/slow')
             ->timeout(5.0)
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://api.example.com/normal')
             ->respondJson(['speed' => 'normal'])
             ->delay(0.2)
-            ->register();
+            ->register()
+        ;
 
         $promises = [
             'fast' => Http::timeout(10)->get('https://api.example.com/fast'),
@@ -1149,12 +1259,14 @@ describe('Advanced Promise Patterns with Mocks', function () {
         Http::mock('GET')
             ->url('https://api.example.com/user/1')
             ->respondJson(['id' => 1, 'name' => 'John', 'companyId' => 5])
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://api.example.com/company/5')
             ->respondJson(['id' => 5, 'name' => 'Acme Corp', 'location' => 'New York'])
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://api.example.com/company/5/employees')
@@ -1163,7 +1275,8 @@ describe('Advanced Promise Patterns with Mocks', function () {
                 ['id' => 2, 'name' => 'Jane'],
                 ['id' => 3, 'name' => 'Bob'],
             ])
-            ->register();
+            ->register()
+        ;
 
         $user = Http::get('https://api.example.com/user/1')->await();
         $companyId = $user->json('companyId');
@@ -1176,7 +1289,8 @@ describe('Advanced Promise Patterns with Mocks', function () {
         $results = Promise::all($promises)->await();
 
         expect($results['company']->json('name'))->toBe('Acme Corp')
-            ->and($results['employees']->json())->toHaveCount(3);
+            ->and($results['employees']->json())->toHaveCount(3)
+        ;
     });
 
     test('load balancing simulation with race', function () {
@@ -1185,19 +1299,22 @@ describe('Advanced Promise Patterns with Mocks', function () {
             ->url('https://server1.example.com/data')
             ->respondJson(['server' => 'server1', 'data' => 'result'])
             ->randomDelay(0.2, 0.4)
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://server2.example.com/data')
             ->respondJson(['server' => 'server2', 'data' => 'result'])
             ->randomDelay(0.1, 0.3)
-            ->register();
+            ->register()
+        ;
 
         Http::mock('GET')
             ->url('https://server3.example.com/data')
             ->respondJson(['server' => 'server3', 'data' => 'result'])
             ->randomDelay(0.15, 0.35)
-            ->register();
+            ->register()
+        ;
 
         $promises = [
             Http::get('https://server1.example.com/data'),
@@ -1209,7 +1326,8 @@ describe('Advanced Promise Patterns with Mocks', function () {
 
         expect($fastest->successful())->toBeTrue()
             ->and($fastest->json('data'))->toBe('result')
-            ->and($fastest->json('server'))->toBeIn(['server1', 'server2', 'server3']);
+            ->and($fastest->json('server'))->toBeIn(['server1', 'server2', 'server3'])
+        ;
     });
 
     test('fan-out fan-in pattern', function () {
@@ -1221,7 +1339,8 @@ describe('Advanced Promise Patterns with Mocks', function () {
                 ['id' => 2, 'name' => 'Item 2'],
                 ['id' => 3, 'name' => 'Item 3'],
             ])
-            ->register();
+            ->register()
+        ;
 
         // Mock detail endpoints for each item
         for ($i = 1; $i <= 3; $i++) {

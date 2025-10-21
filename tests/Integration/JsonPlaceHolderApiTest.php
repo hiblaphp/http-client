@@ -16,7 +16,8 @@ describe('Real API Integration Tests', function () {
             ->and($response->json())->toHaveKey('id', 1)
             ->and($response->json())->toHaveKey('userId')
             ->and($response->json())->toHaveKey('title')
-            ->and($response->json())->toHaveKey('body');
+            ->and($response->json())->toHaveKey('body')
+        ;
     });
 
     test('fetches all posts from JSONPlaceholder', function () {
@@ -31,7 +32,8 @@ describe('Real API Integration Tests', function () {
             ->and($posts)->toBeArray()
             ->and(count($posts))->toBeGreaterThan(0)
             ->and($posts[0])->toHaveKey('id')
-            ->and($posts[0])->toHaveKey('title');
+            ->and($posts[0])->toHaveKey('title')
+        ;
     });
 
     test('creates a new post via POST request', function () {
@@ -55,7 +57,8 @@ describe('Real API Integration Tests', function () {
             ->and($response->json())->toHaveKey('id')
             ->and($response->json('title'))->toBe('Integration Test Post')
             ->and($response->json('body'))->toBe('This is a test post from our integration tests')
-            ->and($response->json('userId'))->toBe(1);
+            ->and($response->json('userId'))->toBe(1)
+        ;
     });
 
     test('updates a post via PUT request', function () {
@@ -78,7 +81,8 @@ describe('Real API Integration Tests', function () {
 
         expect($response->status())->toBe(200)
             ->and($response->json('title'))->toBe('Updated Title')
-            ->and($response->json('body'))->toBe('Updated body content');
+            ->and($response->json('body'))->toBe('Updated body content')
+        ;
     });
 
     test('patches a post via PATCH request', function () {
@@ -93,7 +97,8 @@ describe('Real API Integration Tests', function () {
         $response = $promise->await();
 
         expect($response->status())->toBe(200)
-            ->and($response->json('title'))->toBe('Patched Title');
+            ->and($response->json('title'))->toBe('Patched Title')
+        ;
     });
 
     test('deletes a post via DELETE request', function () {
@@ -121,7 +126,8 @@ describe('Real API Integration Tests', function () {
             ->and(count($comments))->toBeGreaterThan(0)
             ->and($comments[0])->toHaveKey('postId', 1)
             ->and($comments[0])->toHaveKey('email')
-            ->and($comments[0])->toHaveKey('body');
+            ->and($comments[0])->toHaveKey('body')
+        ;
     });
 
     test('filters posts by query parameters', function () {
@@ -134,7 +140,8 @@ describe('Real API Integration Tests', function () {
 
         expect($response->status())->toBe(200)
             ->and($posts)->toBeArray()
-            ->and(count($posts))->toBeGreaterThan(0);
+            ->and(count($posts))->toBeGreaterThan(0)
+        ;
 
         foreach ($posts as $post) {
             expect($post['userId'])->toBe(1);
@@ -150,7 +157,8 @@ describe('Real API Integration Tests', function () {
         expect($response->status())->toBe(404)
             ->and($response->failed())->toBeTrue()
             ->and($response->clientError())->toBeTrue()
-            ->and($response->successful())->toBeFalse();
+            ->and($response->successful())->toBeFalse()
+        ;
     });
 
     test('fetches user data', function () {
@@ -163,7 +171,8 @@ describe('Real API Integration Tests', function () {
             ->and($response->json())->toHaveKey('id', 1)
             ->and($response->json())->toHaveKey('name')
             ->and($response->json())->toHaveKey('email')
-            ->and($response->json())->toHaveKey('address');
+            ->and($response->json())->toHaveKey('address')
+        ;
     });
 
     test('extracts nested JSON data using dot notation', function () {
@@ -174,7 +183,8 @@ describe('Real API Integration Tests', function () {
 
         expect($response->json('address.city'))->toBeString()
             ->and($response->json('address.geo.lat'))->toBeString()
-            ->and($response->json('company.name'))->toBeString();
+            ->and($response->json('company.name'))->toBeString()
+        ;
     });
 
     test('handles response headers correctly', function () {
@@ -185,7 +195,8 @@ describe('Real API Integration Tests', function () {
 
         expect($response->header('content-type'))->toContain('application/json')
             ->and($response->headers())->toHaveKey('content-type')
-            ->and($response->headers())->toHaveKey('date');
+            ->and($response->headers())->toHaveKey('date')
+        ;
     });
 
     test('fetches albums with nested photos', function () {
@@ -201,7 +212,8 @@ describe('Real API Integration Tests', function () {
             ->and(count($photos))->toBeGreaterThan(0)
             ->and($photos[0])->toHaveKey('albumId', 1)
             ->and($photos[0])->toHaveKey('thumbnailUrl')
-            ->and($photos[0])->toHaveKey('url');
+            ->and($photos[0])->toHaveKey('url')
+        ;
     });
 
     test('fetches todos', function () {
@@ -214,7 +226,8 @@ describe('Real API Integration Tests', function () {
             ->and($response->json())->toHaveKey('userId')
             ->and($response->json())->toHaveKey('title')
             ->and($response->json())->toHaveKey('completed')
-            ->and($response->json('completed'))->toBeBool();
+            ->and($response->json('completed'))->toBeBool()
+        ;
     });
 
     test('handles multiple sequential requests', function () {
@@ -234,7 +247,8 @@ describe('Real API Integration Tests', function () {
             ->and($postsResponse->status())->toBe(200)
             ->and($todosResponse->status())->toBe(200)
             ->and($postsResponse->json())->toBeArray()
-            ->and($todosResponse->json())->toBeArray();
+            ->and($todosResponse->json())->toBeArray()
+        ;
     });
 
     test('sends custom headers', function () {
@@ -250,7 +264,8 @@ describe('Real API Integration Tests', function () {
         $response = $promise->await();
 
         expect($response->status())->toBe(200)
-            ->and($response->json())->toHaveKey('id');
+            ->and($response->json())->toHaveKey('id')
+        ;
     });
 
     test('handles timeout configuration', function () {
@@ -277,7 +292,8 @@ describe('Real API Integration Tests', function () {
         expect($body)->toBeString()
             ->and(strlen($body))->toBeGreaterThan(0)
             ->and($body)->toContain('"id"')
-            ->and($body)->toContain('"title"');
+            ->and($body)->toContain('"title"')
+        ;
     });
 
     test('checks HTTP version information', function () {
@@ -289,7 +305,8 @@ describe('Real API Integration Tests', function () {
         $httpVersion = $response->getHttpVersion();
 
         expect($response->status())->toBe(200)
-            ->and($httpVersion)->not->toBeNull();
+            ->and($httpVersion)->not->toBeNull()
+        ;
     });
 
     test('handles JSON default value when key not found', function () {
@@ -299,7 +316,8 @@ describe('Real API Integration Tests', function () {
         $response = $promise->await();
 
         expect($response->json('nonexistent.key', 'default'))->toBe('default')
-            ->and($response->json('deeply.nested.key', 'fallback'))->toBe('fallback');
+            ->and($response->json('deeply.nested.key', 'fallback'))->toBe('fallback')
+        ;
     });
 
     test('verifies response status checks', function () {
@@ -311,7 +329,8 @@ describe('Real API Integration Tests', function () {
         expect($response->successful())->toBeTrue()
             ->and($response->failed())->toBeFalse()
             ->and($response->clientError())->toBeFalse()
-            ->and($response->serverError())->toBeFalse();
+            ->and($response->serverError())->toBeFalse()
+        ;
 
         $promise404 = $handler->fetch('https://jsonplaceholder.typicode.com/posts/99999');
         $response404 = $promise404->await();
@@ -319,7 +338,8 @@ describe('Real API Integration Tests', function () {
         expect($response404->successful())->toBeFalse()
             ->and($response404->failed())->toBeTrue()
             ->and($response404->clientError())->toBeTrue()
-            ->and($response404->serverError())->toBeFalse();
+            ->and($response404->serverError())->toBeFalse()
+        ;
     });
 
     test('fetches comments with email validation', function () {
@@ -332,7 +352,8 @@ describe('Real API Integration Tests', function () {
 
         expect($response->status())->toBe(200)
             ->and($email)->toBeString()
-            ->and(filter_var($email, FILTER_VALIDATE_EMAIL))->not->toBeFalse();
+            ->and(filter_var($email, FILTER_VALIDATE_EMAIL))->not->toBeFalse()
+        ;
     });
 
     test('posts form data', function () {
@@ -379,7 +400,6 @@ describe('Real API Integration Tests', function () {
     });
 })->skipOnCI();
 
-
 describe('Mock Handler Integration Tests', function () {
 
     test('simulates JSONPlaceholder API with mocks', function () {
@@ -393,14 +413,16 @@ describe('Mock Handler Integration Tests', function () {
                 'title' => 'Mocked Post Title',
                 'body' => 'Mocked post body content',
             ])
-            ->register();
+            ->register()
+        ;
 
         $promise = $handler->fetch('https://jsonplaceholder.typicode.com/posts/1');
         $response = $promise->await();
 
         expect($response->status())->toBe(200)
             ->and($response->json('title'))->toBe('Mocked Post Title')
-            ->and($response->json('id'))->toBe(1);
+            ->and($response->json('id'))->toBe(1)
+        ;
     });
 
     test('simulates slow API response', function () {
@@ -413,7 +435,8 @@ describe('Mock Handler Integration Tests', function () {
                 ['id' => 1, 'title' => 'Post 1'],
                 ['id' => 2, 'title' => 'Post 2'],
             ])
-            ->register();
+            ->register()
+        ;
 
         $start = microtime(true);
         $promise = $handler->fetch('https://jsonplaceholder.typicode.com/posts');
@@ -421,7 +444,8 @@ describe('Mock Handler Integration Tests', function () {
         $duration = microtime(true) - $start;
 
         expect($duration)->toBeGreaterThanOrEqual(0.5)
-            ->and($response->json())->toHaveCount(2);
+            ->and($response->json())->toHaveCount(2)
+        ;
     });
 
     test('simulates rate limiting scenario', function () {
@@ -430,7 +454,8 @@ describe('Mock Handler Integration Tests', function () {
         $handler->mock('POST')
             ->url('https://jsonplaceholder.typicode.com/posts')
             ->rateLimitedUntilAttempt(3)
-            ->register();
+            ->register()
+        ;
 
         $promise = $handler->fetch('https://jsonplaceholder.typicode.com/posts', [
             'method' => 'POST',
@@ -441,7 +466,8 @@ describe('Mock Handler Integration Tests', function () {
         $response = $promise->await();
 
         expect($response->status())->toBe(200)
-            ->and($response->json())->toHaveKey('success', true);
+            ->and($response->json())->toHaveKey('success', true)
+        ;
     });
 
     test('simulates network recovery scenario', function () {
@@ -450,7 +476,8 @@ describe('Mock Handler Integration Tests', function () {
         $handler->mock('GET')
             ->url('https://jsonplaceholder.typicode.com/users/1')
             ->slowlyImproveUntilAttempt(3, 2.0)
-            ->register();
+            ->register()
+        ;
 
         $promise = $handler->fetch('https://jsonplaceholder.typicode.com/users/1', [
             'retry' => new RetryConfig(maxRetries: 5, baseDelay: 0.01),
@@ -459,7 +486,8 @@ describe('Mock Handler Integration Tests', function () {
         $response = $promise->await();
 
         expect($response->status())->toBe(200)
-            ->and($response->json())->toHaveKey('success', true);
+            ->and($response->json())->toHaveKey('success', true)
+        ;
     });
 
     test('simulates persistent mock for multiple requests', function () {
@@ -469,7 +497,8 @@ describe('Mock Handler Integration Tests', function () {
             ->url('https://jsonplaceholder.typicode.com/posts/*')
             ->respondJson(['id' => 1, 'title' => 'Generic Post'])
             ->persistent()
-            ->register();
+            ->register()
+        ;
 
         $promise1 = $handler->fetch('https://jsonplaceholder.typicode.com/posts/1');
         $response1 = $promise1->await();

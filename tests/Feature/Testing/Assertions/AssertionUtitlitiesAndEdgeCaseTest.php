@@ -8,8 +8,9 @@ describe('Edge Cases', function () {
         $handler->mock('GET')->url('https://example.com/api/users/123')->respondWithStatus(200)->register();
         $handler->fetch('https://example.com/api/users/123')->await();
 
-        expect(fn() => $handler->assertRequestMatchingUrl('GET', 'https://example.com/api/users/*'))
-            ->not->toThrow(AssertionFailedError::class);
+        expect(fn () => $handler->assertRequestMatchingUrl('GET', 'https://example.com/api/users/*'))
+            ->not->toThrow(AssertionFailedError::class)
+        ;
     });
 
     test('assertions handle case-insensitive HTTP methods', function () {
@@ -17,16 +18,18 @@ describe('Edge Cases', function () {
         $handler->mock('POST')->url('https://example.com')->respondWithStatus(200)->register();
         $handler->fetch('https://example.com', ['method' => 'post'])->await();
 
-        expect(fn() => $handler->assertRequestMade('POST', 'https://example.com'))
-            ->not->toThrow(AssertionFailedError::class);
+        expect(fn () => $handler->assertRequestMade('POST', 'https://example.com'))
+            ->not->toThrow(AssertionFailedError::class)
+        ;
     });
 
     test('assertions handle empty request history', function () {
         $handler = testingHttpHandler();
-        
+
         expect($handler->getLastRequest())->toBeNull()
             ->and($handler->getRequest(0))->toBeNull()
-            ->and($handler->getRequestHistory())->toBeEmpty();
+            ->and($handler->getRequestHistory())->toBeEmpty()
+        ;
     });
 
     test('assertions handle multiple requests to same URL', function () {
@@ -37,8 +40,9 @@ describe('Edge Cases', function () {
         $handler->fetch('https://example.com')->await();
         $handler->fetch('https://example.com')->await();
 
-        expect(fn() => $handler->assertRequestCount(3))
-            ->not->toThrow(AssertionFailedError::class);
+        expect(fn () => $handler->assertRequestCount(3))
+            ->not->toThrow(AssertionFailedError::class)
+        ;
     });
 
     test('assertions handle nested JSON structures', function () {
@@ -51,15 +55,16 @@ describe('Edge Cases', function () {
                 'user' => [
                     'profile' => [
                         'name' => 'John',
-                        'age' => 30
-                    ]
-                ]
+                        'age' => 30,
+                    ],
+                ],
             ]),
-            'headers' => ['Content-Type' => 'application/json']
+            'headers' => ['Content-Type' => 'application/json'],
         ])->await();
 
-        expect(fn() => $handler->assertRequestJsonPath('POST', 'https://example.com', 'user.profile.name', 'John'))
-            ->not->toThrow(AssertionFailedError::class);
+        expect(fn () => $handler->assertRequestJsonPath('POST', 'https://example.com', 'user.profile.name', 'John'))
+            ->not->toThrow(AssertionFailedError::class)
+        ;
     });
 
     test('assertions handle array header values', function () {
@@ -67,7 +72,7 @@ describe('Edge Cases', function () {
         $handler->mock('GET')->url('https://example.com')->respondWithStatus(200)->register();
 
         $handler->fetch('https://example.com', [
-            'headers' => ['Accept' => ['application/json', 'text/html']]
+            'headers' => ['Accept' => ['application/json', 'text/html']],
         ])->await();
 
         $request = $handler->getLastRequest();
@@ -80,13 +85,15 @@ describe('Edge Cases', function () {
             ->url('https://example.com/file.txt')
             ->respondWithStatus(200)
             ->respondWith('test body content')
-            ->register();
+            ->register()
+        ;
 
         $result = $handler->download('https://example.com/file.txt')->await();
 
         expect($result['file'])->toBeString()
             ->and(file_exists($result['file']))->toBeTrue()
-            ->and(file_get_contents($result['file']))->toBe('test body content');
+            ->and(file_get_contents($result['file']))->toBe('test body content')
+        ;
     });
 
     test('stream assertions handle callback presence', function () {
@@ -98,8 +105,9 @@ describe('Edge Cases', function () {
             $chunks[] = $chunk;
         })->await();
 
-        expect(fn() => $handler->assertStreamWithCallback('https://example.com/stream'))
-            ->not->toThrow(AssertionFailedError::class);
+        expect(fn () => $handler->assertStreamWithCallback('https://example.com/stream'))
+            ->not->toThrow(AssertionFailedError::class)
+        ;
     });
 
     test('SSE assertions handle URL patterns with wildcards', function () {
@@ -108,12 +116,14 @@ describe('Edge Cases', function () {
             ->url('https://example.com/events/stream-123')
             ->respondWithHeader('Accept', 'text/event-stream')
             ->respondWithSSE([['event' => 'message', 'data' => 'test']])
-            ->register();
+            ->register()
+        ;
 
         $handler->sse('https://example.com/events/stream-123')->await();
 
-        expect(fn() => $handler->assertSSEConnectionMade('https://example.com/events/*'))
-            ->not->toThrow(AssertionFailedError::class);
+        expect(fn () => $handler->assertSSEConnectionMade('https://example.com/events/*'))
+            ->not->toThrow(AssertionFailedError::class)
+        ;
     });
 });
 
@@ -127,8 +137,8 @@ describe('Debugging Helpers', function () {
             'body' => json_encode(['key' => 'value']),
             'headers' => [
                 'X-Custom' => 'header-value',
-                'Content-Type' => 'application/json'
-            ]
+                'Content-Type' => 'application/json',
+            ],
         ])->await();
 
         ob_start();
@@ -139,7 +149,8 @@ describe('Debugging Helpers', function () {
             ->and($output)->toContain('Method: POST')
             ->and($output)->toContain('URL: https://example.com')
             ->and($output)->toContain('x-custom')
-            ->and($output)->toContain('Parsed JSON');
+            ->and($output)->toContain('Parsed JSON')
+        ;
     });
 
     test('dumpDownloads outputs download information', function () {
@@ -153,7 +164,8 @@ describe('Debugging Helpers', function () {
 
         expect($output)->toContain('Downloads')
             ->and($output)->toContain('https://example.com/file.txt')
-            ->and($output)->toContain('Destination:');
+            ->and($output)->toContain('Destination:')
+        ;
     });
 
     test('dumpStreams outputs stream information', function () {
@@ -167,7 +179,8 @@ describe('Debugging Helpers', function () {
 
         expect($output)->toContain('Streams')
             ->and($output)->toContain('https://example.com/stream')
-            ->and($output)->toContain('Has callback:');
+            ->and($output)->toContain('Has callback:')
+        ;
     });
 
     test('dumpRequestsByMethod filters by HTTP method', function () {

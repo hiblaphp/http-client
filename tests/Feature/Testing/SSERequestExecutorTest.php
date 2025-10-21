@@ -1,20 +1,18 @@
 <?php
 
+use Hibla\HttpClient\SSE\SSEEvent;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
 use Hibla\HttpClient\SSE\SSEResponse;
-use Hibla\HttpClient\SSE\SSEEvent;
 use Hibla\HttpClient\Stream;
+use Hibla\HttpClient\Testing\Exceptions\MockException;
+use Hibla\HttpClient\Testing\Exceptions\UnexpectedRequestException;
 use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Testing\Utilities\Executors\SSERequestExecutor;
 use Hibla\HttpClient\Testing\Utilities\NetworkSimulator;
 use Hibla\HttpClient\Testing\Utilities\RequestMatcher;
 use Hibla\HttpClient\Testing\Utilities\RequestRecorder;
 use Hibla\HttpClient\Testing\Utilities\ResponseFactory;
-use Hibla\HttpClient\Testing\Exceptions\MockException;
-use Hibla\HttpClient\Testing\Exceptions\UnexpectedRequestException;
 use Hibla\Promise\CancellablePromise;
-use Hibla\Promise\Interfaces\PromiseInterface;
-use Hibla\Promise\Promise;
 
 function createSSEExecutor(): SSERequestExecutor
 {
@@ -28,13 +26,13 @@ function createSSEExecutor(): SSERequestExecutor
 test('executes SSE request on first attempt success', function () {
     $executor = createSSEExecutor();
     $mocks = [];
-    
+
     $mock = new MockedRequest('GET');
     $mock->setUrlPattern('https://api.example.com/events');
     $mock->asSSE();
     $mock->setSSEEvents([
         ['event' => 'message', 'data' => 'Hello'],
-        ['event' => 'message', 'data' => 'World']
+        ['event' => 'message', 'data' => 'World'],
     ]);
     $mocks[] = $mock;
 
@@ -53,18 +51,19 @@ test('executes SSE request on first attempt success', function () {
 
     expect($result)->toBeInstanceOf(SSEResponse::class)
         ->and($events)->toHaveCount(2)
-        ->and($mocks)->toBeEmpty();
+        ->and($mocks)->toBeEmpty()
+    ;
 });
 
 test('persistent SSE mock is not removed', function () {
     $executor = createSSEExecutor();
     $mocks = [];
-    
+
     $mock = new MockedRequest('GET');
     $mock->setUrlPattern('https://api.example.com/stream');
     $mock->asSSE();
     $mock->setSSEEvents([
-        ['event' => 'update', 'data' => 'persistent']
+        ['event' => 'update', 'data' => 'persistent'],
     ]);
     $mock->setPersistent(true);
     $mocks[] = $mock;
@@ -77,13 +76,14 @@ test('persistent SSE mock is not removed', function () {
     )->await();
 
     expect($result)->toBeInstanceOf(SSEResponse::class)
-        ->and($mocks)->toHaveCount(1);
+        ->and($mocks)->toHaveCount(1)
+    ;
 });
 
 test('throws exception when SSE mock not properly configured', function () {
     $executor = createSSEExecutor();
     $mocks = [];
-    
+
     $mock = new MockedRequest('GET');
     $mock->setUrlPattern('https://api.example.com/events');
     $mock->setBody('{"not": "sse"}'); // Not configured as SSE
@@ -95,12 +95,12 @@ test('throws exception when SSE mock not properly configured', function () {
         $mocks,
         []
     )->await();
-})->throws(\RuntimeException::class, 'Mock matched for SSE request but is not configured as SSE');
+})->throws(RuntimeException::class, 'Mock matched for SSE request but is not configured as SSE');
 
 test('throws exception when no mock found with strict matching', function () {
     $executor = createSSEExecutor();
     $mocks = [];
-    
+
     $globalSettings = ['strict_matching' => true];
 
     $executor->execute(
@@ -114,10 +114,10 @@ test('throws exception when no mock found with strict matching', function () {
 test('throws exception when passthrough not allowed', function () {
     $executor = createSSEExecutor();
     $mocks = [];
-    
+
     $globalSettings = [
         'strict_matching' => false,
-        'allow_passthrough' => false
+        'allow_passthrough' => false,
     ];
 
     $executor->execute(
@@ -131,12 +131,12 @@ test('throws exception when passthrough not allowed', function () {
 test('handles SSE with onError callback', function () {
     $executor = createSSEExecutor();
     $mocks = [];
-    
+
     $mock = new MockedRequest('GET');
     $mock->setUrlPattern('https://api.example.com/events');
     $mock->asSSE();
     $mock->setSSEEvents([
-        ['event' => 'error', 'data' => 'Something went wrong']
+        ['event' => 'error', 'data' => 'Something went wrong'],
     ]);
     $mocks[] = $mock;
 
@@ -160,22 +160,22 @@ test('handles SSE with onError callback', function () {
 test('executes SSE with reconnect config', function () {
     $executor = createSSEExecutor();
     $mocks = [];
-    
+
     // First connection
     $mock1 = new MockedRequest('GET');
     $mock1->setUrlPattern('https://api.example.com/events');
     $mock1->asSSE();
     $mock1->setSSEEvents([
-        ['event' => 'message', 'data' => 'First', 'id' => '1']
+        ['event' => 'message', 'data' => 'First', 'id' => '1'],
     ]);
     $mocks[] = $mock1;
-    
+
     // Reconnection after failure
     $mock2 = new MockedRequest('GET');
     $mock2->setUrlPattern('https://api.example.com/events');
     $mock2->asSSE();
     $mock2->setSSEEvents([
-        ['event' => 'message', 'data' => 'Reconnected', 'id' => '2']
+        ['event' => 'message', 'data' => 'Reconnected', 'id' => '2'],
     ]);
     $mocks[] = $mock2;
 
@@ -209,13 +209,13 @@ test('executes SSE with reconnect config', function () {
 test('adds Last-Event-ID header on reconnection', function () {
     $executor = createSSEExecutor();
     $mocks = [];
-    
+
     // First mock without Last-Event-ID header (initial connection)
     $mock = new MockedRequest('GET');
     $mock->setUrlPattern('https://api.example.com/events');
     $mock->asSSE();
     $mock->setSSEEvents([
-        ['event' => 'message', 'data' => 'Initial', 'id' => '123']
+        ['event' => 'message', 'data' => 'Initial', 'id' => '123'],
     ]);
     $mocks[] = $mock;
 
@@ -242,7 +242,7 @@ test('adds Last-Event-ID header on reconnection', function () {
 test('throws exception when no SSE mock found during retry', function () {
     $executor = createSSEExecutor();
     $mocks = [];
-    
+
     $reconnectConfig = new SSEReconnectConfig(
         enabled: true,
         maxAttempts: 2
@@ -263,14 +263,14 @@ test('throws exception when no SSE mock found during retry', function () {
 test('handles SSE infinite stream with config', function () {
     $executor = createSSEExecutor();
     $mocks = [];
-    
+
     $mock = new MockedRequest('GET');
     $mock->setUrlPattern('https://api.example.com/live');
     $mock->asSSE();
     $mock->setSSEStreamConfig([
         'event' => 'heartbeat',
         'data' => 'ping',
-        'interval' => 1.0
+        'interval' => 1.0,
     ]);
     $mocks[] = $mock;
 
@@ -288,21 +288,22 @@ test('handles SSE infinite stream with config', function () {
     )->await();
 
     expect($result)->toBeInstanceOf(SSEResponse::class)
-        ->and($mock->hasStreamConfig())->toBeTrue();
+        ->and($mock->hasStreamConfig())->toBeTrue()
+    ;
 });
 
 // FIXED: The $event is an SSEEvent object, not an array
 test('handles SSE with custom event types', function () {
     $executor = createSSEExecutor();
     $mocks = [];
-    
+
     $mock = new MockedRequest('GET');
     $mock->setUrlPattern('https://api.example.com/notifications');
     $mock->asSSE();
     $mock->setSSEEvents([
         ['event' => 'user_joined', 'data' => '{"user": "alice"}'],
         ['event' => 'user_left', 'data' => '{"user": "bob"}'],
-        ['event' => 'message', 'data' => 'Hello everyone']
+        ['event' => 'message', 'data' => 'Hello everyone'],
     ]);
     $mocks[] = $mock;
 
@@ -322,18 +323,19 @@ test('handles SSE with custom event types', function () {
     )->await();
 
     expect($result)->toBeInstanceOf(SSEResponse::class)
-        ->and($eventTypes)->toContain('user_joined', 'user_left', 'message');
+        ->and($eventTypes)->toContain('user_joined', 'user_left', 'message')
+    ;
 });
 
 test('handles SSE reconnection with onReconnect callback', function () {
     $executor = createSSEExecutor();
     $mocks = [];
-    
+
     $mock = new MockedRequest('GET');
     $mock->setUrlPattern('https://api.example.com/events');
     $mock->asSSE();
     $mock->setSSEEvents([
-        ['event' => 'message', 'data' => 'Connected']
+        ['event' => 'message', 'data' => 'Connected'],
     ]);
     $mocks[] = $mock;
 
@@ -364,10 +366,10 @@ test('handles SSE reconnection with onReconnect callback', function () {
 test('throws exception when passthrough without parent SSE handler', function () {
     $executor = createSSEExecutor();
     $mocks = [];
-    
+
     $globalSettings = [
         'strict_matching' => false,
-        'allow_passthrough' => true
+        'allow_passthrough' => true,
     ];
 
     $executor->execute(
@@ -377,17 +379,17 @@ test('throws exception when passthrough without parent SSE handler', function ()
         $globalSettings,
         null,
         null,
-        null 
+        null
     )->await();
-})->throws(\RuntimeException::class, 'No parent SSE handler available');
+})->throws(RuntimeException::class, 'No parent SSE handler available');
 
 test('uses parent SSE handler for passthrough', function () {
     $executor = createSSEExecutor();
     $mocks = [];
-    
+
     $globalSettings = [
         'strict_matching' => false,
-        'allow_passthrough' => true
+        'allow_passthrough' => true,
     ];
 
     $parentCalled = false;
@@ -396,7 +398,7 @@ test('uses parent SSE handler for passthrough', function () {
         $resource = fopen('php://memory', 'r');
         $stream = new Stream($resource);
         $response = new SSEResponse($stream, 200, []);
-        
+
         return new CancellablePromise(function ($resolve, $reject) use ($response) {
             $resolve($response);
         });
@@ -413,13 +415,14 @@ test('uses parent SSE handler for passthrough', function () {
     )->await();
 
     expect($result)->toBeInstanceOf(SSEResponse::class)
-        ->and($parentCalled)->toBeTrue();
+        ->and($parentCalled)->toBeTrue()
+    ;
 });
 
 test('adds SSE event dynamically with addSSEEvent', function () {
     $executor = createSSEExecutor();
     $mocks = [];
-    
+
     $mock = new MockedRequest('GET');
     $mock->setUrlPattern('https://api.example.com/events');
     $mock->asSSE();
@@ -443,18 +446,19 @@ test('adds SSE event dynamically with addSSEEvent', function () {
 
     expect($result)->toBeInstanceOf(SSEResponse::class)
         ->and($events)->toHaveCount(3)
-        ->and($mock->getSSEEvents())->toHaveCount(3);
+        ->and($mock->getSSEEvents())->toHaveCount(3)
+    ;
 });
 
 test('handles SSE with retry field in events', function () {
     $executor = createSSEExecutor();
     $mocks = [];
-    
+
     $mock = new MockedRequest('GET');
     $mock->setUrlPattern('https://api.example.com/events');
     $mock->asSSE();
     $mock->setSSEEvents([
-        ['event' => 'message', 'data' => 'Hello', 'id' => '1', 'retry' => 5000]
+        ['event' => 'message', 'data' => 'Hello', 'id' => '1', 'retry' => 5000],
     ]);
     $mocks[] = $mock;
 
@@ -467,18 +471,19 @@ test('handles SSE with retry field in events', function () {
 
     expect($result)->toBeInstanceOf(SSEResponse::class)
         ->and($mock->getSSEEvents()[0])->toHaveKey('retry')
-        ->and($mock->getSSEEvents()[0]['retry'])->toBe(5000);
+        ->and($mock->getSSEEvents()[0]['retry'])->toBe(5000)
+    ;
 });
 
 test('handles reconnect config disabled', function () {
     $executor = createSSEExecutor();
     $mocks = [];
-    
+
     $mock = new MockedRequest('GET');
     $mock->setUrlPattern('https://api.example.com/events');
     $mock->asSSE();
     $mock->setSSEEvents([
-        ['event' => 'message', 'data' => 'No retry']
+        ['event' => 'message', 'data' => 'No retry'],
     ]);
     $mocks[] = $mock;
 
@@ -499,26 +504,27 @@ test('handles reconnect config disabled', function () {
     )->await();
 
     expect($result)->toBeInstanceOf(SSEResponse::class)
-        ->and($mocks)->toBeEmpty();
+        ->and($mocks)->toBeEmpty()
+    ;
 });
 
 test('handles multiple SSE mocks in sequence', function () {
     $executor = createSSEExecutor();
     $mocks = [];
-    
+
     $mock1 = new MockedRequest('GET');
     $mock1->setUrlPattern('https://api.example.com/events/1');
     $mock1->asSSE();
     $mock1->setSSEEvents([
-        ['event' => 'message', 'data' => 'First stream']
+        ['event' => 'message', 'data' => 'First stream'],
     ]);
     $mocks[] = $mock1;
-    
+
     $mock2 = new MockedRequest('GET');
     $mock2->setUrlPattern('https://api.example.com/events/2');
     $mock2->asSSE();
     $mock2->setSSEEvents([
-        ['event' => 'message', 'data' => 'Second stream']
+        ['event' => 'message', 'data' => 'Second stream'],
     ]);
     $mocks[] = $mock2;
 
@@ -530,7 +536,8 @@ test('handles multiple SSE mocks in sequence', function () {
     )->await();
 
     expect($result1)->toBeInstanceOf(SSEResponse::class)
-        ->and($mocks)->toHaveCount(1);
+        ->and($mocks)->toHaveCount(1)
+    ;
 
     $result2 = $executor->execute(
         'https://api.example.com/events/2',
@@ -540,7 +547,8 @@ test('handles multiple SSE mocks in sequence', function () {
     )->await();
 
     expect($result2)->toBeInstanceOf(SSEResponse::class)
-        ->and($mocks)->toBeEmpty();
+        ->and($mocks)->toBeEmpty()
+    ;
 });
 
 test('retrieves SSE stream config', function () {
@@ -549,12 +557,13 @@ test('retrieves SSE stream config', function () {
     $config = [
         'event' => 'heartbeat',
         'data' => 'ping',
-        'interval' => 2.0
+        'interval' => 2.0,
     ];
     $mock->setSSEStreamConfig($config);
 
     expect($mock->getSSEStreamConfig())->toBe($config)
-        ->and($mock->hasStreamConfig())->toBeTrue();
+        ->and($mock->hasStreamConfig())->toBeTrue()
+    ;
 });
 
 test('calculates reconnection delay with exponential backoff', function () {
@@ -573,7 +582,8 @@ test('calculates reconnection delay with exponential backoff', function () {
 
     expect($delay1)->toBe(1.0)
         ->and($delay2)->toBe(2.0)
-        ->and($delay3)->toBe(4.0);
+        ->and($delay3)->toBe(4.0)
+    ;
 });
 
 test('calculates reconnection delay with max delay cap', function () {
@@ -604,7 +614,8 @@ test('calculates reconnection delay with jitter', function () {
     $delay = $reconnectConfig->calculateDelay(3);
 
     expect($delay)->toBeGreaterThan(0.0)
-        ->and($delay)->toBeLessThanOrEqual(4.0);
+        ->and($delay)->toBeLessThanOrEqual(4.0)
+    ;
 });
 
 test('determines if error is retryable from default list', function () {
@@ -613,27 +624,29 @@ test('determines if error is retryable from default list', function () {
         maxAttempts: 3
     );
 
-    $retryableError = new \Exception('Connection refused by server');
-    $nonRetryableError = new \Exception('Invalid API key');
+    $retryableError = new Exception('Connection refused by server');
+    $nonRetryableError = new Exception('Invalid API key');
 
     expect($reconnectConfig->isRetryableError($retryableError))->toBeTrue()
-        ->and($reconnectConfig->isRetryableError($nonRetryableError))->toBeFalse();
+        ->and($reconnectConfig->isRetryableError($nonRetryableError))->toBeFalse()
+    ;
 });
 
 test('determines if error is retryable using custom callback', function () {
     $reconnectConfig = new SSEReconnectConfig(
         enabled: true,
         maxAttempts: 3,
-        shouldReconnect: function (\Exception $error) {
+        shouldReconnect: function (Exception $error) {
             return str_contains($error->getMessage(), 'temporary');
         }
     );
 
-    $retryableError = new \Exception('This is a temporary error');
-    $nonRetryableError = new \Exception('This is a permanent error');
+    $retryableError = new Exception('This is a temporary error');
+    $nonRetryableError = new Exception('This is a permanent error');
 
     expect($reconnectConfig->isRetryableError($retryableError))->toBeTrue()
-        ->and($reconnectConfig->isRetryableError($nonRetryableError))->toBeFalse();
+        ->and($reconnectConfig->isRetryableError($nonRetryableError))->toBeFalse()
+    ;
 });
 
 test('handles custom retryable errors list', function () {
@@ -643,11 +656,12 @@ test('handles custom retryable errors list', function () {
         retryableErrors: ['custom error', 'another error']
     );
 
-    $retryableError = new \Exception('This is a custom error');
-    $nonRetryableError = new \Exception('This is not retryable');
+    $retryableError = new Exception('This is a custom error');
+    $nonRetryableError = new Exception('This is not retryable');
 
     expect($reconnectConfig->isRetryableError($retryableError))->toBeTrue()
-        ->and($reconnectConfig->isRetryableError($nonRetryableError))->toBeFalse();
+        ->and($reconnectConfig->isRetryableError($nonRetryableError))->toBeFalse()
+    ;
 });
 
 test('SSE mock matches wildcard method', function () {

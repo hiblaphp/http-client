@@ -39,7 +39,8 @@ describe('Nested JSON Access with Dot Notation', function () {
                     'updated_at' => '2025-10-10T12:00:00Z',
                 ],
             ])
-            ->register();
+            ->register()
+        ;
     });
 
     test('retrieves full JSON when no key specified', function () {
@@ -52,7 +53,8 @@ describe('Nested JSON Access with Dot Notation', function () {
             ->and($data)->toHaveKey('name')
             ->and($data)->toHaveKey('profile')
             ->and($data['id'])->toBe(123)
-            ->and($data['name'])->toBe('John Doe');
+            ->and($data['name'])->toBe('John Doe')
+        ;
     });
 
     test('retrieves top-level key value', function () {
@@ -72,7 +74,8 @@ describe('Nested JSON Access with Dot Notation', function () {
             ->and($profile)->toHaveKey('age')
             ->and($profile)->toHaveKey('location')
             ->and($profile)->toHaveKey('preferences')
-            ->and($profile['age'])->toBe(30);
+            ->and($profile['age'])->toBe(30)
+        ;
     });
 
     test('retrieves two levels nested value', function () {
@@ -98,7 +101,8 @@ describe('Nested JSON Access with Dot Notation', function () {
 
         expect($roles)->toBeArray()
             ->and($roles)->toBe(['admin', 'user', 'moderator'])
-            ->and($roles)->toHaveCount(3);
+            ->and($roles)->toHaveCount(3)
+        ;
     });
 
     test('returns actual value when default provided for existing key', function () {
@@ -139,7 +143,8 @@ describe('Nested JSON Access with Dot Notation', function () {
         $age = $response->json('profile.age');
 
         expect($age)->toBe(30)
-            ->and($age)->toBeInt();
+            ->and($age)->toBeInt()
+        ;
     });
 
     test('retrieves float value correctly', function () {
@@ -148,7 +153,8 @@ describe('Nested JSON Access with Dot Notation', function () {
         $lng = $response->json('profile.location.coordinates.lng');
 
         expect($lng)->toBe(-74.0060)
-            ->and($lng)->toBeFloat();
+            ->and($lng)->toBeFloat()
+        ;
     });
 
     test('returns null as default when key does not exist', function () {
@@ -165,7 +171,8 @@ describe('Nested JSON Access with Dot Notation', function () {
         expect($response->json('profile.location.coordinates.lat'))->toBe(40.7128)
             ->and($response->json('profile.location.coordinates.lng'))->toBe(-74.0060)
             ->and($response->json('profile.location.city'))->toBe('New York')
-            ->and($response->json('profile.location.country'))->toBe('USA');
+            ->and($response->json('profile.location.country'))->toBe('USA')
+        ;
     });
 
     test('prioritizes literal dot key over nested path', function () {
@@ -177,14 +184,16 @@ describe('Nested JSON Access with Dot Notation', function () {
                     'name' => 'Nested Name',
                 ],
             ])
-            ->register();
+            ->register()
+        ;
 
         $response = Http::get('https://api.example.com/edge-case')->await();
 
         $literalDot = $response->json('user.name');
 
         expect($literalDot)->toBe('Literal Dot Key')
-            ->and($literalDot)->not->toBe('Nested Name');
+            ->and($literalDot)->not->toBe('Nested Name')
+        ;
     });
 
     test('can access nested value after literal key by getting parent first', function () {
@@ -196,7 +205,8 @@ describe('Nested JSON Access with Dot Notation', function () {
                     'name' => 'Nested Name',
                 ],
             ])
-            ->register();
+            ->register()
+        ;
 
         $response = Http::get('https://api.example.com/edge-case2')->await();
 
@@ -215,12 +225,14 @@ describe('Nested JSON Access with Dot Notation', function () {
                     'empty' => '',
                 ],
             ])
-            ->register();
+            ->register()
+        ;
 
         $response = Http::get('https://api.example.com/empty')->await();
 
         expect($response->json('empty'))->toBe('')
-            ->and($response->json('nested.empty'))->toBe('');
+            ->and($response->json('nested.empty'))->toBe('')
+        ;
     });
 
     test('handles zero values', function () {
@@ -232,12 +244,14 @@ describe('Nested JSON Access with Dot Notation', function () {
                     'zero' => 0,
                 ],
             ])
-            ->register();
+            ->register()
+        ;
 
         $response = Http::get('https://api.example.com/zero')->await();
 
         expect($response->json('zero'))->toBe(0)
-            ->and($response->json('nested.zero'))->toBe(0);
+            ->and($response->json('nested.zero'))->toBe(0)
+        ;
     });
 
     test('handles false boolean values', function () {
@@ -249,12 +263,14 @@ describe('Nested JSON Access with Dot Notation', function () {
                     'false' => false,
                 ],
             ])
-            ->register();
+            ->register()
+        ;
 
         $response = Http::get('https://api.example.com/false')->await();
 
         expect($response->json('false'))->toBeFalse()
-            ->and($response->json('nested.false'))->toBeFalse();
+            ->and($response->json('nested.false'))->toBeFalse()
+        ;
     });
 
     test('handles null values in JSON', function () {
@@ -266,12 +282,14 @@ describe('Nested JSON Access with Dot Notation', function () {
                     'null_value' => null,
                 ],
             ])
-            ->register();
+            ->register()
+        ;
 
         $response = Http::get('https://api.example.com/null')->await();
 
         expect($response->json('null_value'))->toBeNull()
-            ->and($response->json('nested.null_value'))->toBeNull();
+            ->and($response->json('nested.null_value'))->toBeNull()
+        ;
     });
 
     test('handles empty arrays', function () {
@@ -283,12 +301,14 @@ describe('Nested JSON Access with Dot Notation', function () {
                     'empty_array' => [],
                 ],
             ])
-            ->register();
+            ->register()
+        ;
 
         $response = Http::get('https://api.example.com/empty-array')->await();
 
         expect($response->json('empty_array'))->toBe([])
-            ->and($response->json('nested.empty_array'))->toBe([]);
+            ->and($response->json('nested.empty_array'))->toBe([])
+        ;
     });
 
     test('handles mixed data types in nested structure', function () {
@@ -305,7 +325,8 @@ describe('Nested JSON Access with Dot Notation', function () {
                     'object' => ['key' => 'value'],
                 ],
             ])
-            ->register();
+            ->register()
+        ;
 
         $response = Http::get('https://api.example.com/mixed')->await();
 
@@ -315,22 +336,24 @@ describe('Nested JSON Access with Dot Notation', function () {
             ->and($response->json('data.bool'))->toBeTrue()
             ->and($response->json('data.null'))->toBeNull()
             ->and($response->json('data.array'))->toBe([1, 2, 3])
-            ->and($response->json('data.object'))->toBe(['key' => 'value']);
+            ->and($response->json('data.object'))->toBe(['key' => 'value'])
+        ;
     });
 
     test('returns default for invalid JSON', function () {
         Http::mock('GET')
             ->url('https://api.example.com/invalid')
             ->respondWith('invalid json{')
-            ->register();
+            ->register()
+        ;
 
         $response = Http::get('https://api.example.com/invalid')->await();
 
         expect($response->json('any.key', 'default'))->toBe('default')
-            ->and($response->json())->toBeNull();
+            ->and($response->json())->toBeNull()
+        ;
     });
 });
-
 
 describe('Nested JSON Access Edge Cases', function () {
     test('handles numeric string keys', function () {
@@ -343,13 +366,15 @@ describe('Nested JSON Access Edge Cases', function () {
                     '456' => 'nested-number',
                 ],
             ])
-            ->register();
+            ->register()
+        ;
 
         $response = Http::get('https://api.example.com/numeric-keys')->await();
 
         expect($response->json('0'))->toBe('zero')
             ->and($response->json('123'))->toBe('number')
-            ->and($response->json('data.456'))->toBe('nested-number');
+            ->and($response->json('data.456'))->toBe('nested-number')
+        ;
     });
 
     test('handles keys with special characters', function () {
@@ -364,7 +389,8 @@ describe('Nested JSON Access Edge Cases', function () {
                     'nested-key' => 'value',
                 ],
             ])
-            ->register();
+            ->register()
+        ;
 
         $response = Http::get('https://api.example.com/special-chars')->await();
 
@@ -372,7 +398,8 @@ describe('Nested JSON Access Edge Cases', function () {
             ->and($response->json('key_with_underscore'))->toBe('underscore')
             ->and($response->json('key with space'))->toBe('space')
             ->and($response->json('key@symbol'))->toBe('at')
-            ->and($response->json('data.nested-key'))->toBe('value');
+            ->and($response->json('data.nested-key'))->toBe('value')
+        ;
     });
 
     test('handles very deeply nested structures (5+ levels)', function () {
@@ -391,7 +418,8 @@ describe('Nested JSON Access Edge Cases', function () {
                     ],
                 ],
             ])
-            ->register();
+            ->register()
+        ;
 
         $response = Http::get('https://api.example.com/deep')->await();
 
@@ -407,19 +435,22 @@ describe('Nested JSON Access Edge Cases', function () {
                     ['name' => 'Jane', 'age' => 25],
                 ],
             ])
-            ->register();
+            ->register()
+        ;
 
         $response = Http::get('https://api.example.com/arrays')->await();
 
         // Get full array
         $users = $response->json('users');
         expect($users)->toBeArray()
-            ->and($users)->toHaveCount(2);
+            ->and($users)->toHaveCount(2)
+        ;
 
         // Note: Dot notation doesn't support array indices like 'users.0.name'
         // This is expected behavior - user should access array first
         expect($users[0]['name'])->toBe('John')
-            ->and($users[1]['name'])->toBe('Jane');
+            ->and($users[1]['name'])->toBe('Jane')
+        ;
     });
 
     test('handles empty key string', function () {
@@ -429,12 +460,14 @@ describe('Nested JSON Access Edge Cases', function () {
                 '' => 'empty key value',
                 'data' => 'normal',
             ])
-            ->register();
+            ->register()
+        ;
 
         $response = Http::get('https://api.example.com/empty-key')->await();
 
         expect($response->json(''))->toBe('empty key value')
-            ->and($response->json('data'))->toBe('normal');
+            ->and($response->json('data'))->toBe('normal')
+        ;
     });
 
     test('handles whitespace in keys', function () {
@@ -448,14 +481,16 @@ describe('Nested JSON Access Edge Cases', function () {
                     ' nested ' => 'value4',
                 ],
             ])
-            ->register();
+            ->register()
+        ;
 
         $response = Http::get('https://api.example.com/whitespace')->await();
 
         expect($response->json(' leading'))->toBe('value1')
             ->and($response->json('trailing '))->toBe('value2')
             ->and($response->json(' both '))->toBe('value3')
-            ->and($response->json('data. nested '))->toBe('value4');
+            ->and($response->json('data. nested '))->toBe('value4')
+        ;
     });
 
     test('handles unicode characters in keys', function () {
@@ -469,14 +504,16 @@ describe('Nested JSON Access Edge Cases', function () {
                     '中文' => 'Chinese',
                 ],
             ])
-            ->register();
+            ->register()
+        ;
 
         $response = Http::get('https://api.example.com/unicode')->await();
 
         expect($response->json('日本語'))->toBe('Japanese')
             ->and($response->json('🎉'))->toBe('emoji')
             ->and($response->json('français'))->toBe('French')
-            ->and($response->json('data.中文'))->toBe('Chinese');
+            ->and($response->json('data.中文'))->toBe('Chinese')
+        ;
     });
 
     test('handles multiple dots in literal key', function () {
@@ -486,12 +523,14 @@ describe('Nested JSON Access Edge Cases', function () {
                 'file.name.txt' => 'literal triple dot',
                 'version.1.0.0' => 'version string',
             ])
-            ->register();
+            ->register()
+        ;
 
         $response = Http::get('https://api.example.com/multiple-dots')->await();
 
         expect($response->json('file.name.txt'))->toBe('literal triple dot')
-            ->and($response->json('version.1.0.0'))->toBe('version string');
+            ->and($response->json('version.1.0.0'))->toBe('version string')
+        ;
     });
 
     test('handles non-associative array root', function () {
@@ -501,7 +540,8 @@ describe('Nested JSON Access Edge Cases', function () {
                 ['id' => 1, 'name' => 'First'],
                 ['id' => 2, 'name' => 'Second'],
             ])
-            ->register();
+            ->register()
+        ;
 
         $response = Http::get('https://api.example.com/array-root')->await();
 
@@ -509,11 +549,13 @@ describe('Nested JSON Access Edge Cases', function () {
         $data = $response->json();
         expect($data)->toBeArray()
             ->and($data)->toHaveCount(2)
-            ->and($data[0]['name'])->toBe('First');
+            ->and($data[0]['name'])->toBe('First')
+        ;
 
         expect($response->json('0'))->toBe(['id' => 1, 'name' => 'First'])
             ->and($response->json('0.name'))->toBe('First')
-            ->and($response->json('1.name'))->toBe('Second');
+            ->and($response->json('1.name'))->toBe('Second')
+        ;
     });
 
     test('handles case sensitivity in keys', function () {
@@ -528,7 +570,8 @@ describe('Nested JSON Access Edge Cases', function () {
                     'value' => 'nested lowercase',
                 ],
             ])
-            ->register();
+            ->register()
+        ;
 
         $response = Http::get('https://api.example.com/case-sensitive')->await();
 
@@ -537,7 +580,8 @@ describe('Nested JSON Access Edge Cases', function () {
             ->and($response->json('name'))->toBe('lowercase n')
             ->and($response->json('NAME'))->toBe('all caps')
             ->and($response->json('data.Value'))->toBe('nested uppercase')
-            ->and($response->json('data.value'))->toBe('nested lowercase');
+            ->and($response->json('data.value'))->toBe('nested lowercase')
+        ;
     });
 
     test('handles large JSON structures efficiently', function () {
@@ -554,13 +598,15 @@ describe('Nested JSON Access Edge Cases', function () {
                     'deep' => $largeArray,
                 ],
             ])
-            ->register();
+            ->register()
+        ;
 
         $response = Http::get('https://api.example.com/large')->await();
 
         expect($response->json('data.key0'))->toBe('value0')
             ->and($response->json('data.key999'))->toBe('value999')
-            ->and($response->json('nested.deep.key500'))->toBe('value500');
+            ->and($response->json('nested.deep.key500'))->toBe('value500')
+        ;
     });
 
     test('handles mixed array and object nesting', function () {
@@ -577,13 +623,15 @@ describe('Nested JSON Access Edge Cases', function () {
                     ],
                 ],
             ])
-            ->register();
+            ->register()
+        ;
 
         $response = Http::get('https://api.example.com/mixed-nesting')->await();
 
         $users = $response->json('users');
         expect($users[0]['contacts']['email'])->toBe('john@example.com')
-            ->and($users[0]['contacts']['phones'])->toBe(['123', '456']);
+            ->and($users[0]['contacts']['phones'])->toBe(['123', '456'])
+        ;
     });
 
     test('returns null when accessing non-array value as nested', function () {
@@ -593,14 +641,16 @@ describe('Nested JSON Access Edge Cases', function () {
                 'value' => 'string',
                 'number' => 42,
             ])
-            ->register();
+            ->register()
+        ;
 
         $response = Http::get('https://api.example.com/non-array')->await();
 
         // Trying to access string value as nested should return default
         expect($response->json('value.nested'))->toBeNull()
             ->and($response->json('value.nested', 'default'))->toBe('default')
-            ->and($response->json('number.nested'))->toBeNull();
+            ->and($response->json('number.nested'))->toBeNull()
+        ;
     });
 
     test('handles backslash in key names', function () {
@@ -612,12 +662,14 @@ describe('Nested JSON Access Edge Cases', function () {
                     'nested\\key' => 'value',
                 ],
             ])
-            ->register();
+            ->register()
+        ;
 
         $response = Http::get('https://api.example.com/backslash')->await();
 
         expect($response->json('path\\to\\file'))->toBe('windows path')
-            ->and($response->json('data.nested\\key'))->toBe('value');
+            ->and($response->json('data.nested\\key'))->toBe('value')
+        ;
     });
 
     test('handles scientific notation numbers', function () {
@@ -630,14 +682,16 @@ describe('Nested JSON Access Edge Cases', function () {
                     'nested' => 5.5e5,
                 ],
             ])
-            ->register();
+            ->register()
+        ;
 
         $response = Http::get('https://api.example.com/scientific')->await();
 
         expect($response->json('small'))->toBe(1.23e-10)
             ->and($response->json('large'))->toBe(9.87e20)
             ->and($response->json('data.nested'))->toBeNumeric()
-            ->and($response->json('data.nested'))->toBe(550000);
+            ->and($response->json('data.nested'))->toBe(550000)
+        ;
     });
 
     test('handles trailing dots in key parameter', function () {
@@ -648,13 +702,15 @@ describe('Nested JSON Access Edge Cases', function () {
                     'value' => 'test',
                 ],
             ])
-            ->register();
+            ->register()
+        ;
 
         $response = Http::get('https://api.example.com/trailing-dots')->await();
 
         // Trailing dots should be handled gracefully (likely return null)
         expect($response->json('data.'))->toBeNull()
-            ->and($response->json('data.value.'))->toBeNull();
+            ->and($response->json('data.value.'))->toBeNull()
+        ;
     });
 
     test('handles leading dots in key parameter', function () {
@@ -665,13 +721,15 @@ describe('Nested JSON Access Edge Cases', function () {
                     'value' => 'test',
                 ],
             ])
-            ->register();
+            ->register()
+        ;
 
         $response = Http::get('https://api.example.com/leading-dots')->await();
 
         // Leading dots should be handled gracefully (likely return null)
         expect($response->json('.data'))->toBeNull()
-            ->and($response->json('.data.value'))->toBeNull();
+            ->and($response->json('.data.value'))->toBeNull()
+        ;
     });
 
     test('handles consecutive dots in key parameter', function () {

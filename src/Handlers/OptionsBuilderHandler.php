@@ -176,6 +176,7 @@ class OptionsBuilderHandler
      */
     private function resolveHttpVersion(string $protocol): int
     {
+        // @phpstan-ignore-next-line
         return match ($protocol) {
             '2.0', '2' => CURL_HTTP_VERSION_2TLS,
             '3.0', '3' => defined('CURL_HTTP_VERSION_3')
