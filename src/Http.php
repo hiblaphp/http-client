@@ -368,6 +368,22 @@ class Http
     }
 
     /**
+     * Configure global settings for the HTTP client.
+     * 
+     * @param array{user_agent?: string, cache_path?: string} $settings
+     */
+    public static function configure(array $settings): void
+    {
+        if (isset($settings['user_agent'])) {
+            GlobalConfig::setUserAgent($settings['user_agent']);
+        }
+
+        if (isset($settings['cache_path'])) {
+            GlobalConfig::setCachePath($settings['cache_path']);
+        }
+    }
+
+    /**
      * Magic method to handle dynamic static calls.
      *
      * All calls are delegated to a fresh Request instance, providing a clean

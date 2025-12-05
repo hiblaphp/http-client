@@ -84,7 +84,7 @@ class Request extends Message implements CompleteHttpClientInterface
         $this->uri = $uri instanceof UriInterface ? $uri : new Uri($uri);
         $this->setHeaders($headers);
         $this->protocol = $version;
-        $this->userAgent = 'Hibla-HTTP-Client';
+        $this->userAgent = GlobalConfig::getUserAgent();
 
         if ($body !== '' && $body !== null) {
             $this->body = $body instanceof Stream ? $body : $this->createTempStream();
@@ -939,7 +939,7 @@ class Request extends Message implements CompleteHttpClientInterface
         return $this->getRequestInterceptorHandler()
             ->processInterceptors($initialRequest, $this->requestInterceptors)
             ->then(
-                fn ($processedRequest) => $this->executeRequest($processedRequest)
+                fn($processedRequest) => $this->executeRequest($processedRequest)
             )
         ;
     }
@@ -1382,7 +1382,7 @@ class Request extends Message implements CompleteHttpClientInterface
         }
 
         return $httpPromise->then(
-            fn ($response) => $this->getResponseInterceptorHandler()
+            fn($response) => $this->getResponseInterceptorHandler()
                 ->processInterceptors($response, $processedRequest->responseInterceptors)
         );
     }

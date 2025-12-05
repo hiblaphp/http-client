@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Hibla\HttpClient\Handlers;
 
 use Hibla\HttpClient\CacheConfig;
+use Hibla\HttpClient\GlobalConfig;
 use Hibla\HttpClient\Response;
 use Hibla\HttpClient\RetryConfig;
 use Hibla\HttpClient\Traits\CancellablePromiseTrait;
@@ -138,7 +139,7 @@ class CacheHandler
      */
     private function addConditionalHeaders(array $curlOptions, array $cachedItem): array
     {
-        if (! isset($cachedItem['headers']) || ! is_array($cachedItem['headers'])) {
+        if (! isset($cachedItem['headers']) || ! \is_array($cachedItem['headers'])) {
             return $curlOptions;
         }
 
@@ -278,11 +279,11 @@ class CacheHandler
     {
         if (self::$defaultCache === null) {
             /** @var string $cacheDirectory */
-            $cacheDirectory = Config::get('http-client.cache.path', sys_get_temp_dir() . '/cache');
+            $cacheDirectory = GlobalConfig::getCachePath();
 
             if (! is_dir($cacheDirectory)) {
                 if (! mkdir($cacheDirectory, 0775, true) && ! is_dir($cacheDirectory)) {
-                    throw new RuntimeException(sprintf('Cache directory "%s" could not be created', $cacheDirectory));
+                    throw new RuntimeException(\sprintf('Cache directory "%s" could not be created', $cacheDirectory));
                 }
             }
 
