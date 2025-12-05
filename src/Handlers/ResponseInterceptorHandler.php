@@ -4,7 +4,9 @@ namespace Hibla\HttpClient\Handlers;
 
 use Hibla\HttpClient\Exceptions\RequestException;
 use Hibla\HttpClient\Response;
+use Hibla\HttpClient\Traits\CancellablePromiseTrait;
 use Hibla\Promise\CancellablePromise;
+use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
 /**
@@ -12,17 +14,19 @@ use Hibla\Promise\Interfaces\PromiseInterface;
  */
 class ResponseInterceptorHandler
 {
+    use CancellablePromiseTrait;
+
     /**
      * Process response interceptors sequentially.
      *
      * @param Response $response The initial response
-     * @param array<callable(Response): (Response|PromiseInterface<Response>)> $interceptors Array of interceptor callbacks
-     * @return PromiseInterface<Response> A promise that resolves with the processed response
+     * @param array<callable(Response): (Response|CancellablePromiseInterface<Response>)> $interceptors Array of interceptor callbacks
+     * @return CancellablePromiseInterface<Response> A promise that resolves with the processed response
      */
-    public function processInterceptors(Response $response, array $interceptors): PromiseInterface
+    public function processInterceptors(Response $response, array $interceptors): CancellablePromiseInterface
     {
         if ($interceptors === []) {
-            return $this->createResolvedPromise($response);
+            return $this->resolved($response);
         }
 
         /** @var CancellablePromise<Response> $promise */
@@ -35,7 +39,7 @@ class ResponseInterceptorHandler
 
     /**
      * Process response interceptors sequentially, handling both sync and async interceptors.
-     * @param array<callable(Response): (Response|PromiseInterface<Response>)> $interceptors
+     * @param array<callable(Response): (Response|CancellablePromiseInterface<Response>)> $interceptors
      */
     private function processSequentially(
         Response $response,
@@ -81,19 +85,5 @@ class ResponseInterceptorHandler
         } catch (\Throwable $e) {
             $reject($e);
         }
-    }
-
-    /**
-     * Create a resolved promise with the given response.
-     * @return PromiseInterface<Response>
-     */
-    private function createResolvedPromise(Response $response): PromiseInterface
-    {
-        /** @var CancellablePromise<Response> $promise */
-        $promise = new CancellablePromise(function (callable $resolve) use ($response) {
-            $resolve($response);
-        });
-
-        return $promise;
     }
 }

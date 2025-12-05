@@ -81,7 +81,7 @@ class RetryableRequestExecutor
         $retryPromise = $this->responseFactory->createRetryableMockedResponse($retryConfig, $mockProvider);
 
         /** @var array<string, mixed> $stringKeyedOptions */
-        $stringKeyedOptions = array_filter($options, fn ($key) => is_string($key), ARRAY_FILTER_USE_KEY);
+        $stringKeyedOptions = array_filter($options, fn ($key) =>  \is_string($key), ARRAY_FILTER_USE_KEY);
 
         $retryPromise->then(
             function (Response $successfulResponse) use ($stringKeyedOptions, $finalPromise, $createStream, $fileManager): void {
@@ -157,7 +157,7 @@ class RetryableRequestExecutor
         CancellablePromise $finalPromise,
         ?FileManager $fileManager
     ): void {
-        $destPath = is_string($options['download'])
+        $destPath = \is_string($options['download'])
             ? $options['download']
             : ($fileManager !== null ? $fileManager->createTempFile() : sys_get_temp_dir() . '/download_' . uniqid());
 

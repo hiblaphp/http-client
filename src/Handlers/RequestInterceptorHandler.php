@@ -4,7 +4,9 @@ namespace Hibla\HttpClient\Handlers;
 
 use Hibla\HttpClient\Exceptions\RequestException;
 use Hibla\HttpClient\Request;
+use Hibla\HttpClient\Traits\CancellablePromiseTrait;
 use Hibla\Promise\CancellablePromise;
+use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
 /**
@@ -12,17 +14,19 @@ use Hibla\Promise\Interfaces\PromiseInterface;
  */
 class RequestInterceptorHandler
 {
+    use CancellablePromiseTrait;
+
     /**
      * Process request interceptors sequentially, handling both sync and async interceptors.
      *
      * @param Request $request The initial request
      * @param array<callable(Request): (Request|PromiseInterface<Request>)> $interceptors Array of interceptor callbacks
-     * @return PromiseInterface<Request> A promise that resolves with the processed request
+     * @return CancellablePromiseInterface<Request> A promise that resolves with the processed request
      */
-    public function processInterceptors(Request $request, array $interceptors): PromiseInterface
+    public function processInterceptors(Request $request, array $interceptors): CancellablePromiseInterface
     {
         if ($interceptors === []) {
-            return $this->createResolvedPromise($request);
+            return $this->resolved($request);
         }
 
         /** @var CancellablePromise<Request> $promise */
@@ -81,19 +85,5 @@ class RequestInterceptorHandler
         } catch (\Throwable $e) {
             $reject($e);
         }
-    }
-
-    /**
-     * Create a resolved promise with the given request.
-     * @return PromiseInterface<Request>
-     */
-    private function createResolvedPromise(Request $request): PromiseInterface
-    {
-        /** @var CancellablePromise<Request> $promise */
-        $promise = new CancellablePromise(function (callable $resolve) use ($request) {
-            $resolve($request);
-        });
-
-        return $promise;
     }
 }

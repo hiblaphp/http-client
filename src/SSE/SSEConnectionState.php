@@ -3,7 +3,7 @@
 namespace Hibla\HttpClient\SSE;
 
 use Exception;
-use Hibla\EventLoop\EventLoop;
+use Hibla\EventLoop\Loop;
 use Hibla\HttpClient\StreamingResponse;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 
@@ -137,7 +137,7 @@ class SSEConnectionState
         }
 
         if ($this->reconnectTimerId !== null) {
-            EventLoop::getInstance()->cancelTimer($this->reconnectTimerId);
+            Loop::cancelTimer($this->reconnectTimerId);
             $this->reconnectTimerId = null;
         }
     }

@@ -1,6 +1,6 @@
 <?php
 
-use Hibla\EventLoop\EventLoop;
+use Hibla\EventLoop\Loop;
 use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
 use Hibla\HttpClient\SSE\SSEResponse;
@@ -9,11 +9,11 @@ use Hibla\HttpClient\Testing\Utilities\Factories\SSE\RetryableSSEResponseFactory
 use Hibla\HttpClient\Testing\Utilities\NetworkSimulator;
 
 beforeEach(function () {
-    EventLoop::reset();
+    Loop::reset();
 });
 
 afterEach(function () {
-    EventLoop::reset();
+    Loop::reset();
 });
 
 function createRetryableSSEResponseFactory(?NetworkSimulator $simulator = null): RetryableSSEResponseFactory

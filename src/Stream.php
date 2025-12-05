@@ -129,7 +129,7 @@ class Stream implements StreamInterface
      */
     public function close(): void
     {
-        if (is_resource($this->resource)) {
+        if (\is_resource($this->resource)) {
             fclose($this->resource);
         }
         $this->detach();
@@ -140,7 +140,7 @@ class Stream implements StreamInterface
      */
     public function detach()
     {
-        if (! is_resource($this->resource)) {
+        if (! \is_resource($this->resource)) {
             return null;
         }
 
@@ -164,7 +164,7 @@ class Stream implements StreamInterface
             return $this->size;
         }
 
-        if (! is_resource($this->resource)) {
+        if (! \is_resource($this->resource)) {
             return null;
         }
 
@@ -173,7 +173,7 @@ class Stream implements StreamInterface
         }
 
         $stats = fstat($this->resource);
-        if (is_array($stats) && isset($stats['size'])) {
+        if (\is_array($stats) && isset($stats['size'])) {
             $this->size = $stats['size'];
 
             return $this->size;
@@ -187,7 +187,7 @@ class Stream implements StreamInterface
      */
     public function tell(): int
     {
-        if (! is_resource($this->resource)) {
+        if (! \is_resource($this->resource)) {
             throw new HttpStreamException('Stream is detached');
         }
 
@@ -224,7 +224,7 @@ class Stream implements StreamInterface
      */
     public function seek(int $offset, int $whence = SEEK_SET): void
     {
-        if (! is_resource($this->resource)) {
+        if (! \is_resource($this->resource)) {
             throw new HttpStreamException('Stream is detached');
         }
 
@@ -258,7 +258,7 @@ class Stream implements StreamInterface
      */
     public function write(string $string): int
     {
-        if (! is_resource($this->resource)) {
+        if (! \is_resource($this->resource)) {
             throw new HttpStreamException('Stream is detached');
         }
 
@@ -289,7 +289,7 @@ class Stream implements StreamInterface
      */
     public function read(int $length): string
     {
-        if (! is_resource($this->resource)) {
+        if (! \is_resource($this->resource)) {
             throw new HttpStreamException('Stream is detached');
         }
 
@@ -318,7 +318,7 @@ class Stream implements StreamInterface
      */
     public function getContents(): string
     {
-        if (! is_resource($this->resource)) {
+        if (! \is_resource($this->resource)) {
             throw new HttpStreamException('Stream is detached');
         }
 
@@ -339,7 +339,7 @@ class Stream implements StreamInterface
      */
     public function getMetadata(?string $key = null)
     {
-        if (! is_resource($this->resource)) {
+        if (! \is_resource($this->resource)) {
             return $key !== null ? null : [];
         }
 

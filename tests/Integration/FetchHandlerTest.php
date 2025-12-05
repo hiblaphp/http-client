@@ -1,17 +1,17 @@
 <?php
 
-use Hibla\EventLoop\EventLoop;
+use Hibla\EventLoop\Loop;
 use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Handlers\RequestExecutorHandler;
 use Hibla\HttpClient\Response;
 use Hibla\Promise\CancellablePromise;
 
 beforeEach(function () {
-    EventLoop::reset();
+    Loop::reset();
 });
 
 afterEach(function () {
-    EventLoop::reset();
+    Loop::reset();
 });
 
 it('executes a basic HTTP request successfully', function () {
@@ -27,13 +27,13 @@ it('executes a basic HTTP request successfully', function () {
 
     $promise->then(function ($res) use (&$response) {
         $response = $res;
-        EventLoop::getInstance()->stop();
+        Loop::stop();
     })->catch(function ($err) use (&$error) {
         $error = $err;
-        EventLoop::getInstance()->stop();
+        Loop::stop();
     });
 
-    EventLoop::getInstance()->run();
+    Loop::run();
 
     expect($error)->toBeNull();
     expect($response)->toBeInstanceOf(Response::class);
@@ -50,10 +50,10 @@ it('rejects promise on network error', function () {
     $error = null;
     $promise->catch(function ($err) use (&$error) {
         $error = $err;
-        EventLoop::getInstance()->stop();
+        Loop::stop();
     });
 
-    EventLoop::getInstance()->run();
+    Loop::run();
 
     expect($error)->toBeInstanceOf(NetworkException::class);
 })->skipOnCI();
@@ -81,12 +81,12 @@ it('normalizes headers correctly', function () {
     $response = null;
     $promise->then(function ($res) use (&$response) {
         $response = $res;
-        EventLoop::getInstance()->stop();
+        Loop::stop();
     })->catch(function () {
-        EventLoop::getInstance()->stop();
+        Loop::stop();
     });
 
-    EventLoop::getInstance()->run();
+    Loop::run();
 
     expect($response)->toBeInstanceOf(Response::class);
     expect($response->getHeader('content-type'))->not->toBeNull();
@@ -105,13 +105,13 @@ it('filters out curl-only options before execution', function () {
     $error = null;
     $promise->then(function ($res) use (&$response) {
         $response = $res;
-        EventLoop::getInstance()->stop();
+        Loop::stop();
     })->catch(function ($err) use (&$error) {
         $error = $err;
-        EventLoop::getInstance()->stop();
+        Loop::stop();
     });
 
-    EventLoop::getInstance()->run();
+    Loop::run();
 
     expect($error)->toBeNull();
     expect($response)->toBeInstanceOf(Response::class);
@@ -128,12 +128,12 @@ it('sets HTTP version on response when provided', function () {
     $response = null;
     $promise->then(function ($res) use (&$response) {
         $response = $res;
-        EventLoop::getInstance()->stop();
+        Loop::stop();
     })->catch(function () {
-        EventLoop::getInstance()->stop();
+        Loop::stop();
     });
 
-    EventLoop::getInstance()->run();
+    Loop::run();
 
     expect($response)->toBeInstanceOf(Response::class);
     expect($response->getHttpVersion())->not->toBeNull();
@@ -149,16 +149,16 @@ it('does not resolve cancelled promises', function () {
     $resolved = false;
     $promise->then(function () use (&$resolved) {
         $resolved = true;
-        EventLoop::getInstance()->stop();
+        Loop::stop();
     });
 
     $promise->cancel();
 
-    EventLoop::getInstance()->addTimer(0.1, function () {
-        EventLoop::getInstance()->stop();
+    Loop::addTimer(0.1, function () {
+        Loop::stop();
     });
 
-    EventLoop::getInstance()->run();
+    Loop::run();
 
     expect($resolved)->toBeFalse();
 })->skipOnCI();

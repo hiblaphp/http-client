@@ -173,13 +173,13 @@ class HttpHandler
      * @param  array<int|string, mixed>  $curlOptions  cURL options for the request.
      * @param  CacheConfig|null  $cacheConfig  Optional cache configuration.
      * @param  RetryConfig|null  $retryConfig  Optional retry configuration.
-     * @return PromiseInterface<Response> A promise that resolves with a Response object.
+     * @return CancellablePromiseInterface<Response> A promise that resolves with a Response object.
      *
      * @internal This method is the primary extension point for TestingHttpHandler. It is called by
      *           the Request builder and can be overridden to intercept all requests made through
      *           the fluent Request API.
      */
-    public function sendRequest(string $url, array $curlOptions, ?CacheConfig $cacheConfig = null, ?RetryConfig $retryConfig = null): PromiseInterface
+    public function sendRequest(string $url, array $curlOptions, ?CacheConfig $cacheConfig = null, ?RetryConfig $retryConfig = null): CancellablePromiseInterface
     {
         if ($cacheConfig !== null && ($curlOptions[CURLOPT_CUSTOMREQUEST] ?? 'GET') === 'GET') {
             return $this->cacheHandler->execute($url, $curlOptions, $cacheConfig, $retryConfig);
@@ -200,12 +200,12 @@ class HttpHandler
      *
      * @param  string  $url  The target URL.
      * @param  array<int|string, mixed>  $options  An associative array of request options.
-     * @return PromiseInterface<Response>|CancellablePromiseInterface<StreamingResponse>|CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}>|CancellablePromiseInterface<SSEResponse> A promise that resolves with a Response, StreamingResponse, download metadata, or SSEResponse.
+     * @return CancellablePromiseInterface<Response>|CancellablePromiseInterface<StreamingResponse>|CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}>|CancellablePromiseInterface<SSEResponse> A promise that resolves with a Response, StreamingResponse, download metadata, or SSEResponse.
      *
      * @internal This method is a key extension point for TestingHttpHandler. It handles fetch-style
      *           requests and can return different response types based on options (streaming, downloads, etc.).
      */
-    public function fetch(string $url, array $options = []): PromiseInterface|CancellablePromiseInterface
+    public function fetch(string $url, array $options = []): CancellablePromiseInterface
     {
         return $this->fetchHandler->fetch($url, $options);
     }

@@ -2,7 +2,7 @@
 
 namespace Hibla\HttpClient\Testing\Utilities\Factories\SSE;
 
-use Hibla\EventLoop\EventLoop;
+use Hibla\EventLoop\Loop;
 use Hibla\HttpClient\Exceptions\HttpStreamException;
 use Hibla\HttpClient\SSE\SSEResponse;
 use Hibla\HttpClient\Stream;
@@ -93,7 +93,7 @@ class PeriodicSSEEmitter
         $maxEvents = isset($config['max_events']) && is_int($config['max_events']) ? $config['max_events'] : null;
         $eventIndex = 0;
 
-        $periodicTimerId = EventLoop::getInstance()->addPeriodicTimer(
+        $periodicTimerId = Loop::addPeriodicTimer(
             interval: $interval,
             callback: function () use (
                 $eventGenerator,
@@ -106,7 +106,7 @@ class PeriodicSSEEmitter
             ) {
                 if ($maxEvents !== null && $eventIndex >= $maxEvents) {
                     if ($periodicTimerId !== null) {
-                        EventLoop::getInstance()->cancelTimer($periodicTimerId);
+                        Loop::cancelTimer($periodicTimerId);
                         $periodicTimerId = null;
                     }
 
@@ -168,7 +168,7 @@ class PeriodicSSEEmitter
         $totalEvents = count($events);
         $autoClose = isset($config['auto_close']) && is_bool($config['auto_close']) ? $config['auto_close'] : false;
 
-        $periodicTimerId = EventLoop::getInstance()->addPeriodicTimer(
+        $periodicTimerId = Loop::addPeriodicTimer(
             interval: $interval,
             callback: function () use (
                 &$events,
@@ -184,7 +184,7 @@ class PeriodicSSEEmitter
             ) {
                 if ($eventIndex >= $totalEvents) {
                     if ($periodicTimerId !== null) {
-                        EventLoop::getInstance()->cancelTimer($periodicTimerId);
+                        Loop::cancelTimer($periodicTimerId);
                         $periodicTimerId = null;
                     }
 

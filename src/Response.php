@@ -20,7 +20,7 @@ class Response extends Message implements EnhancedResponseInterface
     /**
      * @var array<int, string> Map of standard HTTP status code/reason phrases.
      */
-    private const PHRASES = [
+    private const array PHRASES = [
         100 => 'Continue',
         101 => 'Switching Protocols',
         102 => 'Processing',
@@ -246,7 +246,7 @@ class Response extends Message implements EnhancedResponseInterface
     {
         $headers = [];
         foreach ($this->headers as $name => $values) {
-            $headers[strtolower($name)] = is_array($values) ? implode(', ', $values) : $values;
+            $headers[strtolower($name)] = \is_array($values) ? implode(', ', $values) : $values;
         }
 
         return $headers;
@@ -342,12 +342,12 @@ class Response extends Message implements EnhancedResponseInterface
      */
     protected function getValueByKey(array $array, string $key, mixed $default): mixed
     {
-        if (array_key_exists($key, $array)) {
+        if (\array_key_exists($key, $array)) {
             return $array[$key];
         }
 
         foreach (explode('.', $key) as $segment) {
-            if (is_array($array) && array_key_exists($segment, $array)) {
+            if (\is_array($array) && \array_key_exists($segment, $array)) {
                 $array = $array[$segment];
             } else {
                 return $default;

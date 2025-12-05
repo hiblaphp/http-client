@@ -2,7 +2,7 @@
 
 namespace Hibla\HttpClient\Testing\Utilities\Factories\SSE;
 
-use Hibla\EventLoop\EventLoop;
+use Hibla\EventLoop\Loop;
 use Hibla\HttpClient\Exceptions\HttpStreamException;
 use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\SSE\SSEResponse;
@@ -71,12 +71,12 @@ class SSEResponseFactory
 
         $promise->setCancelHandler(function () use (&$timerId) {
             if ($timerId !== null) {
-                EventLoop::getInstance()->cancelTimer($timerId);
+                Loop::cancelTimer($timerId);
             }
         });
 
         if ($networkConditions['should_fail']) {
-            $timerId = EventLoop::getInstance()->addTimer($totalDelay, function () use (
+            $timerId = Loop::addTimer($totalDelay, function () use (
                 $promise,
                 $networkConditions,
                 $onError
@@ -95,7 +95,7 @@ class SSEResponseFactory
             return $promise;
         }
 
-        $timerId = EventLoop::getInstance()->addTimer($totalDelay, function () use (
+        $timerId = Loop::addTimer($totalDelay, function () use (
             $promise,
             $mock,
             $onEvent,
@@ -179,17 +179,17 @@ class SSEResponseFactory
 
         $promise->setCancelHandler(function () use (&$initialTimerId, &$periodicTimerId) {
             if ($initialTimerId !== null) {
-                EventLoop::getInstance()->cancelTimer($initialTimerId);
+                Loop::cancelTimer($initialTimerId);
                 $initialTimerId = null;
             }
             if ($periodicTimerId !== null) {
-                EventLoop::getInstance()->cancelTimer($periodicTimerId);
+                Loop::cancelTimer($periodicTimerId);
                 $periodicTimerId = null;
             }
         });
 
         if ($networkConditions['should_fail']) {
-            $initialTimerId = EventLoop::getInstance()->addTimer($initialDelay, function () use (
+            $initialTimerId = Loop::addTimer($initialDelay, function () use (
                 $promise,
                 $networkConditions,
                 $onError
@@ -211,7 +211,7 @@ class SSEResponseFactory
         $autoClose = isset($config['auto_close']) && is_bool($config['auto_close']) ? $config['auto_close'] : false;
 
         if ($mock->shouldFail() && ! $autoClose) {
-            $initialTimerId = EventLoop::getInstance()->addTimer($initialDelay, function () use (
+            $initialTimerId = Loop::addTimer($initialDelay, function () use (
                 $promise,
                 $mock,
                 $onError
@@ -230,7 +230,7 @@ class SSEResponseFactory
             return $promise;
         }
 
-        $initialTimerId = EventLoop::getInstance()->addTimer($initialDelay, function () use (
+        $initialTimerId = Loop::addTimer($initialDelay, function () use (
             $promise,
             $mock,
             $onEvent,

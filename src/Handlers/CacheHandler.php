@@ -2,13 +2,11 @@
 
 namespace Hibla\HttpClient\Handlers;
 
-use function Hibla\async;
-use function Hibla\await;
-
+use Hibla\HttpClient\Traits\CancellablePromiseTrait;
 use Hibla\HttpClient\CacheConfig;
 use Hibla\HttpClient\Response;
 use Hibla\HttpClient\RetryConfig;
-use Hibla\Promise\Interfaces\PromiseInterface;
+use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 use Psr\SimpleCache\CacheInterface;
 use Rcalicdan\ConfigLoader\Config;
 use RuntimeException;
@@ -23,6 +21,8 @@ use Symfony\Component\Cache\Psr16Cache;
  */
 class CacheHandler
 {
+    use CancellablePromiseTrait;
+
     private static ?CacheInterface $defaultCache = null;
     private RetryHandler $retryHandler;
     private RequestExecutorHandler $requestExecutor;
@@ -40,15 +40,14 @@ class CacheHandler
      * @param array<int|string, mixed> $curlOptions cURL options.
      * @param CacheConfig $cacheConfig Cache configuration.
      * @param RetryConfig|null $retryConfig Optional retry configuration.
-     * @return PromiseInterface<Response>
+     * @return CancellablePromiseInterface<Response>
      */
     public function execute(
         string $url,
         array $curlOptions,
         CacheConfig $cacheConfig,
         ?RetryConfig $retryConfig = null
-    ): PromiseInterface {
-        // Only cache GET requests
+    ): CancellablePromiseInterface {
         if (($curlOptions[CURLOPT_CUSTOMREQUEST] ?? 'GET') !== 'GET') {
             return $this->executeRequest($url, $curlOptions, $retryConfig);
         }
@@ -56,32 +55,41 @@ class CacheHandler
         $cache = $cacheConfig->cache ?? self::getDefaultCache();
         $cacheKey = $cacheConfig->cacheKey ?? $this->generateCacheKey($url);
 
-        /** @var PromiseInterface<Response> */
-        return async(function () use ($cache, $cacheKey, $url, $curlOptions, $cacheConfig, $retryConfig): Response {
-            /** @var array{body: string, status: int, headers: array<string, array<string>|string>, expires_at: int}|null $cachedItem */
-            $cachedItem = $cache->get($cacheKey);
+        /** @var array{body: string, status: int, headers: array<string, array<string>|string>, expires_at: int}|null $cachedItem */
+        $cachedItem = null;
 
-            if ($this->isCachedItemValid($cachedItem)) {
-                /** @var array{body: string, status: int, headers: array<string, array<string>|string>, expires_at: int} $cachedItem */
-                return new Response($cachedItem['body'], $cachedItem['status'], $cachedItem['headers']);
-            }
+        try {
+            /** @var array{body: string, status: int, headers: array<string, array<string>|string>, expires_at: int}|null $result */
+            $result = $cache->get($cacheKey);
+            $cachedItem = $result;
+        } catch (\Throwable $e) {
+            $this->rejected($e);
+        }
 
-            if (is_array($cachedItem) && $cacheConfig->respectServerHeaders) {
-                $curlOptions = $this->addConditionalHeaders($curlOptions, $cachedItem);
-            }
+        if ($this->isCachedItemValid($cachedItem)) {
+            /** @var array{body: string, status: int, headers: array<string, array<string>|string>, expires_at: int} $cachedItem */
+            return $this->resolved(
+                new Response($cachedItem['body'], $cachedItem['status'], $cachedItem['headers'])
+            );
+        }
 
-            $response = await($this->executeRequest($url, $curlOptions, $retryConfig));
+        if (\is_array($cachedItem) && $cacheConfig->respectServerHeaders) {
+            $curlOptions = $this->addConditionalHeaders($curlOptions, $cachedItem);
+        }
 
-            if ($response->status() === 304 && is_array($cachedItem)) {
-                return $this->handleNotModified($response, $cachedItem, $cache, $cacheKey, $cacheConfig);
-            }
+        return $this->executeRequest($url, $curlOptions, $retryConfig)
+            ->then(function (Response $response) use ($cache, $cacheKey, $cachedItem, $cacheConfig) {
 
-            if ($response->successful()) {
-                $this->cacheResponse($response, $cache, $cacheKey, $cacheConfig);
-            }
+                if ($response->status() === 304 && \is_array($cachedItem)) {
+                    return $this->handleNotModified($response, $cachedItem, $cache, $cacheKey, $cacheConfig);
+                }
 
-            return $response;
-        });
+                if ($response->successful()) {
+                    $this->cacheResponse($response, $cache, $cacheKey, $cacheConfig);
+                }
+
+                return $response;
+            });
     }
 
     /**
@@ -90,9 +98,9 @@ class CacheHandler
      * @param string $url The target URL.
      * @param array<int|string, mixed> $curlOptions cURL options.
      * @param RetryConfig|null $retryConfig Optional retry configuration.
-     * @return PromiseInterface<Response>
+     * @return CancellablePromiseInterface<Response>
      */
-    private function executeRequest(string $url, array $curlOptions, ?RetryConfig $retryConfig): PromiseInterface
+    private function executeRequest(string $url, array $curlOptions, ?RetryConfig $retryConfig): CancellablePromiseInterface
     {
         if ($retryConfig !== null) {
             return $this->retryHandler->execute($url, $curlOptions, $retryConfig);
@@ -109,13 +117,13 @@ class CacheHandler
      */
     private function isCachedItemValid($cachedItem): bool
     {
-        return is_array($cachedItem)
+        return \is_array($cachedItem)
             && isset($cachedItem['expires_at'], $cachedItem['body'], $cachedItem['status'], $cachedItem['headers'])
-            && is_int($cachedItem['expires_at'])
+            && \is_int($cachedItem['expires_at'])
             && time() < $cachedItem['expires_at']
-            && is_string($cachedItem['body'])
-            && is_int($cachedItem['status'])
-            && is_array($cachedItem['headers']);
+            && \is_string($cachedItem['body'])
+            && \is_int($cachedItem['status'])
+            && \is_array($cachedItem['headers']);
     }
 
     /**
@@ -133,7 +141,7 @@ class CacheHandler
 
         /** @var array<string> $httpHeaders */
         $httpHeaders = [];
-        if (isset($curlOptions[CURLOPT_HTTPHEADER]) && is_array($curlOptions[CURLOPT_HTTPHEADER])) {
+        if (isset($curlOptions[CURLOPT_HTTPHEADER]) && \is_array($curlOptions[CURLOPT_HTTPHEADER])) {
             $httpHeaders = $curlOptions[CURLOPT_HTTPHEADER];
         }
 
@@ -166,11 +174,11 @@ class CacheHandler
      */
     private function extractHeaderValue($headerValue): ?string
     {
-        if (is_string($headerValue)) {
+        if (\is_string($headerValue)) {
             return $headerValue;
         }
 
-        if (is_array($headerValue) && isset($headerValue[0]) && is_string($headerValue[0])) {
+        if (\is_array($headerValue) && isset($headerValue[0]) && \is_string($headerValue[0])) {
             return $headerValue[0];
         }
 

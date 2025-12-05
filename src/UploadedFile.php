@@ -42,10 +42,10 @@ class UploadedFile implements UploadedFileInterface
     ) {
         if ($error !== UPLOAD_ERR_OK) {
             $this->stream = null;
-        } elseif (is_string($streamOrFile)) {
+        } elseif (\is_string($streamOrFile)) {
             $this->file = $streamOrFile;
             $this->stream = null;
-        } elseif (is_resource($streamOrFile)) {
+        } elseif (\is_resource($streamOrFile)) {
             $this->stream = new Stream($streamOrFile);
         } elseif ($streamOrFile instanceof StreamInterface) {
             $this->stream = $streamOrFile;

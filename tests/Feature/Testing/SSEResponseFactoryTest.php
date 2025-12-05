@@ -1,17 +1,17 @@
 <?php
 
-use Hibla\EventLoop\EventLoop;
+use Hibla\EventLoop\Loop;
 use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\SSE\SSEResponse;
 use Hibla\HttpClient\Testing\Utilities\Factories\SSE\SSEResponseFactory;
 use Hibla\HttpClient\Testing\Utilities\NetworkSimulator;
 
 beforeEach(function () {
-    EventLoop::reset();
+    Loop::reset();
 });
 
 afterEach(function () {
-    EventLoop::reset();
+    Loop::reset();
 });
 
 function createSSEResponseFactory(?NetworkSimulator $simulator = null): SSEResponseFactory

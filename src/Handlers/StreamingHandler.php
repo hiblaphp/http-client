@@ -2,7 +2,7 @@
 
 namespace Hibla\HttpClient\Handlers;
 
-use Hibla\EventLoop\EventLoop;
+use Hibla\EventLoop\Loop;
 use Hibla\HttpClient\Exceptions\HttpStreamException;
 use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Stream;
@@ -59,7 +59,7 @@ class StreamingHandler
             },
         ]);
 
-        $requestId = EventLoop::getInstance()->addHttpRequest(
+        $requestId = Loop::addHttpRequest(
             $url,
             $streamingOptions,
             function (?string $error, $response, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $promise, $responseStream, &$headerAccumulator): void {
@@ -115,7 +115,7 @@ class StreamingHandler
         );
 
         $promise->setCancelHandler(function () use ($requestId, $responseStream): void {
-            EventLoop::getInstance()->cancelHttpRequest($requestId);
+            Loop::cancelHttpRequest($requestId);
             if (is_resource($responseStream)) {
                 fclose($responseStream);
             }
@@ -160,7 +160,7 @@ class StreamingHandler
             },
         ]);
 
-        $requestId = EventLoop::getInstance()->addHttpRequest(
+        $requestId = Loop::addHttpRequest(
             $url,
             $downloadOptions,
             function (?string $error, $response, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $promise, $file, $destination): void {
@@ -201,7 +201,7 @@ class StreamingHandler
         );
 
         $promise->setCancelHandler(function () use ($requestId, $file, $destination): void {
-            EventLoop::getInstance()->cancelHttpRequest($requestId);
+            Loop::cancelHttpRequest($requestId);
             if (is_resource($file)) {
                 fclose($file);
             }

@@ -2,7 +2,7 @@
 
 namespace Hibla\HttpClient\Handlers;
 
-use Hibla\EventLoop\EventLoop;
+use Hibla\EventLoop\Loop;
 use Hibla\HttpClient\Exceptions\HttpStreamException;
 use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Exceptions\RequestException;
@@ -65,10 +65,8 @@ class SSEHandler
         $wrappedOnEvent = $this->wrapEventCallback($onEvent, $connectionState);
         $wrappedOnError = $this->wrapErrorCallback($onError, $connectionState);
 
-        // Start the first connection attempt
         $this->attemptConnection($connectionState, $wrappedOnEvent, $wrappedOnError, $mainPromise);
 
-        // The main promise's cancellation now controls the entire state machine.
         $mainPromise->setCancelHandler(function () use ($connectionState): void {
             $connectionState->cancel();
         });
@@ -107,13 +105,13 @@ class SSEHandler
         $options = $connectionState->getOptions();
         if ($connectionState->getLastEventId() !== null) {
             $headers = $options[CURLOPT_HTTPHEADER] ?? [];
-            // Ensure headers is an array
-            if (! is_array($headers)) {
+    
+            if (! \is_array($headers)) {
                 $headers = [];
             }
-            // Remove previous Last-Event-ID header if it exists to avoid duplicates
+        
             $headers = array_filter($headers, function ($h): bool {
-                if (! is_string($h)) {
+                if (! \is_string($h)) {
                     return true;
                 }
 
@@ -131,7 +129,6 @@ class SSEHandler
              * @param  mixed  $response
              */
             function ($response) use ($mainPromise, $connectionState): void {
-                // Response is already typed as SSEResponse from the promise generic
                 if ($connectionState->isCancelled()) {
                     return;
                 }
@@ -149,7 +146,6 @@ class SSEHandler
                     return;
                 }
 
-                // When a connection fails, check the master cancellation flag first.
                 if ($connectionState->isCancelled()) {
                     if (! $mainPromise->isSettled()) {
                         $exception = new RequestException(
@@ -164,7 +160,6 @@ class SSEHandler
                     return;
                 }
 
-                // Convert Throwable to Exception for shouldReconnect
                 $errorException = $error instanceof \Exception ? $error : new \Exception($error->getMessage(), (int)$error->getCode(), $error);
 
                 if (! $connectionState->shouldReconnect($errorException)) {
@@ -182,9 +177,8 @@ class SSEHandler
                     $onReconnect($connectionState->getAttemptCount(), $delay, $error);
                 }
 
-                // When we schedule the timer, we get its ID and store it in the state object.
-                $timerId = EventLoop::getInstance()->addTimer($delay, function () use ($connectionState, $onEvent, $onError, $mainPromise) {
-                    $connectionState->setReconnectTimerId(null); // Timer is firing, so clear the ID.
+                $timerId = Loop::addTimer($delay, function () use ($connectionState, $onEvent, $onError, $mainPromise) {
+                    $connectionState->setReconnectTimerId(null);
                     $this->attemptConnection($connectionState, $onEvent, $onError, $mainPromise);
                 });
                 $connectionState->setReconnectTimerId($timerId);
@@ -280,7 +274,7 @@ class SSEHandler
             },
         ]);
 
-        $requestId = EventLoop::getInstance()->addHttpRequest(
+        $requestId = Loop::addHttpRequest(
             $url,
             $sseOptions,
             function (?string $error) use ($url, $promise, $onError) {
@@ -304,7 +298,7 @@ class SSEHandler
         );
 
         $promise->setCancelHandler(function () use ($requestId): void {
-            EventLoop::getInstance()->cancelHttpRequest($requestId);
+            Loop::cancelHttpRequest($requestId);
         });
 
         return $promise;

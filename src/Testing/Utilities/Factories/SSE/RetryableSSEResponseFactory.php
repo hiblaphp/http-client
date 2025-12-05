@@ -6,7 +6,7 @@ use Exception;
 
 use function Hibla\delay;
 
-use Hibla\EventLoop\EventLoop;
+use Hibla\EventLoop\Loop;
 use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
 use Hibla\HttpClient\SSE\SSEResponse;
@@ -60,7 +60,7 @@ class RetryableSSEResponseFactory
                 $activeDelayPromise->cancel();
             }
             if ($periodicTimerId !== null) {
-                EventLoop::getInstance()->cancelTimer($periodicTimerId);
+                Loop::cancelTimer($periodicTimerId);
                 $periodicTimerId = null;
             }
         });

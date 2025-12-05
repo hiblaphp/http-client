@@ -82,7 +82,7 @@ class DownloadResponseFactory
                 $promise->resolve([
                     'file' => $destination,
                     'status' => $mock->getStatusCode(),
-                    'headers' => $mock->getHeaders(),
+                    'headers' => $this->normalizeHeaders($mock->getHeaders()),
                     'size' => strlen($mock->getBody()),
                     'protocol_version' => '2.0',
                 ]);
@@ -119,5 +119,24 @@ class DownloadResponseFactory
         }
 
         $fileManager->trackFile($destination);
+    }
+
+    /**
+     * @param array<string, string|array<string>> $headers
+     * @return array<string, string>
+     */
+    private function normalizeHeaders(array $headers): array
+    {
+        $normalized = [];
+
+        foreach ($headers as $name => $value) {
+            if (\is_array($value)) {
+                $normalized[$name] = implode(', ', $value);
+            } else {
+                $normalized[$name] = $value;
+            }
+        }
+
+        return $normalized;
     }
 }

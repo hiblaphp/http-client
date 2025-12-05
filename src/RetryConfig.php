@@ -56,7 +56,7 @@ class RetryConfig
             return false;
         }
 
-        if ($statusCode !== null && in_array($statusCode, $this->retryableStatusCodes, true)) {
+        if ($statusCode !== null && \in_array($statusCode, $this->retryableStatusCodes, true)) {
             return true;
         }
 

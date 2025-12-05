@@ -2,7 +2,7 @@
 
 namespace Hibla\HttpClient\Handlers;
 
-use Hibla\EventLoop\EventLoop;
+use Hibla\EventLoop\Loop;
 use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Exceptions\TimeoutException;
 use Hibla\HttpClient\Response;
@@ -40,7 +40,7 @@ class RequestExecutorHandler
         $timeout = $curlOptions[CURLOPT_TIMEOUT] ?? $curlOptions[CURLOPT_TIMEOUT_MS] ?? null;
         $connectTimeout = $curlOptions[CURLOPT_CONNECTTIMEOUT] ?? $curlOptions[CURLOPT_CONNECTTIMEOUT_MS] ?? null;
 
-        $requestId = EventLoop::getInstance()->addHttpRequest(
+        $requestId = Loop::addHttpRequest(
             $url,
             $curlOnlyOptions,
             function (?string $error, ?string $response, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $promise, $cookieJar, $timeout, $connectTimeout) {
@@ -70,7 +70,7 @@ class RequestExecutorHandler
         );
 
         $promise->setCancelHandler(function () use ($requestId) {
-            EventLoop::getInstance()->cancelHttpRequest($requestId);
+            Loop::cancelHttpRequest($requestId);
         });
 
         return $promise;

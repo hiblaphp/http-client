@@ -99,7 +99,7 @@ class StreamingResponse extends Response
     {
         $decoded = json_decode($this->body(), true);
 
-        if (! is_array($decoded)) {
+        if (! \is_array($decoded)) {
             return $default;
         }
 
@@ -166,11 +166,11 @@ class StreamingResponse extends Response
      */
     public function streamTo($destination): bool
     {
-        if (is_string($destination)) {
+        if (\is_string($destination)) {
             return $this->saveToFile($destination);
         }
 
-        if (! is_resource($destination)) {
+        if (! \is_resource($destination)) {
             return false;
         }
 

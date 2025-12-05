@@ -8,7 +8,6 @@ use Hibla\HttpClient\SSE\SSEResponse;
 use Hibla\HttpClient\StreamingResponse;
 use Hibla\HttpClient\Traits\FetchOptionTrait;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
-use Hibla\Promise\Interfaces\PromiseInterface;
 
 /**
  * Handler for fetch-style HTTP requests with advanced options support.
@@ -45,9 +44,9 @@ class FetchHandler
      *
      * @param  string  $url  The target URL.
      * @param  array<int|string, mixed>  $options  An associative array of request options.
-     * @return PromiseInterface<Response>|CancellablePromiseInterface<StreamingResponse>|CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}>|CancellablePromiseInterface<SSEResponse> A promise that resolves with a Response, StreamingResponse, download metadata, or SSEResponse.
+     * @return CancellablePromiseInterface<Response>|CancellablePromiseInterface<StreamingResponse>|CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}>|CancellablePromiseInterface<SSEResponse> A promise that resolves with a Response, StreamingResponse, download metadata, or SSEResponse.
      */
-    public function fetch(string $url, array $options = []): PromiseInterface|CancellablePromiseInterface
+    public function fetch(string $url, array $options = []): CancellablePromiseInterface
     {
         if ($this->isDownloadRequested($options)) {
             return $this->fetchDownload($url, $options);
@@ -103,7 +102,7 @@ class FetchHandler
     {
         $destination = $options['download'] ?? $options['save_to'] ?? null;
 
-        if (! is_string($destination)) {
+        if (! \is_string($destination)) {
             throw new \InvalidArgumentException('Download destination must be a string path');
         }
 
@@ -165,7 +164,6 @@ class FetchHandler
             return $options['on_chunk'];
         }
 
-        // Also support 'onChunk' for consistency with Request builder
         if (isset($options['onChunk']) && is_callable($options['onChunk'])) {
             return $options['onChunk'];
         }
@@ -267,7 +265,7 @@ class FetchHandler
             return $reconnect;
         }
 
-        if (is_array($reconnect)) {
+        if (\is_array($reconnect)) {
             $enabled = isset($reconnect['enabled']) ? (bool)$reconnect['enabled'] : true;
             $maxAttempts = (isset($reconnect['max_attempts']) && is_numeric($reconnect['max_attempts'])) ? (int)$reconnect['max_attempts'] : 10;
             $initialDelay = (isset($reconnect['initial_delay']) && is_numeric($reconnect['initial_delay'])) ? (float)$reconnect['initial_delay'] : 1.0;
@@ -287,7 +285,7 @@ class FetchHandler
                 'Operation timed out',
                 'Network is unreachable',
             ];
-            $retryableErrors = (isset($reconnect['retryable_errors']) && is_array($reconnect['retryable_errors']))
+            $retryableErrors = (isset($reconnect['retryable_errors']) && \is_array($reconnect['retryable_errors']))
                 ? $reconnect['retryable_errors']
                 : $defaultErrors;
 

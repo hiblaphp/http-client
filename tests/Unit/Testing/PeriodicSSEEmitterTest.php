@@ -1,15 +1,15 @@
 <?php
 
-use Hibla\EventLoop\EventLoop;
+use Hibla\EventLoop\Loop;
 use Hibla\HttpClient\SSE\SSEResponse;
 use Hibla\HttpClient\Testing\MockedRequest;
 
 beforeEach(function () {
-    EventLoop::reset();
+    Loop::reset();
 });
 
 afterEach(function () {
-    EventLoop::reset();
+    Loop::reset();
 });
 
 describe('PeriodicSSEEmitter', function () {
@@ -52,7 +52,7 @@ describe('PeriodicSSEEmitter', function () {
 
         $emitter->emit($promise, $mock, null, null, $timerId);
 
-        $loop = EventLoop::getInstance();
+        $loop = Loop::getInstance();
         $loop->nextTick(function () use ($loop) {
             $loop->stop();
         });
@@ -91,7 +91,7 @@ describe('PeriodicSSEEmitter', function () {
 
             expect($timerId)->toBeString();
 
-            $loop = EventLoop::getInstance();
+            $loop = Loop::getInstance();
             $stopTimer = $loop->addTimer(0.5, function () use ($loop) {
                 $loop->stop();
             });
@@ -122,7 +122,7 @@ describe('PeriodicSSEEmitter', function () {
 
             $emitter->emit($promise, $mock, $onEvent, null, $timerId);
 
-            $loop = EventLoop::getInstance();
+            $loop = Loop::getInstance();
             $loop->addTimer(0.5, function () use ($loop) {
                 $loop->stop();
             });
@@ -157,7 +157,7 @@ describe('PeriodicSSEEmitter', function () {
             $timerId = null;
             $emitter->emit($promise, $mock, null, $onError, $timerId);
 
-            $loop = EventLoop::getInstance();
+            $loop = Loop::getInstance();
             $loop->addTimer(0.2, function () use ($loop) {
                 $loop->stop();
             });
@@ -197,7 +197,7 @@ describe('PeriodicSSEEmitter', function () {
             $timerId = null;
             $emitter->emit($promise, $mock, $onEvent, null, $timerId);
 
-            $loop = EventLoop::getInstance();
+            $loop = Loop::getInstance();
             $loop->addTimer(0.5, function () use ($loop) {
                 $loop->stop();
             });
@@ -232,7 +232,7 @@ describe('PeriodicSSEEmitter', function () {
             $timerId = null;
             $emitter->emit($promise, $mock, $onEvent, null, $timerId);
 
-            $loop = EventLoop::getInstance();
+            $loop = Loop::getInstance();
             $loop->addTimer(0.3, function () use ($loop) {
                 $loop->stop();
             });
@@ -268,10 +268,10 @@ describe('PeriodicSSEEmitter', function () {
 
             expect($timerId)->toBeString();
 
-            $loop = EventLoop::getInstance();
+            $loop = Loop::getInstance();
 
             $loop->addTimer(0.1, function () use ($loop, $timerId) {
-                EventLoop::getInstance()->cancelTimer($timerId);
+                Loop::cancelTimer($timerId);
                 $loop->stop();
             });
 
@@ -302,7 +302,7 @@ describe('PeriodicSSEEmitter', function () {
 
             expect($timerId)->toBeString();
 
-            $loop = EventLoop::getInstance();
+            $loop = Loop::getInstance();
             $loop->addTimer(0.1, function () use ($loop) {
                 $loop->stop();
             });
@@ -335,7 +335,7 @@ describe('PeriodicSSEEmitter', function () {
             $timerId = null;
             $emitter->emit($promise, $mock, $onEvent, null, $timerId);
 
-            $loop = EventLoop::getInstance();
+            $loop = Loop::getInstance();
             $loop->addTimer(1.0, function () use ($loop) {
                 $loop->stop();
             });
@@ -365,7 +365,7 @@ describe('PeriodicSSEEmitter', function () {
             $timerId = null;
             $emitter->emit($promise, $mock, $onEvent, null, $timerId);
 
-            $loop = EventLoop::getInstance();
+            $loop = Loop::getInstance();
             $loop->addTimer(0.5, function () use ($loop) {
                 $loop->stop();
             });
@@ -452,7 +452,7 @@ describe('PeriodicSSEEmitter', function () {
             $timerId = null;
             $emitter->emit($promise, $mock, $onEvent, null, $timerId);
 
-            $loop = EventLoop::getInstance();
+            $loop = Loop::getInstance();
             $loop->addTimer(0.5, function () use ($loop) {
                 $loop->stop();
             });
@@ -498,7 +498,7 @@ describe('PeriodicSSEEmitter', function () {
             $timerId = null;
             $emitter->emit($promise, $mock, $onEvent, null, $timerId);
 
-            $loop = EventLoop::getInstance();
+            $loop = Loop::getInstance();
             $loop->addTimer(0.1, function () use ($loop) {
                 $loop->stop();
             });
@@ -547,11 +547,11 @@ describe('PeriodicSSEEmitter', function () {
             $timerId = null;
             $emitter->emit($promise, $mock, $onEvent, null, $timerId);
 
-            $cancelled = EventLoop::getInstance()->cancelTimer($timerId);
+            $cancelled = Loop::cancelTimer($timerId);
 
             expect($cancelled)->toBeTrue();
 
-            $loop = EventLoop::getInstance();
+            $loop = Loop::getInstance();
             $loop->addTimer(0.3, function () use ($loop) {
                 $loop->stop();
             });

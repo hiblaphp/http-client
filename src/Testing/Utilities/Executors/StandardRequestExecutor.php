@@ -117,7 +117,7 @@ class StandardRequestExecutor
      */
     private function extractMethod(array $curlOptions): string
     {
-        return is_string($curlOptions[CURLOPT_CUSTOMREQUEST] ?? null)
+        return \is_string($curlOptions[CURLOPT_CUSTOMREQUEST] ?? null)
             ? $curlOptions[CURLOPT_CUSTOMREQUEST]
             : 'GET';
     }
@@ -187,8 +187,8 @@ class StandardRequestExecutor
         $transformedHeaders = [];
 
         foreach ($rawHeaders as $key => $value) {
-            if (is_string($key)) {
-                $transformedHeaders[$key] = is_array($value) ? $value : [$value];
+            if (\is_string($key)) {
+                $transformedHeaders[$key] = \is_array($value) ? $value : [$value];
             }
         }
 

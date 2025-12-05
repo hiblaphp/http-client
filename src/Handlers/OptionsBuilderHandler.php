@@ -84,7 +84,7 @@ class OptionsBuilderHandler
 
         $stringKeyOptions = array_filter(
             $additionalOptions,
-            fn ($key) => is_string($key),
+            fn ($key) => \is_string($key),
             ARRAY_FILTER_USE_KEY
         );
 
@@ -98,7 +98,7 @@ class OptionsBuilderHandler
 
         // Merge additional options (integer keys only for cURL options)
         foreach ($additionalOptions as $key => $value) {
-            if (is_int($key)) {
+            if (\is_int($key)) {
                 $options[$key] = $value;
             }
         }
@@ -176,10 +176,9 @@ class OptionsBuilderHandler
      */
     private function resolveHttpVersion(string $protocol): int
     {
-        // @phpstan-ignore-next-line
         return match ($protocol) {
             '2.0', '2' => CURL_HTTP_VERSION_2TLS,
-            '3.0', '3' => defined('CURL_HTTP_VERSION_3')
+            '3.0', '3' => \defined('CURL_HTTP_VERSION_3')
                 ? CURL_HTTP_VERSION_3
                 : CURL_HTTP_VERSION_1_1,
             '1.0' => CURL_HTTP_VERSION_1_0,
@@ -214,7 +213,7 @@ class OptionsBuilderHandler
 
         if (isset($lowerHeaders['cookie'])) {
             $existingCookie = implode('; ', $lowerHeaders['cookie']);
-            // Remove old Cookie header (case-insensitive)
+       
             foreach ($headers as $name => $value) {
                 if (strtolower($name) === 'cookie') {
                     unset($headers[$name]);
@@ -252,7 +251,7 @@ class OptionsBuilderHandler
             $options[CURLOPT_PROXYUSERPWD] = $proxyAuth;
         }
 
-        if (in_array($proxyConfig->type, ['socks4', 'socks5'], true)) {
+        if (\in_array($proxyConfig->type, ['socks4', 'socks5'], true)) {
             $options[CURLOPT_HTTPPROXYTUNNEL] = false;
         } else {
             $options[CURLOPT_HTTPPROXYTUNNEL] = true;

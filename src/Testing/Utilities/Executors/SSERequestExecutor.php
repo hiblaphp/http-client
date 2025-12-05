@@ -268,7 +268,7 @@ class SSERequestExecutor
         }
 
         $headers = $curlOptions[CURLOPT_HTTPHEADER] ?? [];
-        if (! is_array($headers)) {
+        if (! \is_array($headers)) {
             $headers = [];
         }
         $headers[] = "Last-Event-ID: {$lastEventId}";

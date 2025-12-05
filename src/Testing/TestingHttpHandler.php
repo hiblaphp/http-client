@@ -33,7 +33,6 @@ use Hibla\HttpClient\Testing\Utilities\RequestRecorder;
 use Hibla\HttpClient\Testing\Utilities\ResponseFactory;
 use Hibla\HttpClient\Traits\FetchOptionTrait;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
-use Hibla\Promise\Interfaces\PromiseInterface;
 
 /**
  * Robust HTTP testing handler with comprehensive mocking capabilities.
@@ -411,7 +410,7 @@ class TestingHttpHandler extends HttpHandler implements
     /**
      * Send an HTTP request with mocking support.
      */
-    public function sendRequest(string $url, array $curlOptions, ?CacheConfig $cacheConfig = null, ?RetryConfig $retryConfig = null): PromiseInterface
+    public function sendRequest(string $url, array $curlOptions, ?CacheConfig $cacheConfig = null, ?RetryConfig $retryConfig = null): CancellablePromiseInterface
     {
         $mockedRequests = array_values($this->mockedRequests);
 
@@ -430,9 +429,9 @@ class TestingHttpHandler extends HttpHandler implements
      * Fetch a URL with mocking support.
      *
      * @param array<int|string, mixed> $options
-     * @return PromiseInterface<\Hibla\HttpClient\Response>|CancellablePromiseInterface<\Hibla\HttpClient\StreamingResponse>|CancellablePromiseInterface<\Hibla\HttpClient\SSE\SSEResponse>|CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}>
+     * @return CancellablePromiseInterface<\Hibla\HttpClient\Response>|CancellablePromiseInterface<\Hibla\HttpClient\StreamingResponse>|CancellablePromiseInterface<\Hibla\HttpClient\SSE\SSEResponse>|CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}>
      */
-    public function fetch(string $url, array $options = []): PromiseInterface|CancellablePromiseInterface
+    public function fetch(string $url, array $options = []): CancellablePromiseInterface
     {
         $mockedRequests = array_values($this->mockedRequests);
         /** @var array<string, mixed> $normalizedOptions */

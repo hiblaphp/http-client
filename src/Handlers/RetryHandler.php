@@ -2,7 +2,7 @@
 
 namespace Hibla\HttpClient\Handlers;
 
-use Hibla\EventLoop\EventLoop;
+use Hibla\EventLoop\Loop;
 use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Response;
 use Hibla\HttpClient\RetryConfig;
@@ -56,7 +56,7 @@ class RetryHandler
         ) {
             $totalAttempts++;
 
-            $requestId = EventLoop::getInstance()->addHttpRequest(
+            $requestId = Loop::addHttpRequest(
                 $url,
                 $curlOnlyOptions,
                 function (?string $error, ?string $responseBody, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $retryConfig, $promise, &$attempt, &$totalAttempts, &$executeRequest, $cookieJar) {
@@ -70,7 +70,7 @@ class RetryHandler
                     if ($isRetryable && $attempt < $retryConfig->maxRetries) {
                         $attempt++;
                         $delay = $retryConfig->getDelay($attempt);
-                        EventLoop::getInstance()->addTimer($delay, $executeRequest);
+                        Loop::addTimer($delay, $executeRequest);
 
                         return;
                     }
@@ -108,7 +108,7 @@ class RetryHandler
 
         $promise->setCancelHandler(function () use (&$requestId) {
             if ($requestId !== null) {
-                EventLoop::getInstance()->cancelHttpRequest($requestId);
+                Loop::cancelHttpRequest($requestId);
             }
         });
 
