@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Hibla\HttpClient\Testing\Utilities\RecordedRequest;
 use PHPUnit\Framework\AssertionFailedError;
 
@@ -72,6 +74,7 @@ describe('AssertsStreams', function () {
         $lastStream = $handler->getLastStream();
 
         expect($lastStream)->toBeInstanceOf(RecordedRequest::class)
-            ->and($lastStream->getUrl())->toBe('https://example.com/stream2');
+            ->and($lastStream->getUrl())->toBe('https://example.com/stream2')
+        ;
     });
 });

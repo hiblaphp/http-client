@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Hibla\HttpClient\Http;
 use Hibla\Promise\Promise;
 
@@ -1351,7 +1353,8 @@ describe('Advanced Promise Patterns with Mocks', function () {
                     'description' => "Detailed info for item {$i}",
                     'price' => 100 * $i,
                 ])
-                ->register();
+                ->register()
+            ;
         }
 
         // Fan-out: get list of items
@@ -1370,7 +1373,8 @@ describe('Advanced Promise Patterns with Mocks', function () {
         expect($details)->toHaveCount(3);
         foreach ($details as $id => $detail) {
             expect($detail->json('id'))->toBe($id)
-                ->and($detail->json('price'))->toBe(100 * $id);
+                ->and($detail->json('price'))->toBe(100 * $id)
+            ;
         }
     });
 });

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Hibla\HttpClient\Handlers\HttpHandler;
 use Hibla\HttpClient\RetryConfig;
 
@@ -512,6 +514,7 @@ describe('Mock Handler Integration Tests', function () {
         expect($response1->json('title'))->toBe('Generic Post')
             ->and($response2->json('title'))->toBe('Generic Post')
             ->and($response3->json('title'))->toBe('Generic Post')
-            ->and($handler->getRequestHistory())->toHaveCount(3);
+            ->and($handler->getRequestHistory())->toHaveCount(3)
+        ;
     });
 });

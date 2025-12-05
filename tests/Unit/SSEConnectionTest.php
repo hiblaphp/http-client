@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Hibla\HttpClient\SSE\SSEConnectionState;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
 

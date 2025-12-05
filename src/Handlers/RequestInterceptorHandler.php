@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hibla\HttpClient\Handlers;
 
 use Hibla\HttpClient\Exceptions\RequestException;

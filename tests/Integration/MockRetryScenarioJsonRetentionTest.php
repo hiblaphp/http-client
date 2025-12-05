@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Hibla\HttpClient\Http;
 
 beforeEach(function () {
@@ -300,6 +302,7 @@ describe('Retry Scenarios JSON Data Retention', function () {
             ->and($response->json()['false_value'])->toBeFalse()
             ->and($response->json()['zero'])->toBe(0)
             ->and($response->json()['empty_string'])->toBe('')
-            ->and($response->json()['empty_array'])->toBe([]);
+            ->and($response->json()['empty_array'])->toBe([])
+        ;
     });
 });

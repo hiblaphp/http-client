@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hibla\HttpClient\Handlers;
 
-use Hibla\HttpClient\Traits\CancellablePromiseTrait;
 use Hibla\HttpClient\CacheConfig;
 use Hibla\HttpClient\Response;
 use Hibla\HttpClient\RetryConfig;
+use Hibla\HttpClient\Traits\CancellablePromiseTrait;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 use Psr\SimpleCache\CacheInterface;
 use Rcalicdan\ConfigLoader\Config;
@@ -89,7 +91,8 @@ class CacheHandler
                 }
 
                 return $response;
-            });
+            })
+        ;
     }
 
     /**

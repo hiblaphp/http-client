@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Hibla\HttpClient\Message;
 use Hibla\HttpClient\Stream;
 use Psr\Http\Message\StreamInterface;

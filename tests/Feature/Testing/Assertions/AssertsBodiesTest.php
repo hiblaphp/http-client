@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use PHPUnit\Framework\AssertionFailedError;
 
 describe('AssertsRequestBody', function () {
@@ -135,6 +137,7 @@ describe('AssertsRequestBody', function () {
         ])->await();
 
         expect(fn () => $handler->assertRequestBodyMatches('POST', 'https://example.com', '/request-id-\d+/'))
-            ->not->toThrow(AssertionFailedError::class);
+            ->not->toThrow(AssertionFailedError::class)
+        ;
     });
 });

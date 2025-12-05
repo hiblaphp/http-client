@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hibla\HttpClient;
 
 use Hibla\HttpClient\Handlers\HttpHandler;
@@ -1249,7 +1251,7 @@ class Request extends Message implements CompleteHttpClientInterface
     public function withUrlParameters(array $parameters): self
     {
         $new = clone $this;
-        $new->urlParameters =   array_merge($new->urlParameters, $parameters);
+        $new->urlParameters = array_merge($new->urlParameters, $parameters);
 
         return $new;
     }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Hibla\HttpClient\RetryConfig;
 
 test('it calculates exponential backoff delay correctly', function () {

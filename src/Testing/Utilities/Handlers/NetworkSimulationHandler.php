@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hibla\HttpClient\Testing\Utilities\Handlers;
 
 use Hibla\HttpClient\Testing\TestingHttpHandler;

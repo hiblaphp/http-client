@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hibla\HttpClient\Testing\Utilities\Executors;
 
 use Hibla\HttpClient\Handlers\HttpHandler;
@@ -81,7 +83,7 @@ class RetryableRequestExecutor
         $retryPromise = $this->responseFactory->createRetryableMockedResponse($retryConfig, $mockProvider);
 
         /** @var array<string, mixed> $stringKeyedOptions */
-        $stringKeyedOptions = array_filter($options, fn ($key) =>  \is_string($key), ARRAY_FILTER_USE_KEY);
+        $stringKeyedOptions = array_filter($options, fn ($key) => \is_string($key), ARRAY_FILTER_USE_KEY);
 
         $retryPromise->then(
             function (Response $successfulResponse) use ($stringKeyedOptions, $finalPromise, $createStream, $fileManager): void {

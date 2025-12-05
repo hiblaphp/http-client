@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Hibla\EventLoop\Loop;
 use Hibla\HttpClient\SSE\SSEResponse;
 use Hibla\HttpClient\Testing\MockedRequest;

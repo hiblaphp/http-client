@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hibla\HttpClient\Handlers;
 
 use Hibla\HttpClient\Interfaces\CookieJarInterface;
@@ -213,7 +215,7 @@ class OptionsBuilderHandler
 
         if (isset($lowerHeaders['cookie'])) {
             $existingCookie = implode('; ', $lowerHeaders['cookie']);
-       
+
             foreach ($headers as $name => $value) {
                 if (strtolower($name) === 'cookie') {
                     unset($headers[$name]);

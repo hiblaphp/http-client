@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Hibla\HttpClient\Testing\Utilities\RecordedRequest;
 use PHPUnit\Framework\AssertionFailedError;
 
@@ -104,6 +106,7 @@ describe('AssertsRequests', function () {
         $firstRequest = $handler->getRequest(0);
 
         expect($firstRequest)->toBeInstanceOf(RecordedRequest::class)
-            ->and($firstRequest->getUrl())->toBe('https://example.com/1');
+            ->and($firstRequest->getUrl())->toBe('https://example.com/1')
+        ;
     });
 });

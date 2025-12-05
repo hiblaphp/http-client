@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Hibla\HttpClient\SSE\SSEEvent;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
 use Hibla\HttpClient\SSE\SSEResponse;
@@ -670,5 +672,6 @@ test('SSE mock matches wildcard method', function () {
     $mock->asSSE();
 
     expect($mock->matches('GET', 'https://api.example.com/events', []))->toBeTrue()
-        ->and($mock->matches('POST', 'https://api.example.com/events', []))->toBeTrue();
+        ->and($mock->matches('POST', 'https://api.example.com/events', []))->toBeTrue()
+    ;
 });

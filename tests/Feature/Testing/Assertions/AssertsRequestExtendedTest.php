@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use PHPUnit\Framework\AssertionFailedError;
 
 describe('AssertsRequestsExtended', function () {
@@ -111,6 +113,7 @@ describe('AssertsRequestsExtended', function () {
         expect($getRequests)->toHaveCount(1)
             ->and($postRequests)->toHaveCount(1)
             ->and($getRequests[0]->getMethod())->toBe('GET')
-            ->and($postRequests[0]->getMethod())->toBe('POST');
+            ->and($postRequests[0]->getMethod())->toBe('POST')
+        ;
     });
 });

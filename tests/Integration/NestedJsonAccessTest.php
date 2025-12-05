@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Hibla\HttpClient\Http;
 
 beforeEach(function () {
@@ -740,12 +742,14 @@ describe('Nested JSON Access Edge Cases', function () {
                     'value' => 'test',
                 ],
             ])
-            ->register();
+            ->register()
+        ;
 
         $response = Http::get('https://api.example.com/consecutive-dots')->await();
 
         // Consecutive dots should be handled gracefully
         expect($response->json('data..value'))->toBeNull()
-            ->and($response->json('data...value'))->toBeNull();
+            ->and($response->json('data...value'))->toBeNull()
+        ;
     });
 });

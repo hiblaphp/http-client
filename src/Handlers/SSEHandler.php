@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hibla\HttpClient\Handlers;
 
 use Hibla\EventLoop\Loop;
@@ -105,11 +107,11 @@ class SSEHandler
         $options = $connectionState->getOptions();
         if ($connectionState->getLastEventId() !== null) {
             $headers = $options[CURLOPT_HTTPHEADER] ?? [];
-    
+
             if (! \is_array($headers)) {
                 $headers = [];
             }
-        
+
             $headers = array_filter($headers, function ($h): bool {
                 if (! \is_string($h)) {
                     return true;

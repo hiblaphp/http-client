@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hibla\HttpClient\Testing\Traits\RequestBuilder;
 
 use Hibla\HttpClient\Testing\Utilities\CookieManager;

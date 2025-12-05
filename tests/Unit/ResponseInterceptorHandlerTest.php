@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Hibla\HttpClient\Handlers\ResponseInterceptorHandler;
 use Hibla\HttpClient\Response;
 use Hibla\Promise\Promise;

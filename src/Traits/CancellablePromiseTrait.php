@@ -5,32 +5,31 @@ declare(strict_types=1);
 namespace Hibla\HttpClient\Traits;
 
 use Hibla\Promise\CancellablePromise;
-use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 
 trait CancellablePromiseTrait
 {
-    /** 
+    /**
      * @template TValue
      * @param TValue $value
-     * @return CancellablePromise<TValue> 
+     * @return CancellablePromise<TValue>
      */
     private function resolved(mixed $value): CancellablePromise
     {
         /** @var CancellablePromise<TValue> $promise */
-        $promise =  new CancellablePromise();
+        $promise = new CancellablePromise();
 
         $promise->resolve($value);
 
         return $promise;
     }
 
-    /** 
-     * @return CancellablePromise<mixed> 
+    /**
+     * @return CancellablePromise<mixed>
      */
     private function rejected(mixed $reason): CancellablePromise
     {
         /** @var CancellablePromise<mixed> $promise */
-        $promise =  new CancellablePromise();
+        $promise = new CancellablePromise();
 
         $promise->reject($reason);
 

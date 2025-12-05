@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 // src/Testing/Traits/RequestBuilder/BuildsBasicMocks.php
 
 namespace Hibla\HttpClient\Testing\Traits\RequestBuilder;

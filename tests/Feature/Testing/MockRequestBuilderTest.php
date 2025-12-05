@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Hibla\HttpClient\Testing\MockRequestBuilder;
 use Hibla\HttpClient\Testing\TestingHttpHandler;
 
@@ -592,7 +594,8 @@ test('registers mock with handler', function () {
 
     $builder->url('https://api.example.com/test')
         ->respondJson(['status' => 'ok'])
-        ->register();
+        ->register()
+    ;
 
     expect($handler)->toBeInstanceOf(TestingHttpHandler::class);
 });

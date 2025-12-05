@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use PHPUnit\Framework\AssertionFailedError;
 
 describe('Edge Cases', function () {
@@ -197,6 +199,7 @@ describe('Debugging Helpers', function () {
 
         expect($output)->toContain('GET Requests')
             ->and($output)->toContain('https://example.com/1')
-            ->and($output)->not->toContain('https://example.com/2');
+            ->and($output)->not->toContain('https://example.com/2')
+        ;
     });
 });

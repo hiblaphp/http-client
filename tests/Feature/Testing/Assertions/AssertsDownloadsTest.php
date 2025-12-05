@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Hibla\HttpClient\Testing\Utilities\RecordedRequest;
 use PHPUnit\Framework\AssertionFailedError;
 
@@ -195,6 +197,7 @@ describe('AssertsDownloads', function () {
         $lastDownload = $handler->getLastDownload();
 
         expect($lastDownload)->toBeInstanceOf(RecordedRequest::class)
-            ->and($lastDownload->getUrl())->toBe('https://example.com/file2.txt');
+            ->and($lastDownload->getUrl())->toBe('https://example.com/file2.txt')
+        ;
     });
 });

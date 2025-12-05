@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use PHPUnit\Framework\AssertionFailedError;
 
 describe('AssertsHeaders', function () {
@@ -155,6 +157,7 @@ describe('AssertsHeaders', function () {
         ])->await();
 
         expect(fn () => $handler->assertUserAgent('CustomAgent/1.0'))
-            ->not->toThrow(AssertionFailedError::class);
+            ->not->toThrow(AssertionFailedError::class)
+        ;
     });
 });

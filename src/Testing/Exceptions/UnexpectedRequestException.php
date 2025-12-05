@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hibla\HttpClient\Testing\Exceptions;
 
 use Hibla\HttpClient\Testing\MockedRequest;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Hibla\HttpClient\RetryConfig;
 
 afterEach(function () {
@@ -569,7 +571,8 @@ describe('Body Expectation Tests', function () {
             ->url('https://api.example.com/json  ')
             ->expectJson(['key' => 'value'])
             ->respondJson(['success' => true])
-            ->register();
+            ->register()
+        ;
 
         $response = $handler->fetch('https://api.example.com/json  ', [
             'method' => 'POST',

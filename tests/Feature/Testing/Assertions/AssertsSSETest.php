@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Hibla\HttpClient\Testing\Utilities\RecordedRequest;
 use PHPUnit\Framework\AssertionFailedError;
 
@@ -330,6 +332,7 @@ describe('AssertsSSE', function () {
 
         expect($attempts)->toHaveCount(2)
             ->and($attempts[0])->toBeInstanceOf(RecordedRequest::class)
-            ->and($attempts[1])->toBeInstanceOf(RecordedRequest::class);
+            ->and($attempts[1])->toBeInstanceOf(RecordedRequest::class)
+        ;
     });
 });

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Hibla\HttpClient\Handlers\OptionsBuilderHandler;
 use Hibla\HttpClient\ProxyConfig;
 use Hibla\HttpClient\Stream;

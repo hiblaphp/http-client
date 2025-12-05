@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Hibla\HttpClient\Cookie;
 use Hibla\HttpClient\CookieJar;
 use Hibla\HttpClient\FileCookieJar;

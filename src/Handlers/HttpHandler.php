@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hibla\HttpClient\Handlers;
 
 use Hibla\HttpClient\CacheConfig;
@@ -14,7 +16,6 @@ use Hibla\HttpClient\SSE\SSEResponse;
 use Hibla\HttpClient\Stream;
 use Hibla\HttpClient\StreamingResponse;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
-use Hibla\Promise\Interfaces\PromiseInterface;
 
 /**
  * Core handler for creating and dispatching asynchronous HTTP requests.

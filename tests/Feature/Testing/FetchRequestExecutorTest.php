@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Hibla\HttpClient\CacheConfig;
 use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Response;
@@ -277,5 +279,6 @@ test('handles multiple mocks with first match priority', function () {
     )->await();
 
     expect($result->body())->toBe('{"source": "first"}')
-        ->and($mocks)->toHaveCount(1);
+        ->and($mocks)->toHaveCount(1)
+    ;
 });
