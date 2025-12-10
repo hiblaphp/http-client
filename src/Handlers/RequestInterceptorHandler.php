@@ -6,33 +6,29 @@ namespace Hibla\HttpClient\Handlers;
 
 use Hibla\HttpClient\Exceptions\RequestException;
 use Hibla\HttpClient\Request;
-use Hibla\HttpClient\Traits\CancellablePromiseTrait;
-use Hibla\Promise\CancellablePromise;
-use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
+use Hibla\Promise\Promise;
 
 /**
  * Handles sequential processing of request interceptors.
  */
 class RequestInterceptorHandler
 {
-    use CancellablePromiseTrait;
-
     /**
      * Process request interceptors sequentially, handling both sync and async interceptors.
      *
      * @param Request $request The initial request
      * @param array<callable(Request): (Request|PromiseInterface<Request>)> $interceptors Array of interceptor callbacks
-     * @return CancellablePromiseInterface<Request> A promise that resolves with the processed request
+     * @return PromiseInterface<Request> A promise that resolves with the processed request
      */
-    public function processInterceptors(Request $request, array $interceptors): CancellablePromiseInterface
+    public function processInterceptors(Request $request, array $interceptors): PromiseInterface
     {
         if ($interceptors === []) {
-            return $this->resolved($request);
+            return Promise::resolved($request);
         }
 
-        /** @var CancellablePromise<Request> $promise */
-        $promise = new CancellablePromise(function (callable $resolve, callable $reject) use ($request, $interceptors) {
+        /** @var Promise<Request> $promise */
+        $promise = new Promise(function (callable $resolve, callable $reject) use ($request, $interceptors) {
             $this->processSequentially($request, $interceptors, $resolve, $reject);
         });
 

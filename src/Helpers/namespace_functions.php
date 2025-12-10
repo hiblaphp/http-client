@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient;
 
-use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
 /**
@@ -67,16 +66,16 @@ function http_post(string $url, array $data = []): PromiseInterface
  *
  * @param  string  $url  The URL to stream from
  * @param  callable|null  $onChunk  Callback to handle each chunk
- * @return CancellablePromiseInterface<StreamingResponse> Promise that resolves when streaming completes
+ * @return PromiseInterface<StreamingResponse> Promise that resolves when streaming completes
  *
  * @example
  * await(http_stream('https://api.example.com/data', [], function($chunk) {
  *     echo "Received: " . $chunk;
  * }));
  */
-function http_stream(string $url, ?callable $onChunk = null): CancellablePromiseInterface
+function http_stream(string $url, ?callable $onChunk = null): PromiseInterface
 {
-    /** @var CancellablePromiseInterface<StreamingResponse> */
+    /** @var PromiseInterface<StreamingResponse> */
     return Http::stream($url,  $onChunk);
 }
 
@@ -88,12 +87,12 @@ function http_stream(string $url, ?callable $onChunk = null): CancellablePromise
  *
  * @param  string  $url  The URL to download from
  * @param  string  $destination  The local path to save the file
- * @return CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>}> Promise that resolves when download completes
+ * @return PromiseInterface<array{file: string, status: int, headers: array<mixed>}> Promise that resolves when download completes
  *
  * @example
  * await(http_download('https://example.com/file.zip', '/local/file.zip'));
  */
-function http_download(string $url, string $destination): CancellablePromiseInterface
+function http_download(string $url, string $destination): PromiseInterface
 {
     return Http::download($url, $destination);
 }

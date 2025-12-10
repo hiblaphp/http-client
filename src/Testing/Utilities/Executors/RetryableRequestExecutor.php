@@ -15,9 +15,8 @@ use Hibla\HttpClient\Testing\Utilities\RequestMatcher;
 use Hibla\HttpClient\Testing\Utilities\RequestRecorder;
 use Hibla\HttpClient\Testing\Utilities\ResponseFactory;
 use Hibla\HttpClient\Traits\FetchOptionTrait;
-use Hibla\Promise\CancellablePromise;
-use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
+use Hibla\Promise\Promise;
 use Psr\Http\Message\StreamInterface;
 
 class RetryableRequestExecutor
@@ -72,8 +71,8 @@ class RetryableRequestExecutor
         ?callable $createStream = null,
         ?FileManager $fileManager = null
     ): PromiseInterface {
-        /** @var CancellablePromise<Response|StreamingResponse|array<string, mixed>> $finalPromise */
-        $finalPromise = new CancellablePromise();
+        /** @var Promise<Response|StreamingResponse|array<string, mixed>> $finalPromise */
+        $finalPromise = new Promise();
 
         $curlOptions = $this->normalizeFetchOptions($url, $options);
         /** @var array<int, mixed> $curlOnlyOptions */
@@ -95,7 +94,7 @@ class RetryableRequestExecutor
         );
 
         if ($retryPromise instanceof CancellablePromiseInterface) {
-            $finalPromise->setCancelHandler(fn () => $retryPromise->cancel());
+            $finalPromise->onCancel(fn () => $retryPromise->cancel());
         }
 
         return $finalPromise;
@@ -131,12 +130,12 @@ class RetryableRequestExecutor
 
     /**
      * @param array<string, mixed> $options
-     * @param CancellablePromise<Response|StreamingResponse|array<string, mixed>> $finalPromise
+     * @param Promise<Response|StreamingResponse|array<string, mixed>> $finalPromise
      */
     private function resolveRetryResponse(
         Response $successfulResponse,
         array $options,
-        CancellablePromise $finalPromise,
+        Promise $finalPromise,
         ?callable $createStream,
         ?FileManager $fileManager
     ): void {
@@ -151,12 +150,12 @@ class RetryableRequestExecutor
 
     /**
      * @param array<string, mixed> $options
-     * @param CancellablePromise<Response|StreamingResponse|array<string, mixed>> $finalPromise
+     * @param Promise<Response|StreamingResponse|array<string, mixed>> $finalPromise
      */
     private function resolveDownload(
         Response $successfulResponse,
         array $options,
-        CancellablePromise $finalPromise,
+        Promise $finalPromise,
         ?FileManager $fileManager
     ): void {
         $destPath = \is_string($options['download'])
@@ -176,12 +175,12 @@ class RetryableRequestExecutor
 
     /**
      * @param array<string, mixed> $options
-     * @param CancellablePromise<Response|StreamingResponse|array<string, mixed>> $finalPromise
+     * @param Promise<Response|StreamingResponse|array<string, mixed>> $finalPromise
      */
     private function resolveStream(
         Response $successfulResponse,
         array $options,
-        CancellablePromise $finalPromise,
+        Promise $finalPromise,
         ?callable $createStream
     ): void {
         $onChunkRaw = $options['on_chunk'] ?? $options['onChunk'] ?? null;

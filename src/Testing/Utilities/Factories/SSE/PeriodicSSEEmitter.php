@@ -10,7 +10,7 @@ use Hibla\HttpClient\SSE\SSEResponse;
 use Hibla\HttpClient\Stream;
 use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Testing\Utilities\Formatters\SSEEventFormatter;
-use Hibla\Promise\CancellablePromise;
+use Hibla\Promise\Promise;
 
 class PeriodicSSEEmitter
 {
@@ -22,7 +22,7 @@ class PeriodicSSEEmitter
     }
 
     /**
-     * @param CancellablePromise<SSEResponse> $promise
+     * @param Promise<SSEResponse> $promise
      * @param MockedRequest $mock
      * @param callable|null $onEvent
      * @param callable|null $onError
@@ -30,7 +30,7 @@ class PeriodicSSEEmitter
      * @param-out string $periodicTimerId
      */
     public function emit(
-        CancellablePromise $promise,
+        Promise $promise,
         MockedRequest $mock,
         ?callable $onEvent,
         ?callable $onError,

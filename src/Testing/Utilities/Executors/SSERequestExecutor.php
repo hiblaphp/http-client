@@ -10,7 +10,7 @@ use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Testing\Utilities\RequestMatcher;
 use Hibla\HttpClient\Testing\Utilities\RequestRecorder;
 use Hibla\HttpClient\Testing\Utilities\ResponseFactory;
-use Hibla\Promise\Interfaces\CancellablePromiseInterface;
+use Hibla\Promise\Interfaces\PromiseInterface;
 
 class SSERequestExecutor
 {
@@ -33,7 +33,7 @@ class SSERequestExecutor
      * @param list<MockedRequest> $mockedRequests
      * @param array<string, mixed> $globalSettings
      * @param mixed $reconnectConfig
-     * @return CancellablePromiseInterface<\Hibla\HttpClient\SSE\SSEResponse>
+     * @return PromiseInterface<\Hibla\HttpClient\SSE\SSEResponse>
      */
     public function execute(
         string $url,
@@ -44,7 +44,7 @@ class SSERequestExecutor
         ?callable $onError = null,
         ?callable $parentSSE = null,
         $reconnectConfig = null
-    ): CancellablePromiseInterface {
+    ): PromiseInterface {
         $method = 'GET';
 
         if ($this->shouldUseRetry($reconnectConfig)) {
@@ -88,7 +88,7 @@ class SSERequestExecutor
      * @param list<MockedRequest> $mockedRequests
      * @param array<string, mixed> $globalSettings
      * @param mixed $reconnectConfig
-     * @return CancellablePromiseInterface<\Hibla\HttpClient\SSE\SSEResponse>
+     * @return PromiseInterface<\Hibla\HttpClient\SSE\SSEResponse>
      */
     private function executeSimple(
         string $url,
@@ -100,7 +100,7 @@ class SSERequestExecutor
         ?callable $onError,
         ?callable $parentSSE,
         $reconnectConfig
-    ): CancellablePromiseInterface {
+    ): PromiseInterface {
         $this->requestRecorder->recordRequest($method, $url, $curlOptions);
 
         $match = $this->requestMatcher->findMatchingMock($mockedRequests, $method, $url, $curlOptions);
@@ -125,14 +125,14 @@ class SSERequestExecutor
     /**
      * @param array{mock: MockedRequest, index: int} $match
      * @param list<MockedRequest> $mockedRequests
-     * @return CancellablePromiseInterface<\Hibla\HttpClient\SSE\SSEResponse>
+     * @return PromiseInterface<\Hibla\HttpClient\SSE\SSEResponse>
      */
     private function handleMatchedSSE(
         array $match,
         array &$mockedRequests,
         ?callable $onEvent,
         ?callable $onError
-    ): CancellablePromiseInterface {
+    ): PromiseInterface {
         $mock = $match['mock'];
 
         if (! $mock->isPersistent()) {
@@ -154,7 +154,7 @@ class SSERequestExecutor
      * @param list<MockedRequest> $mockedRequests
      * @param array<string, mixed> $globalSettings
      * @param mixed $reconnectConfig
-     * @return CancellablePromiseInterface<\Hibla\HttpClient\SSE\SSEResponse>
+     * @return PromiseInterface<\Hibla\HttpClient\SSE\SSEResponse>
      */
     private function handleNoMatch(
         string $method,
@@ -166,7 +166,7 @@ class SSERequestExecutor
         ?callable $onEvent,
         ?callable $onError,
         $reconnectConfig
-    ): CancellablePromiseInterface {
+    ): PromiseInterface {
         if ((bool)($globalSettings['strict_matching'] ?? true)) {
             throw UnexpectedRequestException::noMatchFound($method, $url, $curlOptions, $mockedRequests);
         }
@@ -179,7 +179,7 @@ class SSERequestExecutor
             throw new \RuntimeException('No parent SSE handler available');
         }
 
-        /** @var CancellablePromiseInterface<\Hibla\HttpClient\SSE\SSEResponse> $result */
+        /** @var PromiseInterface<\Hibla\HttpClient\SSE\SSEResponse> $result */
         $result = $parentSSE($url, [], $onEvent, $onError, $reconnectConfig);
 
         return $result;
@@ -189,7 +189,7 @@ class SSERequestExecutor
      * @param array<int, mixed> $curlOptions
      * @param list<MockedRequest> $mockedRequests
      * @param array<string, mixed> $globalSettings
-     * @return CancellablePromiseInterface<\Hibla\HttpClient\SSE\SSEResponse>
+     * @return PromiseInterface<\Hibla\HttpClient\SSE\SSEResponse>
      */
     private function executeWithRetry(
         string $url,
@@ -200,7 +200,7 @@ class SSERequestExecutor
         ?callable $onError,
         \Hibla\HttpClient\SSE\SSEReconnectConfig $reconnectConfig,
         ?callable $parentSSE
-    ): CancellablePromiseInterface {
+    ): PromiseInterface {
         $method = 'GET';
 
         $mockProvider = $this->createMockProvider($method, $url, $curlOptions, $mockedRequests);

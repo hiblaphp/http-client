@@ -12,7 +12,7 @@ describe('AssertsHeaders', function () {
 
         $handler->fetch('https://example.com', [
             'headers' => ['X-Custom' => 'value'],
-        ])->await();
+        ])->wait();
 
         expect(fn () => $handler->assertHeaderSent('X-Custom'))
             ->not->toThrow(AssertionFailedError::class)
@@ -26,7 +26,7 @@ describe('AssertsHeaders', function () {
 
         $handler->fetch('https://example.com', [
             'headers' => ['X-Custom' => 'expected-value'],
-        ])->await();
+        ])->wait();
 
         expect(fn () => $handler->assertHeaderSent('X-Custom', 'expected-value'))
             ->not->toThrow(AssertionFailedError::class)
@@ -40,7 +40,7 @@ describe('AssertsHeaders', function () {
 
         $handler->fetch('https://example.com', [
             'headers' => ['X-Custom' => 'actual-value'],
-        ])->await();
+        ])->wait();
 
         expect(fn () => $handler->assertHeaderSent('X-Custom', 'expected-value'))
             ->toThrow(AssertionFailedError::class)
@@ -51,7 +51,7 @@ describe('AssertsHeaders', function () {
         $handler = testingHttpHandler();
 
         $handler->mock('GET')->url('https://example.com')->respondWithStatus(200)->register();
-        $handler->fetch('https://example.com')->await();
+        $handler->fetch('https://example.com')->wait();
 
         expect(fn () => $handler->assertHeaderNotSent('X-Missing'))
             ->not->toThrow(AssertionFailedError::class)
@@ -65,7 +65,7 @@ describe('AssertsHeaders', function () {
 
         $handler->fetch('https://example.com', [
             'headers' => ['X-Custom' => 'value'],
-        ])->await();
+        ])->wait();
 
         expect(fn () => $handler->assertHeaderNotSent('X-Custom'))
             ->toThrow(AssertionFailedError::class)
@@ -82,7 +82,7 @@ describe('AssertsHeaders', function () {
                 'X-Custom-1' => 'value1',
                 'X-Custom-2' => 'value2',
             ],
-        ])->await();
+        ])->wait();
 
         expect(fn () => $handler->assertHeadersSent([
             'X-Custom-1' => 'value1',
@@ -97,7 +97,7 @@ describe('AssertsHeaders', function () {
 
         $handler->fetch('https://example.com', [
             'headers' => ['X-Request-Id' => 'req-12345'],
-        ])->await();
+        ])->wait();
 
         expect(fn () => $handler->assertHeaderMatches('X-Request-Id', '/^req-\d+$/'))
             ->not->toThrow(AssertionFailedError::class)
@@ -111,7 +111,7 @@ describe('AssertsHeaders', function () {
 
         $handler->fetch('https://example.com', [
             'headers' => ['Authorization' => 'Bearer secret-token'],
-        ])->await();
+        ])->wait();
 
         expect(fn () => $handler->assertBearerTokenSent('secret-token'))
             ->not->toThrow(AssertionFailedError::class)
@@ -126,7 +126,7 @@ describe('AssertsHeaders', function () {
         $handler->fetch('https://example.com', [
             'method' => 'POST',
             'headers' => ['Content-Type' => 'application/json'],
-        ])->await();
+        ])->wait();
 
         expect(fn () => $handler->assertContentType('application/json'))
             ->not->toThrow(AssertionFailedError::class)
@@ -140,7 +140,7 @@ describe('AssertsHeaders', function () {
 
         $handler->fetch('https://example.com', [
             'headers' => ['Accept' => 'application/json'],
-        ])->await();
+        ])->wait();
 
         expect(fn () => $handler->assertAcceptHeader('application/json'))
             ->not->toThrow(AssertionFailedError::class)
@@ -154,7 +154,7 @@ describe('AssertsHeaders', function () {
 
         $handler->fetch('https://example.com', [
             'headers' => ['User-Agent' => 'CustomAgent/1.0'],
-        ])->await();
+        ])->wait();
 
         expect(fn () => $handler->assertUserAgent('CustomAgent/1.0'))
             ->not->toThrow(AssertionFailedError::class)

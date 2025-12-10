@@ -13,8 +13,8 @@ use Hibla\HttpClient\SSE\SSEEvent;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
 use Hibla\HttpClient\SSE\SSEResponse;
 use Hibla\HttpClient\Stream;
-use Hibla\Promise\CancellablePromise;
-use Hibla\Promise\Interfaces\CancellablePromiseInterface;
+use Hibla\Promise\Interfaces\PromiseInterface;
+use Hibla\Promise\Promise;
 
 /**
  * Dedicated handler for Server-Sent Events (SSE) connections with reconnection support.
@@ -29,7 +29,7 @@ class SSEHandler
      * @param  callable(SSEEvent): void|null  $onEvent  Optional callback for each SSE event
      * @param  callable(string): void|null  $onError  Optional callback for connection errors
      * @param  SSEReconnectConfig|null  $reconnectConfig  Optional reconnection configuration
-     * @return CancellablePromiseInterface<SSEResponse>
+     * @return PromiseInterface<SSEResponse>
      */
     public function connect(
         string $url,
@@ -37,7 +37,7 @@ class SSEHandler
         ?callable $onEvent = null,
         ?callable $onError = null,
         ?SSEReconnectConfig $reconnectConfig = null
-    ): CancellablePromiseInterface {
+    ): PromiseInterface {
         if ($reconnectConfig !== null && $reconnectConfig->enabled) {
             return $this->connectWithReconnection($url, $options, $onEvent, $onError, $reconnectConfig);
         }
@@ -49,7 +49,7 @@ class SSEHandler
      * Creates an SSE connection with automatic reconnection logic.
      *
      * @param  array<int|string, mixed>  $options
-     * @return CancellablePromiseInterface<SSEResponse>
+     * @return PromiseInterface<SSEResponse>
      */
     private function connectWithReconnection(
         string $url,
@@ -57,9 +57,9 @@ class SSEHandler
         ?callable $onEvent,
         ?callable $onError,
         SSEReconnectConfig $reconnectConfig
-    ): CancellablePromiseInterface {
-        /** @var CancellablePromise<SSEResponse> $mainPromise */
-        $mainPromise = new CancellablePromise();
+    ): PromiseInterface {
+        /** @var Promise<SSEResponse> $mainPromise */
+        $mainPromise = new Promise();
 
         /** @var SSEConnectionState<SSEResponse> $connectionState */
         $connectionState = new SSEConnectionState($url, $options, $reconnectConfig);
@@ -69,7 +69,7 @@ class SSEHandler
 
         $this->attemptConnection($connectionState, $wrappedOnEvent, $wrappedOnError, $mainPromise);
 
-        $mainPromise->setCancelHandler(function () use ($connectionState): void {
+        $mainPromise->onCancel(function () use ($connectionState): void {
             $connectionState->cancel();
         });
 
@@ -80,13 +80,13 @@ class SSEHandler
      * Attempts to establish an SSE connection.
      *
      * @param  SSEConnectionState<SSEResponse>  $connectionState
-     * @param  CancellablePromise<SSEResponse>  $mainPromise
+     * @param  Promise<SSEResponse>  $mainPromise
      */
     private function attemptConnection(
         SSEConnectionState $connectionState,
         ?callable $onEvent,
         ?callable $onError,
-        CancellablePromise $mainPromise
+        Promise $mainPromise
     ): void {
         if ($connectionState->isCancelled()) {
             if (! $mainPromise->isSettled()) {
@@ -192,16 +192,16 @@ class SSEHandler
      * Creates a basic SSE connection without reconnection.
      *
      * @param  array<int|string, mixed>  $options
-     * @return CancellablePromiseInterface<SSEResponse>
+     * @return PromiseInterface<SSEResponse>
      */
     private function createSSEConnection(
         string $url,
         array $options,
         ?callable $onEvent,
         ?callable $onError
-    ): CancellablePromiseInterface {
-        /** @var CancellablePromise<SSEResponse> $promise */
-        $promise = new CancellablePromise();
+    ): PromiseInterface {
+        /** @var Promise<SSEResponse> $promise */
+        $promise = new Promise();
         /** @var SSEResponse|null $sseResponse */
         $sseResponse = null;
         $headersProcessed = false;
@@ -299,7 +299,7 @@ class SSEHandler
             }
         );
 
-        $promise->setCancelHandler(function () use ($requestId): void {
+        $promise->onCancel(function () use ($requestId): void {
             Loop::cancelHttpRequest($requestId);
         });
 

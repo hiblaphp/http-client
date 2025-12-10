@@ -15,7 +15,7 @@ describe('AssertsDownloads', function () {
         $destination = $handler->createTempFile('test.txt');
         $handler->mock('GET')->url('https://example.com/file.txt')->respondWithStatus(200)->register();
 
-        $handler->download('https://example.com/file.txt', $destination)->await();
+        $handler->download('https://example.com/file.txt', $destination)->wait();
 
         expect(fn () => $handler->assertDownloadMade('https://example.com/file.txt', $destination))
             ->not->toThrow(AssertionFailedError::class)
@@ -26,7 +26,7 @@ describe('AssertsDownloads', function () {
         $handler = testingHttpHandler();
         $handler->mock('GET')->url('https://example.com/file.txt')->respondWithStatus(200)->register();
 
-        $handler->download('https://example.com/file.txt')->await();
+        $handler->download('https://example.com/file.txt')->wait();
 
         expect(fn () => $handler->assertDownloadMadeToUrl('https://example.com/file.txt'))
             ->not->toThrow(AssertionFailedError::class)
@@ -38,7 +38,7 @@ describe('AssertsDownloads', function () {
         $destination = $handler->createTempFile('test.txt');
         $handler->mock('GET')->url('https://example.com/file.txt')->respondWithStatus(200)->register();
 
-        $handler->download('https://example.com/file.txt', $destination)->await();
+        $handler->download('https://example.com/file.txt', $destination)->wait();
 
         expect(fn () => $handler->assertFileDownloaded($destination))
             ->not->toThrow(AssertionFailedError::class)
@@ -48,7 +48,7 @@ describe('AssertsDownloads', function () {
     test('assertNoDownloadsMade passes when no downloads made', function () {
         $handler = testingHttpHandler();
         $handler->mock('GET')->url('https://example.com')->respondWithStatus(200)->register();
-        $handler->fetch('https://example.com')->await();
+        $handler->fetch('https://example.com')->wait();
 
         expect(fn () => $handler->assertNoDownloadsMade())
             ->not->toThrow(AssertionFailedError::class)
@@ -58,7 +58,7 @@ describe('AssertsDownloads', function () {
     test('assertNoDownloadsMade fails when downloads exist', function () {
         $handler = testingHttpHandler();
         $handler->mock('GET')->url('https://example.com/file.txt')->respondWithStatus(200)->register();
-        $handler->download('https://example.com/file.txt')->await();
+        $handler->download('https://example.com/file.txt')->wait();
 
         expect(fn () => $handler->assertNoDownloadsMade())
             ->toThrow(AssertionFailedError::class)
@@ -70,8 +70,8 @@ describe('AssertsDownloads', function () {
         $handler->mock('GET')->url('https://example.com/file1.txt')->respondWithStatus(200)->register();
         $handler->mock('GET')->url('https://example.com/file2.txt')->respondWithStatus(200)->register();
 
-        $handler->download('https://example.com/file1.txt')->await();
-        $handler->download('https://example.com/file2.txt')->await();
+        $handler->download('https://example.com/file1.txt')->wait();
+        $handler->download('https://example.com/file2.txt')->wait();
 
         expect(fn () => $handler->assertDownloadCount(2))
             ->not->toThrow(AssertionFailedError::class)
@@ -83,7 +83,7 @@ describe('AssertsDownloads', function () {
         $destination = $handler->createTempFile('test.txt');
         $handler->mock('GET')->url('https://example.com/file.txt')->respondWithStatus(200)->register();
 
-        $handler->download('https://example.com/file.txt', $destination)->await();
+        $handler->download('https://example.com/file.txt', $destination)->wait();
 
         expect(fn () => $handler->assertDownloadedFileExists($destination))
             ->not->toThrow(AssertionFailedError::class)
@@ -100,7 +100,7 @@ describe('AssertsDownloads', function () {
             ->register()
         ;
 
-        $handler->download('https://example.com/file.txt', $destination)->await();
+        $handler->download('https://example.com/file.txt', $destination)->wait();
 
         expect(fn () => $handler->assertDownloadedFileContains($destination, 'expected content'))
             ->not->toThrow(AssertionFailedError::class)
@@ -117,7 +117,7 @@ describe('AssertsDownloads', function () {
             ->register()
         ;
 
-        $handler->download('https://example.com/file.txt', $destination)->await();
+        $handler->download('https://example.com/file.txt', $destination)->wait();
 
         expect(fn () => $handler->assertDownloadedFileContainsString($destination, 'expected'))
             ->not->toThrow(AssertionFailedError::class)
@@ -135,7 +135,7 @@ describe('AssertsDownloads', function () {
             ->register()
         ;
 
-        $handler->download('https://example.com/file.txt', $destination)->await();
+        $handler->download('https://example.com/file.txt', $destination)->wait();
 
         expect(fn () => $handler->assertDownloadedFileSize($destination, strlen($content)))
             ->not->toThrow(AssertionFailedError::class)
@@ -152,7 +152,7 @@ describe('AssertsDownloads', function () {
             ->register()
         ;
 
-        $handler->download('https://example.com/file.txt', $destination)->await();
+        $handler->download('https://example.com/file.txt', $destination)->wait();
 
         expect(fn () => $handler->assertDownloadedFileSizeBetween($destination, 5, 10))
             ->not->toThrow(AssertionFailedError::class)
@@ -163,7 +163,7 @@ describe('AssertsDownloads', function () {
         $handler = testingHttpHandler();
         $handler->mock('POST')->url('https://example.com/file.txt')->respondWithStatus(200)->register();
 
-        $handler->download('https://example.com/file.txt', null, ['method' => 'POST'])->await();
+        $handler->download('https://example.com/file.txt', null, ['method' => 'POST'])->wait();
 
         expect(fn () => $handler->assertDownloadWithMethod('https://example.com/file.txt', 'POST'))
             ->not->toThrow(AssertionFailedError::class)
@@ -175,8 +175,8 @@ describe('AssertsDownloads', function () {
         $handler->mock('GET')->url('https://example.com/file1.txt')->respondWithStatus(200)->register();
         $handler->mock('GET')->url('https://example.com/file2.txt')->respondWithStatus(200)->register();
 
-        $handler->download('https://example.com/file1.txt')->await();
-        $handler->download('https://example.com/file2.txt')->await();
+        $handler->download('https://example.com/file1.txt')->wait();
+        $handler->download('https://example.com/file2.txt')->wait();
 
         $downloads = $handler->getDownloadRequests();
 
@@ -191,8 +191,8 @@ describe('AssertsDownloads', function () {
         $handler->mock('GET')->url('https://example.com/file1.txt')->respondWithStatus(200)->register();
         $handler->mock('GET')->url('https://example.com/file2.txt')->respondWithStatus(200)->register();
 
-        $handler->download('https://example.com/file1.txt')->await();
-        $handler->download('https://example.com/file2.txt')->await();
+        $handler->download('https://example.com/file1.txt')->wait();
+        $handler->download('https://example.com/file2.txt')->wait();
 
         $lastDownload = $handler->getLastDownload();
 

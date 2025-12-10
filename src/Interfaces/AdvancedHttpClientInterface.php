@@ -10,7 +10,7 @@ use Hibla\HttpClient\RetryConfig;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
 use Hibla\HttpClient\SSE\SSEResponse;
 use Hibla\HttpClient\StreamingResponse;
-use Hibla\Promise\Interfaces\CancellablePromiseInterface;
+use Hibla\Promise\Interfaces\PromiseInterface;
 
 /**
  * Advanced HTTP client interface with specialized functionality.
@@ -123,25 +123,25 @@ interface AdvancedHttpClientInterface extends HttpClientBuilderInterface
      * Stream a GET request with chunk callbacks.
      *
      * @param (callable(string): void)|null $onChunk Callback invoked for each data chunk
-     * @return CancellablePromiseInterface<StreamingResponse>
+     * @return PromiseInterface<StreamingResponse>
      */
-    public function stream(string $url, ?callable $onChunk = null): CancellablePromiseInterface;
+    public function stream(string $url, ?callable $onChunk = null): PromiseInterface;
 
     /**
      * Stream a POST request with chunk callbacks.
      *
      * @param string|resource|array<string, mixed>|null $body Request body
      * @param (callable(string): void)|null $onChunk Callback invoked for each data chunk
-     * @return CancellablePromiseInterface<StreamingResponse>
+     * @return PromiseInterface<StreamingResponse>
      */
-    public function streamPost(string $url, $body = null, ?callable $onChunk = null): CancellablePromiseInterface;
+    public function streamPost(string $url, $body = null, ?callable $onChunk = null): PromiseInterface;
 
     /**
      * Download a file to a destination path.
      *
-     * @return CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}> A promise that resolves with download metadata.
+     * @return PromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}> A promise that resolves with download metadata.
      */
-    public function download(string $url, string $destination): CancellablePromiseInterface;
+    public function download(string $url, string $destination): PromiseInterface;
 
     /**
      * Set the data format for SSE events (array, object, or raw).
@@ -153,9 +153,9 @@ interface AdvancedHttpClientInterface extends HttpClientBuilderInterface
      *
      * @param (callable(mixed): void)|null $onEvent Callback for each event
      * @param (callable(string): void)|null $onError Callback for connection errors
-     * @return CancellablePromiseInterface<SSEResponse>
+     * @return PromiseInterface<SSEResponse>
      */
-    public function sse(string $url, ?callable $onEvent = null, ?callable $onError = null, ?SSEReconnectConfig $reconnectConfig = null): CancellablePromiseInterface;
+    public function sse(string $url, ?callable $onEvent = null, ?callable $onError = null, ?SSEReconnectConfig $reconnectConfig = null): PromiseInterface;
 
     /**
      * Map/transform SSE event data before invoking callbacks.

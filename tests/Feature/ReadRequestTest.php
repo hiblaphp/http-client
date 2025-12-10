@@ -21,7 +21,7 @@ describe('Read-Oriented HTTP Methods', function () {
             ->register()
         ;
 
-        $response = Http::request()->get('/users')->await();
+        $response = Http::request()->get('/users')->wait();
 
         Http::assertRequestMade('GET', '/users');
         expect($response->successful())->toBeTrue();
@@ -35,7 +35,7 @@ describe('Read-Oriented HTTP Methods', function () {
             ->register()
         ;
 
-        $response = Http::request()->get('/users', ['status' => 'active'])->await();
+        $response = Http::request()->get('/users', ['status' => 'active'])->wait();
 
         Http::assertRequestMade('GET', '/users?status=active');
         expect($response->json())->toBe(['data' => 'active users']);
@@ -49,7 +49,7 @@ describe('Read-Oriented HTTP Methods', function () {
             ->register()
         ;
 
-        $response = Http::request()->head('/resource')->await();
+        $response = Http::request()->head('/resource')->wait();
 
         Http::assertRequestMade('HEAD', '/resource');
         expect($response->successful())->toBeTrue();
@@ -64,7 +64,7 @@ describe('Read-Oriented HTTP Methods', function () {
             ->register()
         ;
 
-        $response = Http::request()->options('/resource')->await();
+        $response = Http::request()->options('/resource')->wait();
 
         Http::assertRequestMade('OPTIONS', '/resource');
         expect($response->header('Allow'))->toBe('GET, POST, OPTIONS');
@@ -77,7 +77,7 @@ describe('Read-Oriented HTTP Methods', function () {
             ->register()
         ;
 
-        $response = Http::request()->send('TRACE', '/debug')->await();
+        $response = Http::request()->send('TRACE', '/debug')->wait();
 
         Http::assertRequestMade('TRACE', '/debug');
         expect($response->body())->toBe('Trace complete');

@@ -26,7 +26,7 @@ use Hibla\HttpClient\Testing\Utilities\RequestMatcher;
 use Hibla\HttpClient\Testing\Utilities\RequestRecorder;
 use Hibla\HttpClient\Testing\Utilities\ResponseFactory;
 use Hibla\HttpClient\Testing\Utilities\Validators\RequestValidator;
-use Hibla\Promise\CancellablePromise;
+use Hibla\Promise\Promise;
 
 pest()->extend(Tests\TestCase::class)->in('Feature');
 pest()->extend(Tests\TestCase::class)->in('Unit');
@@ -129,9 +129,9 @@ function createPeriodicEmitter(): PeriodicSSEEmitter
     return new PeriodicSSEEmitter();
 }
 
-function createCancellablePromise(): CancellablePromise
+function createPromise(): Promise
 {
-    return new CancellablePromise();
+    return new Promise();
 }
 
 function createMockRequest(): MockedRequest

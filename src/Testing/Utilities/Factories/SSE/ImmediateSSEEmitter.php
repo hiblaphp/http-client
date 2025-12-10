@@ -9,7 +9,7 @@ use Hibla\HttpClient\SSE\SSEResponse;
 use Hibla\HttpClient\Stream;
 use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Testing\Utilities\Formatters\SSEEventFormatter;
-use Hibla\Promise\CancellablePromise;
+use Hibla\Promise\Promise;
 
 class ImmediateSSEEmitter
 {
@@ -21,14 +21,14 @@ class ImmediateSSEEmitter
     }
 
     /**
-     * @param CancellablePromise<SSEResponse> $promise
+     * @param Promise<SSEResponse> $promise
      * @param MockedRequest $mock
      * @param callable|null $onEvent
      * @param string|null &$lastEventId
      * @param int|null &$retryInterval
      */
     public function emit(
-        CancellablePromise $promise,
+        Promise $promise,
         MockedRequest $mock,
         ?callable $onEvent,
         ?string &$lastEventId,

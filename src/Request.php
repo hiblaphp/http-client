@@ -14,7 +14,7 @@ use Hibla\HttpClient\SSE\SSEEvent;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
 use Hibla\HttpClient\SSE\SSEResponse;
 use Hibla\HttpClient\Traits\StreamTrait;
-use Hibla\Promise\Interfaces\CancellablePromiseInterface;
+use Hibla\Promise\Interfaces\PromiseInterface;
 use InvalidArgumentException;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UploadedFileInterface;
@@ -524,14 +524,14 @@ class Request extends Message implements CompleteHttpClientInterface
      * @param (callable(mixed): void)|null $onEvent Callback for each event (receives data in configured format)
      * @param callable(string): void|null $onError Optional callback for connection errors
      * @param SSEReconnectConfig|null $reconnectConfig Optional reconnection configuration
-     * @return CancellablePromiseInterface<SSEResponse>
+     * @return PromiseInterface<SSEResponse>
      */
     public function sse(
         string $url,
         ?callable $onEvent = null,
         ?callable $onError = null,
         ?SSEReconnectConfig $reconnectConfig = null
-    ): CancellablePromiseInterface {
+    ): PromiseInterface {
         $method = $this->body->getSize() > 0 ? 'POST' : 'GET';
         $options = $this->buildCurlOptions($method, $url);
 
@@ -627,9 +627,9 @@ class Request extends Message implements CompleteHttpClientInterface
      *
      * @param  string  $url  The URL to stream from.
      * @param  (callable(string): void)|null  $onChunk  An optional callback for each data chunk.
-     * @return CancellablePromiseInterface<StreamingResponse> A promise that resolves with a StreamingResponse.
+     * @return PromiseInterface<StreamingResponse> A promise that resolves with a StreamingResponse.
      */
-    public function stream(string $url, ?callable $onChunk = null): CancellablePromiseInterface
+    public function stream(string $url, ?callable $onChunk = null): PromiseInterface
     {
         $options = $this->buildFetchOptions('GET');
         $options['stream'] = true;
@@ -638,15 +638,15 @@ class Request extends Message implements CompleteHttpClientInterface
             $options['on_chunk'] = $onChunk;
         }
 
-        /** @var CancellablePromiseInterface<StreamingResponse> */
+        /** @var PromiseInterface<StreamingResponse> */
         return $this->handler->fetch($url, $options);
     }
 
     /**
      * {@inheritdoc}
-     * @return CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}> A promise that resolves with download metadata.
+     * @return PromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}> A promise that resolves with download metadata.
      */
-    public function download(string $url, string $destination): CancellablePromiseInterface
+    public function download(string $url, string $destination): PromiseInterface
     {
         $options = $this->buildCurlOptions('GET', $url);
         $options['retry'] = $this->retryConfig;
@@ -660,9 +660,9 @@ class Request extends Message implements CompleteHttpClientInterface
      * @param  string  $url  The target URL.
      * @param  mixed|null  $body  The request body.
      * @param  (callable(string): void)|null  $onChunk  An optional callback for each data chunk.
-     * @return CancellablePromiseInterface<StreamingResponse> A promise that resolves with a StreamingResponse.
+     * @return PromiseInterface<StreamingResponse> A promise that resolves with a StreamingResponse.
      */
-    public function streamPost(string $url, $body = null, ?callable $onChunk = null): CancellablePromiseInterface
+    public function streamPost(string $url, $body = null, ?callable $onChunk = null): PromiseInterface
     {
         $new = $this;
         if ($body !== null) {
@@ -679,9 +679,9 @@ class Request extends Message implements CompleteHttpClientInterface
      *
      * @param  string  $url  The target URL.
      * @param  array<string, mixed>  $query  Optional query parameters to append to the URL.
-     * @return CancellablePromiseInterface<Response> A promise that resolves with a Response object.
+     * @return PromiseInterface<Response> A promise that resolves with a Response object.
      */
-    public function get(string $url, array $query = []): CancellablePromiseInterface
+    public function get(string $url, array $query = []): PromiseInterface
     {
         if (\count($query) > 0) {
             $url .= (strpos($url, '?') !== false ? '&' : '?') . http_build_query($query);
@@ -695,9 +695,9 @@ class Request extends Message implements CompleteHttpClientInterface
      *
      * @param  string  $url  The target URL.
      * @param  array<string, mixed>  $data  If provided, will be JSON-encoded and set as the request body.
-     * @return CancellablePromiseInterface<Response> A promise that resolves with a Response object.
+     * @return PromiseInterface<Response> A promise that resolves with a Response object.
      */
-    public function post(string $url, array $data = []): CancellablePromiseInterface
+    public function post(string $url, array $data = []): PromiseInterface
     {
         $new = $this;
         if (\count($data) > 0 && $this->body->getSize() === 0 && ! isset($this->options['multipart'])) {
@@ -712,9 +712,9 @@ class Request extends Message implements CompleteHttpClientInterface
      *
      * @param  string  $url  The target URL.
      * @param  array<string, mixed>  $data  If provided, will be JSON-encoded and set as the request body.
-     * @return CancellablePromiseInterface<Response> A promise that resolves with a Response object.
+     * @return PromiseInterface<Response> A promise that resolves with a Response object.
      */
-    public function put(string $url, array $data = []): CancellablePromiseInterface
+    public function put(string $url, array $data = []): PromiseInterface
     {
         $new = $this;
         if (\count($data) > 0 && $this->body->getSize() === 0 && ! isset($this->options['multipart'])) {
@@ -728,9 +728,9 @@ class Request extends Message implements CompleteHttpClientInterface
      * Performs an asynchronous DELETE request.
      *
      * @param  string  $url  The target URL.
-     * @return CancellablePromiseInterface<Response> A promise that resolves with a Response object.
+     * @return PromiseInterface<Response> A promise that resolves with a Response object.
      */
-    public function delete(string $url): CancellablePromiseInterface
+    public function delete(string $url): PromiseInterface
     {
         return $this->send('DELETE', $url);
     }
@@ -740,9 +740,9 @@ class Request extends Message implements CompleteHttpClientInterface
      *
      * @param  string  $url  The target URL.
      * @param  array<string, mixed>  $data  If provided, will be JSON-encoded and set as the request body.
-     * @return CancellablePromiseInterface<Response> A promise that resolves with a Response object.
+     * @return PromiseInterface<Response> A promise that resolves with a Response object.
      */
-    public function patch(string $url, array $data = []): CancellablePromiseInterface
+    public function patch(string $url, array $data = []): PromiseInterface
     {
         $new = $this;
         if (\count($data) > 0 && $this->body->getSize() === 0 && ! isset($this->options['multipart'])) {
@@ -756,9 +756,9 @@ class Request extends Message implements CompleteHttpClientInterface
      * Performs an asynchronous OPTIONS request.
      *
      * @param  string  $url  The target URL.
-     * @return CancellablePromiseInterface<Response> A promise that resolves with a Response object.
+     * @return PromiseInterface<Response> A promise that resolves with a Response object.
      */
-    public function options(string $url): CancellablePromiseInterface
+    public function options(string $url): PromiseInterface
     {
         return $this->send('OPTIONS', $url);
     }
@@ -767,9 +767,9 @@ class Request extends Message implements CompleteHttpClientInterface
      * Performs an asynchronous HEAD request.
      *
      * @param  string  $url  The target URL.
-     * @return CancellablePromiseInterface<Response> A promise that resolves with a Response object.
+     * @return PromiseInterface<Response> A promise that resolves with a Response object.
      */
-    public function head(string $url): CancellablePromiseInterface
+    public function head(string $url): PromiseInterface
     {
         return $this->send('HEAD', $url);
     }
@@ -927,9 +927,9 @@ class Request extends Message implements CompleteHttpClientInterface
      *
      * @param string $method The HTTP method (GET, POST, etc.).
      * @param string $url The target URL.
-     * @return CancellablePromiseInterface<Response> A promise that resolves with the final Response object.
+     * @return PromiseInterface<Response> A promise that resolves with the final Response object.
      */
-    public function send(string $method, string $url): CancellablePromiseInterface
+    public function send(string $method, string $url): PromiseInterface
     {
         $expandedUrl = $this->expandUriTemplate($url);
 
@@ -939,7 +939,7 @@ class Request extends Message implements CompleteHttpClientInterface
         return $this->getRequestInterceptorHandler()
             ->processInterceptors($initialRequest, $this->requestInterceptors)
             ->then(
-                fn($processedRequest) => $this->executeRequest($processedRequest)
+                fn ($processedRequest) => $this->executeRequest($processedRequest)
             )
         ;
     }
@@ -1361,9 +1361,9 @@ class Request extends Message implements CompleteHttpClientInterface
      * Execute the actual request after all interceptors have been processed.
      *
      * @param Request $processedRequest The request after interceptor processing.
-     * @return CancellablePromiseInterface<Response> A promise that resolves with the response.
+     * @return PromiseInterface<Response> A promise that resolves with the response.
      */
-    private function executeRequest(Request $processedRequest): CancellablePromiseInterface
+    private function executeRequest(Request $processedRequest): PromiseInterface
     {
         $options = $processedRequest->buildCurlOptions(
             $processedRequest->getMethod(),
@@ -1382,7 +1382,7 @@ class Request extends Message implements CompleteHttpClientInterface
         }
 
         return $httpPromise->then(
-            fn($response) => $this->getResponseInterceptorHandler()
+            fn ($response) => $this->getResponseInterceptorHandler()
                 ->processInterceptors($response, $processedRequest->responseInterceptors)
         );
     }

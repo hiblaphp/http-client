@@ -12,8 +12,8 @@ use Hibla\HttpClient\StreamingResponse;
 use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Testing\Utilities\Handlers\DelayCalculator;
 use Hibla\HttpClient\Testing\Utilities\Handlers\NetworkSimulationHandler;
-use Hibla\Promise\CancellablePromise;
-use Hibla\Promise\Interfaces\CancellablePromiseInterface;
+use Hibla\Promise\Interfaces\PromiseInterface;
+use Hibla\Promise\Promise;
 
 use Psr\Http\Message\StreamInterface;
 
@@ -31,15 +31,15 @@ class StreamingResponseFactory
     /**
      * Creates a streaming response with the given configuration.
      *
-     * @return CancellablePromiseInterface<StreamingResponse>
+     * @return PromiseInterface<StreamingResponse>
      */
     public function create(
         MockedRequest $mock,
         ?callable $onChunk,
         callable $createStream
-    ): CancellablePromiseInterface {
-        /** @var CancellablePromise<StreamingResponse> $promise */
-        $promise = new CancellablePromise();
+    ): PromiseInterface {
+        /** @var Promise<StreamingResponse> $promise */
+        $promise = new Promise();
 
         $networkConditions = $this->networkHandler->simulate();
         $globalDelay = $this->networkHandler->generateGlobalRandomDelay();
@@ -51,7 +51,7 @@ class StreamingResponseFactory
 
         $delayPromise = delay($totalDelay);
 
-        $promise->setCancelHandler(function () use ($delayPromise) {
+        $promise->onCancel(function () use ($delayPromise) {
             $delayPromise->cancel();
         });
 

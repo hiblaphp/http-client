@@ -15,8 +15,8 @@ use Hibla\HttpClient\Testing\Exceptions\MockException;
 use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Testing\Utilities\Handlers\DelayCalculator;
 use Hibla\HttpClient\Testing\Utilities\Handlers\NetworkSimulationHandler;
-use Hibla\Promise\CancellablePromise;
-use Hibla\Promise\Interfaces\CancellablePromiseInterface;
+use Hibla\Promise\Interfaces\PromiseInterface;
+use Hibla\Promise\Promise;
 
 class RetryableResponseFactory
 {
@@ -32,18 +32,18 @@ class RetryableResponseFactory
     /**
      * Creates a retryable response with the given configuration.
      *
-     * @return CancellablePromiseInterface<Response>
+     * @return PromiseInterface<Response>
      */
-    public function create(RetryConfig $retryConfig, callable $mockProvider): CancellablePromiseInterface
+    public function create(RetryConfig $retryConfig, callable $mockProvider): PromiseInterface
     {
-        /** @var CancellablePromise<Response> $promise */
-        $promise = new CancellablePromise();
+        /** @var Promise<Response> $promise */
+        $promise = new Promise();
         $attempt = 0;
 
-        /** @var CancellablePromiseInterface<mixed>|null $activeDelayPromise */
+        /** @var PromiseInterface<mixed>|null $activeDelayPromise */
         $activeDelayPromise = null;
 
-        $promise->setCancelHandler(function () use (&$activeDelayPromise) {
+        $promise->onCancel(function () use (&$activeDelayPromise) {
             if ($activeDelayPromise !== null) {
                 $activeDelayPromise->cancel();
             }

@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 use Hibla\HttpClient\SSE\SSEEvent;
 use Hibla\HttpClient\SSE\SSEResponse;
-use Hibla\Promise\CancellablePromise;
+use Hibla\Promise\Promise;
 
 it('emits SSE events immediately', function () {
     $emitter = createImmediateSSEEmitter();
-    $promise = new CancellablePromise();
+    $promise = new Promise();
 
     $events = [
         ['data' => 'Hello', 'event' => 'message'],
@@ -37,20 +37,20 @@ it('emits SSE events immediately', function () {
 
 it('resolves promise with SSEResponse', function () {
     $emitter = createImmediateSSEEmitter();
-    $promise = new CancellablePromise();
+    $promise = new Promise();
     $mock = createMockedSSERequest();
 
     $lastEventId = null;
     $retryInterval = null;
     $emitter->emit($promise, $mock, null, $lastEventId, $retryInterval);
 
-    $response = $promise->await();
+    $response = $promise->wait();
     expect($response)->toBeInstanceOf(SSEResponse::class);
 });
 
 it('updates lastEventId when event has id', function () {
     $emitter = createImmediateSSEEmitter();
-    $promise = new CancellablePromise();
+    $promise = new Promise();
 
     $events = [
         ['data' => 'First', 'id' => '123'],
@@ -69,7 +69,7 @@ it('updates lastEventId when event has id', function () {
 
 it('updates retryInterval when event has retry', function () {
     $emitter = createImmediateSSEEmitter();
-    $promise = new CancellablePromise();
+    $promise = new Promise();
 
     $events = [
         ['data' => 'Test', 'retry' => 3000],
@@ -87,7 +87,7 @@ it('updates retryInterval when event has retry', function () {
 
 it('handles empty events array', function () {
     $emitter = createImmediateSSEEmitter();
-    $promise = new CancellablePromise();
+    $promise = new Promise();
     $mock = createMockedSSERequest([]);
 
     $receivedEvents = [];
@@ -105,7 +105,7 @@ it('handles empty events array', function () {
 
 it('does not call onEvent when null', function () {
     $emitter = createImmediateSSEEmitter();
-    $promise = new CancellablePromise();
+    $promise = new Promise();
 
     $events = [
         ['data' => 'Test'],
@@ -123,7 +123,7 @@ it('does not call onEvent when null', function () {
 
 it('creates stream with formatted SSE content', function () {
     $emitter = createImmediateSSEEmitter();
-    $promise = new CancellablePromise();
+    $promise = new Promise();
 
     $events = [
         ['data' => 'Line 1', 'event' => 'test'],
@@ -136,7 +136,7 @@ it('creates stream with formatted SSE content', function () {
     $retryInterval = null;
     $emitter->emit($promise, $mock, null, $lastEventId, $retryInterval);
 
-    $resolvedResponse = $promise->await();
+    $resolvedResponse = $promise->wait();
 
     expect($resolvedResponse)->toBeInstanceOf(SSEResponse::class)
         ->and($resolvedResponse->getStream())->not->toBeNull()
@@ -145,7 +145,7 @@ it('creates stream with formatted SSE content', function () {
 
 it('handles multiple event updates correctly', function () {
     $emitter = createImmediateSSEEmitter();
-    $promise = new CancellablePromise();
+    $promise = new Promise();
 
     $events = [
         ['data' => 'First', 'id' => '1', 'retry' => 1000],
@@ -168,7 +168,7 @@ it('handles multiple event updates correctly', function () {
 
 it('passes correct status code and headers to SSEResponse', function () {
     $emitter = createImmediateSSEEmitter();
-    $promise = new CancellablePromise();
+    $promise = new Promise();
 
     $headers = ['Content-Type' => 'text/event-stream', 'X-Custom' => 'value'];
     $mock = createMockedSSERequest([], 201, $headers);
@@ -177,7 +177,7 @@ it('passes correct status code and headers to SSEResponse', function () {
     $retryInterval = null;
     $emitter->emit($promise, $mock, null, $lastEventId, $retryInterval);
 
-    $resolvedResponse = $promise->await();
+    $resolvedResponse = $promise->wait();
 
     expect($resolvedResponse)->toBeInstanceOf(SSEResponse::class)
         ->and($resolvedResponse->getStatusCode())->toBe(201)
@@ -188,7 +188,7 @@ it('passes correct status code and headers to SSEResponse', function () {
 
 it('handles events with only data field', function () {
     $emitter = createImmediateSSEEmitter();
-    $promise = new CancellablePromise();
+    $promise = new Promise();
 
     $events = [
         ['data' => 'Simple event'],
@@ -216,7 +216,7 @@ it('handles events with only data field', function () {
 
 it('preserves lastEventId when subsequent events have no id', function () {
     $emitter = createImmediateSSEEmitter();
-    $promise = new CancellablePromise();
+    $promise = new Promise();
 
     $events = [
         ['data' => 'First', 'id' => '123'],

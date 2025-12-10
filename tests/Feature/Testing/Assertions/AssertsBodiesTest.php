@@ -13,7 +13,7 @@ describe('AssertsRequestBody', function () {
         $handler->fetch('https://example.com', [
             'method' => 'POST',
             'body' => 'test body content',
-        ])->await();
+        ])->wait();
 
         expect(fn () => $handler->assertRequestWithBody('POST', 'https://example.com', 'test body content'))
             ->not->toThrow(AssertionFailedError::class)
@@ -28,7 +28,7 @@ describe('AssertsRequestBody', function () {
         $handler->fetch('https://example.com', [
             'method' => 'POST',
             'body' => 'this is test body content',
-        ])->await();
+        ])->wait();
 
         expect(fn () => $handler->assertRequestBodyContains('POST', 'https://example.com', 'test body'))
             ->not->toThrow(AssertionFailedError::class)
@@ -44,7 +44,7 @@ describe('AssertsRequestBody', function () {
             'method' => 'POST',
             'body' => json_encode(['name' => 'John', 'age' => 30]),
             'headers' => ['Content-Type' => 'application/json'],
-        ])->await();
+        ])->wait();
 
         expect(fn () => $handler->assertRequestWithJson('POST', 'https://example.com', [
             'name' => 'John',
@@ -61,7 +61,7 @@ describe('AssertsRequestBody', function () {
             'method' => 'POST',
             'body' => json_encode(['name' => 'John', 'age' => 30, 'city' => 'NYC']),
             'headers' => ['Content-Type' => 'application/json'],
-        ])->await();
+        ])->wait();
 
         expect(fn () => $handler->assertRequestJsonContains('POST', 'https://example.com', [
             'name' => 'John',
@@ -77,7 +77,7 @@ describe('AssertsRequestBody', function () {
             'method' => 'POST',
             'body' => json_encode(['user' => ['name' => 'John', 'age' => 30]]),
             'headers' => ['Content-Type' => 'application/json'],
-        ])->await();
+        ])->wait();
 
         expect(fn () => $handler->assertRequestJsonPath('POST', 'https://example.com', 'user.name', 'John'))
             ->not->toThrow(AssertionFailedError::class)
@@ -88,7 +88,7 @@ describe('AssertsRequestBody', function () {
         $handler = testingHttpHandler();
 
         $handler->mock('GET')->url('https://example.com')->respondWithStatus(200)->register();
-        $handler->fetch('https://example.com')->await();
+        $handler->fetch('https://example.com')->wait();
 
         expect(fn () => $handler->assertRequestWithEmptyBody('GET', 'https://example.com'))
             ->not->toThrow(AssertionFailedError::class)
@@ -103,7 +103,7 @@ describe('AssertsRequestBody', function () {
         $handler->fetch('https://example.com', [
             'method' => 'POST',
             'body' => 'test body content',
-        ])->await();
+        ])->wait();
 
         expect(fn () => $handler->assertRequestHasBody('POST', 'https://example.com'))
             ->not->toThrow(AssertionFailedError::class)
@@ -119,7 +119,7 @@ describe('AssertsRequestBody', function () {
             'method' => 'POST',
             'body' => json_encode(['key' => 'value']),
             'headers' => ['Content-Type' => 'application/json'],
-        ])->await();
+        ])->wait();
 
         expect(fn () => $handler->assertRequestIsJson('POST', 'https://example.com'))
             ->not->toThrow(AssertionFailedError::class)
@@ -134,7 +134,7 @@ describe('AssertsRequestBody', function () {
         $handler->fetch('https://example.com', [
             'method' => 'POST',
             'body' => 'request-id-12345',
-        ])->await();
+        ])->wait();
 
         expect(fn () => $handler->assertRequestBodyMatches('POST', 'https://example.com', '/request-id-\d+/'))
             ->not->toThrow(AssertionFailedError::class)

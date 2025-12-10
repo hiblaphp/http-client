@@ -32,7 +32,7 @@ describe('Server-Sent Events Features', function () {
 
         Http::sse('/sse-stream', function (SSEEvent $event) use (&$events) {
             $events[] = $event;
-        }, null, $reconnectConfig)->await();
+        }, null, $reconnectConfig)->wait();
 
         Http::assertSSEConnectionAttempts('/sse-stream', 2);
         expect($events)->toHaveCount(1);
@@ -53,7 +53,7 @@ describe('Server-Sent Events Features', function () {
         $reconnectConfig = new SSEReconnectConfig(maxAttempts: 2, initialDelay: 0.01);
         Http::sse('/sse-reconnect', function (SSEEvent $event) use (&$events) {
             $events[] = $event;
-        }, null, $reconnectConfig)->await();
+        }, null, $reconnectConfig)->wait();
 
         Http::assertSSEConnectionAttempts('/sse-reconnect', 2);
 

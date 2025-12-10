@@ -47,7 +47,7 @@ test('executes basic get request', function () {
         [CURLOPT_CUSTOMREQUEST => 'GET'],
         $mocks,
         []
-    )->await();
+    )->wait();
 
     expect($result)->toBeInstanceOf(Response::class)
         ->and($result->body())->toBe('{"users": []}')
@@ -75,7 +75,7 @@ test('executes post request with json body', function () {
         ],
         $mocks,
         []
-    )->await();
+    )->wait();
 
     expect($result->status())->toBe(201)
         ->and($result->body())->toBe('{"id": 1, "name": "John"}')
@@ -97,7 +97,7 @@ test('persistent mock remains available', function () {
         [CURLOPT_CUSTOMREQUEST => 'GET'],
         $mocks,
         []
-    )->await();
+    )->wait();
     expect($mocks)->toHaveCount(1);
 
     $executor->execute(
@@ -105,7 +105,7 @@ test('persistent mock remains available', function () {
         [CURLOPT_CUSTOMREQUEST => 'GET'],
         $mocks,
         []
-    )->await();
+    )->wait();
     expect($mocks)->toHaveCount(1);
 });
 
@@ -123,7 +123,7 @@ test('non persistent mock is removed', function () {
         [CURLOPT_CUSTOMREQUEST => 'GET'],
         $mocks,
         []
-    )->await();
+    )->wait();
     expect($mocks)->toBeEmpty();
 });
 
@@ -144,7 +144,7 @@ test('executes with custom headers', function () {
         ],
         $mocks,
         []
-    )->await();
+    )->wait();
 
     expect($result->body())->toBe('{"authenticated": true}');
 });
@@ -158,7 +158,7 @@ test('throws exception when no mock matches and passthrough disabled', function 
         [CURLOPT_CUSTOMREQUEST => 'GET'],
         $mocks,
         ['allow_passthrough' => false]
-    )->await();
+    )->wait();
 })->throws(UnexpectedRequestException::class);
 
 test('allows passthrough when enabled', function () {
@@ -180,7 +180,7 @@ test('allows passthrough when enabled', function () {
         null,
         null,
         $parentSend
-    )->await();
+    )->wait();
 
     expect($parentSendCalled)->toBeTrue()
         ->and($result->body())->toBe('passthrough')
@@ -203,7 +203,7 @@ test('executes request with delay', function () {
         [CURLOPT_CUSTOMREQUEST => 'GET'],
         $mocks,
         []
-    )->await();
+    )->wait();
     $elapsed = microtime(true) - $start;
 
     expect($elapsed)->toBeGreaterThanOrEqual(0.1)
@@ -225,7 +225,7 @@ test('handles error mock', function () {
         [CURLOPT_CUSTOMREQUEST => 'GET'],
         $mocks,
         []
-    )->await();
+    )->wait();
 })->throws(NetworkException::class, 'Connection failed');
 
 test('uses cache config when provided', function () {
@@ -245,7 +245,7 @@ test('uses cache config when provided', function () {
         $mocks,
         [],
         $cacheConfig
-    )->await();
+    )->wait();
 
     expect($mocks)->toBeEmpty();
 
@@ -255,7 +255,7 @@ test('uses cache config when provided', function () {
         $mocks,
         [],
         $cacheConfig
-    )->await();
+    )->wait();
 
     expect($result1->body())->toBe($result2->body());
 });
@@ -274,7 +274,7 @@ test('matches wildcard method', function () {
         [CURLOPT_CUSTOMREQUEST => 'DELETE'],
         $mocks,
         []
-    )->await();
+    )->wait();
 
     expect($result->body())->toBe('{"method": "any"}');
 });
@@ -298,7 +298,7 @@ test('handles multiple mocks with first match priority', function () {
         [CURLOPT_CUSTOMREQUEST => 'GET'],
         $mocks,
         []
-    )->await();
+    )->wait();
 
     expect($result->body())->toBe('{"source": "first"}')
         ->and($mocks)->toHaveCount(1)
@@ -319,7 +319,7 @@ test('defaults to GET method when not specified', function () {
         [], // No CURLOPT_CUSTOMREQUEST specified
         $mocks,
         []
-    )->await();
+    )->wait();
 
     expect($result->body())->toBe('{"default": "GET"}');
 });
@@ -342,7 +342,7 @@ test('executes with retry config', function () {
         [],
         null,
         $retryConfig
-    )->await();
+    )->wait();
 
     expect($result->body())->toBe('{"retried": true}');
 });
@@ -362,7 +362,7 @@ test('processes cookies from response', function () {
         [CURLOPT_CUSTOMREQUEST => 'GET'],
         $mocks,
         []
-    )->await();
+    )->wait();
 
     expect($result->body())->toBe('{"has_cookies": true}');
 });

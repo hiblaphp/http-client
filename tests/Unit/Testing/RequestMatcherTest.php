@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Testing\Utilities\RecordedRequest;
 use Hibla\HttpClient\Testing\Utilities\RequestMatcher;

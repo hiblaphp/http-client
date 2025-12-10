@@ -19,7 +19,7 @@ describe('Basic Mock Response Tests', function () {
             ->register()
         ;
 
-        $response = $handler->fetch('https://api.example.com/users  ')->await();
+        $response = $handler->fetch('https://api.example.com/users  ')->wait();
 
         expect($response->status())->toBe(201)
             ->and($response->json())->toBe(['id' => 1, 'name' => 'John'])
@@ -38,7 +38,7 @@ describe('Basic Mock Response Tests', function () {
         $response = $handler->fetch('https://api.example.com/posts  ', [
             'method' => 'POST',
             'body' => json_encode(['title' => 'Test Post']),
-        ])->await();
+        ])->wait();
 
         expect($response->json())->toBe(['success' => true, 'post_id' => 123])
             ->and($response->headers()['content-type'])->toContain('application/json')
@@ -54,7 +54,7 @@ describe('Basic Mock Response Tests', function () {
             ->register()
         ;
 
-        $response = $handler->fetch('https://example.com/text  ')->await();
+        $response = $handler->fetch('https://example.com/text  ')->wait();
 
         expect($response->body())->toBe('Hello World');
     });
@@ -72,7 +72,7 @@ describe('Delay Simulation Tests', function () {
         ;
 
         $start = microtime(true);
-        $response = $handler->fetch('https://api.example.com/slow  ')->await();
+        $response = $handler->fetch('https://api.example.com/slow  ')->wait();
         $duration = microtime(true) - $start;
 
         expect($duration)->toBeGreaterThanOrEqual(0.5)
@@ -91,7 +91,7 @@ describe('Delay Simulation Tests', function () {
         ;
 
         $start = microtime(true);
-        $response = $handler->fetch('https://api.example.com/random-slow  ')->await();
+        $response = $handler->fetch('https://api.example.com/random-slow  ')->wait();
         $duration = microtime(true) - $start;
 
         expect($duration)->toBeGreaterThanOrEqual(0.2)
@@ -112,7 +112,7 @@ describe('Delay Simulation Tests', function () {
         ;
 
         $start = microtime(true);
-        $response = $handler->fetch('https://api.example.com/test  ')->await();
+        $response = $handler->fetch('https://api.example.com/test  ')->wait();
         $duration = microtime(true) - $start;
 
         expect($duration)->toBeGreaterThanOrEqual(0.1)
@@ -131,7 +131,7 @@ describe('Error Simulation Tests', function () {
             ->register()
         ;
 
-        expect(fn () => $handler->fetch('https://api.example.com/fail  ')->await())
+        expect(fn () => $handler->fetch('https://api.example.com/fail  ')->wait())
             ->toThrow(Exception::class)
         ;
     });
@@ -145,7 +145,7 @@ describe('Error Simulation Tests', function () {
             ->register()
         ;
 
-        expect(fn () => $handler->fetch('https://api.example.com/timeout  ')->await())
+        expect(fn () => $handler->fetch('https://api.example.com/timeout  ')->wait())
             ->toThrow(Exception::class)
         ;
     });
@@ -159,7 +159,7 @@ describe('Error Simulation Tests', function () {
             ->register()
         ;
 
-        expect(fn () => $handler->fetch('https://api.example.com/network-error  ')->await())
+        expect(fn () => $handler->fetch('https://api.example.com/network-error  ')->wait())
             ->toThrow(Exception::class)
         ;
     });
@@ -177,7 +177,7 @@ describe('Retry Sequence Tests', function () {
 
         $response = $handler->fetch('https://api.example.com/retry  ', [
             'retry' => new RetryConfig(maxRetries: 5, baseDelay: 0.01),
-        ])->await();
+        ])->wait();
 
         expect($response->json())->toHaveKey('success', true)
             ->and($response->json())->toHaveKey('attempt', 3)
@@ -195,7 +195,7 @@ describe('Retry Sequence Tests', function () {
 
         $response = $handler->fetch('https://api.example.com/timeout-retry  ', [
             'retry' => new RetryConfig(maxRetries: 5, baseDelay: 0.01),
-        ])->await();
+        ])->wait();
 
         expect($response->json())->toHaveKey('success', true);
     });
@@ -215,7 +215,7 @@ describe('Retry Sequence Tests', function () {
 
         $response = $handler->fetch('https://api.example.com/sequence  ', [
             'retry' => new RetryConfig(maxRetries: 5, baseDelay: 0.01),
-        ])->await();
+        ])->wait();
 
         expect($response->json())->toBe(['final' => 'success']);
     });
@@ -233,7 +233,7 @@ describe('Advanced Scenario Tests', function () {
 
         $response = $handler->fetch('https://api.example.com/rate-limited  ', [
             'retry' => new RetryConfig(maxRetries: 5, baseDelay: 0.01),
-        ])->await();
+        ])->wait();
 
         expect($response->status())->toBe(200)
             ->and($response->json())->toHaveKey('success', true)
@@ -253,7 +253,7 @@ describe('Advanced Scenario Tests', function () {
 
         $response = $handler->fetch('https://api.example.com/improving', [
             'retry' => new RetryConfig(maxRetries: 5, baseDelay: 0.01),
-        ])->await();
+        ])->wait();
 
         expect($response->json())->toHaveKey('success', true);
     });
@@ -274,7 +274,7 @@ describe('Network Simulation Tests', function () {
         $start = microtime(true);
 
         try {
-            $handler->fetch('https://api.example.com/test')->await();
+            $handler->fetch('https://api.example.com/test')->wait();
             $duration = microtime(true) - $start;
 
             expect($duration)->toBeGreaterThan(0.1);
@@ -298,7 +298,7 @@ describe('Network Simulation Tests', function () {
         ;
 
         $start = microtime(true);
-        $handler->fetch('https://api.example.com/test  ')->await();
+        $handler->fetch('https://api.example.com/test  ')->wait();
         $duration = microtime(true) - $start;
 
         // Fast network should be relatively quick
@@ -317,7 +317,7 @@ describe('Network Simulation Tests', function () {
             ->register()
         ;
 
-        $response = $handler->fetch('https://api.example.com/test  ')->await();
+        $response = $handler->fetch('https://api.example.com/test  ')->wait();
 
         expect($response->json())->toBe(['data' => 'test']);
     });
@@ -338,7 +338,7 @@ describe('Header Tests', function () {
             ->register()
         ;
 
-        $response = $handler->fetch('https://api.example.com/headers  ')->await();
+        $response = $handler->fetch('https://api.example.com/headers  ')->wait();
 
         expect($response->headers()['x-custom-header'])->toBe('custom-value')
             ->and($response->headers()['x-rate-limit'])->toBe('100')
@@ -358,7 +358,7 @@ describe('Header Tests', function () {
 
         $response = $handler->fetch('https://api.example.com/auth  ', [
             'headers' => ['Authorization' => 'Bearer token123'],
-        ])->await();
+        ])->wait();
 
         expect($response->json())->toBe(['authenticated' => true]);
     });
@@ -380,8 +380,8 @@ describe('Request Recording Tests', function () {
             ->register()
         ;
 
-        $handler->fetch('https://api.example.com/test1  ')->await();
-        $handler->fetch('https://api.example.com/test2  ', ['method' => 'POST'])->await();
+        $handler->fetch('https://api.example.com/test1  ')->wait();
+        $handler->fetch('https://api.example.com/test2  ', ['method' => 'POST'])->wait();
 
         $history = $handler->getRequestHistory();
 
@@ -402,7 +402,7 @@ describe('Request Recording Tests', function () {
             ->register()
         ;
 
-        $handler->fetch('https://api.example.com/test  ')->await();
+        $handler->fetch('https://api.example.com/test  ')->wait();
 
         $history = $handler->getRequestHistory();
 
@@ -421,9 +421,9 @@ describe('Persistent Mock Tests', function () {
             ->register()
         ;
 
-        $response1 = $handler->fetch('https://api.example.com/persistent  ')->await();
-        $response2 = $handler->fetch('https://api.example.com/persistent  ')->await();
-        $response3 = $handler->fetch('https://api.example.com/persistent  ')->await();
+        $response1 = $handler->fetch('https://api.example.com/persistent  ')->wait();
+        $response2 = $handler->fetch('https://api.example.com/persistent  ')->wait();
+        $response3 = $handler->fetch('https://api.example.com/persistent  ')->wait();
 
         expect($response1->json())->toBe(['counter' => 1])
             ->and($response2->json())->toBe(['counter' => 1])
@@ -462,7 +462,7 @@ describe('Download Tests', function () {
             ->register()
         ;
 
-        $response = $handler->fetch('https://example.com/file.pdf  ')->await();
+        $response = $handler->fetch('https://example.com/file.pdf  ')->wait();
 
         expect($response->body())->toBe('PDF content here')
             ->and($response->headers()['content-type'])->toBe('application/pdf')
@@ -479,7 +479,7 @@ describe('Download Tests', function () {
             ->register()
         ;
 
-        $response = $handler->fetch('https://example.com/large.bin  ')->await();
+        $response = $handler->fetch('https://example.com/large.bin  ')->wait();
 
         expect(strlen($response->body()))->toBeGreaterThan(1000)
             ->and($response->headers()['content-type'])->toBe('application/octet-stream')
@@ -497,7 +497,7 @@ describe('Reset Tests', function () {
             ->register()
         ;
 
-        $handler->fetch('https://api.example.com/test  ')->await();
+        $handler->fetch('https://api.example.com/test  ')->wait();
 
         $handler->reset();
 
@@ -517,8 +517,8 @@ describe('URL Pattern Matching Tests', function () {
             ->register()
         ;
 
-        $response1 = $handler->fetch('https://api.example.com/users/123  ')->await();
-        $response2 = $handler->fetch('https://api.example.com/users/456  ')->await();
+        $response1 = $handler->fetch('https://api.example.com/users/123  ')->wait();
+        $response2 = $handler->fetch('https://api.example.com/users/456  ')->wait();
 
         expect($response1->json())->toBe(['user' => 'data'])
             ->and($response2->json())->toBe(['user' => 'data'])
@@ -537,7 +537,7 @@ describe('Cookie Tests', function () {
             ->register()
         ;
 
-        $response = $handler->fetch('https://example.com/login  ')->await();
+        $response = $handler->fetch('https://example.com/login  ')->wait();
 
         expect($response->json())->toBe(['logged_in' => true])
             ->and($response->headers())->toHaveKey('set-cookie')
@@ -559,7 +559,7 @@ describe('Body Expectation Tests', function () {
         $response = $handler->fetch('https://api.example.com/data  ', [
             'method' => 'POST',
             'body' => 'test data',
-        ])->await();
+        ])->wait();
 
         expect($response->json())->toBe(['received' => true]);
     });
@@ -577,7 +577,7 @@ describe('Body Expectation Tests', function () {
         $response = $handler->fetch('https://api.example.com/json  ', [
             'method' => 'POST',
             'json' => ['key' => 'value'],
-        ])->await();
+        ])->wait();
 
         expect($response->json())->toBe(['success' => true]);
     });

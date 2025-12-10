@@ -13,8 +13,8 @@ use Hibla\HttpClient\Response;
 use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Testing\Utilities\Handlers\DelayCalculator;
 use Hibla\HttpClient\Testing\Utilities\Handlers\NetworkSimulationHandler;
-use Hibla\Promise\CancellablePromise;
-use Hibla\Promise\Interfaces\CancellablePromiseInterface;
+use Hibla\Promise\Interfaces\PromiseInterface;
+use Hibla\Promise\Promise;
 
 class StandardResponseFactory
 {
@@ -30,12 +30,12 @@ class StandardResponseFactory
     /**
      * Creates a standard response with the given configuration.
      *
-     * @return CancellablePromiseInterface<Response>
+     * @return PromiseInterface<Response>
      */
-    public function create(MockedRequest $mock): CancellablePromiseInterface
+    public function create(MockedRequest $mock): PromiseInterface
     {
-        /** @var CancellablePromise<Response> $promise */
-        $promise = new CancellablePromise();
+        /** @var Promise<Response> $promise */
+        $promise = new Promise();
 
         $this->executeWithNetworkSimulation($promise, $mock, function () use ($mock) {
             if ($mock->shouldFail()) {
@@ -54,10 +54,10 @@ class StandardResponseFactory
 
     /**
      * @template TValue
-     * @param CancellablePromise<TValue> $promise
+     * @param Promise<TValue> $promise
      */
     private function executeWithNetworkSimulation(
-        CancellablePromise $promise,
+        Promise $promise,
         MockedRequest $mock,
         callable $callback
     ): void {
@@ -71,7 +71,7 @@ class StandardResponseFactory
 
         $delayPromise = delay($totalDelay);
 
-        $promise->setCancelHandler(function () use ($delayPromise) {
+        $promise->onCancel(function () use ($delayPromise) {
             $delayPromise->cancel();
         });
 

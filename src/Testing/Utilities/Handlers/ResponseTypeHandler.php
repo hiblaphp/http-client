@@ -11,7 +11,6 @@ use Hibla\HttpClient\StreamingResponse;
 use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Testing\Utilities\FileManager;
 use Hibla\HttpClient\Testing\Utilities\ResponseFactory;
-use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Psr\Http\Message\StreamInterface;
 
@@ -35,7 +34,7 @@ class ResponseTypeHandler
      * @param array{mock: MockedRequest, index: int} $match
      * @param array<string, mixed> $options
      * @param list<MockedRequest> $mockedRequests
-     * @return PromiseInterface<Response>|CancellablePromiseInterface<StreamingResponse>|CancellablePromiseInterface<array<string, mixed>>
+     * @return PromiseInterface<Response>|PromiseInterface<StreamingResponse>|PromiseInterface<array<string, mixed>>
      */
     public function handleMockedResponse(
         array $match,
@@ -45,7 +44,7 @@ class ResponseTypeHandler
         string $url,
         string $method,
         ?callable $createStream = null
-    ): PromiseInterface|CancellablePromiseInterface {
+    ): PromiseInterface {
         $mock = $match['mock'];
 
         if (! $mock->isPersistent()) {
@@ -65,9 +64,9 @@ class ResponseTypeHandler
 
     /**
      * @param array<string, mixed> $options
-     * @return CancellablePromiseInterface<array<string, mixed>>
+     * @return PromiseInterface<array<string, mixed>>
      */
-    private function handleDownload(MockedRequest $mock, array $options): CancellablePromiseInterface
+    private function handleDownload(MockedRequest $mock, array $options): PromiseInterface
     {
         $destination = is_string($options['download']) ? $options['download'] : '';
 
@@ -81,9 +80,9 @@ class ResponseTypeHandler
 
     /**
      * @param array<string, mixed> $options
-     * @return CancellablePromiseInterface<StreamingResponse>
+     * @return PromiseInterface<StreamingResponse>
      */
-    private function handleStream(MockedRequest $mock, array $options, ?callable $createStream): CancellablePromiseInterface
+    private function handleStream(MockedRequest $mock, array $options, ?callable $createStream): PromiseInterface
     {
         $onChunkRaw = $options['on_chunk'] ?? $options['onChunk'] ?? null;
         $onChunk = is_callable($onChunkRaw) ? $onChunkRaw : null;

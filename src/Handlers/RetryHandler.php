@@ -9,8 +9,8 @@ use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Response;
 use Hibla\HttpClient\RetryConfig;
 use Hibla\HttpClient\Traits\NormalizeHeaderTrait;
-use Hibla\Promise\CancellablePromise;
-use Hibla\Promise\Interfaces\CancellablePromiseInterface;
+use Hibla\Promise\Interfaces\PromiseInterface;
+use Hibla\Promise\Promise;
 
 /**
  * Handles HTTP requests with automatic retry logic.
@@ -28,12 +28,12 @@ class RetryHandler
      * @param string $url The target URL.
      * @param array<int|string, mixed> $curlOptions cURL options.
      * @param RetryConfig $retryConfig Retry configuration.
-     * @return CancellablePromiseInterface<Response>
+     * @return PromiseInterface<Response>
      */
-    public function execute(string $url, array $curlOptions, RetryConfig $retryConfig): CancellablePromiseInterface
+    public function execute(string $url, array $curlOptions, RetryConfig $retryConfig): PromiseInterface
     {
-        /** @var CancellablePromise<Response> $promise */
-        $promise = new CancellablePromise();
+        /** @var Promise<Response> $promise */
+        $promise = new Promise();
         $attempt = 0;
         $totalAttempts = 0;
         /** @var string|null $requestId */
@@ -108,7 +108,7 @@ class RetryHandler
 
         $executeRequest();
 
-        $promise->setCancelHandler(function () use (&$requestId) {
+        $promise->onCancel(function () use (&$requestId) {
             if ($requestId !== null) {
                 Loop::cancelHttpRequest($requestId);
             }

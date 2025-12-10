@@ -15,7 +15,7 @@ use Hibla\HttpClient\SSE\SSEReconnectConfig;
 use Hibla\HttpClient\SSE\SSEResponse;
 use Hibla\HttpClient\Stream;
 use Hibla\HttpClient\StreamingResponse;
-use Hibla\Promise\Interfaces\CancellablePromiseInterface;
+use Hibla\Promise\Interfaces\PromiseInterface;
 
 /**
  * Core handler for creating and dispatching asynchronous HTTP requests.
@@ -73,7 +73,7 @@ class HttpHandler
      * @param  callable(SSEEvent): void|null  $onEvent  Optional callback for each SSE event
      * @param  callable(string): void|null  $onError  Optional callback for connection errors
      * @param  SSEReconnectConfig|null  $reconnectConfig  Optional reconnection configuration
-     * @return CancellablePromiseInterface<SSEResponse>
+     * @return PromiseInterface<SSEResponse>
      *
      * @internal This method is designed for extension by TestingHttpHandler and internal use.
      */
@@ -83,7 +83,7 @@ class HttpHandler
         ?callable $onEvent = null,
         ?callable $onError = null,
         ?SSEReconnectConfig $reconnectConfig = null
-    ): CancellablePromiseInterface {
+    ): PromiseInterface {
         $curlOptions = $this->normalizeFetchOptions($url, $options, true);
 
         /** @var array<int, mixed> $curlOnlyOptions */
@@ -103,13 +103,13 @@ class HttpHandler
      * @param  string  $url  The URL to stream from.
      * @param  array<int|string, mixed>  $options  Request options for internal use and testing extensions.
      * @param  callable(string): void|null  $onChunk  An optional callback to execute for each received data chunk.
-     * @return CancellablePromiseInterface<StreamingResponse> A promise that resolves with a StreamingResponse object.
+     * @return PromiseInterface<StreamingResponse> A promise that resolves with a StreamingResponse object.
      *
      * @internal This method is designed for extension by TestingHttpHandler. The $options parameter
      *           allows testing implementations to intercept and mock requests. End users should use
      *           $http->request()->stream() for configuration instead.
      */
-    public function stream(string $url, array $options = [], ?callable $onChunk = null): CancellablePromiseInterface
+    public function stream(string $url, array $options = [], ?callable $onChunk = null): PromiseInterface
     {
         $curlOptions = $this->normalizeFetchOptions($url, $options);
 
@@ -125,11 +125,11 @@ class HttpHandler
      * @param  string  $url  The URL of the file to download.
      * @param  string  $destination  The local path to save the file.
      * @param  array<int|string, mixed>  $options  Request options for internal use and testing extensions.
-     * @return CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}> A promise that resolves with download metadata.
+     * @return PromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}> A promise that resolves with download metadata.
      *
      * @internal This method is designed for extension by TestingHttpHandler.
      */
-    public function download(string $url, string $destination, array $options = []): CancellablePromiseInterface
+    public function download(string $url, string $destination, array $options = []): PromiseInterface
     {
         $curlOptions = $this->normalizeFetchOptions($url, $options);
 
@@ -174,13 +174,13 @@ class HttpHandler
      * @param  array<int|string, mixed>  $curlOptions  cURL options for the request.
      * @param  CacheConfig|null  $cacheConfig  Optional cache configuration.
      * @param  RetryConfig|null  $retryConfig  Optional retry configuration.
-     * @return CancellablePromiseInterface<Response> A promise that resolves with a Response object.
+     * @return PromiseInterface<Response> A promise that resolves with a Response object.
      *
      * @internal This method is the primary extension point for TestingHttpHandler. It is called by
      *           the Request builder and can be overridden to intercept all requests made through
      *           the fluent Request API.
      */
-    public function sendRequest(string $url, array $curlOptions, ?CacheConfig $cacheConfig = null, ?RetryConfig $retryConfig = null): CancellablePromiseInterface
+    public function sendRequest(string $url, array $curlOptions, ?CacheConfig $cacheConfig = null, ?RetryConfig $retryConfig = null): PromiseInterface
     {
         if ($cacheConfig !== null && ($curlOptions[CURLOPT_CUSTOMREQUEST] ?? 'GET') === 'GET') {
             return $this->cacheHandler->execute($url, $curlOptions, $cacheConfig, $retryConfig);
@@ -201,12 +201,12 @@ class HttpHandler
      *
      * @param  string  $url  The target URL.
      * @param  array<int|string, mixed>  $options  An associative array of request options.
-     * @return CancellablePromiseInterface<Response>|CancellablePromiseInterface<StreamingResponse>|CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}>|CancellablePromiseInterface<SSEResponse> A promise that resolves with a Response, StreamingResponse, download metadata, or SSEResponse.
+     * @return PromiseInterface<Response>|PromiseInterface<StreamingResponse>|PromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}>|PromiseInterface<SSEResponse> A promise that resolves with a Response, StreamingResponse, download metadata, or SSEResponse.
      *
      * @internal This method is a key extension point for TestingHttpHandler. It handles fetch-style
      *           requests and can return different response types based on options (streaming, downloads, etc.).
      */
-    public function fetch(string $url, array $options = []): CancellablePromiseInterface
+    public function fetch(string $url, array $options = []): PromiseInterface
     {
         return $this->fetchHandler->fetch($url, $options);
     }

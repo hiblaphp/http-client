@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Hibla\HttpClient\Uri;
 
 test('parses all components of a complex URI correctly', function () {

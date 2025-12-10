@@ -19,7 +19,7 @@ describe('Response and Exception Handling', function () {
     it('returns a Response object on 4xx status codes', function () {
         Http::mock()->url('/client-error')->status(404)->respondJson(['error' => 'Not Found'])->register();
 
-        $response = Http::get('/client-error')->await();
+        $response = Http::get('/client-error')->wait();
 
         expect($response)->toBeInstanceOf(Response::class);
         expect($response->successful())->toBeFalse();
@@ -32,7 +32,7 @@ describe('Response and Exception Handling', function () {
     it('returns a Response object on 5xx status codes', function () {
         Http::mock()->url('/server-error')->status(503)->respondWith('Service Unavailable')->register();
 
-        $response = Http::get('/server-error')->await();
+        $response = Http::get('/server-error')->wait();
 
         expect($response)->toBeInstanceOf(Response::class);
         expect($response->successful())->toBeFalse();
@@ -47,7 +47,7 @@ describe('Response and Exception Handling', function () {
 
         $promise = Http::get('/network-error');
 
-        expect(fn () => $promise->await())
+        expect(fn () => $promise->wait())
             ->toThrow(NetworkException::class, 'Connection refused')
         ;
     });

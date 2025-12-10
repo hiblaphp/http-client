@@ -6,7 +6,7 @@ use Hibla\EventLoop\Loop;
 use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Handlers\RequestExecutorHandler;
 use Hibla\HttpClient\Response;
-use Hibla\Promise\CancellablePromise;
+use Hibla\Promise\Promise;
 
 beforeEach(function () {
     Loop::reset();
@@ -66,7 +66,7 @@ it('handles cancellation properly', function () {
         CURLOPT_URL => 'https://jsonplaceholder.typicode.com/posts/1',
     ]);
 
-    expect($promise)->toBeInstanceOf(CancellablePromise::class);
+    expect($promise)->toBeInstanceOf(Promise::class);
 
     $promise->cancel();
 

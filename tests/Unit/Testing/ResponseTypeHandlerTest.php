@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Hibla\HttpClient\CacheConfig;
 use Hibla\HttpClient\Response;
 use Hibla\HttpClient\Testing\MockedRequest;
@@ -125,7 +127,7 @@ describe('ResponseTypeHandler', function () {
                 'GET'
             );
 
-            $resultPromise->await();
+            $resultPromise->wait();
         });
     });
 

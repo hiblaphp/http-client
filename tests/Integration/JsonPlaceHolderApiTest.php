@@ -11,7 +11,7 @@ describe('Real API Integration Tests', function () {
         $handler = new HttpHandler();
 
         $promise = $handler->fetch('https://jsonplaceholder.typicode.com/posts/1');
-        $response = $promise->await();
+        $response = $promise->wait();
 
         expect($response->status())->toBe(200)
             ->and($response->successful())->toBeTrue()
@@ -26,7 +26,7 @@ describe('Real API Integration Tests', function () {
         $handler = new HttpHandler();
 
         $promise = $handler->fetch('https://jsonplaceholder.typicode.com/posts');
-        $response = $promise->await();
+        $response = $promise->wait();
 
         $posts = $response->json();
 
@@ -53,7 +53,7 @@ describe('Real API Integration Tests', function () {
             'json' => $postData,
         ]);
 
-        $response = $promise->await();
+        $response = $promise->wait();
 
         expect($response->status())->toBe(201)
             ->and($response->json())->toHaveKey('id')
@@ -79,7 +79,7 @@ describe('Real API Integration Tests', function () {
             'json' => $updatedData,
         ]);
 
-        $response = $promise->await();
+        $response = $promise->wait();
 
         expect($response->status())->toBe(200)
             ->and($response->json('title'))->toBe('Updated Title')
@@ -96,7 +96,7 @@ describe('Real API Integration Tests', function () {
             'json' => ['title' => 'Patched Title'],
         ]);
 
-        $response = $promise->await();
+        $response = $promise->wait();
 
         expect($response->status())->toBe(200)
             ->and($response->json('title'))->toBe('Patched Title')
@@ -110,7 +110,7 @@ describe('Real API Integration Tests', function () {
             'method' => 'DELETE',
         ]);
 
-        $response = $promise->await();
+        $response = $promise->wait();
 
         expect($response->status())->toBe(200);
     });
@@ -119,7 +119,7 @@ describe('Real API Integration Tests', function () {
         $handler = new HttpHandler();
 
         $promise = $handler->fetch('https://jsonplaceholder.typicode.com/posts/1/comments');
-        $response = $promise->await();
+        $response = $promise->wait();
 
         $comments = $response->json();
 
@@ -136,7 +136,7 @@ describe('Real API Integration Tests', function () {
         $handler = new HttpHandler();
 
         $promise = $handler->fetch('https://jsonplaceholder.typicode.com/posts?userId=1');
-        $response = $promise->await();
+        $response = $promise->wait();
 
         $posts = $response->json();
 
@@ -154,7 +154,7 @@ describe('Real API Integration Tests', function () {
         $handler = new HttpHandler();
 
         $promise = $handler->fetch('https://jsonplaceholder.typicode.com/posts/99999');
-        $response = $promise->await();
+        $response = $promise->wait();
 
         expect($response->status())->toBe(404)
             ->and($response->failed())->toBeTrue()
@@ -167,7 +167,7 @@ describe('Real API Integration Tests', function () {
         $handler = new HttpHandler();
 
         $promise = $handler->fetch('https://jsonplaceholder.typicode.com/users/1');
-        $response = $promise->await();
+        $response = $promise->wait();
 
         expect($response->status())->toBe(200)
             ->and($response->json())->toHaveKey('id', 1)
@@ -181,7 +181,7 @@ describe('Real API Integration Tests', function () {
         $handler = new HttpHandler();
 
         $promise = $handler->fetch('https://jsonplaceholder.typicode.com/users/1');
-        $response = $promise->await();
+        $response = $promise->wait();
 
         expect($response->json('address.city'))->toBeString()
             ->and($response->json('address.geo.lat'))->toBeString()
@@ -193,7 +193,7 @@ describe('Real API Integration Tests', function () {
         $handler = new HttpHandler();
 
         $promise = $handler->fetch('https://jsonplaceholder.typicode.com/posts/1');
-        $response = $promise->await();
+        $response = $promise->wait();
 
         expect($response->header('content-type'))->toContain('application/json')
             ->and($response->headers())->toHaveKey('content-type')
@@ -205,7 +205,7 @@ describe('Real API Integration Tests', function () {
         $handler = new HttpHandler();
 
         $promise = $handler->fetch('https://jsonplaceholder.typicode.com/albums/1/photos');
-        $response = $promise->await();
+        $response = $promise->wait();
 
         $photos = $response->json();
 
@@ -222,7 +222,7 @@ describe('Real API Integration Tests', function () {
         $handler = new HttpHandler();
 
         $promise = $handler->fetch('https://jsonplaceholder.typicode.com/todos/1');
-        $response = $promise->await();
+        $response = $promise->wait();
 
         expect($response->status())->toBe(200)
             ->and($response->json())->toHaveKey('userId')
@@ -236,14 +236,14 @@ describe('Real API Integration Tests', function () {
         $handler = new HttpHandler();
 
         $userPromise = $handler->fetch('https://jsonplaceholder.typicode.com/users/1');
-        $userResponse = $userPromise->await();
+        $userResponse = $userPromise->wait();
         $userId = $userResponse->json('id');
 
         $postsPromise = $handler->fetch("https://jsonplaceholder.typicode.com/posts?userId={$userId}");
-        $postsResponse = $postsPromise->await();
+        $postsResponse = $postsPromise->wait();
 
         $todosPromise = $handler->fetch("https://jsonplaceholder.typicode.com/todos?userId={$userId}");
-        $todosResponse = $todosPromise->await();
+        $todosResponse = $todosPromise->wait();
 
         expect($userResponse->status())->toBe(200)
             ->and($postsResponse->status())->toBe(200)
@@ -263,7 +263,7 @@ describe('Real API Integration Tests', function () {
             ],
         ]);
 
-        $response = $promise->await();
+        $response = $promise->wait();
 
         expect($response->status())->toBe(200)
             ->and($response->json())->toHaveKey('id')
@@ -278,7 +278,7 @@ describe('Real API Integration Tests', function () {
             'connect_timeout' => 10,
         ]);
 
-        $response = $promise->await();
+        $response = $promise->wait();
 
         expect($response->status())->toBe(200);
     });
@@ -287,7 +287,7 @@ describe('Real API Integration Tests', function () {
         $handler = new HttpHandler();
 
         $promise = $handler->fetch('https://jsonplaceholder.typicode.com/posts/1');
-        $response = $promise->await();
+        $response = $promise->wait();
 
         $body = $response->body();
 
@@ -302,7 +302,7 @@ describe('Real API Integration Tests', function () {
         $handler = new HttpHandler();
 
         $promise = $handler->fetch('https://jsonplaceholder.typicode.com/posts/1');
-        $response = $promise->await();
+        $response = $promise->wait();
 
         $httpVersion = $response->getHttpVersion();
 
@@ -315,7 +315,7 @@ describe('Real API Integration Tests', function () {
         $handler = new HttpHandler();
 
         $promise = $handler->fetch('https://jsonplaceholder.typicode.com/posts/1');
-        $response = $promise->await();
+        $response = $promise->wait();
 
         expect($response->json('nonexistent.key', 'default'))->toBe('default')
             ->and($response->json('deeply.nested.key', 'fallback'))->toBe('fallback')
@@ -326,7 +326,7 @@ describe('Real API Integration Tests', function () {
         $handler = new HttpHandler();
 
         $promise = $handler->fetch('https://jsonplaceholder.typicode.com/posts/1');
-        $response = $promise->await();
+        $response = $promise->wait();
 
         expect($response->successful())->toBeTrue()
             ->and($response->failed())->toBeFalse()
@@ -335,7 +335,7 @@ describe('Real API Integration Tests', function () {
         ;
 
         $promise404 = $handler->fetch('https://jsonplaceholder.typicode.com/posts/99999');
-        $response404 = $promise404->await();
+        $response404 = $promise404->wait();
 
         expect($response404->successful())->toBeFalse()
             ->and($response404->failed())->toBeTrue()
@@ -348,7 +348,7 @@ describe('Real API Integration Tests', function () {
         $handler = new HttpHandler();
 
         $promise = $handler->fetch('https://jsonplaceholder.typicode.com/comments/1');
-        $response = $promise->await();
+        $response = $promise->wait();
 
         $email = $response->json('email');
 
@@ -371,7 +371,7 @@ describe('Real API Integration Tests', function () {
             ]),
         ]);
 
-        $response = $promise->await();
+        $response = $promise->wait();
 
         expect($response->status())->toBe(201);
     });
@@ -395,7 +395,7 @@ describe('Real API Integration Tests', function () {
             }
 
             $promise = $handler->fetch($config['url'], $options);
-            $response = $promise->await();
+            $response = $promise->wait();
 
             expect($response->status())->toBe($config['expectedStatus']);
         }
@@ -419,7 +419,7 @@ describe('Mock Handler Integration Tests', function () {
         ;
 
         $promise = $handler->fetch('https://jsonplaceholder.typicode.com/posts/1');
-        $response = $promise->await();
+        $response = $promise->wait();
 
         expect($response->status())->toBe(200)
             ->and($response->json('title'))->toBe('Mocked Post Title')
@@ -442,7 +442,7 @@ describe('Mock Handler Integration Tests', function () {
 
         $start = microtime(true);
         $promise = $handler->fetch('https://jsonplaceholder.typicode.com/posts');
-        $response = $promise->await();
+        $response = $promise->wait();
         $duration = microtime(true) - $start;
 
         expect($duration)->toBeGreaterThanOrEqual(0.5)
@@ -465,7 +465,7 @@ describe('Mock Handler Integration Tests', function () {
             'retry' => new RetryConfig(maxRetries: 5, baseDelay: 0.01),
         ]);
 
-        $response = $promise->await();
+        $response = $promise->wait();
 
         expect($response->status())->toBe(200)
             ->and($response->json())->toHaveKey('success', true)
@@ -485,7 +485,7 @@ describe('Mock Handler Integration Tests', function () {
             'retry' => new RetryConfig(maxRetries: 5, baseDelay: 0.01),
         ]);
 
-        $response = $promise->await();
+        $response = $promise->wait();
 
         expect($response->status())->toBe(200)
             ->and($response->json())->toHaveKey('success', true)
@@ -503,13 +503,13 @@ describe('Mock Handler Integration Tests', function () {
         ;
 
         $promise1 = $handler->fetch('https://jsonplaceholder.typicode.com/posts/1');
-        $response1 = $promise1->await();
+        $response1 = $promise1->wait();
 
         $promise2 = $handler->fetch('https://jsonplaceholder.typicode.com/posts/2');
-        $response2 = $promise2->await();
+        $response2 = $promise2->wait();
 
         $promise3 = $handler->fetch('https://jsonplaceholder.typicode.com/posts/3');
-        $response3 = $promise3->await();
+        $response3 = $promise3->wait();
 
         expect($response1->json('title'))->toBe('Generic Post')
             ->and($response2->json('title'))->toBe('Generic Post')

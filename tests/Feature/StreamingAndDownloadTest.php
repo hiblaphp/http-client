@@ -26,7 +26,7 @@ describe('Streaming Features', function () {
             $receivedChunks[] = $chunk;
         };
 
-        Http::stream('/stream', $onChunkCallback)->await();
+        Http::stream('/stream', $onChunkCallback)->wait();
 
         Http::assertStreamMade('/stream');
         expect($receivedChunks)->toBe(['first chunk', ' second chunk', ' last chunk']);
@@ -44,7 +44,7 @@ describe('Streaming Features', function () {
         $handler = Http::getTestingHandler();
         $destination = $handler->createTempFile();
 
-        $result = Http::download('/download/file.txt', $destination)->await();
+        $result = Http::download('/download/file.txt', $destination)->wait();
 
         Http::assertDownloadMade('/download/file.txt', $destination);
         expect($result['file'])->toBe($destination);

@@ -25,7 +25,7 @@ describe('Retry Scenarios JSON Data Retention', function () {
         $start = microtime(true);
         $response = Http::retry(5, 0.01)
             ->get('https://api.example.com/improving')
-            ->await()
+            ->wait()
         ;
         $duration = microtime(true) - $start;
 
@@ -52,7 +52,7 @@ describe('Retry Scenarios JSON Data Retention', function () {
         $start = microtime(true);
         $response = Http::retry(5, 0.01)
             ->get('https://api.example.com/fail-retry')
-            ->await()
+            ->wait()
         ;
         $duration = microtime(true) - $start;
 
@@ -78,7 +78,7 @@ describe('Retry Scenarios JSON Data Retention', function () {
 
         $response = Http::retry(5, 0.01)
             ->get('https://api.example.com/custom-retry')
-            ->await()
+            ->wait()
         ;
 
         expect($response->status())->toBe(200)
@@ -109,7 +109,7 @@ describe('Retry Scenarios JSON Data Retention', function () {
         $start = microtime(true);
         $response = Http::retry(5, 0.01)
             ->get('https://api.example.com/timeout-retry')
-            ->await()
+            ->wait()
         ;
         $duration = microtime(true) - $start;
 
@@ -138,7 +138,7 @@ describe('Retry Scenarios JSON Data Retention', function () {
         $start = microtime(true);
         $response = Http::retry(5, 0.01)
             ->get('https://api.example.com/sequence')
-            ->await()
+            ->wait()
         ;
         $duration = microtime(true) - $start;
 
@@ -166,7 +166,7 @@ describe('Retry Scenarios JSON Data Retention', function () {
 
         $response = Http::retry(5, 0.01)
             ->get('https://api.example.com/rate-limited')
-            ->await()
+            ->wait()
         ;
 
         expect($response->status())->toBe(200)
@@ -203,7 +203,7 @@ describe('Retry Scenarios JSON Data Retention', function () {
 
         $response = Http::retry(5, 0.01)
             ->post('https://api.example.com/complex')
-            ->await()
+            ->wait()
         ;
 
         expect($response->status())->toBe(200)
@@ -242,9 +242,9 @@ describe('Retry Scenarios JSON Data Retention', function () {
             ->register()
         ;
 
-        $response1 = Http::retry(5, 0.01)->get('https://api.example.com/endpoint1')->await();
-        $response2 = Http::retry(5, 0.01)->get('https://api.example.com/endpoint2')->await();
-        $response3 = Http::retry(5, 0.01)->get('https://api.example.com/endpoint3')->await();
+        $response1 = Http::retry(5, 0.01)->get('https://api.example.com/endpoint1')->wait();
+        $response2 = Http::retry(5, 0.01)->get('https://api.example.com/endpoint2')->wait();
+        $response3 = Http::retry(5, 0.01)->get('https://api.example.com/endpoint3')->wait();
 
         expect($response1->json()['endpoint'])->toBe(1)
             ->and($response2->json()['endpoint'])->toBe(2)
@@ -267,7 +267,7 @@ describe('Retry Scenarios JSON Data Retention', function () {
 
         $response = Http::retry(5, 0.01)
             ->get('https://api.example.com/special-chars')
-            ->await()
+            ->wait()
         ;
 
         expect($response->json()['message'])->toBe('Hello "World" with \'quotes\'')
@@ -294,7 +294,7 @@ describe('Retry Scenarios JSON Data Retention', function () {
 
         $response = Http::retry(5, 0.01)
             ->get('https://api.example.com/types')
-            ->await()
+            ->wait()
         ;
 
         expect($response->json()['null_value'])->toBeNull()

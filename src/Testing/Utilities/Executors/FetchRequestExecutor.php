@@ -15,7 +15,6 @@ use Hibla\HttpClient\Testing\Utilities\RequestRecorder;
 use Hibla\HttpClient\Testing\Utilities\ResponseFactory;
 use Hibla\HttpClient\Testing\Utilities\Validators\RequestValidator;
 use Hibla\HttpClient\Traits\FetchOptionTrait;
-use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Hibla\Promise\Promise;
 
@@ -64,7 +63,7 @@ class FetchRequestExecutor
      * @param array<string, mixed> $options
      * @param list<MockedRequest> $mockedRequests
      * @param array<string, mixed> $globalSettings
-     * @return CancellablePromiseInterface<mixed>|PromiseInterface<mixed>
+     * @return PromiseInterface<mixed>
      */
     public function execute(
         string $url,
@@ -73,7 +72,7 @@ class FetchRequestExecutor
         array $globalSettings,
         ?callable $parentFetch = null,
         ?callable $createStream = null
-    ): PromiseInterface|CancellablePromiseInterface {
+    ): PromiseInterface {
         $method = $this->extractMethod($options);
         $curlOptions = $this->normalizeFetchOptions($url, $options);
         /** @var array<int, mixed> $curlOnlyOptions */
@@ -83,7 +82,7 @@ class FetchRequestExecutor
         $cacheConfig = $this->extractCacheConfig($options);
 
         if ($this->validator->isSSERequested($options)) {
-            /** @var CancellablePromiseInterface<mixed> */
+            /** @var PromiseInterface<mixed> */
             return $this->handleSSERequest($url, $options, $method, $curlOnlyOptions, $mockedRequests);
         }
 
@@ -93,7 +92,7 @@ class FetchRequestExecutor
         }
 
         if ($retryConfig !== null) {
-            /** @var PromiseInterface<mixed>|CancellablePromiseInterface<mixed> */
+            /** @var PromiseInterface<mixed> */
             return $this->retryExecutor->executeWithMockRetry(
                 $url,
                 $options,
@@ -132,7 +131,7 @@ class FetchRequestExecutor
      * @param array<string, mixed> $options
      * @param array<int, mixed> $curlOnlyOptions
      * @param list<MockedRequest> $mockedRequests
-     * @return CancellablePromiseInterface<mixed>
+     * @return PromiseInterface<mixed>
      */
     private function handleSSERequest(
         string $url,
@@ -140,7 +139,7 @@ class FetchRequestExecutor
         string $method,
         array $curlOnlyOptions,
         array &$mockedRequests
-    ): CancellablePromiseInterface {
+    ): PromiseInterface {
         $match = $this->requestMatcher->findMatchingMock($mockedRequests, $method, $url, $curlOnlyOptions);
 
         if ($match !== null) {
@@ -153,7 +152,7 @@ class FetchRequestExecutor
                 $onEvent = $options['on_event'] ?? $options['onEvent'] ?? null;
                 $onError = $options['on_error'] ?? $options['onError'] ?? null;
 
-                /** @var CancellablePromiseInterface<mixed> */
+                /** @var PromiseInterface<mixed> */
                 return $this->responseFactory->createMockedSSE(
                     $mock,
                     is_callable($onEvent) ? $onEvent : null,
@@ -170,7 +169,7 @@ class FetchRequestExecutor
      * @param array<int, mixed> $curlOnlyOptions
      * @param list<MockedRequest> $mockedRequests
      * @param array<string, mixed> $globalSettings
-     * @return PromiseInterface<mixed>|CancellablePromiseInterface<mixed>
+     * @return PromiseInterface<mixed>
      */
     private function executeStandard(
         string $url,
@@ -182,13 +181,13 @@ class FetchRequestExecutor
         CacheConfig|null $cacheConfig,
         ?callable $parentFetch,
         ?callable $createStream
-    ): PromiseInterface|CancellablePromiseInterface {
+    ): PromiseInterface {
         $this->requestRecorder->recordRequest($method, $url, array_merge($options, $curlOnlyOptions));
 
         $match = $this->requestMatcher->findMatchingMock($mockedRequests, $method, $url, $curlOnlyOptions);
 
         if ($match !== null) {
-            /** @var PromiseInterface<mixed>|CancellablePromiseInterface<mixed> */
+            /** @var PromiseInterface<mixed> */
             return $this->responseTypeHandler->handleMockedResponse(
                 $match,
                 $options,
@@ -216,7 +215,7 @@ class FetchRequestExecutor
      * @param list<MockedRequest> $mockedRequests
      * @param array<string, mixed> $globalSettings
      * @param array<string, mixed> $options
-     * @return PromiseInterface<mixed>|CancellablePromiseInterface<mixed>
+     * @return PromiseInterface<mixed>
      */
     private function handleNoMatch(
         string $method,
@@ -226,7 +225,7 @@ class FetchRequestExecutor
         array $globalSettings,
         ?callable $parentFetch,
         array $options
-    ): PromiseInterface|CancellablePromiseInterface {
+    ): PromiseInterface {
         if ((bool)($globalSettings['strict_matching'] ?? true)) {
             throw UnexpectedRequestException::noMatchFound($method, $url, $curlOnlyOptions, $mockedRequests);
         }
@@ -239,7 +238,7 @@ class FetchRequestExecutor
             throw new \RuntimeException('No parent fetch available');
         }
 
-        /** @var PromiseInterface<mixed>|CancellablePromiseInterface<mixed> $result */
+        /** @var PromiseInterface<mixed> $result */
         $result = $parentFetch($url, $options);
 
         return $result;

@@ -8,7 +8,6 @@ use Hibla\HttpClient\Handlers\RequestExecutorHandler;
 use Hibla\HttpClient\Handlers\RetryHandler;
 use Hibla\HttpClient\Handlers\StreamingHandler;
 use Hibla\HttpClient\RetryConfig;
-use Hibla\Promise\CancellablePromise;
 use Hibla\Promise\Promise;
 
 afterEach(function () {
@@ -29,7 +28,7 @@ it('delegates stream calls to the StreamingHandler', function () {
         ->shouldReceive('streamRequest')
         ->once()
         ->with('https://example.com/stream', Mockery::type('array'), null)
-        ->andReturn(new CancellablePromise())
+        ->andReturn(new Promise())
     ;
 
     $handler = new HttpHandler($streamingHandlerMock, $fetchHandlerMock);
@@ -52,7 +51,7 @@ it('delegates download calls to the StreamingHandler', function () {
         ->shouldReceive('downloadFile')
         ->once()
         ->with('https://example.com/file.zip', '/tmp/file.zip', Mockery::type('array'))
-        ->andReturn(new CancellablePromise())
+        ->andReturn(new Promise())
     ;
 
     $handler = new HttpHandler($streamingHandlerMock, $fetchHandlerMock);
@@ -85,7 +84,7 @@ it('sends request without retry when no retry is configured', function () {
         ->shouldReceive('execute')
         ->once()
         ->with('https://example.com', [CURLOPT_CUSTOMREQUEST => 'POST'])
-        ->andReturn(new CancellablePromise())
+        ->andReturn(new Promise())
     ;
 
     $handler = new HttpHandler(null, null, $requestExecutorMock);
@@ -102,7 +101,7 @@ it('sends request with retry when retry is configured', function () {
         ->shouldReceive('execute')
         ->once()
         ->with('https://example.com', [CURLOPT_CUSTOMREQUEST => 'POST'], $retryConfig)
-        ->andReturn(new CancellablePromise())
+        ->andReturn(new Promise())
     ;
 
     $handler = new HttpHandler(null, null, null, $retryHandlerMock);

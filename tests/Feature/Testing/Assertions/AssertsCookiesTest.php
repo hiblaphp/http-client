@@ -14,7 +14,7 @@ describe('AssertsCookies', function () {
         $jar->setCookie($cookie);
 
         $handler->mock('GET')->url('https://example.com')->respondWithStatus(200)->register();
-        $handler->fetch('https://example.com', ['cookie_jar' => $jar])->await();
+        $handler->fetch('https://example.com', ['cookie_jar' => $jar])->wait();
 
         expect(fn () => $handler->assertCookieSent('session'))
             ->not->toThrow(AssertionFailedError::class)

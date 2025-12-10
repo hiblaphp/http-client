@@ -18,7 +18,7 @@ describe('File Uploads', function () {
 
         $filePath = Http::getTestingHandler()->createTempFile('test.txt', 'file content');
 
-        Http::withFile('attachment', $filePath, 'custom.txt')->post('/upload')->await();
+        Http::withFile('attachment', $filePath, 'custom.txt')->post('/upload')->wait();
 
         $lastRequest = Http::getLastRequest();
         $options = $lastRequest->getOptions();
@@ -42,7 +42,7 @@ describe('File Uploads', function () {
             'upload' => $filePath,
         ];
 
-        Http::multipartWithFiles($data, $files)->post('/multipart')->await();
+        Http::multipartWithFiles($data, $files)->post('/multipart')->wait();
 
         $lastRequest = Http::getLastRequest();
         $options = $lastRequest->getOptions();
@@ -60,7 +60,7 @@ describe('Proxy Configuration', function () {
 
         Http::withProxy('proxy.example.com', 8080, 'user', 'pass')
             ->get('/proxied')
-            ->await()
+            ->wait()
         ;
 
         $lastRequest = Http::getLastRequest();
@@ -76,7 +76,7 @@ describe('Proxy Configuration', function () {
 
         Http::withSocks5Proxy('socks.example.com', 1080)
             ->get('/proxied')
-            ->await()
+            ->wait()
         ;
 
         $lastRequest = Http::getLastRequest();

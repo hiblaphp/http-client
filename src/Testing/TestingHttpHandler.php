@@ -34,7 +34,7 @@ use Hibla\HttpClient\Testing\Utilities\RequestMatcher;
 use Hibla\HttpClient\Testing\Utilities\RequestRecorder;
 use Hibla\HttpClient\Testing\Utilities\ResponseFactory;
 use Hibla\HttpClient\Traits\FetchOptionTrait;
-use Hibla\Promise\Interfaces\CancellablePromiseInterface;
+use Hibla\Promise\Interfaces\PromiseInterface;
 
 /**
  * Robust HTTP testing handler with comprehensive mocking capabilities.
@@ -412,7 +412,7 @@ class TestingHttpHandler extends HttpHandler implements
     /**
      * Send an HTTP request with mocking support.
      */
-    public function sendRequest(string $url, array $curlOptions, ?CacheConfig $cacheConfig = null, ?RetryConfig $retryConfig = null): CancellablePromiseInterface
+    public function sendRequest(string $url, array $curlOptions, ?CacheConfig $cacheConfig = null, ?RetryConfig $retryConfig = null): PromiseInterface
     {
         $mockedRequests = array_values($this->mockedRequests);
 
@@ -431,9 +431,9 @@ class TestingHttpHandler extends HttpHandler implements
      * Fetch a URL with mocking support.
      *
      * @param array<int|string, mixed> $options
-     * @return CancellablePromiseInterface<\Hibla\HttpClient\Response>|CancellablePromiseInterface<\Hibla\HttpClient\StreamingResponse>|CancellablePromiseInterface<\Hibla\HttpClient\SSE\SSEResponse>|CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}>
+     * @return PromiseInterface<\Hibla\HttpClient\Response>|PromiseInterface<\Hibla\HttpClient\StreamingResponse>|PromiseInterface<\Hibla\HttpClient\SSE\SSEResponse>|PromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}>
      */
-    public function fetch(string $url, array $options = []): CancellablePromiseInterface
+    public function fetch(string $url, array $options = []): PromiseInterface
     {
         $mockedRequests = array_values($this->mockedRequests);
         /** @var array<string, mixed> $normalizedOptions */
@@ -454,16 +454,16 @@ class TestingHttpHandler extends HttpHandler implements
      * Stream data from a URL with chunk callbacks.
      *
      * @param array<int|string, mixed> $options
-     * @return CancellablePromiseInterface<\Hibla\HttpClient\StreamingResponse>
+     * @return PromiseInterface<\Hibla\HttpClient\StreamingResponse>
      */
-    public function stream(string $url, array $options = [], ?callable $onChunk = null): CancellablePromiseInterface
+    public function stream(string $url, array $options = [], ?callable $onChunk = null): PromiseInterface
     {
         $options['stream'] = true;
         if ($onChunk !== null) {
             $options['on_chunk'] = $onChunk;
         }
 
-        /** @var CancellablePromiseInterface<\Hibla\HttpClient\StreamingResponse> */
+        /** @var PromiseInterface<\Hibla\HttpClient\StreamingResponse> */
         return $this->fetch($url, $options);
     }
 
@@ -471,9 +471,9 @@ class TestingHttpHandler extends HttpHandler implements
      * Download a file to a destination path.
      *
      * @param array<int|string, mixed> $options
-     * @return CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}>
+     * @return PromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}>
      */
-    public function download(string $url, ?string $destination = null, array $options = []): CancellablePromiseInterface
+    public function download(string $url, ?string $destination = null, array $options = []): PromiseInterface
     {
         if ($destination === null) {
             $destination = $this->fileManager->createTempFile(
@@ -485,7 +485,7 @@ class TestingHttpHandler extends HttpHandler implements
 
         $options['download'] = $destination;
 
-        /** @var CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}> */
+        /** @var PromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}> */
         return $this->fetch($url, $options);
     }
 
@@ -500,7 +500,7 @@ class TestingHttpHandler extends HttpHandler implements
         ?callable $onEvent = null,
         ?callable $onError = null,
         ?SSEReconnectConfig $reconnectConfig = null
-    ): CancellablePromiseInterface {
+    ): PromiseInterface {
         $curlOptions = $this->normalizeFetchOptions($url, $options, true);
         $mockedRequests = array_values($this->mockedRequests);
 

@@ -18,8 +18,8 @@ describe('HTTP Client Caching', function () {
     it('caches a successful GET request', function () {
         Http::mock()->url('/cache-me')->respondJson(['data' => 'live'])->register();
 
-        $response1 = Http::cache(60)->get('/cache-me')->await();
-        $response2 = Http::cache(60)->get('/cache-me')->await();
+        $response1 = Http::cache(60)->get('/cache-me')->wait();
+        $response2 = Http::cache(60)->get('/cache-me')->wait();
 
         expect($response1->json())->toBe(['data' => 'live']);
         expect($response2->json())->toBe(['data' => 'live']);
@@ -35,11 +35,11 @@ describe('HTTP Client Caching', function () {
         ;
 
         $start1 = microtime(true);
-        $response1 = Http::cache(60)->get('/slow-endpoint')->await();
+        $response1 = Http::cache(60)->get('/slow-endpoint')->wait();
         $duration1 = microtime(true) - $start1;
 
         $start2 = microtime(true);
-        $response2 = Http::cache(60)->get('/slow-endpoint')->await();
+        $response2 = Http::cache(60)->get('/slow-endpoint')->wait();
         $duration2 = microtime(true) - $start2;
 
         Http::assertRequestCount(1);
@@ -52,8 +52,8 @@ describe('HTTP Client Caching', function () {
     it('does not cache non-GET requests', function () {
         Http::mock()->url('/no-cache')->persistent()->respondWith('OK')->register();
 
-        Http::cache(60)->post('/no-cache', ['data' => '1'])->await();
-        Http::cache(60)->post('/no-cache', ['data' => '1'])->await();
+        Http::cache(60)->post('/no-cache', ['data' => '1'])->wait();
+        Http::cache(60)->post('/no-cache', ['data' => '1'])->wait();
 
         Http::assertRequestCount(2);
     });
@@ -62,8 +62,8 @@ describe('HTTP Client Caching', function () {
         Http::mock()->url('/data/1')->respondJson(['id' => 1])->register();
         Http::mock()->url('/data/2')->respondJson(['id' => 2])->register();
 
-        Http::cache(60)->get('/data/1')->await();
-        Http::cache(60)->get('/data/2')->await();
+        Http::cache(60)->get('/data/1')->wait();
+        Http::cache(60)->get('/data/2')->wait();
 
         Http::assertRequestCount(2);
     });
@@ -76,8 +76,8 @@ describe('HTTP Client Caching', function () {
             ->register()
         ;
 
-        $response1 = Http::cacheWithKey('my-shared-key')->get('/any-url')->await();
-        $response2 = Http::cacheWithKey('my-shared-key')->get('/another-url')->await();
+        $response1 = Http::cacheWithKey('my-shared-key')->get('/any-url')->wait();
+        $response2 = Http::cacheWithKey('my-shared-key')->get('/another-url')->wait();
 
         expect($response1->json())->toBe(['data' => 'shared']);
         expect($response2->json())->toBe(['data' => 'shared']);

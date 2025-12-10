@@ -17,7 +17,6 @@ use Hibla\HttpClient\Testing\Utilities\RequestExecutor;
 use Hibla\HttpClient\Testing\Utilities\RequestMatcher;
 use Hibla\HttpClient\Testing\Utilities\RequestRecorder;
 use Hibla\HttpClient\Testing\Utilities\ResponseFactory;
-use Hibla\Promise\CancellablePromise;
 use Hibla\Promise\Promise;
 
 function createRequestExecutor(): RequestExecutor
@@ -46,7 +45,7 @@ test('executes standard send request', function () {
         [CURLOPT_CUSTOMREQUEST => 'GET'],
         $mocks,
         []
-    )->await();
+    )->wait();
 
     expect($result)->toBeInstanceOf(Response::class);
 });
@@ -68,7 +67,7 @@ test('executes SSE request', function () {
         [CURLOPT_CUSTOMREQUEST => 'GET'],
         $mocks,
         []
-    )->await();
+    )->wait();
 
     expect($result)->toBeInstanceOf(SSEResponse::class);
 });
@@ -87,7 +86,7 @@ test('executes fetch request', function () {
         ['method' => 'GET'],
         $mocks,
         []
-    )->await();
+    )->wait();
 
     expect($result)->toBeInstanceOf(Response::class);
 });
@@ -109,7 +108,7 @@ test('executes send request with cache config', function () {
         $mocks,
         [],
         $cacheConfig
-    )->await();
+    )->wait();
 
     expect($result)->toBeInstanceOf(Response::class);
 });
@@ -132,7 +131,7 @@ test('executes send request with retry config', function () {
         [],
         null,
         $retryConfig
-    )->await();
+    )->wait();
 
     expect($result)->toBeInstanceOf(Response::class);
 });
@@ -163,7 +162,7 @@ test('executes SSE with reconnect config', function () {
         null,
         null,
         $reconnectConfig
-    )->await();
+    )->wait();
 
     expect($result)->toBeInstanceOf(SSEResponse::class);
 });
@@ -194,7 +193,7 @@ test('executes send request with parent callback', function () {
         null,
         null,
         $parentSendRequest
-    )->await();
+    )->wait();
 
     expect($result)->toBeInstanceOf(Response::class)
         ->and($parentCalled)->toBeTrue()
@@ -217,7 +216,7 @@ test('executes SSE with parent callback', function () {
         $stream = new Stream($resource);
         $response = new SSEResponse($stream, 200, []);
 
-        return new CancellablePromise(function ($resolve, $reject) use ($response) {
+        return new Promise(function ($resolve, $reject) use ($response) {
             $resolve($response);
         });
     };
@@ -230,7 +229,7 @@ test('executes SSE with parent callback', function () {
         null,
         null,
         $parentSSE
-    )->await();
+    )->wait();
 
     expect($result)->toBeInstanceOf(SSEResponse::class)
         ->and($parentCalled)->toBeTrue()

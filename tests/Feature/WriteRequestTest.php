@@ -21,7 +21,7 @@ describe('DELETE Method', function () {
             ->register()
         ;
 
-        $response = Http::request()->delete('/users/1')->await();
+        $response = Http::request()->delete('/users/1')->wait();
 
         Http::assertRequestMade('DELETE', '/users/1');
         expect($response->status())->toBe(204);

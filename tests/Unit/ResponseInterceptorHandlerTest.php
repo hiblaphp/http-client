@@ -19,7 +19,7 @@ test('it processes synchronous interceptors in order', function () {
         },
     ];
 
-    $finalResponse = $handler->processInterceptors($initialResponse, $interceptors)->await();
+    $finalResponse = $handler->processInterceptors($initialResponse, $interceptors)->wait();
 
     expect($finalResponse->hasHeader('X-First'))->toBeTrue();
     expect($finalResponse->hasHeader('X-Second'))->toBeTrue();
@@ -39,7 +39,7 @@ test('it processes asynchronous interceptors in order', function () {
         },
     ];
 
-    $finalResponse = $handler->processInterceptors($initialResponse, $interceptors)->await();
+    $finalResponse = $handler->processInterceptors($initialResponse, $interceptors)->wait();
 
     expect($finalResponse->hasHeader('X-Async-First'))->toBeTrue();
     expect($finalResponse->hasHeader('X-Async-Second'))->toBeTrue();
@@ -61,7 +61,7 @@ test('it processes a mix of synchronous and asynchronous interceptors', function
         },
     ];
 
-    $finalResponse = $handler->processInterceptors($initialResponse, $interceptors)->await();
+    $finalResponse = $handler->processInterceptors($initialResponse, $interceptors)->wait();
 
     expect($finalResponse->getHeaders())->toHaveKeys(['X-Sync-1', 'X-Async-2', 'X-Sync-3']);
 });
@@ -78,5 +78,5 @@ test('it rejects the promise if an interceptor throws an exception', function ()
 
     $promise = $handler->processInterceptors($initialResponse, $interceptors);
 
-    expect(fn () => $promise->await())->toThrow(Exception::class, 'Interceptor failed');
+    expect(fn () => $promise->wait())->toThrow(Exception::class, 'Interceptor failed');
 });

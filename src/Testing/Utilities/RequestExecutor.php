@@ -15,7 +15,6 @@ use Hibla\HttpClient\Testing\Utilities\Executors\StandardRequestExecutor;
 use Hibla\HttpClient\Testing\Utilities\Handlers\CacheHandler;
 use Hibla\HttpClient\Testing\Utilities\Validators\RequestValidator;
 use Hibla\HttpClient\Traits\FetchOptionTrait;
-use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
 class RequestExecutor
@@ -114,7 +113,7 @@ class RequestExecutor
      * @param list<MockedRequest> $mockedRequests
      * @param array<string, mixed> $globalSettings
      * @param mixed $reconnectConfig
-     * @return CancellablePromiseInterface<\Hibla\HttpClient\SSE\SSEResponse>
+     * @return PromiseInterface<\Hibla\HttpClient\SSE\SSEResponse>
      */
     public function executeSSE(
         string $url,
@@ -125,7 +124,7 @@ class RequestExecutor
         ?callable $onError = null,
         ?callable $parentSSE = null,
         $reconnectConfig = null
-    ): CancellablePromiseInterface {
+    ): PromiseInterface {
         return $this->sseExecutor->execute(
             $url,
             $curlOptions,
@@ -142,7 +141,7 @@ class RequestExecutor
      * @param array<string, mixed> $options
      * @param list<MockedRequest> $mockedRequests
      * @param array<string, mixed> $globalSettings
-     * @return CancellablePromiseInterface<array<string, mixed>|StreamingResponse>|PromiseInterface<Response>
+     * @return PromiseInterface<array<string, mixed>|StreamingResponse>|PromiseInterface<Response>
      */
     public function executeFetch(
         string $url,
@@ -151,8 +150,8 @@ class RequestExecutor
         array $globalSettings,
         ?callable $parentFetch = null,
         ?callable $createStream = null
-    ): PromiseInterface|CancellablePromiseInterface {
-        /** @var CancellablePromiseInterface<array<string, mixed>|StreamingResponse>|PromiseInterface<Response> */
+    ): PromiseInterface {
+        /** @var PromiseInterface<array<string, mixed>|StreamingResponse>|PromiseInterface<Response> */
         return $this->fetchExecutor->execute(
             $url,
             $options,

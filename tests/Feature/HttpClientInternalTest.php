@@ -22,7 +22,7 @@ describe('Basic Requests', function () {
             ->register()
         ;
 
-        $response = Http::get('https://api.example.com/posts/1')->await();
+        $response = Http::get('https://api.example.com/posts/1')->wait();
 
         expect($response)->toBeInstanceOf(Response::class)
             ->and($response->successful())->toBeTrue()
@@ -41,7 +41,7 @@ describe('Basic Requests', function () {
             ->register()
         ;
 
-        $response = Http::post('https://api.example.com/posts', ['title' => 'New Post'])->await();
+        $response = Http::post('https://api.example.com/posts', ['title' => 'New Post'])->wait();
 
         expect($response->status())->toBe(201)
             ->and($response->json())->toBe(['id' => 2])
@@ -59,7 +59,7 @@ describe('Headers', function () {
         Http::withHeaders([
             'X-Custom-Header' => 'MyValue',
             'X-Another' => 'AnotherValue',
-        ])->get('/')->await();
+        ])->get('/')->wait();
 
         Http::assertHeaderSent('X-Custom-Header', 'MyValue');
         Http::assertHeaderSent('X-Another', 'AnotherValue');
@@ -69,7 +69,7 @@ describe('Headers', function () {
     test('it correctly adds a bearer token', function () {
         Http::mock()->url('/secure')->respondWith('Success')->register();
 
-        Http::withToken('my-secret-token')->get('/secure')->await();
+        Http::withToken('my-secret-token')->get('/secure')->wait();
 
         Http::assertBearerTokenSent('my-secret-token');
         expect(true)->toBeTrue();
@@ -78,7 +78,7 @@ describe('Headers', function () {
     test('it sets the Accept header correctly', function () {
         Http::mock()->url('*')->respondWith('OK')->register();
 
-        Http::accept('application/json')->get('/')->await();
+        Http::accept('application/json')->get('/')->wait();
 
         Http::assertAcceptHeader('application/json');
         expect(true)->toBeTrue();
@@ -89,7 +89,7 @@ describe('Request Body', function () {
     test('it sends a JSON request body correctly', function () {
         Http::mock()->url('/json')->respondWith('OK')->register();
 
-        Http::withJson(['foo' => 'bar'])->post('/json')->await();
+        Http::withJson(['foo' => 'bar'])->post('/json')->wait();
 
         Http::assertContentType('application/json');
         Http::assertRequestWithJson('POST', '/json', ['foo' => 'bar']);
@@ -99,7 +99,7 @@ describe('Request Body', function () {
     test('it sends a url-encoded form body correctly', function () {
         Http::mock()->url('/form')->respondWith('OK')->register();
 
-        Http::withForm(['foo' => 'bar', 'baz' => 'qux'])->post('/form')->await();
+        Http::withForm(['foo' => 'bar', 'baz' => 'qux'])->post('/form')->wait();
 
         Http::assertContentType('application/x-www-form-urlencoded');
         Http::assertRequestWithBody('POST', '/form', 'foo=bar&baz=qux');
@@ -116,7 +116,7 @@ describe('Retries', function () {
             ->register()
         ;
 
-        $response = Http::retry(3)->get('/retry-test')->await();
+        $response = Http::retry(3)->get('/retry-test')->wait();
 
         expect($response->successful())->toBeTrue()
             ->and($response->body())->toBe('Finally succeeded on attempt 3')
@@ -134,8 +134,8 @@ describe('Caching', function () {
             ->register()
         ;
 
-        $response1 = Http::cache(60)->get('/cached-endpoint')->await();
-        $response2 = Http::cache(60)->get('/cached-endpoint')->await();
+        $response1 = Http::cache(60)->get('/cached-endpoint')->wait();
+        $response2 = Http::cache(60)->get('/cached-endpoint')->wait();
 
         expect($response1->json())->toBe(['data' => 'live data']);
         expect($response2->json())->toBe(['data' => 'live data']);
@@ -159,7 +159,7 @@ describe('Server-Sent Events (SSE)', function () {
 
         Http::sse('https://api.example.com/stream', function (SSEEvent $event) use (&$receivedEvents) {
             $receivedEvents[] = $event;
-        })->await();
+        })->wait();
 
         Http::assertSSEConnectionMade('https://api.example.com/stream');
         expect($receivedEvents)->toHaveCount(2);
@@ -179,7 +179,7 @@ describe('Error Handling', function () {
             ->register()
         ;
 
-        $response = Http::get('/not-found')->await();
+        $response = Http::get('/not-found')->wait();
 
         expect($response->successful())->toBeFalse();
         expect($response->clientError())->toBeTrue();
@@ -195,7 +195,7 @@ describe('Error Handling', function () {
             ->register()
         ;
 
-        $response = Http::get('/server-error')->await();
+        $response = Http::get('/server-error')->wait();
 
         expect($response->successful())->toBeFalse();
         expect($response->clientError())->toBeFalse();

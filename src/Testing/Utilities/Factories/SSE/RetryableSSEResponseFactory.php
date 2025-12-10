@@ -16,8 +16,8 @@ use Hibla\HttpClient\Testing\Exceptions\MockException;
 use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Testing\Utilities\Handlers\DelayCalculator;
 use Hibla\HttpClient\Testing\Utilities\Handlers\NetworkSimulationHandler;
-use Hibla\Promise\CancellablePromise;
-use Hibla\Promise\Interfaces\CancellablePromiseInterface;
+use Hibla\Promise\Interfaces\PromiseInterface;
+use Hibla\Promise\Promise;
 
 use Throwable;
 
@@ -37,7 +37,7 @@ class RetryableSSEResponseFactory
     /**
      * Creates a retryable SSE response with the given configuration.
      *
-     * @return CancellablePromiseInterface<SSEResponse>
+     * @return PromiseInterface<SSEResponse>
      */
     public function create(
         SSEReconnectConfig $reconnectConfig,
@@ -45,19 +45,19 @@ class RetryableSSEResponseFactory
         ?callable $onEvent,
         ?callable $onError,
         ?callable $onReconnect = null
-    ): CancellablePromiseInterface {
-        /** @var CancellablePromise<SSEResponse> $promise */
-        $promise = new CancellablePromise();
+    ): PromiseInterface {
+        /** @var Promise<SSEResponse> $promise */
+        $promise = new Promise();
         $attempt = 0;
 
-        /** @var CancellablePromiseInterface<mixed>|null $activeDelayPromise */
+        /** @var PromiseInterface<mixed>|null $activeDelayPromise */
         $activeDelayPromise = null;
         /** @var string|null $periodicTimerId */
         $periodicTimerId = null;
         $lastEventId = null;
         $retryInterval = null;
 
-        $promise->setCancelHandler(function () use (&$activeDelayPromise, &$periodicTimerId) {
+        $promise->onCancel(function () use (&$activeDelayPromise, &$periodicTimerId) {
             if ($activeDelayPromise !== null) {
                 $activeDelayPromise->cancel();
             }

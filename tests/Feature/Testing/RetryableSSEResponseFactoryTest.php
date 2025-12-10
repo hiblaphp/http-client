@@ -58,7 +58,7 @@ describe('RetryableSSEResponseFactory', function () {
         };
 
         $promise = $factory->create($reconnectConfig, $mockProvider, $onEvent, null);
-        $response = $promise->await();
+        $response = $promise->wait();
 
         expect($response)->toBeInstanceOf(SSEResponse::class);
         expect($receivedEvents)->toHaveCount(1);
@@ -90,7 +90,7 @@ describe('RetryableSSEResponseFactory', function () {
         };
 
         $promise = $factory->create($reconnectConfig, $mockProvider, null, null, $onReconnect);
-        $response = $promise->await();
+        $response = $promise->wait();
 
         expect($response)->toBeInstanceOf(SSEResponse::class);
         expect($attemptCount)->toBe(3);
@@ -113,7 +113,7 @@ describe('RetryableSSEResponseFactory', function () {
 
         $promise = $factory->create($reconnectConfig, $mockProvider, null, null);
 
-        expect(fn () => $promise->await())
+        expect(fn () => $promise->wait())
             ->toThrow(NetworkException::class)
         ;
         // It makes maxAttempts + 1 attempts (initial + retries)
@@ -136,7 +136,7 @@ describe('RetryableSSEResponseFactory', function () {
 
         $promise = $factory->create($reconnectConfig, $mockProvider, null, null);
 
-        expect(fn () => $promise->await())
+        expect(fn () => $promise->wait())
             ->toThrow(NetworkException::class)
         ;
         expect($attemptCount)->toBe(1); // Only one attempt
@@ -159,7 +159,7 @@ describe('RetryableSSEResponseFactory', function () {
 
         $promise = $factory->create($reconnectConfig, $mockProvider, null, null);
 
-        expect(fn () => $promise->await())
+        expect(fn () => $promise->wait())
             ->toThrow(NetworkException::class)
         ;
         // Network failures also happen on initial attempt, but the mock provider is not called
@@ -186,7 +186,7 @@ describe('RetryableSSEResponseFactory', function () {
 
         $promise = $factory->create($reconnectConfig, $mockProvider, null, $onError);
 
-        expect(fn () => $promise->await())
+        expect(fn () => $promise->wait())
             ->toThrow(NetworkException::class)
         ;
         // Error is called for each attempt (initial + retries)
@@ -221,7 +221,7 @@ describe('RetryableSSEResponseFactory', function () {
         };
 
         $promise = $factory->create($reconnectConfig, $mockProvider, null, null, $onReconnect);
-        $response = $promise->await();
+        $response = $promise->wait();
 
         expect($response)->toBeInstanceOf(SSEResponse::class);
         expect($reconnectData)->toHaveCount(1);
@@ -240,7 +240,7 @@ describe('RetryableSSEResponseFactory', function () {
 
         $promise = $factory->create($reconnectConfig, $mockProvider, null, null);
 
-        expect(fn () => $promise->await())
+        expect(fn () => $promise->wait())
             ->toThrow(MockException::class)
         ;
     });
@@ -255,7 +255,7 @@ describe('RetryableSSEResponseFactory', function () {
 
         $promise = $factory->create($reconnectConfig, $mockProvider, null, null);
 
-        expect(fn () => $promise->await())
+        expect(fn () => $promise->wait())
             ->toThrow(MockException::class, 'Mock provider error')
         ;
     });
@@ -285,7 +285,7 @@ describe('RetryableSSEResponseFactory', function () {
         };
 
         $promise = $factory->create($reconnectConfig, $mockProvider, $onEvent, null);
-        $response = $promise->await();
+        $response = $promise->wait();
 
         expect($response)->toBeInstanceOf(SSEResponse::class);
         expect($receivedEvents)->toHaveCount(2);
@@ -304,7 +304,7 @@ describe('RetryableSSEResponseFactory', function () {
         };
 
         $promise = $factory->create($reconnectConfig, $mockProvider, null, null, null);
-        $response = $promise->await();
+        $response = $promise->wait();
 
         expect($response)->toBeInstanceOf(SSEResponse::class);
     });

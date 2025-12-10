@@ -11,7 +11,6 @@ use Hibla\HttpClient\SSE\SSEResponse;
 use Hibla\HttpClient\Testing\MockRequestBuilder;
 use Hibla\HttpClient\Testing\TestingHttpHandler;
 use Hibla\HttpClient\Testing\Utilities\RecordedRequest;
-use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Psr\Http\Message\UploadedFileInterface;
 
@@ -32,8 +31,8 @@ use Psr\Http\Message\UploadedFileInterface;
  * @method static PromiseInterface<Response> options(string $url) Performs an OPTIONS request.
  * @method static PromiseInterface<Response> head(string $url) Performs a HEAD request.
  * @method static PromiseInterface<Response> fetch(string $url, array<int|string, mixed> $options = []) A flexible, fetch-like request method.
- * @method static CancellablePromiseInterface<StreamingResponse> stream(string $url, ?callable $onChunk = null) Streams a response body.
- * @method static CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>}> download(string $url, string $destination) Downloads a file.
+ * @method static PromiseInterface<StreamingResponse> stream(string $url, ?callable $onChunk = null) Streams a response body.
+ * @method static PromiseInterface<array{file: string, status: int, headers: array<mixed>}> download(string $url, string $destination) Downloads a file.
  *
  * Request builder methods:
  * @method static Request cache(int $ttlSeconds = 3600, bool $respectServerHeaders = true) Start building a request with caching enabled.
@@ -95,7 +94,7 @@ use Psr\Http\Message\UploadedFileInterface;
  * @method static Request interceptResponse(callable $callback) Start building a request with a response interceptor.
  *
  * SSE (Server-Sent Events) methods:
- * @method static CancellablePromiseInterface<SSEResponse> sse(string $url, ?callable $onEvent = null, ?callable $onError = null, ?SSEReconnectConfig $reconnectConfig = null) Start an SSE connection.
+ * @method static PromiseInterface<SSEResponse> sse(string $url, ?callable $onEvent = null, ?callable $onError = null, ?SSEReconnectConfig $reconnectConfig = null) Start an SSE connection.
  * @method static Request sseDataFormat(string $format = 'json') Start building a request with SSE data format configuration.
  * @method static Request sseMap(callable $mapper) Start building a request with custom SSE event mapper.
  * @method static Request sseReconnect(int $maxAttempts = 10, float $initialDelay = 1.0, float $maxDelay = 30.0, float $backoffMultiplier = 2.0) Start building a request with SSE reconnection configuration.
@@ -127,7 +126,7 @@ use Psr\Http\Message\UploadedFileInterface;
  * @method static Request withUri(Uri $uri, bool $preserveHost = false) Returns an instance with the provided URI.
  *
  * Request streaming methods:
- * @method static CancellablePromiseInterface<StreamingResponse> streamPost(string $url, mixed $body = null, ?callable $onChunk = null) Streams the response body of a POST request.
+ * @method static PromiseInterface<StreamingResponse> streamPost(string $url, mixed $body = null, ?callable $onChunk = null) Streams the response body of a POST request.
  *
  * Request execution methods:
  * @method static PromiseInterface<Response> send(string $method, string $url) Dispatches the configured request.
@@ -369,7 +368,7 @@ class Http
 
     /**
      * Configure global settings for the HTTP client.
-     * 
+     *
      * @param array{user_agent?: string, cache_path?: string} $settings
      */
     public static function configure(array $settings): void

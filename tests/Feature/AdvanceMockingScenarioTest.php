@@ -22,7 +22,7 @@ describe('Advanced Retry Mocking', function () {
             ->register()
         ;
 
-        $response = Http::retry(3, 0.01)->get('/timeout-test')->await();
+        $response = Http::retry(3, 0.01)->get('/timeout-test')->wait();
 
         expect($response->successful())->toBeTrue();
         Http::assertRequestCount(3);
@@ -36,7 +36,7 @@ describe('Advanced Retry Mocking', function () {
             ->register()
         ;
 
-        $response = Http::retry(3, 0.01)->get('/status-fail')->await();
+        $response = Http::retry(3, 0.01)->get('/status-fail')->wait();
 
         expect($response->successful())->toBeTrue();
         expect($response->json())->toBe(['status' => 'recovered']);
@@ -58,7 +58,7 @@ describe('Advanced SSE Mocking', function () {
         $events = [];
         Http::sse('/sse-keepalive', function (SSEEvent $event) use (&$events) {
             $events[] = $event;
-        })->await();
+        })->wait();
 
         // 1 data, 1 keepalive, 1 data = 3 total events
         expect($events)->toHaveCount(3);
@@ -77,7 +77,7 @@ describe('Advanced SSE Mocking', function () {
         $events = [];
         Http::sse('/sse-retry-directive', function (SSEEvent $event) use (&$events) {
             $events[] = $event;
-        })->await();
+        })->wait();
 
         expect($events)->toHaveCount(2);
         expect($events[0]->retry)->toBe(5000);

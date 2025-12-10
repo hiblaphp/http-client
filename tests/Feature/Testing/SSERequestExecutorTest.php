@@ -14,7 +14,7 @@ use Hibla\HttpClient\Testing\Utilities\NetworkSimulator;
 use Hibla\HttpClient\Testing\Utilities\RequestMatcher;
 use Hibla\HttpClient\Testing\Utilities\RequestRecorder;
 use Hibla\HttpClient\Testing\Utilities\ResponseFactory;
-use Hibla\Promise\CancellablePromise;
+use Hibla\Promise\Promise;
 
 function createSSEExecutor(): SSERequestExecutor
 {
@@ -49,7 +49,7 @@ test('executes SSE request on first attempt success', function () {
         $mocks,
         [],
         $onEvent
-    )->await();
+    )->wait();
 
     expect($result)->toBeInstanceOf(SSEResponse::class)
         ->and($events)->toHaveCount(2)
@@ -75,7 +75,7 @@ test('persistent SSE mock is not removed', function () {
         [CURLOPT_CUSTOMREQUEST => 'GET'],
         $mocks,
         []
-    )->await();
+    )->wait();
 
     expect($result)->toBeInstanceOf(SSEResponse::class)
         ->and($mocks)->toHaveCount(1)
@@ -96,7 +96,7 @@ test('throws exception when SSE mock not properly configured', function () {
         [CURLOPT_CUSTOMREQUEST => 'GET'],
         $mocks,
         []
-    )->await();
+    )->wait();
 })->throws(RuntimeException::class, 'Mock matched for SSE request but is not configured as SSE');
 
 test('throws exception when no mock found with strict matching', function () {
@@ -110,7 +110,7 @@ test('throws exception when no mock found with strict matching', function () {
         [CURLOPT_CUSTOMREQUEST => 'GET'],
         $mocks,
         $globalSettings
-    )->await();
+    )->wait();
 })->throws(UnexpectedRequestException::class);
 
 test('throws exception when passthrough not allowed', function () {
@@ -127,7 +127,7 @@ test('throws exception when passthrough not allowed', function () {
         [CURLOPT_CUSTOMREQUEST => 'GET'],
         $mocks,
         $globalSettings
-    )->await();
+    )->wait();
 })->throws(UnexpectedRequestException::class);
 
 test('handles SSE with onError callback', function () {
@@ -154,7 +154,7 @@ test('handles SSE with onError callback', function () {
         [],
         null,
         $onError
-    )->await();
+    )->wait();
 
     expect($result)->toBeInstanceOf(SSEResponse::class);
 });
@@ -201,7 +201,7 @@ test('executes SSE with reconnect config', function () {
         null,
         null,
         $reconnectConfig
-    )->await();
+    )->wait();
 
     expect($result)->toBeInstanceOf(SSEResponse::class);
 });
@@ -235,7 +235,7 @@ test('adds Last-Event-ID header on reconnection', function () {
         null,
         null,
         $reconnectConfig
-    )->await();
+    )->wait();
 
     expect($result)->toBeInstanceOf(SSEResponse::class);
 });
@@ -259,7 +259,7 @@ test('throws exception when no SSE mock found during retry', function () {
         null,
         null,
         $reconnectConfig
-    )->await();
+    )->wait();
 })->throws(MockException::class);
 
 test('handles SSE infinite stream with config', function () {
@@ -287,7 +287,7 @@ test('handles SSE infinite stream with config', function () {
         $mocks,
         [],
         $onEvent
-    )->await();
+    )->wait();
 
     expect($result)->toBeInstanceOf(SSEResponse::class)
         ->and($mock->hasStreamConfig())->toBeTrue()
@@ -322,7 +322,7 @@ test('handles SSE with custom event types', function () {
         $mocks,
         [],
         $onEvent
-    )->await();
+    )->wait();
 
     expect($result)->toBeInstanceOf(SSEResponse::class)
         ->and($eventTypes)->toContain('user_joined', 'user_left', 'message')
@@ -360,7 +360,7 @@ test('handles SSE reconnection with onReconnect callback', function () {
         null,
         null,
         $reconnectConfig
-    )->await();
+    )->wait();
 
     expect($result)->toBeInstanceOf(SSEResponse::class);
 });
@@ -382,7 +382,7 @@ test('throws exception when passthrough without parent SSE handler', function ()
         null,
         null,
         null
-    )->await();
+    )->wait();
 })->throws(RuntimeException::class, 'No parent SSE handler available');
 
 test('uses parent SSE handler for passthrough', function () {
@@ -401,7 +401,7 @@ test('uses parent SSE handler for passthrough', function () {
         $stream = new Stream($resource);
         $response = new SSEResponse($stream, 200, []);
 
-        return new CancellablePromise(function ($resolve, $reject) use ($response) {
+        return new Promise(function ($resolve, $reject) use ($response) {
             $resolve($response);
         });
     };
@@ -414,7 +414,7 @@ test('uses parent SSE handler for passthrough', function () {
         null,
         null,
         $parentSSE
-    )->await();
+    )->wait();
 
     expect($result)->toBeInstanceOf(SSEResponse::class)
         ->and($parentCalled)->toBeTrue()
@@ -444,7 +444,7 @@ test('adds SSE event dynamically with addSSEEvent', function () {
         $mocks,
         [],
         $onEvent
-    )->await();
+    )->wait();
 
     expect($result)->toBeInstanceOf(SSEResponse::class)
         ->and($events)->toHaveCount(3)
@@ -469,7 +469,7 @@ test('handles SSE with retry field in events', function () {
         [CURLOPT_CUSTOMREQUEST => 'GET'],
         $mocks,
         []
-    )->await();
+    )->wait();
 
     expect($result)->toBeInstanceOf(SSEResponse::class)
         ->and($mock->getSSEEvents()[0])->toHaveKey('retry')
@@ -503,7 +503,7 @@ test('handles reconnect config disabled', function () {
         null,
         null,
         $reconnectConfig
-    )->await();
+    )->wait();
 
     expect($result)->toBeInstanceOf(SSEResponse::class)
         ->and($mocks)->toBeEmpty()
@@ -535,7 +535,7 @@ test('handles multiple SSE mocks in sequence', function () {
         [CURLOPT_CUSTOMREQUEST => 'GET'],
         $mocks,
         []
-    )->await();
+    )->wait();
 
     expect($result1)->toBeInstanceOf(SSEResponse::class)
         ->and($mocks)->toHaveCount(1)
@@ -546,7 +546,7 @@ test('handles multiple SSE mocks in sequence', function () {
         [CURLOPT_CUSTOMREQUEST => 'GET'],
         $mocks,
         []
-    )->await();
+    )->wait();
 
     expect($result2)->toBeInstanceOf(SSEResponse::class)
         ->and($mocks)->toBeEmpty()

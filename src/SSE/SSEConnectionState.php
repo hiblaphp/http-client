@@ -7,7 +7,7 @@ namespace Hibla\HttpClient\SSE;
 use Exception;
 use Hibla\EventLoop\Loop;
 use Hibla\HttpClient\StreamingResponse;
-use Hibla\Promise\Interfaces\CancellablePromiseInterface;
+use Hibla\Promise\Interfaces\PromiseInterface;
 
 /**
  * Manages the state of an SSE connection including reconnection attempts.
@@ -21,9 +21,9 @@ class SSEConnectionState
     private ?int $retryInterval = null;
 
     /**
-     * @var CancellablePromiseInterface<TResponse>|null
+     * @var PromiseInterface<TResponse>|null
      */
-    private ?CancellablePromiseInterface $currentConnection = null;
+    private ?PromiseInterface $currentConnection = null;
     private ?Exception $lastError = null;
     private bool $cancelled = false;
     private ?string $reconnectTimerId = null;
@@ -155,9 +155,9 @@ class SSEConnectionState
     /**
      * Sets the promise for the current active connection.
      *
-     * @param CancellablePromiseInterface<TResponse> $connection
+     * @param PromiseInterface<TResponse> $connection
      */
-    public function setCurrentConnection(CancellablePromiseInterface $connection): void
+    public function setCurrentConnection(PromiseInterface $connection): void
     {
         $this->currentConnection = $connection;
     }

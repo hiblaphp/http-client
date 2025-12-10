@@ -9,7 +9,7 @@ use Hibla\HttpClient\SSE\SSEReconnectConfig;
 use Hibla\HttpClient\SSE\SSEResponse;
 use Hibla\HttpClient\StreamingResponse;
 use Hibla\HttpClient\Traits\FetchOptionTrait;
-use Hibla\Promise\Interfaces\CancellablePromiseInterface;
+use Hibla\Promise\Interfaces\PromiseInterface;
 
 /**
  * Handler for fetch-style HTTP requests with advanced options support.
@@ -46,9 +46,9 @@ class FetchHandler
      *
      * @param  string  $url  The target URL.
      * @param  array<int|string, mixed>  $options  An associative array of request options.
-     * @return CancellablePromiseInterface<Response>|CancellablePromiseInterface<StreamingResponse>|CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}>|CancellablePromiseInterface<SSEResponse> A promise that resolves with a Response, StreamingResponse, download metadata, or SSEResponse.
+     * @return PromiseInterface<Response>|PromiseInterface<StreamingResponse>|PromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}>|PromiseInterface<SSEResponse> A promise that resolves with a Response, StreamingResponse, download metadata, or SSEResponse.
      */
-    public function fetch(string $url, array $options = []): CancellablePromiseInterface
+    public function fetch(string $url, array $options = []): PromiseInterface
     {
         if ($this->isDownloadRequested($options)) {
             return $this->fetchDownload($url, $options);
@@ -98,9 +98,9 @@ class FetchHandler
      *
      * @param  string  $url  The target URL.
      * @param  array<int|string, mixed>  $options  Request options.
-     * @return CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}> A promise that resolves with download metadata.
+     * @return PromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}> A promise that resolves with download metadata.
      */
-    private function fetchDownload(string $url, array $options): CancellablePromiseInterface
+    private function fetchDownload(string $url, array $options): PromiseInterface
     {
         $destination = $options['download'] ?? $options['save_to'] ?? null;
 
@@ -131,9 +131,9 @@ class FetchHandler
      * @param  string  $url  The target URL.
      * @param  array<int|string, mixed>  $options  Request options.
      * @param  callable|null  $onChunk  Optional chunk callback.
-     * @return CancellablePromiseInterface<StreamingResponse> A promise that resolves with a StreamingResponse.
+     * @return PromiseInterface<StreamingResponse> A promise that resolves with a StreamingResponse.
      */
-    private function fetchStream(string $url, array $options, ?callable $onChunk = null): CancellablePromiseInterface
+    private function fetchStream(string $url, array $options, ?callable $onChunk = null): PromiseInterface
     {
         $curlOptions = $this->normalizeFetchOptions($url, $options);
 
@@ -213,7 +213,7 @@ class FetchHandler
     /**
      * Handles SSE requests through fetch.
      * @param array<int|string, mixed> $options
-     * @return CancellablePromiseInterface<SSEResponse>
+     * @return PromiseInterface<SSEResponse>
      */
     private function fetchSSE(
         string $url,
@@ -221,7 +221,7 @@ class FetchHandler
         ?callable $onEvent = null,
         ?callable $onError = null,
         ?SSEReconnectConfig $reconnectConfig = null
-    ): CancellablePromiseInterface {
+    ): PromiseInterface {
         $curlOptions = $this->normalizeFetchOptions($url, $options);
 
         /** @var array<int, mixed> $curlOnlyOptions */

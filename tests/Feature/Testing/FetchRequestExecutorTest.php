@@ -44,7 +44,7 @@ test('executes basic get request', function () {
         ['method' => 'GET'],
         $mocks,
         []
-    )->await();
+    )->wait();
 
     expect($result)->toBeInstanceOf(Response::class)
         ->and($result->body())->toBe('{"users": []}')
@@ -72,7 +72,7 @@ test('executes post request with json body', function () {
         ],
         $mocks,
         []
-    )->await();
+    )->wait();
 
     expect($result->status())->toBe(201)
         ->and($result->body())->toBe('{"id": 1, "name": "John"}')
@@ -89,10 +89,10 @@ test('persistent mock remains available', function () {
     $mock->setPersistent(true);
     $mocks[] = $mock;
 
-    $executor->execute('https://api.example.com/data', [], $mocks, [])->await();
+    $executor->execute('https://api.example.com/data', [], $mocks, [])->wait();
     expect($mocks)->toHaveCount(1);
 
-    $executor->execute('https://api.example.com/data', [], $mocks, [])->await();
+    $executor->execute('https://api.example.com/data', [], $mocks, [])->wait();
     expect($mocks)->toHaveCount(1);
 });
 
@@ -105,7 +105,7 @@ test('non persistent mock is removed', function () {
     $mock->setBody('{"result": "ok"}');
     $mocks[] = $mock;
 
-    $executor->execute('https://api.example.com/data', [], $mocks, [])->await();
+    $executor->execute('https://api.example.com/data', [], $mocks, [])->wait();
     expect($mocks)->toBeEmpty();
 });
 
@@ -126,7 +126,7 @@ test('executes with custom headers', function () {
         ],
         $mocks,
         []
-    )->await();
+    )->wait();
 
     expect($result->body())->toBe('{"authenticated": true}');
 });
@@ -140,7 +140,7 @@ test('throws exception when no mock matches in strict mode', function () {
         [],
         $mocks,
         ['strict_matching' => true]
-    )->await();
+    )->wait();
 })->throws(UnexpectedRequestException::class);
 
 test('allows passthrough when enabled', function () {
@@ -160,7 +160,7 @@ test('allows passthrough when enabled', function () {
         $mocks,
         ['strict_matching' => false, 'allow_passthrough' => true],
         $parentFetch
-    )->await();
+    )->wait();
 
     expect($parentFetchCalled)->toBeTrue()
         ->and($result->body())->toBe('passthrough')
@@ -183,7 +183,7 @@ test('executes request with delay', function () {
         [],
         $mocks,
         []
-    )->await();
+    )->wait();
     $elapsed = microtime(true) - $start;
 
     expect($elapsed)->toBeGreaterThanOrEqual(0.1)
@@ -205,7 +205,7 @@ test('handles error mock', function () {
         [],
         $mocks,
         []
-    )->await();
+    )->wait();
 })->throws(NetworkException::class, 'Connection failed');
 
 test('uses cache config when provided', function () {
@@ -224,7 +224,7 @@ test('uses cache config when provided', function () {
         ['cache' => $cacheConfig],
         $mocks,
         []
-    )->await();
+    )->wait();
 
     expect($mocks)->toBeEmpty();
 
@@ -233,7 +233,7 @@ test('uses cache config when provided', function () {
         ['cache' => $cacheConfig],
         $mocks,
         []
-    )->await();
+    )->wait();
 
     expect($result1->body())->toBe($result2->body());
 });
@@ -252,7 +252,7 @@ test('matches wildcard method', function () {
         ['method' => 'DELETE'],
         $mocks,
         []
-    )->await();
+    )->wait();
 
     expect($result->body())->toBe('{"method": "any"}');
 });
@@ -276,7 +276,7 @@ test('handles multiple mocks with first match priority', function () {
         [],
         $mocks,
         []
-    )->await();
+    )->wait();
 
     expect($result->body())->toBe('{"source": "first"}')
         ->and($mocks)->toHaveCount(1)

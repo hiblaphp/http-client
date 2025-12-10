@@ -18,7 +18,6 @@ use Hibla\HttpClient\Testing\Utilities\Factories\SSE\SSEResponseFactory;
 use Hibla\HttpClient\Testing\Utilities\Factories\StandardResponseFactory;
 use Hibla\HttpClient\Testing\Utilities\Factories\StreamingResponseFactory;
 use Hibla\HttpClient\Testing\Utilities\Handlers\NetworkSimulationHandler;
-use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
 class ResponseFactory
@@ -64,40 +63,40 @@ class ResponseFactory
     }
 
     /**
-     * @return CancellablePromiseInterface<StreamingResponse>
+     * @return PromiseInterface<StreamingResponse>
      */
     public function createMockedStream(
         MockedRequest $mock,
         ?callable $onChunk,
         callable $createStream
-    ): CancellablePromiseInterface {
+    ): PromiseInterface {
         return $this->streamingFactory->create($mock, $onChunk, $createStream);
     }
 
     /**
-     * @return CancellablePromiseInterface<array{file: string, status: int, headers: array<string, string>, size: int, protocol_version: string}>
+     * @return PromiseInterface<array{file: string, status: int, headers: array<string, string>, size: int, protocol_version: string}>
      */
     public function createMockedDownload(
         MockedRequest $mock,
         string $destination,
         FileManager $fileManager
-    ): CancellablePromiseInterface {
+    ): PromiseInterface {
         return $this->downloadFactory->create($mock, $destination, $fileManager);
     }
 
     /**
-     * @return CancellablePromiseInterface<SSEResponse>
+     * @return PromiseInterface<SSEResponse>
      */
     public function createMockedSSE(
         MockedRequest $mock,
         ?callable $onEvent,
         ?callable $onError
-    ): CancellablePromiseInterface {
+    ): PromiseInterface {
         return $this->sseFactory->create($mock, $onEvent, $onError);
     }
 
     /**
-     * @return CancellablePromiseInterface<SSEResponse>
+     * @return PromiseInterface<SSEResponse>
      */
     public function createRetryableMockedSSE(
         SSEReconnectConfig $reconnectConfig,
@@ -105,7 +104,7 @@ class ResponseFactory
         ?callable $onEvent,
         ?callable $onError,
         ?callable $onReconnect = null
-    ): CancellablePromiseInterface {
+    ): PromiseInterface {
         return $this->retryableSSEFactory->create(
             $reconnectConfig,
             $mockProvider,

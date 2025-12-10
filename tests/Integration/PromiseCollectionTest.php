@@ -35,7 +35,7 @@ describe('Promise::all() with Mocks using Http Facade', function () {
             Http::get('https://jsonplaceholder.typicode.com/posts/3'),
         ];
 
-        $results = Promise::all($promises)->await();
+        $results = Promise::all($promises)->wait();
 
         expect($results)->toBeArray()
             ->and($results)->toHaveCount(3)
@@ -97,7 +97,7 @@ describe('Promise::all() with Mocks using Http Facade', function () {
             'todo' => Http::get('https://jsonplaceholder.typicode.com/todos/1'),
         ];
 
-        $results = Promise::all($promises)->await();
+        $results = Promise::all($promises)->wait();
 
         expect($results)->toBeArray()
             ->and($results)->toHaveCount(4)
@@ -134,7 +134,7 @@ describe('Promise::all() with Mocks using Http Facade', function () {
             Http::get('https://jsonplaceholder.typicode.com/posts/3'),
         ];
 
-        $results = Promise::all($promises)->await();
+        $results = Promise::all($promises)->wait();
 
         expect($results)->toHaveCount(3)
             ->and($results[0]->successful())->toBeTrue()
@@ -163,7 +163,7 @@ describe('Promise::all() with Mocks using Http Facade', function () {
         }
 
         $start = microtime(true);
-        $results = Promise::all($promises)->await();
+        $results = Promise::all($promises)->wait();
         $duration = microtime(true) - $start;
 
         expect($results)->toHaveCount(10)
@@ -211,7 +211,7 @@ describe('Promise::allSettled() with Mocks using Http Facade', function () {
             Http::get('https://invalid-domain-that-does-not-exist-12345.com/test'),
         ];
 
-        $results = Promise::allSettled($promises)->await();
+        $results = Promise::allSettled($promises)->wait();
 
         expect($results)->toBeArray()
             ->and($results)->toHaveCount(4)
@@ -258,7 +258,7 @@ describe('Promise::allSettled() with Mocks using Http Facade', function () {
             Http::get('https://jsonplaceholder.typicode.com/users/3'),
         ];
 
-        $results = Promise::allSettled($promises)->await();
+        $results = Promise::allSettled($promises)->wait();
 
         expect($results)->toHaveCount(3);
 
@@ -302,7 +302,7 @@ describe('Promise::race() with Mocks using Http Facade', function () {
             Http::get('https://jsonplaceholder.typicode.com/posts/3'),
         ];
 
-        $result = Promise::race($promises)->await();
+        $result = Promise::race($promises)->wait();
 
         expect($result->successful())->toBeTrue()
             ->and($result->json())->toHaveKey('id')
@@ -341,7 +341,7 @@ describe('Promise::race() with Mocks using Http Facade', function () {
             Http::get('https://api.example.com/medium'),
         ];
 
-        $result = Promise::race($promises)->await();
+        $result = Promise::race($promises)->wait();
 
         expect($result->json('speed'))->toBe('fast');
     });
@@ -363,7 +363,7 @@ describe('Promise::any() with Mocks using Http Facade', function () {
             Http::get('https://jsonplaceholder.typicode.com/posts/3'),
         ];
 
-        $result = Promise::any($promises)->await();
+        $result = Promise::any($promises)->wait();
 
         expect($result->successful())->toBeTrue()
             ->and($result->json())->toHaveKey('id')
@@ -395,7 +395,7 @@ describe('Promise::any() with Mocks using Http Facade', function () {
             Http::get('https://another-invalid-domain-67890.com/fail'),
         ];
 
-        $result = Promise::any($promises)->await();
+        $result = Promise::any($promises)->wait();
 
         expect($result->successful())->toBeTrue()
             ->and($result->json('id'))->toBe(1)
@@ -424,7 +424,7 @@ describe('Promise::concurrent() with Mocks using Http Facade', function () {
         }
 
         $start = microtime(true);
-        $results = Promise::concurrent($tasks, 5)->await();
+        $results = Promise::concurrent($tasks, 5)->wait();
         $duration = microtime(true) - $start;
 
         expect($results)->toHaveCount(20);
@@ -482,7 +482,7 @@ describe('Promise::concurrent() with Mocks using Http Facade', function () {
             fn () => Http::get('https://jsonplaceholder.typicode.com/todos/1'),
         ];
 
-        $results = Promise::concurrent($tasks, 3)->await();
+        $results = Promise::concurrent($tasks, 3)->wait();
 
         expect($results)->toHaveCount(6);
 
@@ -515,7 +515,7 @@ describe('Promise::concurrent() with Mocks using Http Facade', function () {
             ]);
         }
 
-        $results = Promise::concurrent($tasks, 2)->await();
+        $results = Promise::concurrent($tasks, 2)->wait();
 
         expect($results)->toHaveCount(5);
 
@@ -545,7 +545,7 @@ describe('Promise::batch() with Mocks using Http Facade', function () {
             $tasks[] = fn () => Http::get("https://jsonplaceholder.typicode.com/posts/{$i}");
         }
 
-        $results = Promise::batch($tasks, 5, 3)->await();
+        $results = Promise::batch($tasks, 5, 3)->wait();
 
         expect($results)->toHaveCount(15);
 
@@ -596,7 +596,7 @@ describe('Promise::batch() with Mocks using Http Facade', function () {
             fn () => Http::patch('https://jsonplaceholder.typicode.com/posts/1', ['title' => 'Patched']),
         ];
 
-        $results = Promise::batch($tasks, 2, 2)->await();
+        $results = Promise::batch($tasks, 2, 2)->wait();
 
         expect($results)->toHaveCount(5);
 
@@ -651,7 +651,7 @@ describe('Promise::concurrentSettled() with Mocks using Http Facade', function (
             fn () => Http::get('https://jsonplaceholder.typicode.com/posts/3'),
         ];
 
-        $results = Promise::concurrentSettled($tasks, 2)->await();
+        $results = Promise::concurrentSettled($tasks, 2)->wait();
 
         expect($results)->toHaveCount(4);
 
@@ -692,7 +692,7 @@ describe('Promise::concurrentSettled() with Mocks using Http Facade', function (
             $tasks[] = fn () => Http::get("https://jsonplaceholder.typicode.com/users/{$i}");
         }
 
-        $results = Promise::concurrentSettled($tasks, 5)->await();
+        $results = Promise::concurrentSettled($tasks, 5)->wait();
 
         expect($results)->toHaveCount(10);
 
@@ -760,7 +760,7 @@ describe('Promise::batchSettled() with Mocks using Http Facade', function () {
             fn () => Http::get('https://jsonplaceholder.typicode.com/posts/4'),
         ];
 
-        $results = Promise::batchSettled($tasks, 3, 2)->await();
+        $results = Promise::batchSettled($tasks, 3, 2)->wait();
 
         expect($results)->toHaveCount(6);
 
@@ -810,7 +810,7 @@ describe('Concurrent Requests with Mocks using Http Facade', function () {
             'mock' => Http::get('https://api.example.com/mocked'),
         ];
 
-        $results = Promise::all($promises)->await();
+        $results = Promise::all($promises)->wait();
 
         expect($results)->toHaveCount(2)
             ->and($results['real']->json('id'))->toBe(1)
@@ -844,7 +844,7 @@ describe('Concurrent Requests with Mocks using Http Facade', function () {
             fn () => Http::get('https://jsonplaceholder.typicode.com/posts/2'),
         ];
 
-        $results = Promise::concurrent($tasks, 2)->await();
+        $results = Promise::concurrent($tasks, 2)->wait();
 
         expect($results)->toHaveCount(3)
             ->and($results[0]->successful())->toBeTrue()
@@ -869,7 +869,7 @@ describe('Concurrent Requests with Mocks using Http Facade', function () {
             ;
         }
 
-        $results = Promise::batch($tasks, 2, 2)->await();
+        $results = Promise::batch($tasks, 2, 2)->wait();
 
         expect($results)->toHaveCount(5);
 
@@ -911,7 +911,7 @@ describe('Concurrent Requests with Mocks using Http Facade', function () {
             Http::get('https://jsonplaceholder.typicode.com/posts/1'),
         ];
 
-        $results = Promise::allSettled($promises)->await();
+        $results = Promise::allSettled($promises)->wait();
 
         expect($results)->toHaveCount(4)
             ->and($results[0]['status'])->toBe('fulfilled')
@@ -950,7 +950,7 @@ describe('Concurrency Performance Tests with Mocks using Http Facade', function 
         // Sequential execution
         $sequentialStart = microtime(true);
         for ($i = 1; $i <= 5; $i++) {
-            Http::get("https://jsonplaceholder.typicode.com/posts/{$i}")->await();
+            Http::get("https://jsonplaceholder.typicode.com/posts/{$i}")->wait();
         }
         $sequentialDuration = microtime(true) - $sequentialStart;
 
@@ -961,7 +961,7 @@ describe('Concurrency Performance Tests with Mocks using Http Facade', function 
         }
 
         $concurrentStart = microtime(true);
-        Promise::all($promises)->await();
+        Promise::all($promises)->wait();
         $concurrentDuration = microtime(true) - $concurrentStart;
 
         expect($concurrentDuration)->toBeLessThan($sequentialDuration);
@@ -987,7 +987,7 @@ describe('Concurrency Performance Tests with Mocks using Http Facade', function 
         }
 
         $start = microtime(true);
-        $results = Promise::batch($tasks, 5, 5)->await();
+        $results = Promise::batch($tasks, 5, 5)->wait();
         $duration = microtime(true) - $start;
 
         expect($results)->toHaveCount(20)
@@ -1035,7 +1035,7 @@ describe('Complex Concurrent Workflows with Mocks using Http Facade', function (
             ->register()
         ;
 
-        $userResponse = Http::get('https://jsonplaceholder.typicode.com/users/1')->await();
+        $userResponse = Http::get('https://jsonplaceholder.typicode.com/users/1')->wait();
         $userId = $userResponse->json('id');
 
         $promises = [
@@ -1044,7 +1044,7 @@ describe('Complex Concurrent Workflows with Mocks using Http Facade', function (
             'albums' => Http::get("https://jsonplaceholder.typicode.com/albums?userId={$userId}"),
         ];
 
-        $results = Promise::all($promises)->await();
+        $results = Promise::all($promises)->wait();
 
         expect($results)->toHaveCount(3)
             ->and($results['posts']->json())->toBeArray()
@@ -1080,7 +1080,7 @@ describe('Complex Concurrent Workflows with Mocks using Http Facade', function (
             $promises[] = Http::post('https://jsonplaceholder.typicode.com/posts', $post);
         }
 
-        $results = Promise::all($promises)->await();
+        $results = Promise::all($promises)->wait();
 
         expect($results)->toHaveCount(3);
 
@@ -1119,7 +1119,7 @@ describe('Complex Concurrent Workflows with Mocks using Http Facade', function (
             Http::get('https://jsonplaceholder.typicode.com/comments/1'),
         ];
 
-        $winner = Promise::race($promises)->await();
+        $winner = Promise::race($promises)->wait();
 
         expect($winner->successful())->toBeTrue()
             ->and($winner->json())->toHaveKey('id')
@@ -1162,7 +1162,7 @@ describe('Error Handling with Concurrent Requests', function () {
             Http::get('https://api.example.com/endpoint4'),
         ];
 
-        $results = Promise::allSettled($promises)->await();
+        $results = Promise::allSettled($promises)->wait();
 
         expect($results)->toHaveCount(4);
 
@@ -1202,7 +1202,7 @@ describe('Error Handling with Concurrent Requests', function () {
             fn () => Http::retry(5, 0.01)->get('https://api.example.com/retry3'),
         ];
 
-        $results = Promise::concurrent($tasks, 3)->await();
+        $results = Promise::concurrent($tasks, 3)->wait();
 
         expect($results)->toHaveCount(3);
 
@@ -1238,7 +1238,7 @@ describe('Error Handling with Concurrent Requests', function () {
             'normal' => Http::timeout(10)->get('https://api.example.com/normal'),
         ];
 
-        $results = Promise::allSettled($promises)->await();
+        $results = Promise::allSettled($promises)->wait();
 
         expect($results)->toHaveCount(3);
         expect($results['fast']['status'])->toBe('fulfilled');
@@ -1280,7 +1280,7 @@ describe('Advanced Promise Patterns with Mocks', function () {
             ->register()
         ;
 
-        $user = Http::get('https://api.example.com/user/1')->await();
+        $user = Http::get('https://api.example.com/user/1')->wait();
         $companyId = $user->json('companyId');
 
         $promises = [
@@ -1288,7 +1288,7 @@ describe('Advanced Promise Patterns with Mocks', function () {
             'employees' => Http::get("https://api.example.com/company/{$companyId}/employees"),
         ];
 
-        $results = Promise::all($promises)->await();
+        $results = Promise::all($promises)->wait();
 
         expect($results['company']->json('name'))->toBe('Acme Corp')
             ->and($results['employees']->json())->toHaveCount(3)
@@ -1324,7 +1324,7 @@ describe('Advanced Promise Patterns with Mocks', function () {
             Http::get('https://server3.example.com/data'),
         ];
 
-        $fastest = Promise::race($promises)->await();
+        $fastest = Promise::race($promises)->wait();
 
         expect($fastest->successful())->toBeTrue()
             ->and($fastest->json('data'))->toBe('result')
@@ -1358,7 +1358,7 @@ describe('Advanced Promise Patterns with Mocks', function () {
         }
 
         // Fan-out: get list of items
-        $items = Http::get('https://api.example.com/items')->await();
+        $items = Http::get('https://api.example.com/items')->wait();
         $itemIds = array_column($items->json(), 'id');
 
         // Fan-out: fetch details for all items concurrently
@@ -1368,7 +1368,7 @@ describe('Advanced Promise Patterns with Mocks', function () {
         }
 
         // Fan-in: collect all results
-        $details = Promise::all($detailPromises)->await();
+        $details = Promise::all($detailPromises)->wait();
 
         expect($details)->toHaveCount(3);
         foreach ($details as $id => $detail) {

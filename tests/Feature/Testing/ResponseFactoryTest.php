@@ -42,7 +42,7 @@ describe('StandardResponseFactory', function () {
         $mock->shouldReceive('getHeaders')->andReturn(['Content-Type' => 'application/json']);
 
         $promise = $factory->create($mock);
-        $response = $promise->await();
+        $response = $promise->wait();
 
         expect($response)->toBeInstanceOf(Response::class)
             ->and($response->body())->toBe('test body')
@@ -63,7 +63,7 @@ describe('StandardResponseFactory', function () {
 
         $promise = $factory->create($mock);
 
-        expect(fn () => $promise->await())
+        expect(fn () => $promise->wait())
             ->toThrow(NetworkException::class, 'Custom error message')
         ;
     });
@@ -78,7 +78,7 @@ describe('StandardResponseFactory', function () {
 
         $promise = $factory->create($mock);
 
-        expect(fn () => $promise->await())
+        expect(fn () => $promise->wait())
             ->toThrow(NetworkException::class)
         ;
     });
@@ -93,7 +93,7 @@ describe('StandardResponseFactory', function () {
 
         $promise = $factory->create($mock);
 
-        expect(fn () => $promise->await())
+        expect(fn () => $promise->wait())
             ->toThrow(NetworkException::class)
         ;
     });
@@ -127,7 +127,7 @@ describe('StandardResponseFactory', function () {
 
         $startTime = microtime(true);
         $promise = $factory->create($mock);
-        $response = $promise->await();
+        $response = $promise->wait();
         $duration = microtime(true) - $startTime;
 
         expect($response->body())->toBe('delayed response')
@@ -150,7 +150,7 @@ describe('StandardResponseFactory', function () {
 
         $startTime = microtime(true);
         $promise = $factory->create($mock);
-        $response = $promise->await();
+        $response = $promise->wait();
         $duration = microtime(true) - $startTime;
 
         expect($response->body())->toBe('response')
@@ -177,7 +177,7 @@ describe('DownloadResponseFactory', function () {
 
         $destination = $tempDir . '/test.txt';
         $promise = $factory->create($mock, $destination, $fileManager);
-        $result = $promise->await();
+        $result = $promise->wait();
 
         expect($result)->toBeArray()
             ->and($result['file'])->toBe($destination)
@@ -209,7 +209,7 @@ describe('DownloadResponseFactory', function () {
 
         $destination = $tempDir . '/nested/dir/file.txt';
         $promise = $factory->create($mock, $destination, $fileManager);
-        $promise->await();
+        $promise->wait();
 
         expect(is_dir($tempDir . '/nested/dir'))->toBeTrue()
             ->and(file_exists($destination))->toBeTrue()
@@ -233,7 +233,7 @@ describe('DownloadResponseFactory', function () {
         $destination = $tempDir . '/test.txt';
         $promise = $factory->create($mock, $destination, $fileManager);
 
-        expect(fn () => $promise->await())
+        expect(fn () => $promise->wait())
             ->toThrow(NetworkException::class)
         ;
 
@@ -257,7 +257,7 @@ describe('DownloadResponseFactory', function () {
         $destination = $tempDir . '/test.txt';
         $promise = $factory->create($mock, $destination, $fileManager);
 
-        expect(fn () => $promise->await())
+        expect(fn () => $promise->wait())
             ->toThrow(NetworkException::class, 'Download failed')
         ;
 
@@ -304,7 +304,7 @@ describe('DownloadResponseFactory', function () {
 
         $destination = $tempDir . '/tracked/file.txt';
         $promise = $factory->create($mock, $destination, $fileManager);
-        $promise->await();
+        $promise->wait();
 
         expect(file_exists($destination))->toBeTrue();
 
@@ -336,7 +336,7 @@ describe('StreamingResponseFactory', function () {
         $createStream = fn ($body) => $stream;
 
         $promise = $factory->create($mock, null, $createStream);
-        $response = $promise->await();
+        $response = $promise->wait();
 
         expect($response)->toBeInstanceOf(StreamingResponse::class)
             ->and($response->status())->toBe(200)
@@ -366,7 +366,7 @@ describe('StreamingResponseFactory', function () {
         $createStream = fn ($body) => $stream;
 
         $promise = $factory->create($mock, $onChunk, $createStream);
-        $promise->await();
+        $promise->wait();
 
         expect($chunks)->toBe(['chunk1', 'chunk2', 'chunk3']);
     });
@@ -393,7 +393,7 @@ describe('StreamingResponseFactory', function () {
         $createStream = fn ($body) => $stream;
 
         $promise = $factory->create($mock, $onChunk, $createStream);
-        $promise->await();
+        $promise->wait();
 
         expect($chunks)->toBe(['single chunk']);
     });
@@ -411,7 +411,7 @@ describe('StreamingResponseFactory', function () {
 
         $promise = $factory->create($mock, null, $createStream);
 
-        expect(fn () => $promise->await())
+        expect(fn () => $promise->wait())
             ->toThrow(HttpException::class)
         ;
     });
@@ -431,7 +431,7 @@ describe('StreamingResponseFactory', function () {
 
         $promise = $factory->create($mock, null, $createStream);
 
-        expect(fn () => $promise->await())
+        expect(fn () => $promise->wait())
             ->toThrow(HttpException::class, 'Stream error')
         ;
     });
@@ -471,7 +471,7 @@ describe('StreamingResponseFactory', function () {
         $createStream = fn ($body) => $stream;
 
         $promise = $factory->create($mock, null, $createStream);
-        $response = $promise->await();
+        $response = $promise->wait();
 
         expect($response)->toBeInstanceOf(StreamingResponse::class);
     });
@@ -494,7 +494,7 @@ describe('RetryableResponseFactory', function () {
         $mockProvider = fn ($attempt) => $mock;
 
         $promise = $factory->create($retryConfig, $mockProvider);
-        $response = $promise->await();
+        $response = $promise->wait();
 
         expect($response)->toBeInstanceOf(Response::class)
             ->and($response->body())->toBe('success')
@@ -541,7 +541,7 @@ describe('RetryableResponseFactory', function () {
         };
 
         $promise = $factory->create($retryConfig, $mockProvider);
-        $response = $promise->await();
+        $response = $promise->wait();
 
         expect($response)->toBeInstanceOf(Response::class)
             ->and($attemptCount)->toBe(3)
@@ -574,7 +574,7 @@ describe('RetryableResponseFactory', function () {
         };
 
         $promise = $factory->create($retryConfig, $mockProvider);
-        $response = $promise->await();
+        $response = $promise->wait();
 
         expect($response->status())->toBe(200)
             ->and($attemptCount)->toBe(3)
@@ -611,7 +611,7 @@ describe('RetryableResponseFactory', function () {
         };
 
         $promise = $factory->create($retryConfig, $mockProvider);
-        $response = $promise->await();
+        $response = $promise->wait();
 
         expect($response->status())->toBe(200)
             ->and($attemptCount)->toBe(3)
@@ -641,7 +641,7 @@ describe('RetryableResponseFactory', function () {
 
         $promise = $factory->create($retryConfig, $mockProvider);
 
-        expect(fn () => $promise->await())
+        expect(fn () => $promise->wait())
             ->toThrow(NetworkException::class, 'HTTP Request failed after 4 attempt(s)')
         ;
     });
@@ -668,7 +668,7 @@ describe('RetryableResponseFactory', function () {
 
         $promise = $factory->create($retryConfig, $mockProvider);
 
-        expect(fn () => $promise->await())
+        expect(fn () => $promise->wait())
             ->toThrow(NetworkException::class, 'HTTP Request failed after 1 attempt(s): Fatal error')
         ;
     });
@@ -694,7 +694,7 @@ describe('RetryableResponseFactory', function () {
 
         $promise = $factory->create($retryConfig, $mockProvider);
 
-        expect(fn () => $promise->await())
+        expect(fn () => $promise->wait())
             ->toThrow(NetworkException::class, 'HTTP Request failed after 1 attempt(s): Mock responded with status 404')
         ;
     });
@@ -757,7 +757,7 @@ describe('RetryableResponseFactory', function () {
 
         $startTime = microtime(true);
         $promise = $factory->create($retryConfig, $mockProvider);
-        $response = $promise->await();
+        $response = $promise->wait();
         $duration = microtime(true) - $startTime;
 
         // Total delay should be: 0.02 + 0.04 + 0.08 = 0.14
@@ -777,7 +777,7 @@ describe('RetryableResponseFactory', function () {
 
         $promise = $factory->create($retryConfig, $mockProvider);
 
-        expect(fn () => $promise->await())
+        expect(fn () => $promise->wait())
             ->toThrow(Exception::class, 'Mock provider error: Provider error')
         ;
     });
@@ -792,7 +792,7 @@ describe('RetryableResponseFactory', function () {
 
         $promise = $factory->create($retryConfig, $mockProvider);
 
-        expect(fn () => $promise->await())
+        expect(fn () => $promise->wait())
             ->toThrow(Exception::class, 'Mock provider must return a MockedRequest instance')
         ;
     });
@@ -819,7 +819,7 @@ describe('RetryableResponseFactory', function () {
 
         $promise = $factory->create($retryConfig, $mockProvider);
 
-        expect(fn () => $promise->await())
+        expect(fn () => $promise->wait())
             ->toThrow(NetworkException::class)
             ->and($attemptCount)->toBeGreaterThan(1)
         ;

@@ -19,7 +19,7 @@ describe('AssertsRequests', function () {
             ->register()
         ;
 
-        $handler->fetch('https://example.com/api')->await();
+        $handler->fetch('https://example.com/api')->wait();
 
         expect(fn () => $handler->assertRequestMade('GET', 'https://example.com/api'))
             ->not->toThrow(AssertionFailedError::class)
@@ -46,7 +46,7 @@ describe('AssertsRequests', function () {
         $handler = testingHttpHandler();
 
         $handler->mock('GET')->url('https://example.com')->respondWithStatus(200)->register();
-        $handler->fetch('https://example.com')->await();
+        $handler->fetch('https://example.com')->wait();
 
         expect(fn () => $handler->assertNoRequestsMade())
             ->toThrow(AssertionFailedError::class, 'Expected no requests, but 1 were made')
@@ -59,8 +59,8 @@ describe('AssertsRequests', function () {
         $handler->mock('GET')->url('https://example.com/1')->respondWithStatus(200)->register();
         $handler->mock('GET')->url('https://example.com/2')->respondWithStatus(200)->register();
 
-        $handler->fetch('https://example.com/1')->await();
-        $handler->fetch('https://example.com/2')->await();
+        $handler->fetch('https://example.com/1')->wait();
+        $handler->fetch('https://example.com/2')->wait();
 
         expect(fn () => $handler->assertRequestCount(2))
             ->not->toThrow(AssertionFailedError::class)
@@ -71,7 +71,7 @@ describe('AssertsRequests', function () {
         $handler = testingHttpHandler();
 
         $handler->mock('GET')->url('https://example.com')->respondWithStatus(200)->register();
-        $handler->fetch('https://example.com')->await();
+        $handler->fetch('https://example.com')->wait();
 
         expect(fn () => $handler->assertRequestCount(2))
             ->toThrow(AssertionFailedError::class, 'Expected 2 requests, but 1 were made')
@@ -84,8 +84,8 @@ describe('AssertsRequests', function () {
         $handler->mock('GET')->url('https://example.com/1')->respondWithStatus(200)->register();
         $handler->mock('GET')->url('https://example.com/2')->respondWithStatus(200)->register();
 
-        $handler->fetch('https://example.com/1')->await();
-        $handler->fetch('https://example.com/2')->await();
+        $handler->fetch('https://example.com/1')->wait();
+        $handler->fetch('https://example.com/2')->wait();
 
         $lastRequest = $handler->getLastRequest();
 
@@ -100,8 +100,8 @@ describe('AssertsRequests', function () {
         $handler->mock('GET')->url('https://example.com/1')->respondWithStatus(200)->register();
         $handler->mock('GET')->url('https://example.com/2')->respondWithStatus(200)->register();
 
-        $handler->fetch('https://example.com/1')->await();
-        $handler->fetch('https://example.com/2')->await();
+        $handler->fetch('https://example.com/1')->wait();
+        $handler->fetch('https://example.com/2')->wait();
 
         $firstRequest = $handler->getRequest(0);
 

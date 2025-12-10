@@ -12,9 +12,9 @@ use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Testing\Utilities\FileManager;
 use Hibla\HttpClient\Testing\Utilities\Handlers\DelayCalculator;
 use Hibla\HttpClient\Testing\Utilities\Handlers\NetworkSimulationHandler;
-use Hibla\Promise\CancellablePromise;
+use Hibla\Promise\Interfaces\PromiseInterface;
 
-use Hibla\Promise\Interfaces\CancellablePromiseInterface;
+use Hibla\Promise\Promise;
 
 class DownloadResponseFactory
 {
@@ -30,15 +30,15 @@ class DownloadResponseFactory
     /**
      * Creates a download response with the given configuration.
      *
-     * @return CancellablePromiseInterface<array{file: string, status: int, headers: array<string, string>, size: int, protocol_version: string}>
+     * @return PromiseInterface<array{file: string, status: int, headers: array<string, string>, size: int, protocol_version: string}>
      */
     public function create(
         MockedRequest $mock,
         string $destination,
         FileManager $fileManager
-    ): CancellablePromiseInterface {
-        /** @var CancellablePromise<array{file: string, status: int, headers: array<string, string>, size: int, protocol_version: string}> $promise */
-        $promise = new CancellablePromise();
+    ): PromiseInterface {
+        /** @var Promise<array{file: string, status: int, headers: array<string, string>, size: int, protocol_version: string}> $promise */
+        $promise = new Promise();
 
         $networkConditions = $this->networkHandler->simulate();
         $globalDelay = $this->networkHandler->generateGlobalRandomDelay();
@@ -50,7 +50,7 @@ class DownloadResponseFactory
 
         $delayPromise = delay($totalDelay);
 
-        $promise->setCancelHandler(function () use ($delayPromise) {
+        $promise->onCancel(function () use ($delayPromise) {
             $delayPromise->cancel();
         });
 

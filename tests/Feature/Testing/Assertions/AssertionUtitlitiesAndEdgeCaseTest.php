@@ -8,7 +8,7 @@ describe('Edge Cases', function () {
     test('assertions work with wildcards in URLs', function () {
         $handler = testingHttpHandler();
         $handler->mock('GET')->url('https://example.com/api/users/123')->respondWithStatus(200)->register();
-        $handler->fetch('https://example.com/api/users/123')->await();
+        $handler->fetch('https://example.com/api/users/123')->wait();
 
         expect(fn () => $handler->assertRequestMatchingUrl('GET', 'https://example.com/api/users/*'))
             ->not->toThrow(AssertionFailedError::class)
@@ -18,7 +18,7 @@ describe('Edge Cases', function () {
     test('assertions handle case-insensitive HTTP methods', function () {
         $handler = testingHttpHandler();
         $handler->mock('POST')->url('https://example.com')->respondWithStatus(200)->register();
-        $handler->fetch('https://example.com', ['method' => 'post'])->await();
+        $handler->fetch('https://example.com', ['method' => 'post'])->wait();
 
         expect(fn () => $handler->assertRequestMade('POST', 'https://example.com'))
             ->not->toThrow(AssertionFailedError::class)
@@ -38,9 +38,9 @@ describe('Edge Cases', function () {
         $handler = testingHttpHandler();
         $handler->mock('GET')->url('https://example.com')->respondWithStatus(200)->register();
 
-        $handler->fetch('https://example.com')->await();
-        $handler->fetch('https://example.com')->await();
-        $handler->fetch('https://example.com')->await();
+        $handler->fetch('https://example.com')->wait();
+        $handler->fetch('https://example.com')->wait();
+        $handler->fetch('https://example.com')->wait();
 
         expect(fn () => $handler->assertRequestCount(3))
             ->not->toThrow(AssertionFailedError::class)
@@ -62,7 +62,7 @@ describe('Edge Cases', function () {
                 ],
             ]),
             'headers' => ['Content-Type' => 'application/json'],
-        ])->await();
+        ])->wait();
 
         expect(fn () => $handler->assertRequestJsonPath('POST', 'https://example.com', 'user.profile.name', 'John'))
             ->not->toThrow(AssertionFailedError::class)
@@ -75,7 +75,7 @@ describe('Edge Cases', function () {
 
         $handler->fetch('https://example.com', [
             'headers' => ['Accept' => ['application/json', 'text/html']],
-        ])->await();
+        ])->wait();
 
         $request = $handler->getLastRequest();
         expect($request)->not->toBeNull();
@@ -90,7 +90,7 @@ describe('Edge Cases', function () {
             ->register()
         ;
 
-        $result = $handler->download('https://example.com/file.txt')->await();
+        $result = $handler->download('https://example.com/file.txt')->wait();
 
         expect($result['file'])->toBeString()
             ->and(file_exists($result['file']))->toBeTrue()
@@ -105,7 +105,7 @@ describe('Edge Cases', function () {
         $chunks = [];
         $handler->stream('https://example.com/stream', [], function ($chunk) use (&$chunks) {
             $chunks[] = $chunk;
-        })->await();
+        })->wait();
 
         expect(fn () => $handler->assertStreamWithCallback('https://example.com/stream'))
             ->not->toThrow(AssertionFailedError::class)
@@ -121,7 +121,7 @@ describe('Edge Cases', function () {
             ->register()
         ;
 
-        $handler->sse('https://example.com/events/stream-123')->await();
+        $handler->sse('https://example.com/events/stream-123')->wait();
 
         expect(fn () => $handler->assertSSEConnectionMade('https://example.com/events/*'))
             ->not->toThrow(AssertionFailedError::class)
@@ -141,7 +141,7 @@ describe('Debugging Helpers', function () {
                 'X-Custom' => 'header-value',
                 'Content-Type' => 'application/json',
             ],
-        ])->await();
+        ])->wait();
 
         ob_start();
         $handler->dumpLastRequest();
@@ -158,7 +158,7 @@ describe('Debugging Helpers', function () {
     test('dumpDownloads outputs download information', function () {
         $handler = testingHttpHandler();
         $handler->mock('GET')->url('https://example.com/file.txt')->respondWithStatus(200)->register();
-        $handler->download('https://example.com/file.txt')->await();
+        $handler->download('https://example.com/file.txt')->wait();
 
         ob_start();
         $handler->dumpDownloads();
@@ -173,7 +173,7 @@ describe('Debugging Helpers', function () {
     test('dumpStreams outputs stream information', function () {
         $handler = testingHttpHandler();
         $handler->mock('GET')->url('https://example.com/stream')->respondWithStatus(200)->register();
-        $handler->stream('https://example.com/stream')->await();
+        $handler->stream('https://example.com/stream')->wait();
 
         ob_start();
         $handler->dumpStreams();
@@ -190,8 +190,8 @@ describe('Debugging Helpers', function () {
         $handler->mock('GET')->url('https://example.com/1')->respondWithStatus(200)->register();
         $handler->mock('POST')->url('https://example.com/2')->respondWithStatus(200)->register();
 
-        $handler->fetch('https://example.com/1')->await();
-        $handler->fetch('https://example.com/2', ['method' => 'POST'])->await();
+        $handler->fetch('https://example.com/1')->wait();
+        $handler->fetch('https://example.com/2', ['method' => 'POST'])->wait();
 
         ob_start();
         $handler->dumpRequestsByMethod('GET');

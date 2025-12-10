@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Hibla\HttpClient\SSE\SSEEvent;
 use Hibla\HttpClient\Testing\Utilities\Formatters\SSEEventFormatter;
 

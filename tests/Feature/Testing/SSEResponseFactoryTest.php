@@ -44,7 +44,7 @@ describe('SSEResponseFactory', function () {
             };
 
             $promise = $factory->create($mock, $onEvent, null);
-            $response = $promise->await();
+            $response = $promise->wait();
 
             expect($response)->toBeInstanceOf(SSEResponse::class);
             expect($response->getStatusCode())->toBe(200);
@@ -66,7 +66,7 @@ describe('SSEResponseFactory', function () {
 
             $promise = $factory->create($mock, null, $onError);
 
-            expect(fn () => $promise->await())
+            expect(fn () => $promise->wait())
                 ->toThrow(NetworkException::class) // Remove specific message check
             ;
             expect($errorCallbackCalled)->toBeTrue();
@@ -87,7 +87,7 @@ describe('SSEResponseFactory', function () {
 
             $promise = $factory->create($mock, null, $onError);
 
-            expect(fn () => $promise->await())
+            expect(fn () => $promise->wait())
                 ->toThrow(NetworkException::class)
             ;
             expect($errorCallbackCalled)->toBeTrue();
@@ -101,7 +101,7 @@ describe('SSEResponseFactory', function () {
             $mock->setStatusCode(200);
 
             $promise = $factory->create($mock, null, null);
-            $response = $promise->await();
+            $response = $promise->wait();
 
             expect($response)->toBeInstanceOf(SSEResponse::class);
         });
@@ -114,7 +114,7 @@ describe('SSEResponseFactory', function () {
             $mock->setStatusCode(200);
 
             $promise = $factory->create($mock, null, null);
-            $response = $promise->await();
+            $response = $promise->wait();
 
             expect($response)->toBeInstanceOf(SSEResponse::class);
         });
@@ -129,7 +129,7 @@ describe('SSEResponseFactory', function () {
 
             $startTime = microtime(true);
             $promise = $factory->create($mock, null, null);
-            $response = $promise->await();
+            $response = $promise->wait();
             $elapsed = microtime(true) - $startTime;
 
             expect($response)->toBeInstanceOf(SSEResponse::class);
@@ -145,7 +145,7 @@ describe('SSEResponseFactory', function () {
             $mock->addResponseHeader('X-Custom-Header', 'test-value');
 
             $promise = $factory->create($mock, null, null);
-            $response = $promise->await();
+            $response = $promise->wait();
 
             expect($response->getStatusCode())->toBe(201);
             $headers = $response->getHeaders();
@@ -182,7 +182,7 @@ describe('SSEResponseFactory', function () {
             };
 
             $promise = $factory->create($mock, $onEvent, null);
-            $response = $promise->await();
+            $response = $promise->wait();
 
             expect($response)->toBeInstanceOf(SSEResponse::class);
             expect($receivedEvents)->toHaveCount(3);
@@ -210,7 +210,7 @@ describe('SSEResponseFactory', function () {
             };
 
             $promise = $factory->create($mock, $onEvent, null);
-            $response = $promise->await();
+            $response = $promise->wait();
 
             expect($response)->toBeInstanceOf(SSEResponse::class);
             expect($receivedEvents)->toHaveCount(3);
@@ -229,7 +229,7 @@ describe('SSEResponseFactory', function () {
 
             $promise = $factory->create($mock, null, null);
 
-            expect(fn () => $promise->await())
+            expect(fn () => $promise->wait())
                 ->toThrow(NetworkException::class) // Remove specific message check
             ;
         });
@@ -248,7 +248,7 @@ describe('SSEResponseFactory', function () {
 
             $promise = $factory->create($mock, null, null);
 
-            expect(fn () => $promise->await())
+            expect(fn () => $promise->wait())
                 ->toThrow(NetworkException::class)
             ;
         });
@@ -271,7 +271,7 @@ describe('SSEResponseFactory', function () {
             };
 
             $promise = $factory->create($mock, null, $onError);
-            $response = $promise->await();
+            $response = $promise->wait();
 
             expect($response)->toBeInstanceOf(SSEResponse::class);
             expect($errorCalled)->toBeTrue();
@@ -297,7 +297,7 @@ describe('SSEResponseFactory', function () {
             };
 
             $promise = $factory->create($mock, $onEvent, null);
-            $response = $promise->await();
+            $response = $promise->wait();
 
             expect($response)->toBeInstanceOf(SSEResponse::class);
             expect($eventTimes)->toHaveCount(2);

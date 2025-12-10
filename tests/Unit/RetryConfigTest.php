@@ -36,7 +36,7 @@ test('isRetryableError identifies retryable exceptions', function () {
         retryableExceptions: ['Connection timed out', 'connection failed']
     );
 
-    expect($config->isRetryableError(new Exception('A connection failed unexpectedly.')))->toBeTrue();
-    expect($config->isRetryableError(new Exception('Error: Connection timed out.')))->toBeTrue();
-    expect($config->isRetryableError(new Exception('An unknown error occurred.')))->toBeFalse();
+    expect($config->isRetryableError('A connection failed unexpectedly.'))->toBeTrue();
+    expect($config->isRetryableError('Error: Connection timed out.'))->toBeTrue();
+    expect($config->isRetryableError('An unknown error occurred.'))->toBeFalse();
 });

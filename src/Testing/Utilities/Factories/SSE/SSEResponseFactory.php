@@ -13,8 +13,8 @@ use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Testing\Utilities\Formatters\SSEEventFormatter;
 use Hibla\HttpClient\Testing\Utilities\Handlers\DelayCalculator;
 use Hibla\HttpClient\Testing\Utilities\Handlers\NetworkSimulationHandler;
-use Hibla\Promise\CancellablePromise;
-use Hibla\Promise\Interfaces\CancellablePromiseInterface;
+use Hibla\Promise\Interfaces\PromiseInterface;
+use Hibla\Promise\Promise;
 use Throwable;
 
 class SSEResponseFactory
@@ -35,13 +35,13 @@ class SSEResponseFactory
     /**
      * Creates an SSE response with the given configuration.
      *
-     * @return CancellablePromiseInterface<SSEResponse>
+     * @return PromiseInterface<SSEResponse>
      */
     public function create(
         MockedRequest $mock,
         ?callable $onEvent,
         ?callable $onError
-    ): CancellablePromiseInterface {
+    ): PromiseInterface {
         if ($mock->hasStreamConfig()) {
             return $this->createPeriodicSSE($mock, $onEvent, $onError);
         }
@@ -50,15 +50,15 @@ class SSEResponseFactory
     }
 
     /**
-     * @return CancellablePromiseInterface<SSEResponse>
+     * @return PromiseInterface<SSEResponse>
      */
     private function createImmediateSSE(
         MockedRequest $mock,
         ?callable $onEvent,
         ?callable $onError
-    ): CancellablePromiseInterface {
-        /** @var CancellablePromise<SSEResponse> $promise */
-        $promise = new CancellablePromise();
+    ): PromiseInterface {
+        /** @var Promise<SSEResponse> $promise */
+        $promise = new Promise();
 
         $networkConditions = $this->networkHandler->simulate();
         $globalDelay = $this->networkHandler->generateGlobalRandomDelay();
@@ -71,7 +71,7 @@ class SSEResponseFactory
         /** @var string|null $timerId */
         $timerId = null;
 
-        $promise->setCancelHandler(function () use (&$timerId) {
+        $promise->onCancel(function () use (&$timerId) {
             if ($timerId !== null) {
                 Loop::cancelTimer($timerId);
             }
@@ -151,15 +151,15 @@ class SSEResponseFactory
     }
 
     /**
-     * @return CancellablePromiseInterface<SSEResponse>
+     * @return PromiseInterface<SSEResponse>
      */
     private function createPeriodicSSE(
         MockedRequest $mock,
         ?callable $onEvent,
         ?callable $onError
-    ): CancellablePromiseInterface {
-        /** @var CancellablePromise<SSEResponse> $promise */
-        $promise = new CancellablePromise();
+    ): PromiseInterface {
+        /** @var Promise<SSEResponse> $promise */
+        $promise = new Promise();
 
         $config = $mock->getSSEStreamConfig();
         if ($config === null) {
@@ -179,7 +179,7 @@ class SSEResponseFactory
         /** @var string|null $periodicTimerId */
         $periodicTimerId = null;
 
-        $promise->setCancelHandler(function () use (&$initialTimerId, &$periodicTimerId) {
+        $promise->onCancel(function () use (&$initialTimerId, &$periodicTimerId) {
             if ($initialTimerId !== null) {
                 Loop::cancelTimer($initialTimerId);
                 $initialTimerId = null;

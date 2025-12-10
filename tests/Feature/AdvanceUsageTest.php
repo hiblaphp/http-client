@@ -26,7 +26,7 @@ describe('Advanced Asynchronous Features', function () {
             Http::get('/posts/1'),
         ];
 
-        $results = Promise::all($promises)->await();
+        $results = Promise::all($promises)->wait();
 
         Http::assertRequestCount(3);
         expect($results[0]->json())->toBe(['id' => 1]);
@@ -41,7 +41,7 @@ describe('Advanced Asynchronous Features', function () {
 
         $timedPromise = Promise::timeout($promise, 0.1);
 
-        expect(fn () => $timedPromise->await())->toThrow(Exception::class);
+        expect(fn () => $timedPromise->wait())->toThrow(Exception::class);
 
         Http::assertRequestCount(1);
     });
@@ -53,7 +53,7 @@ describe('Advanced Asynchronous Features', function () {
             'method' => 'POST',
             'headers' => ['X-Is-Fetch' => 'true'],
             'body' => 'raw body',
-        ])->await();
+        ])->wait();
 
         Http::assertRequestMade('POST', '/fetch-test');
         Http::assertHeaderSent('X-Is-Fetch', 'true');

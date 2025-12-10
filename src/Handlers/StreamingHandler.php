@@ -9,8 +9,8 @@ use Hibla\HttpClient\Exceptions\HttpStreamException;
 use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Stream;
 use Hibla\HttpClient\StreamingResponse;
-use Hibla\Promise\CancellablePromise;
-use Hibla\Promise\Interfaces\CancellablePromiseInterface;
+use Hibla\Promise\Interfaces\PromiseInterface;
+use Hibla\Promise\Promise;
 
 /**
  * Handles non-blocking HTTP streaming operations with cancellation support.
@@ -20,12 +20,12 @@ class StreamingHandler
     /**
      * Creates a streaming HTTP request with optional real-time chunk processing.
      * @param array<int|string, mixed> $options
-     * @return CancellablePromiseInterface<StreamingResponse>
+     * @return PromiseInterface<StreamingResponse>
      */
-    public function streamRequest(string $url, array $options, ?callable $onChunk = null): CancellablePromiseInterface
+    public function streamRequest(string $url, array $options, ?callable $onChunk = null): PromiseInterface
     {
-        /** @var CancellablePromise<StreamingResponse> $promise */
-        $promise = new CancellablePromise();
+        /** @var Promise<StreamingResponse> $promise */
+        $promise = new Promise();
 
         $responseStream = fopen('php://temp', 'w+b');
         if ($responseStream === false) {
@@ -116,7 +116,7 @@ class StreamingHandler
             }
         );
 
-        $promise->setCancelHandler(function () use ($requestId, $responseStream): void {
+        $promise->onCancel(function () use ($requestId, $responseStream): void {
             Loop::cancelHttpRequest($requestId);
             if (is_resource($responseStream)) {
                 fclose($responseStream);
@@ -129,12 +129,12 @@ class StreamingHandler
     /**
      * Downloads a file asynchronously to a specified destination with cancellation support.
      * @param array<int|string, mixed> $options
-     * @return CancellablePromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}>
+     * @return PromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}>
      */
-    public function downloadFile(string $url, string $destination, array $options = []): CancellablePromiseInterface
+    public function downloadFile(string $url, string $destination, array $options = []): PromiseInterface
     {
-        /** @var CancellablePromise<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}> $promise */
-        $promise = new CancellablePromise();
+        /** @var Promise<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}> $promise */
+        $promise = new Promise();
 
         $file = fopen($destination, 'wb');
         if ($file === false) {
@@ -202,7 +202,7 @@ class StreamingHandler
             }
         );
 
-        $promise->setCancelHandler(function () use ($requestId, $file, $destination): void {
+        $promise->onCancel(function () use ($requestId, $file, $destination): void {
             Loop::cancelHttpRequest($requestId);
             if (is_resource($file)) {
                 fclose($file);

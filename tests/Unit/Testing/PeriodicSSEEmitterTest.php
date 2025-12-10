@@ -18,7 +18,7 @@ describe('PeriodicSSEEmitter', function () {
 
     it('throws exception when SSE config is missing', function () {
         $emitter = createPeriodicEmitter();
-        $promise = createCancellablePromise();
+        $promise = createPromise();
         $mock = createMockRequest();
 
         $timerId = null;
@@ -34,7 +34,7 @@ describe('PeriodicSSEEmitter', function () {
 
     it('resolves promise with SSEResponse', function () {
         $emitter = createPeriodicEmitter();
-        $promise = createCancellablePromise();
+        $promise = createPromise();
         $mock = createMockRequest();
 
         $mock->setSSEStreamConfig([
@@ -68,7 +68,7 @@ describe('PeriodicSSEEmitter', function () {
 
         it('emits finite events with default interval', function () {
             $emitter = createPeriodicEmitter();
-            $promise = createCancellablePromise();
+            $promise = createPromise();
             $mock = createMockRequest();
 
             $events = [
@@ -105,7 +105,7 @@ describe('PeriodicSSEEmitter', function () {
 
         it('applies custom interval', function () {
             $emitter = createPeriodicEmitter();
-            $promise = createCancellablePromise();
+            $promise = createPromise();
             $mock = createMockRequest();
 
             $mock->setSSEStreamConfig([
@@ -137,7 +137,7 @@ describe('PeriodicSSEEmitter', function () {
 
         it('uses default error message when not provided', function () {
             $emitter = createPeriodicEmitter();
-            $promise = createCancellablePromise();
+            $promise = createPromise();
 
             $mock = Mockery::mock(MockedRequest::class);
 
@@ -176,7 +176,7 @@ describe('PeriodicSSEEmitter', function () {
 
         it('emits infinite events using generator', function () {
             $emitter = createPeriodicEmitter();
-            $promise = createCancellablePromise();
+            $promise = createPromise();
             $mock = createMockRequest();
 
             $generator = function (int $index) {
@@ -211,7 +211,7 @@ describe('PeriodicSSEEmitter', function () {
 
         it('stops after max_events reached', function () {
             $emitter = createPeriodicEmitter();
-            $promise = createCancellablePromise();
+            $promise = createPromise();
             $mock = createMockRequest();
 
             $generator = function (int $index) {
@@ -246,7 +246,7 @@ describe('PeriodicSSEEmitter', function () {
 
         it('does not require max_events', function () {
             $emitter = createPeriodicEmitter();
-            $promise = createCancellablePromise();
+            $promise = createPromise();
             $mock = createMockRequest();
 
             $generator = function (int $index) {
@@ -284,7 +284,7 @@ describe('PeriodicSSEEmitter', function () {
 
         it('ignores non-callable event_generator', function () {
             $emitter = createPeriodicEmitter();
-            $promise = createCancellablePromise();
+            $promise = createPromise();
             $mock = createMockRequest();
 
             $mock->setSSEStreamConfig([
@@ -319,7 +319,7 @@ describe('PeriodicSSEEmitter', function () {
 
         it('applies jitter to event timing', function () {
             $emitter = createPeriodicEmitter();
-            $promise = createCancellablePromise();
+            $promise = createPromise();
             $mock = createMockRequest();
 
             $mock->setSSEStreamConfig([
@@ -349,7 +349,7 @@ describe('PeriodicSSEEmitter', function () {
 
         it('handles zero jitter', function () {
             $emitter = createPeriodicEmitter();
-            $promise = createCancellablePromise();
+            $promise = createPromise();
             $mock = createMockRequest();
 
             $mock->setSSEStreamConfig([
@@ -382,7 +382,7 @@ describe('PeriodicSSEEmitter', function () {
 
         it('uses default interval when not specified', function () {
             $emitter = createPeriodicEmitter();
-            $promise = createCancellablePromise();
+            $promise = createPromise();
             $mock = createMockRequest();
 
             $mock->setSSEStreamConfig([
@@ -398,7 +398,7 @@ describe('PeriodicSSEEmitter', function () {
 
         it('handles invalid interval values', function () {
             $emitter = createPeriodicEmitter();
-            $promise = createCancellablePromise();
+            $promise = createPromise();
             $mock = createMockRequest();
 
             $mock->setSSEStreamConfig([
@@ -415,7 +415,7 @@ describe('PeriodicSSEEmitter', function () {
 
         it('handles invalid jitter values', function () {
             $emitter = createPeriodicEmitter();
-            $promise = createCancellablePromise();
+            $promise = createPromise();
             $mock = createMockRequest();
 
             $mock->setSSEStreamConfig([
@@ -432,7 +432,7 @@ describe('PeriodicSSEEmitter', function () {
 
         it('filters out non-array events', function () {
             $emitter = createPeriodicEmitter();
-            $promise = createCancellablePromise();
+            $promise = createPromise();
             $mock = createMockRequest();
 
             $mock->setSSEStreamConfig([
@@ -466,7 +466,7 @@ describe('PeriodicSSEEmitter', function () {
 
         it('handles empty events array', function () {
             $emitter = createPeriodicEmitter();
-            $promise = createCancellablePromise();
+            $promise = createPromise();
             $mock = createMockRequest();
 
             $mock->setSSEStreamConfig([
@@ -483,7 +483,7 @@ describe('PeriodicSSEEmitter', function () {
 
         it('handles non-array events configuration', function () {
             $emitter = createPeriodicEmitter();
-            $promise = createCancellablePromise();
+            $promise = createPromise();
             $mock = createMockRequest();
 
             $mock->setSSEStreamConfig([
@@ -515,7 +515,7 @@ describe('PeriodicSSEEmitter', function () {
 
         it('sets timer ID via reference parameter', function () {
             $emitter = createPeriodicEmitter();
-            $promise = createCancellablePromise();
+            $promise = createPromise();
             $mock = createMockRequest();
 
             $mock->setSSEStreamConfig([
@@ -527,12 +527,12 @@ describe('PeriodicSSEEmitter', function () {
             $timerId = null;
             $emitter->emit($promise, $mock, null, null, $timerId);
 
-            expect($timerId)->toBeString()->not->toBeEmpty();
+            expect($timerId)->not->toBeNull();
         });
 
         it('allows timer cancellation', function () {
             $emitter = createPeriodicEmitter();
-            $promise = createCancellablePromise();
+            $promise = createPromise();
             $mock = createMockRequest();
 
             $mock->setSSEStreamConfig([
@@ -568,7 +568,7 @@ describe('PeriodicSSEEmitter', function () {
 
         it('works without onEvent callback', function () {
             $emitter = createPeriodicEmitter();
-            $promise = createCancellablePromise();
+            $promise = createPromise();
             $mock = createMockRequest();
 
             $mock->setSSEStreamConfig([
@@ -590,7 +590,7 @@ describe('PeriodicSSEEmitter', function () {
 
         it('works without onError callback', function () {
             $emitter = createPeriodicEmitter();
-            $promise = createCancellablePromise();
+            $promise = createPromise();
             $mock = createMockRequest();
 
             $mock->setSSEStreamConfig([

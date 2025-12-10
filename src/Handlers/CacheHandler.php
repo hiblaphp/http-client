@@ -8,10 +8,9 @@ use Hibla\HttpClient\CacheConfig;
 use Hibla\HttpClient\GlobalConfig;
 use Hibla\HttpClient\Response;
 use Hibla\HttpClient\RetryConfig;
-use Hibla\HttpClient\Traits\CancellablePromiseTrait;
-use Hibla\Promise\Interfaces\CancellablePromiseInterface;
+use Hibla\Promise\Interfaces\PromiseInterface;
+use Hibla\Promise\Promise;
 use Psr\SimpleCache\CacheInterface;
-use Rcalicdan\ConfigLoader\Config;
 use RuntimeException;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\Cache\Psr16Cache;
@@ -24,8 +23,6 @@ use Symfony\Component\Cache\Psr16Cache;
  */
 class CacheHandler
 {
-    use CancellablePromiseTrait;
-
     private static ?CacheInterface $defaultCache = null;
     private RetryHandler $retryHandler;
     private RequestExecutorHandler $requestExecutor;
@@ -43,14 +40,14 @@ class CacheHandler
      * @param array<int|string, mixed> $curlOptions cURL options.
      * @param CacheConfig $cacheConfig Cache configuration.
      * @param RetryConfig|null $retryConfig Optional retry configuration.
-     * @return CancellablePromiseInterface<Response>
+     * @return PromiseInterface<Response>
      */
     public function execute(
         string $url,
         array $curlOptions,
         CacheConfig $cacheConfig,
         ?RetryConfig $retryConfig = null
-    ): CancellablePromiseInterface {
+    ): PromiseInterface {
         if (($curlOptions[CURLOPT_CUSTOMREQUEST] ?? 'GET') !== 'GET') {
             return $this->executeRequest($url, $curlOptions, $retryConfig);
         }
@@ -66,12 +63,12 @@ class CacheHandler
             $result = $cache->get($cacheKey);
             $cachedItem = $result;
         } catch (\Throwable $e) {
-            $this->rejected($e);
+            return Promise::rejected($e);
         }
 
         if ($this->isCachedItemValid($cachedItem)) {
             /** @var array{body: string, status: int, headers: array<string, array<string>|string>, expires_at: int} $cachedItem */
-            return $this->resolved(
+            return Promise::resolved(
                 new Response($cachedItem['body'], $cachedItem['status'], $cachedItem['headers'])
             );
         }
@@ -102,9 +99,9 @@ class CacheHandler
      * @param string $url The target URL.
      * @param array<int|string, mixed> $curlOptions cURL options.
      * @param RetryConfig|null $retryConfig Optional retry configuration.
-     * @return CancellablePromiseInterface<Response>
+     * @return PromiseInterface<Response>
      */
-    private function executeRequest(string $url, array $curlOptions, ?RetryConfig $retryConfig): CancellablePromiseInterface
+    private function executeRequest(string $url, array $curlOptions, ?RetryConfig $retryConfig): PromiseInterface
     {
         if ($retryConfig !== null) {
             return $this->retryHandler->execute($url, $curlOptions, $retryConfig);

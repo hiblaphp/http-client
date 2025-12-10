@@ -9,8 +9,8 @@ use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Exceptions\TimeoutException;
 use Hibla\HttpClient\Response;
 use Hibla\HttpClient\Traits\NormalizeHeaderTrait;
-use Hibla\Promise\CancellablePromise;
-use Hibla\Promise\Interfaces\CancellablePromiseInterface;
+use Hibla\Promise\Interfaces\PromiseInterface;
+use Hibla\Promise\Promise;
 
 /**
  * Executes basic HTTP requests without any additional logic.
@@ -26,12 +26,12 @@ class RequestExecutorHandler
      *
      * @param string $url The target URL.
      * @param array<int|string, mixed> $curlOptions cURL options.
-     * @return CancellablePromiseInterface<Response>
+     * @return PromiseInterface<Response>
      */
-    public function execute(string $url, array $curlOptions): CancellablePromiseInterface
+    public function execute(string $url, array $curlOptions): PromiseInterface
     {
-        /** @var CancellablePromise<Response> $promise */
-        $promise = new CancellablePromise();
+        /** @var Promise<Response> $promise */
+        $promise = new Promise();
 
         $cookieJar = $curlOptions['_cookie_jar'] ?? null;
         unset($curlOptions['_cookie_jar']);
@@ -71,7 +71,7 @@ class RequestExecutorHandler
             }
         );
 
-        $promise->setCancelHandler(function () use ($requestId) {
+        $promise->onCancel(function () use ($requestId) {
             Loop::cancelHttpRequest($requestId);
         });
 

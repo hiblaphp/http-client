@@ -41,7 +41,7 @@ test('executes request with retry on first attempt success', function () {
         $retryConfig,
         'GET',
         $mocks
-    )->await();
+    )->wait();
 
     expect($result)->toBeInstanceOf(Response::class)
         ->and($result->body())->toBe('{"success": true}')
@@ -74,7 +74,7 @@ test('retries failed request until success', function () {
         $retryConfig,
         'GET',
         $mocks
-    )->await();
+    )->wait();
 
     expect($result->body())->toBe('{"retried": true}')
         ->and($mocks)->toBeEmpty()
@@ -101,7 +101,7 @@ test('exhausts all retry attempts and fails', function () {
         $retryConfig,
         'GET',
         $mocks
-    )->await();
+    )->wait();
 })->throws(MockException::class);
 
 test('persistent mock is not removed during retries', function () {
@@ -122,7 +122,7 @@ test('persistent mock is not removed during retries', function () {
         $retryConfig,
         'GET',
         $mocks
-    )->await();
+    )->wait();
 
     expect($result->body())->toBe('{"persistent": true}')
         ->and($mocks)->toHaveCount(1)
@@ -146,7 +146,7 @@ test('executeWithMockRetry handles basic request', function () {
         $retryConfig,
         'GET',
         $mocks
-    )->await();
+    )->wait();
 
     expect($result)->toBeInstanceOf(Response::class)
         ->and($result->body())->toBe('{"data": "value"}')
@@ -177,7 +177,7 @@ test('executeWithMockRetry handles download', function () {
         $mocks,
         null,
         $fileManager
-    )->await();
+    )->wait();
 
     expect($result)->toBeArray()
         ->and($result)->toHaveKey('file')
@@ -306,7 +306,7 @@ test('executeWithMockRetry handles streaming', function () {
         'GET',
         $mocks,
         $createStream
-    )->await();
+    )->wait();
 
     expect($result)->toBeInstanceOf(StreamingResponse::class)
         ->and($chunkReceived)->toBe('streaming content')
@@ -345,7 +345,7 @@ test('executeWithMockRetry retries download on failure', function () {
         $mocks,
         null,
         $fileManager
-    )->await();
+    )->wait();
 
     expect($result['status'])->toBe(200)
         ->and(file_get_contents($result['file']))->toBe('PDF content')
@@ -365,7 +365,7 @@ test('throws exception when no mock found during retry', function () {
         $retryConfig,
         'GET',
         $mocks
-    )->await();
+    )->wait();
 })->throws(MockException::class);
 
 test('records requests during retry attempts', function () {
@@ -396,7 +396,7 @@ test('records requests during retry attempts', function () {
         $retryConfig,
         'POST',
         $mocks
-    )->await();
+    )->wait();
 
     expect($result->status())->toBe(201)
         ->and($result->body())->toBe('{"created": true}')
@@ -428,7 +428,7 @@ test('executeWithMockRetry uses onChunk callback variant', function () {
         $retryConfig,
         'GET',
         $mocks
-    )->await();
+    )->wait();
 
     expect($result)->toBeInstanceOf(StreamingResponse::class)
         ->and($chunkData)->toBe('chunk data')
@@ -455,7 +455,7 @@ test('executeWithMockRetry creates temp file when download path not specified', 
         $retryConfig,
         'GET',
         $mocks
-    )->await();
+    )->wait();
 
     expect($result)->toBeArray()
         ->and($result)->toHaveKey('file')
@@ -487,7 +487,7 @@ test('handles mixed curl and string options', function () {
         $retryConfig,
         'POST',
         $mocks
-    )->await();
+    )->wait();
 
     expect($result->body())->toBe('{"mixed": true}');
 });
