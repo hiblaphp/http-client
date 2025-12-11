@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Handlers;
 
+use Hibla\HttpClient\Interfaces\CacheHandlerInterface;
+use Hibla\HttpClient\Interfaces\FetchHandlerInterface;
+use Hibla\HttpClient\Interfaces\RequestExecutorHandlerInterface;
+use Hibla\HttpClient\Interfaces\RetryHandlerInterface;
+use Hibla\HttpClient\Interfaces\SSEHandlerInterface;
+use Hibla\HttpClient\Interfaces\StreamingHandlerInterface;
 use Hibla\HttpClient\Response;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
 use Hibla\HttpClient\SSE\SSEResponse;
@@ -17,22 +23,22 @@ use Hibla\Promise\Interfaces\PromiseInterface;
  * This class provides a flexible, fetch-like interface for making HTTP requests
  * with support for streaming, downloads, retry logic, and caching.
  */
-class FetchHandler
+class FetchHandler implements FetchHandlerInterface
 {
     use FetchOptionTrait;
 
-    private StreamingHandler $streamingHandler;
-    private SSEHandler $sseHandler;
-    private RequestExecutorHandler $requestExecutor;
-    private RetryHandler $retryHandler;
-    private CacheHandler $cacheHandler;
+    private StreamingHandlerInterface $streamingHandler;
+    private SSEHandlerInterface $sseHandler;
+    private RequestExecutorHandlerInterface $requestExecutor;
+    private RetryHandlerInterface $retryHandler;
+    private CacheHandlerInterface $cacheHandler;
 
     public function __construct(
-        ?StreamingHandler $streamingHandler = null,
-        ?SSEHandler $sseHandler = null,
-        ?RequestExecutorHandler $requestExecutor = null,
-        ?RetryHandler $retryHandler = null,
-        ?CacheHandler $cacheHandler = null
+        ?StreamingHandlerInterface $streamingHandler = null,
+        ?SSEHandlerInterface $sseHandler = null,
+        ?RequestExecutorHandlerInterface $requestExecutor = null,
+        ?RetryHandlerInterface $retryHandler = null,
+        ?CacheHandlerInterface $cacheHandler = null
     ) {
         $this->streamingHandler = $streamingHandler ?? new StreamingHandler();
         $this->sseHandler = $sseHandler ?? new SSEHandler();

@@ -8,6 +8,7 @@ use Hibla\EventLoop\Loop;
 use Hibla\HttpClient\Exceptions\HttpStreamException;
 use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Exceptions\RequestException;
+use Hibla\HttpClient\Interfaces\SSEHandlerInterface;
 use Hibla\HttpClient\SSE\SSEConnectionState;
 use Hibla\HttpClient\SSE\SSEEvent;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
@@ -19,17 +20,10 @@ use Hibla\Promise\Promise;
 /**
  * Dedicated handler for Server-Sent Events (SSE) connections with reconnection support.
  */
-class SSEHandler
+class SSEHandler implements SSEHandlerInterface
 {
     /**
-     * Creates an SSE connection with optional reconnection logic.
-     *
-     * @param  string  $url  The SSE endpoint URL
-     * @param  array<int|string, mixed>  $options  cURL options
-     * @param  callable(SSEEvent): void|null  $onEvent  Optional callback for each SSE event
-     * @param  callable(string): void|null  $onError  Optional callback for connection errors
-     * @param  SSEReconnectConfig|null  $reconnectConfig  Optional reconnection configuration
-     * @return PromiseInterface<SSEResponse>
+     * {@inheritDoc}
      */
     public function connect(
         string $url,
@@ -209,7 +203,7 @@ class SSEHandler
         $curlOnlyOptions = array_filter($options, 'is_int', ARRAY_FILTER_USE_KEY);
 
         $existingHeaders = $curlOnlyOptions[CURLOPT_HTTPHEADER] ?? [];
-        if (! is_array($existingHeaders)) {
+        if (! \is_array($existingHeaders)) {
             $existingHeaders = [];
         }
 

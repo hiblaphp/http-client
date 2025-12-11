@@ -6,29 +6,19 @@ namespace Hibla\HttpClient\Handlers;
 
 use Hibla\EventLoop\Loop;
 use Hibla\HttpClient\Exceptions\NetworkException;
+use Hibla\HttpClient\Interfaces\RetryHandlerInterface;
 use Hibla\HttpClient\Response;
 use Hibla\HttpClient\RetryConfig;
 use Hibla\HttpClient\Traits\NormalizeHeaderTrait;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Hibla\Promise\Promise;
 
-/**
- * Handles HTTP requests with automatic retry logic.
- *
- * This handler wraps HTTP requests and automatically retries them based on
- * configurable retry policies when transient failures occur.
- */
-class RetryHandler
+class RetryHandler implements RetryHandlerInterface
 {
     use NormalizeHeaderTrait;
 
     /**
-     * Executes an HTTP request with retry logic.
-     *
-     * @param string $url The target URL.
-     * @param array<int|string, mixed> $curlOptions cURL options.
-     * @param RetryConfig $retryConfig Retry configuration.
-     * @return PromiseInterface<Response>
+     * {@inheritDoc}
      */
     public function execute(string $url, array $curlOptions, RetryConfig $retryConfig): PromiseInterface
     {
@@ -38,6 +28,8 @@ class RetryHandler
         $totalAttempts = 0;
         /** @var string|null $requestId */
         $requestId = null;
+        /** @var string|null $timerId */
+        $timerId = null;
 
         $cookieJar = $curlOptions['_cookie_jar'] ?? null;
         unset($curlOptions['_cookie_jar']);
@@ -55,25 +47,37 @@ class RetryHandler
             &$requestId,
             &$executeRequest,
             $cookieJar,
+            &$timerId,
         ) {
             $totalAttempts++;
 
             $requestId = Loop::addHttpRequest(
                 $url,
                 $curlOnlyOptions,
-                function (?string $error, ?string $responseBody, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $retryConfig, $promise, &$attempt, &$totalAttempts, &$executeRequest, $cookieJar) {
+                function (?string $error, ?string $responseBody, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $retryConfig, $promise, &$attempt, &$totalAttempts, &$executeRequest, $cookieJar, &$timerId) {
                     if ($promise->isCancelled()) {
                         return;
                     }
+                    
+                    // Cancel any pending timer if we're about to resolve/reject
+                    if ($timerId !== null) {
+                        Loop::cancelTimer($timerId);
+                        $timerId = null;
+                    }
 
                     $isRetryable = ($error !== null && $retryConfig->isRetryableError($error)) ||
-                        ($httpCode !== null && in_array($httpCode, $retryConfig->retryableStatusCodes, true));
+                        ($httpCode !== null && \in_array($httpCode, $retryConfig->retryableStatusCodes, true));
+
+
 
                     if ($isRetryable && $attempt < $retryConfig->maxRetries) {
                         $attempt++;
                         $delay = $retryConfig->getDelay($attempt);
-                        Loop::addTimer($delay, $executeRequest);
 
+                        $timerId = Loop::addTimer($delay, function () use ($executeRequest, &$timerId) {
+                            $timerId = null;
+                            $executeRequest();
+                        });
                         return;
                     }
 
@@ -108,9 +112,13 @@ class RetryHandler
 
         $executeRequest();
 
-        $promise->onCancel(function () use (&$requestId) {
+        $promise->onCancel(function () use (&$requestId, &$timerId) {
             if ($requestId !== null) {
                 Loop::cancelHttpRequest($requestId);
+            }
+
+            if ($timerId !== null) {
+                Loop::cancelTimer($timerId);
             }
         });
 

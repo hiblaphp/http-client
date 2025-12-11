@@ -6,6 +6,9 @@ namespace Hibla\HttpClient\Handlers;
 
 use Hibla\HttpClient\CacheConfig;
 use Hibla\HttpClient\GlobalConfig;
+use Hibla\HttpClient\Interfaces\CacheHandlerInterface;
+use Hibla\HttpClient\Interfaces\RequestExecutorHandlerInterface;
+use Hibla\HttpClient\Interfaces\RetryHandlerInterface;
 use Hibla\HttpClient\Response;
 use Hibla\HttpClient\RetryConfig;
 use Hibla\Promise\Interfaces\PromiseInterface;
@@ -21,26 +24,22 @@ use Symfony\Component\Cache\Psr16Cache;
  * This handler implements HTTP caching semantics including ETags,
  * Last-Modified headers, and Cache-Control directives.
  */
-class CacheHandler
+class CacheHandler implements CacheHandlerInterface
 {
     private static ?CacheInterface $defaultCache = null;
-    private RetryHandler $retryHandler;
-    private RequestExecutorHandler $requestExecutor;
+    private RetryHandlerInterface $retryHandler;
+    private RequestExecutorHandlerInterface $requestExecutor;
 
-    public function __construct(?RequestExecutorHandler $requestExecutor = null, ?RetryHandler $retryHandler = null)
-    {
+    public function __construct(
+        ?RequestExecutorHandlerInterface $requestExecutor = null,
+        ?RetryHandlerInterface $retryHandler = null
+    ) {
         $this->requestExecutor = $requestExecutor ?? new RequestExecutorHandler();
         $this->retryHandler = $retryHandler ?? new RetryHandler();
     }
 
     /**
-     * Executes an HTTP request with caching support.
-     *
-     * @param string $url The target URL.
-     * @param array<int|string, mixed> $curlOptions cURL options.
-     * @param CacheConfig $cacheConfig Cache configuration.
-     * @param RetryConfig|null $retryConfig Optional retry configuration.
-     * @return PromiseInterface<Response>
+     * {@inheritDoc}
      */
     public function execute(
         string $url,

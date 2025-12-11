@@ -496,7 +496,7 @@ class Http
             'dumpLastStream',
         ];
 
-        if (in_array($method, $assertionMethods, true)) {
+        if (\in_array($method, $assertionMethods, true)) {
             if (! self::$isTesting || self::$testingInstance === null) {
                 throw new \RuntimeException(
                     "Cannot call assertion method '{$method}' outside of testing mode. " .
@@ -511,7 +511,7 @@ class Http
         /** @var list<string> */
         $directMethods = ['fetch'];
 
-        if (in_array($method, $directMethods, true)) {
+        if (\in_array($method, $directMethods, true)) {
             /** @phpstan-ignore-next-line */
             return self::getInstance()->{$method}(...$arguments);
         }

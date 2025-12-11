@@ -6,7 +6,13 @@ namespace Hibla\HttpClient\Handlers;
 
 use Hibla\HttpClient\CacheConfig;
 use Hibla\HttpClient\Exceptions\HttpStreamException;
+use Hibla\HttpClient\Interfaces\CacheHandlerInterface;
 use Hibla\HttpClient\Interfaces\CookieJarInterface;
+use Hibla\HttpClient\Interfaces\FetchHandlerInterface;
+use Hibla\HttpClient\Interfaces\RequestExecutorHandlerInterface;
+use Hibla\HttpClient\Interfaces\RetryHandlerInterface;
+use Hibla\HttpClient\Interfaces\SSEHandlerInterface;
+use Hibla\HttpClient\Interfaces\StreamingHandlerInterface;
 use Hibla\HttpClient\Request;
 use Hibla\HttpClient\Response;
 use Hibla\HttpClient\RetryConfig;
@@ -28,24 +34,24 @@ use Hibla\Promise\Interfaces\PromiseInterface;
  */
 class HttpHandler
 {
-    protected StreamingHandler $streamingHandler;
-    protected FetchHandler $fetchHandler;
-    protected RequestExecutorHandler $requestExecutorHandler;
-    protected RetryHandler $retryHandler;
-    protected CacheHandler $cacheHandler;
-    protected SSEHandler $sseHandler;
+    protected StreamingHandlerInterface $streamingHandler;
+    protected FetchHandlerInterface $fetchHandler;
+    protected RequestExecutorHandlerInterface $requestExecutorHandler;
+    protected RetryHandlerInterface $retryHandler;
+    protected CacheHandlerInterface $cacheHandler;
+    protected SSEHandlerInterface $sseHandler;
     protected ?CookieJarInterface $defaultCookieJar = null;
 
     /**
      * Creates a new HttpHandler instance.
      */
     public function __construct(
-        ?StreamingHandler $streamingHandler = null,
-        ?FetchHandler $fetchHandler = null,
-        ?RequestExecutorHandler $requestExecutor = null,
-        ?RetryHandler $retryHandler = null,
-        ?CacheHandler $cacheHandler = null,
-        ?SSEHandler $sseHandler = null
+        ?StreamingHandlerInterface $streamingHandler = null,
+        ?FetchHandlerInterface $fetchHandler = null,
+        ?RequestExecutorHandlerInterface $requestExecutor = null,
+        ?RetryHandlerInterface $retryHandler = null,
+        ?CacheHandlerInterface $cacheHandler = null,
+        ?SSEHandlerInterface $sseHandler = null
     ) {
         $this->streamingHandler = $streamingHandler ?? new StreamingHandler();
         $this->requestExecutorHandler = $requestExecutor ?? new RequestExecutorHandler();

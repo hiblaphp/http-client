@@ -82,7 +82,7 @@ class RetryableRequestExecutor
         $retryPromise = $this->responseFactory->createRetryableMockedResponse($retryConfig, $mockProvider);
 
         /** @var array<string, mixed> $stringKeyedOptions */
-        $stringKeyedOptions = array_filter($options, fn ($key) => \is_string($key), ARRAY_FILTER_USE_KEY);
+        $stringKeyedOptions = array_filter($options, fn($key) => \is_string($key), ARRAY_FILTER_USE_KEY);
 
         $retryPromise->then(
             function (Response $successfulResponse) use ($stringKeyedOptions, $finalPromise, $createStream, $fileManager): void {
@@ -93,9 +93,8 @@ class RetryableRequestExecutor
             }
         );
 
-        if ($retryPromise instanceof CancellablePromiseInterface) {
-            $finalPromise->onCancel(fn () => $retryPromise->cancel());
-        }
+
+        $finalPromise->onCancel(fn() => $retryPromise->cancel());
 
         return $finalPromise;
     }
@@ -191,7 +190,7 @@ class RetryableRequestExecutor
             $onChunk($body);
         }
 
-        $createStreamFn = $createStream ?? fn (string $b): StreamInterface => (new HttpHandler())->createStream($b);
+        $createStreamFn = $createStream ?? fn(string $b): StreamInterface => (new HttpHandler())->createStream($b);
         /** @var StreamInterface $stream */
         $stream = $createStreamFn($body);
 

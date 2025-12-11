@@ -34,37 +34,73 @@ class Request extends Message implements CompleteHttpClientInterface
 {
     use StreamTrait;
 
-    private HttpHandler $handler;
-    private OptionsBuilderHandler $optionsBuilder;
-    private ?CookieJarInterface $cookieJar = null;
-    private string $method = 'GET';
-    private ?string $requestTarget = null;
-    private UriInterface $uri;
-    /** @var array<int|string, mixed> */
-    private array $options = [];
-    private int $timeout = 30;
-    private int $connectTimeout = 10;
-    private bool $followRedirects = true;
-    private int $maxRedirects = 5;
-    private bool $verifySSL = true;
-    private ?string $userAgent = null;
-    /** @var array{0: string, 1: string, 2: string}|null */
+    /**
+     * @var array{0: string, 1: string, 2: string}|null 
+     */
     private ?array $auth = null;
-    /** @var array<string, mixed> */
+
+    /**
+     *  @var array<int|string, mixed> 
+     */
+    private array $options = [];
+
+    /** 
+     *  @var array<string, mixed> 
+     */
     private array $urlParameters = [];
-    private ?RetryConfig $retryConfig = null;
-    private ?CacheConfig $cacheConfig = null;
-    /** @var array<int, callable(Request): Request> Callbacks to intercept the request before it is sent. */
+
+    /** 
+     * @var array<int, callable(Request): Request> 
+     */
     private array $requestInterceptors = [];
-    /** @var array<int, callable(Response): Response> Callbacks to intercept the response after it is received. */
+
+    /** 
+     * @var array<int, callable(Response): Response> 
+     */
     private array $responseInterceptors = [];
-    private ?ProxyConfig $proxyConfig = null;
-    private ?SSEReconnectConfig $sseReconnectConfig = null;
-    private ?string $sseDataFormat = null;
-    /** @var (callable(mixed): mixed)|null */
+
+    /** 
+     *  @var (callable(mixed): mixed)|null 
+     */
     private $sseMapper = null;
+
+    private int $timeout = 30;
+
+    private string $method = 'GET';
+
+    private int $connectTimeout = 10;
+
+    private bool $followRedirects = true;
+
+    private int $maxRedirects = 5;
+
+    private bool $verifySSL = true;
+
+    private ?string $userAgent = null;
+
+    private ?string $sseDataFormat = null;
+
+    private ?string $requestTarget = null;
+
+    private HttpHandler $handler;
+
+    private OptionsBuilderHandler $optionsBuilder;
+
+    private UriInterface $uri;
+
+    private ?RetryConfig $retryConfig = null;
+
+    private ?CacheConfig $cacheConfig = null;
+
+    private ?CookieJarInterface $cookieJar = null;
+
     private ?RequestInterceptorHandler $requestInterceptorHandler = null;
+
     private ?ResponseInterceptorHandler $responseInterceptorHandler = null;
+
+    private ?ProxyConfig $proxyConfig = null;
+
+    private ?SSEReconnectConfig $sseReconnectConfig = null;
 
     /**
      * Initializes a new Request builder instance.
@@ -939,7 +975,7 @@ class Request extends Message implements CompleteHttpClientInterface
         return $this->getRequestInterceptorHandler()
             ->processInterceptors($initialRequest, $this->requestInterceptors)
             ->then(
-                fn ($processedRequest) => $this->executeRequest($processedRequest)
+                fn($processedRequest) => $this->executeRequest($processedRequest)
             )
         ;
     }
@@ -1071,13 +1107,13 @@ class Request extends Message implements CompleteHttpClientInterface
         $cookie = new Cookie(
             $name,
             $value,
-            isset($attributes['expires']) && is_numeric($attributes['expires']) ? (int)$attributes['expires'] : null,
-            isset($attributes['domain']) && is_string($attributes['domain']) ? $attributes['domain'] : null,
-            isset($attributes['path']) && is_string($attributes['path']) ? $attributes['path'] : null,
+            isset($attributes['expires']) && \is_numeric($attributes['expires']) ? (int)$attributes['expires'] : null,
+            isset($attributes['domain']) && \is_string($attributes['domain']) ? $attributes['domain'] : null,
+            isset($attributes['path']) && \is_string($attributes['path']) ? $attributes['path'] : null,
             isset($attributes['secure']) ? (bool)$attributes['secure'] : false,
             isset($attributes['httpOnly']) ? (bool)$attributes['httpOnly'] : false,
-            isset($attributes['maxAge']) && is_numeric($attributes['maxAge']) ? (int)$attributes['maxAge'] : null,
-            isset($attributes['sameSite']) && is_string($attributes['sameSite']) ? $attributes['sameSite'] : null
+            isset($attributes['maxAge']) && \is_numeric($attributes['maxAge']) ? (int)$attributes['maxAge'] : null,
+            isset($attributes['sameSite']) && \is_string($attributes['sameSite']) ? $attributes['sameSite'] : null
         );
 
         $new->cookieJar->setCookie($cookie);
@@ -1382,7 +1418,7 @@ class Request extends Message implements CompleteHttpClientInterface
         }
 
         return $httpPromise->then(
-            fn ($response) => $this->getResponseInterceptorHandler()
+            fn($response) => $this->getResponseInterceptorHandler()
                 ->processInterceptors($response, $processedRequest->responseInterceptors)
         );
     }
@@ -1484,7 +1520,7 @@ class Request extends Message implements CompleteHttpClientInterface
 
         if ($array['data'] !== null && is_string($array['data'])) {
             $parsed = json_decode($array['data'], true);
-            if (json_last_error() === JSON_ERROR_NONE && is_array($parsed)) {
+            if (json_last_error() === JSON_ERROR_NONE && \is_array($parsed)) {
                 $array['data'] = $parsed;
             }
         }

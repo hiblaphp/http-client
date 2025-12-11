@@ -7,6 +7,7 @@ namespace Hibla\HttpClient\Handlers;
 use Hibla\EventLoop\Loop;
 use Hibla\HttpClient\Exceptions\HttpStreamException;
 use Hibla\HttpClient\Exceptions\NetworkException;
+use Hibla\HttpClient\Interfaces\StreamingHandlerInterface;
 use Hibla\HttpClient\Stream;
 use Hibla\HttpClient\StreamingResponse;
 use Hibla\Promise\Interfaces\PromiseInterface;
@@ -15,12 +16,10 @@ use Hibla\Promise\Promise;
 /**
  * Handles non-blocking HTTP streaming operations with cancellation support.
  */
-class StreamingHandler
+class StreamingHandler implements StreamingHandlerInterface
 {
     /**
-     * Creates a streaming HTTP request with optional real-time chunk processing.
-     * @param array<int|string, mixed> $options
-     * @return PromiseInterface<StreamingResponse>
+     * @inheritDoc
      */
     public function streamRequest(string $url, array $options, ?callable $onChunk = null): PromiseInterface
     {
@@ -49,7 +48,7 @@ class StreamingHandler
                     $onChunk($data);
                 }
 
-                return strlen($data);
+                return \strlen($data);
             },
             CURLOPT_HEADERFUNCTION => function ($ch, string $header) use (&$headerAccumulator): int {
                 $trimmedHeader = trim($header);
@@ -57,7 +56,7 @@ class StreamingHandler
                     $headerAccumulator[] = $trimmedHeader;
                 }
 
-                return strlen($header);
+                return \strlen($header);
             },
         ]);
 
@@ -94,7 +93,7 @@ class StreamingHandler
                             $key = trim($key);
                             $value = trim($value);
                             if (isset($formattedHeaders[$key])) {
-                                if (is_array($formattedHeaders[$key])) {
+                                if (\is_array($formattedHeaders[$key])) {
                                     $formattedHeaders[$key][] = $value;
                                 } else {
                                     $formattedHeaders[$key] = [$formattedHeaders[$key], $value];
@@ -118,7 +117,7 @@ class StreamingHandler
 
         $promise->onCancel(function () use ($requestId, $responseStream): void {
             Loop::cancelHttpRequest($requestId);
-            if (is_resource($responseStream)) {
+            if (\is_resource($responseStream)) {
                 fclose($responseStream);
             }
         });
@@ -127,9 +126,7 @@ class StreamingHandler
     }
 
     /**
-     * Downloads a file asynchronously to a specified destination with cancellation support.
-     * @param array<int|string, mixed> $options
-     * @return PromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}>
+     * @inheritDoc
      */
     public function downloadFile(string $url, string $destination, array $options = []): PromiseInterface
     {
@@ -204,7 +201,7 @@ class StreamingHandler
 
         $promise->onCancel(function () use ($requestId, $file, $destination): void {
             Loop::cancelHttpRequest($requestId);
-            if (is_resource($file)) {
+            if (\is_resource($file)) {
                 fclose($file);
             }
             if (file_exists($destination)) {

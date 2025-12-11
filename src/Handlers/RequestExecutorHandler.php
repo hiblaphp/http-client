@@ -7,6 +7,7 @@ namespace Hibla\HttpClient\Handlers;
 use Hibla\EventLoop\Loop;
 use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Exceptions\TimeoutException;
+use Hibla\HttpClient\Interfaces\RequestExecutorHandlerInterface;
 use Hibla\HttpClient\Response;
 use Hibla\HttpClient\Traits\NormalizeHeaderTrait;
 use Hibla\Promise\Interfaces\PromiseInterface;
@@ -17,7 +18,7 @@ use Hibla\Promise\Promise;
  *
  * This is the base executor that other handlers can build upon.
  */
-class RequestExecutorHandler
+class RequestExecutorHandler implements RequestExecutorHandlerInterface
 {
     use NormalizeHeaderTrait;
 
@@ -72,6 +73,7 @@ class RequestExecutorHandler
         );
 
         $promise->onCancel(function () use ($requestId) {
+            echo 'Request cancelled: ' . $requestId . PHP_EOL;
             Loop::cancelHttpRequest($requestId);
         });
 
