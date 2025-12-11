@@ -272,7 +272,15 @@ class Http
      */
     public static function request(): Request
     {
-        return self::getInstance()->request();
+        $request = new Request(); 
+
+        if (self::$isTesting && self::$testingInstance !== null) {
+            $request = $request->setHandler(self::$testingInstance);
+        } elseif (self::$instance !== null) {
+            $request = $request->setHandler(self::$instance);
+        }
+
+        return $request;
     }
 
     /**

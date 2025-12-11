@@ -62,16 +62,6 @@ class HttpHandler
     }
 
     /**
-     * Creates a new fluent HTTP request builder instance.
-     *
-     * @return Request The request builder.
-     */
-    public function request(): Request
-    {
-        return new Request($this);
-    }
-
-    /**
      * Creates an SSE (Server-Sent Events) connection with optional reconnection.
      *
      * @param  string  $url  The SSE endpoint URL

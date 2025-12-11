@@ -2,14 +2,13 @@
 
 declare(strict_types=1);
 
-use Hibla\HttpClient\Handlers\HttpHandler;
 use Hibla\HttpClient\Handlers\RequestInterceptorHandler;
 use Hibla\HttpClient\Request;
 use Hibla\Promise\Promise;
 
 test('it processes synchronous interceptors in order', function () {
     $handler = new RequestInterceptorHandler();
-    $initialRequest = new Request(new HttpHandler());
+    $initialRequest = new Request();
 
     $interceptors = [
         function (Request $request) {
@@ -29,7 +28,7 @@ test('it processes synchronous interceptors in order', function () {
 
 test('it processes asynchronous interceptors in order', function () {
     $handler = new RequestInterceptorHandler();
-    $initialRequest = new Request(new HttpHandler());
+    $initialRequest = new Request();
 
     $interceptors = [
         function (Request $request) {
@@ -48,7 +47,7 @@ test('it processes asynchronous interceptors in order', function () {
 
 test('it processes a mix of synchronous and asynchronous interceptors', function () {
     $handler = new RequestInterceptorHandler();
-    $initialRequest = new Request(new HttpHandler());
+    $initialRequest = new Request();
 
     $interceptors = [
         function (Request $request) {
@@ -69,7 +68,7 @@ test('it processes a mix of synchronous and asynchronous interceptors', function
 
 test('it rejects the promise if an interceptor throws an exception', function () {
     $handler = new RequestInterceptorHandler();
-    $initialRequest = new Request(new HttpHandler());
+    $initialRequest = new Request();
 
     $interceptors = [
         function (Request $request) {

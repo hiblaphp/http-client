@@ -73,7 +73,6 @@ class RequestExecutorHandler implements RequestExecutorHandlerInterface
         );
 
         $promise->onCancel(function () use ($requestId) {
-            echo 'Request cancelled: ' . $requestId . PHP_EOL;
             Loop::cancelHttpRequest($requestId);
         });
 

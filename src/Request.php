@@ -82,11 +82,11 @@ class Request extends Message implements CompleteHttpClientInterface
 
     private ?string $requestTarget = null;
 
-    private HttpHandler $handler;
-
     private OptionsBuilderHandler $optionsBuilder;
 
     private UriInterface $uri;
+
+    private ?HttpHandler $handler = null;
 
     private ?RetryConfig $retryConfig = null;
 
@@ -105,15 +105,21 @@ class Request extends Message implements CompleteHttpClientInterface
     /**
      * Initializes a new Request builder instance.
      *
-     * @param  HttpHandler  $handler  The core handler responsible for dispatching the request.
      * @param  string  $method  The HTTP method for the request.
      * @param  string|UriInterface  $uri  The URI for the request.
      * @param  array<string, string|string[]>  $headers  An associative array of headers.
      * @param  mixed|null  $body  The request body.
      * @param  string  $version  The HTTP protocol version.
+     * @param  HttpHandler|null  $handler  Optional HTTP handler instance.
      */
-    public function __construct(HttpHandler $handler, string $method = 'GET', $uri = '', array $headers = [], $body = null, string $version = '2.0')
-    {
+    public function __construct(
+        string $method = 'GET',
+        $uri = '',
+        array $headers = [],
+        $body = null,
+        string $version = '2.0',
+        ?HttpHandler $handler = null
+    ) {
         $this->handler = $handler;
         $this->optionsBuilder = new OptionsBuilderHandler();
         $this->method = strtoupper($method);
@@ -132,6 +138,20 @@ class Request extends Message implements CompleteHttpClientInterface
         } else {
             $this->body = $this->createTempStream();
         }
+    }
+
+    /**
+     * Set the HTTP handler for this request.
+     *
+     * @param  HttpHandler  $handler  The handler instance.
+     * @return self For fluent method chaining.
+     */
+    public function setHandler(HttpHandler $handler): self
+    {
+        $new = clone $this;
+        $new->handler = $handler;
+
+        return $new;
     }
 
     /**
@@ -574,7 +594,7 @@ class Request extends Message implements CompleteHttpClientInterface
         $effectiveReconnectConfig = $reconnectConfig ?? $this->sseReconnectConfig;
         $wrappedCallback = $this->wrapSSECallback($onEvent);
 
-        return $this->handler->sse($url, $options, $wrappedCallback, $onError, $effectiveReconnectConfig);
+        return $this->getHandler()->sse($url, $options, $wrappedCallback, $onError, $effectiveReconnectConfig);
     }
 
     /**
@@ -675,7 +695,7 @@ class Request extends Message implements CompleteHttpClientInterface
         }
 
         /** @var PromiseInterface<StreamingResponse> */
-        return $this->handler->fetch($url, $options);
+        return $this->getHandler()->fetch($url, $options);
     }
 
     /**
@@ -687,7 +707,7 @@ class Request extends Message implements CompleteHttpClientInterface
         $options = $this->buildCurlOptions('GET', $url);
         $options['retry'] = $this->retryConfig;
 
-        return $this->handler->download($url, $destination, $options);
+        return $this->getHandler()->download($url, $destination, $options);
     }
 
     /**
@@ -707,7 +727,7 @@ class Request extends Message implements CompleteHttpClientInterface
         $options = $new->buildCurlOptions('POST', $url);
         $options[CURLOPT_HEADER] = false;
 
-        return $this->handler->stream($url, $options, $onChunk);
+        return $this->getHandler()->stream($url, $options, $onChunk);
     }
 
     /**
@@ -911,7 +931,6 @@ class Request extends Message implements CompleteHttpClientInterface
         } else {
             throw new InvalidArgumentException('File must be a file path, UploadedFileInterface, or resource');
         }
-
         $new->options['multipart'] = $multipart;
         $new = $new->withoutHeader('Content-Type');
 
@@ -1308,6 +1327,20 @@ class Request extends Message implements CompleteHttpClientInterface
     }
 
     /**
+     * Get the HTTP handler, creating a default instance if needed.
+     *
+     * @return HttpHandler The handler instance.
+     */
+    private function getHandler(): HttpHandler
+    {
+        if ($this->handler === null) {
+            $this->handler = new HttpHandler();
+        }
+
+        return $this->handler;
+    }
+
+    /**
      * Normalize token by removing duplicate type prefix.
      *
      * @param  string  $token  The token value.
@@ -1406,7 +1439,7 @@ class Request extends Message implements CompleteHttpClientInterface
             (string) $processedRequest->getUri()
         );
 
-        $httpPromise = $this->handler->sendRequest(
+        $httpPromise = $this->getHandler()->sendRequest(
             (string) $processedRequest->getUri(),
             $options,
             $processedRequest->cacheConfig,
@@ -1447,7 +1480,7 @@ class Request extends Message implements CompleteHttpClientInterface
             userAgent: $this->userAgent,
             protocol: $this->protocol,
             cookieJar: $this->cookieJar,
-            handlerCookieJar: $this->handler->getCookieJar(),
+            handlerCookieJar: $this->getHandler()->getCookieJar(),
             proxyConfig: $this->proxyConfig,
             auth: $this->auth,
             additionalOptions: $this->options
