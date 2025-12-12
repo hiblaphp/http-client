@@ -34,6 +34,7 @@ use Hibla\HttpClient\Testing\Utilities\RequestMatcher;
 use Hibla\HttpClient\Testing\Utilities\RequestRecorder;
 use Hibla\HttpClient\Testing\Utilities\ResponseFactory;
 use Hibla\HttpClient\Traits\FetchOptionTrait;
+use Hibla\HttpClient\Traits\StreamTrait;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
 /**
@@ -50,6 +51,7 @@ class TestingHttpHandler extends HttpHandler implements
     AssertsRequestsExtendedInterface
 {
     use FetchOptionTrait;
+    use StreamTrait;
     use AssertsRequests;
     use AssertsHeaders;
     use AssertsCookies;
@@ -423,7 +425,7 @@ class TestingHttpHandler extends HttpHandler implements
             $this->globalSettings,
             $cacheConfig,
             $retryConfig,
-            fn (string $url, array $curlOptions, ?CacheConfig $cacheConfig, ?RetryConfig $retryConfig) => parent::sendRequest($url, $curlOptions, $cacheConfig, $retryConfig)
+            fn(string $url, array $curlOptions, ?CacheConfig $cacheConfig, ?RetryConfig $retryConfig) => parent::sendRequest($url, $curlOptions, $cacheConfig, $retryConfig)
         );
     }
 
@@ -445,7 +447,7 @@ class TestingHttpHandler extends HttpHandler implements
             $normalizedOptions,
             $mockedRequests,
             $this->globalSettings,
-            fn (string $url, array $options) => parent::fetch($url, $options),
+            fn(string $url, array $options) => parent::fetch($url, $options),
             [$this, 'createStream']
         );
     }
@@ -514,7 +516,7 @@ class TestingHttpHandler extends HttpHandler implements
             $this->globalSettings,
             $onEvent,
             $onError,
-            fn (string $url, array $options, ?callable $onEvent, ?callable $onError, ?SSEReconnectConfig $reconnectConfig) => parent::sse($url, $options, $onEvent, $onError, $reconnectConfig),
+            fn(string $url, array $options, ?callable $onEvent, ?callable $onError, ?SSEReconnectConfig $reconnectConfig) => parent::sse($url, $options, $onEvent, $onError, $reconnectConfig),
             $reconnectConfig
         );
     }

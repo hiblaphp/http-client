@@ -18,7 +18,7 @@ use Hibla\Promise\Promise;
  *
  * This is the base executor that other handlers can build upon.
  */
-final class RequestExecutorHandler implements RequestExecutorHandlerInterface
+class RequestExecutorHandler implements RequestExecutorHandlerInterface
 {
     use NormalizeHeaderTrait;
 

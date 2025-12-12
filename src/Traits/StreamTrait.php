@@ -23,6 +23,31 @@ trait StreamTrait
     }
 
     /**
+     * Creates a new stream from a string.
+     *
+     * @param  string  $content  The initial content of the stream.
+     * @return Stream A new Stream object.
+     *
+     * @throws HttpStreamException If temporary stream creation fails.
+     *
+     * @internal This method is designed for extension by TestingHttpHandler for stream mocking.
+     */
+    public function createStream(string $content = ''): Stream
+    {
+        $resource = fopen('php://temp', 'w+b');
+        if ($resource === false) {
+            throw new HttpStreamException('Failed to create temporary stream');
+        }
+
+        if ($content !== '') {
+            fwrite($resource, $content);
+            rewind($resource);
+        }
+
+        return new Stream($resource);
+    }
+
+    /**
      * Safely converts mixed values to string.
      *
      * @param  mixed  $value  The value to convert to string

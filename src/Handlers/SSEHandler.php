@@ -17,7 +17,7 @@ use Hibla\HttpClient\Stream;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Hibla\Promise\Promise;
 
-final class SSEHandler implements SSEHandlerInterface
+class SSEHandler implements SSEHandlerInterface
 {
     /**
      * {@inheritDoc}

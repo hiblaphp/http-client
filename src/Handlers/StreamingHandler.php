@@ -13,7 +13,7 @@ use Hibla\HttpClient\StreamingResponse;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Hibla\Promise\Promise;
 
-final class StreamingHandler implements StreamingHandlerInterface
+class StreamingHandler implements StreamingHandlerInterface
 {
     /**
      * @inheritDoc

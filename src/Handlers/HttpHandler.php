@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Hibla\HttpClient\Handlers;
 
 use Hibla\HttpClient\CacheConfig;
-use Hibla\HttpClient\Exceptions\HttpStreamException;
 use Hibla\HttpClient\Interfaces\CacheHandlerInterface;
 use Hibla\HttpClient\Interfaces\CookieJarInterface;
 use Hibla\HttpClient\Interfaces\FetchHandlerInterface;
@@ -18,7 +17,6 @@ use Hibla\HttpClient\RetryConfig;
 use Hibla\HttpClient\SSE\SSEEvent;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
 use Hibla\HttpClient\SSE\SSEResponse;
-use Hibla\HttpClient\Stream;
 use Hibla\HttpClient\StreamingResponse;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
@@ -132,31 +130,6 @@ class HttpHandler
         $curlOnlyOptions = array_filter($curlOptions, 'is_int', ARRAY_FILTER_USE_KEY);
 
         return $this->streamingHandler->downloadFile($url, $destination, $curlOnlyOptions);
-    }
-
-    /**
-     * Creates a new stream from a string.
-     *
-     * @param  string  $content  The initial content of the stream.
-     * @return Stream A new Stream object.
-     *
-     * @throws HttpStreamException If temporary stream creation fails.
-     *
-     * @internal This method is designed for extension by TestingHttpHandler for stream mocking.
-     */
-    public function createStream(string $content = ''): Stream
-    {
-        $resource = fopen('php://temp', 'w+b');
-        if ($resource === false) {
-            throw new HttpStreamException('Failed to create temporary stream');
-        }
-
-        if ($content !== '') {
-            fwrite($resource, $content);
-            rewind($resource);
-        }
-
-        return new Stream($resource);
     }
 
     /**

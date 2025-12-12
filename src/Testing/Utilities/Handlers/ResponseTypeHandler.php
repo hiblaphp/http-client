@@ -11,11 +11,14 @@ use Hibla\HttpClient\StreamingResponse;
 use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Testing\Utilities\FileManager;
 use Hibla\HttpClient\Testing\Utilities\ResponseFactory;
+use Hibla\HttpClient\Traits\StreamTrait;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Psr\Http\Message\StreamInterface;
 
 class ResponseTypeHandler
 {
+    use StreamTrait;
+
     private ResponseFactory $responseFactory;
     private FileManager $fileManager;
     private CacheHandler $cacheHandler;
@@ -87,7 +90,7 @@ class ResponseTypeHandler
         $onChunkRaw = $options['on_chunk'] ?? $options['onChunk'] ?? null;
         $onChunk = is_callable($onChunkRaw) ? $onChunkRaw : null;
 
-        $createStreamFn = $createStream ?? fn (string $body): StreamInterface => (new HttpHandler())->createStream($body);
+        $createStreamFn = $createStream ?? fn (string $body): StreamInterface => $this->createStream($body);
 
         return $this->responseFactory->createMockedStream($mock, $onChunk, $createStreamFn);
     }

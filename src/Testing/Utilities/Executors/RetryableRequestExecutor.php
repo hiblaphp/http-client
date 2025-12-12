@@ -15,6 +15,7 @@ use Hibla\HttpClient\Testing\Utilities\RequestMatcher;
 use Hibla\HttpClient\Testing\Utilities\RequestRecorder;
 use Hibla\HttpClient\Testing\Utilities\ResponseFactory;
 use Hibla\HttpClient\Traits\FetchOptionTrait;
+use Hibla\HttpClient\Traits\StreamTrait;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Hibla\Promise\Promise;
 use Psr\Http\Message\StreamInterface;
@@ -22,6 +23,7 @@ use Psr\Http\Message\StreamInterface;
 class RetryableRequestExecutor
 {
     use FetchOptionTrait;
+    use StreamTrait;
 
     private RequestMatcher $requestMatcher;
     private ResponseFactory $responseFactory;
@@ -166,7 +168,7 @@ class RetryableRequestExecutor
             'file' => $destPath,
             'status' => $successfulResponse->status(),
             'headers' => $successfulResponse->headers(),
-            'size' => strlen($successfulResponse->body()),
+            'size' => \strlen($successfulResponse->body()),
             'protocol_version' => '1.1',
         ]);
     }
@@ -189,12 +191,12 @@ class RetryableRequestExecutor
             $onChunk($body);
         }
 
-        $createStreamFn = $createStream ?? fn (string $b): StreamInterface => (new HttpHandler())->createStream($b);
+        $createStreamFn = $createStream ?? fn (string $b): StreamInterface => $this->createStream($b);
         /** @var StreamInterface $stream */
         $stream = $createStreamFn($body);
 
         $finalPromise->resolve(
-            new StreamingResponse($stream, $successfulResponse->status(), $successfulResponse->headers())
+            new StreamingResponse(stream: $stream, status: $successfulResponse->status(), headers: $successfulResponse->headers())
         );
     }
 }

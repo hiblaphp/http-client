@@ -118,9 +118,7 @@ class Request extends Message implements CompleteHttpClientInterface
         array $headers = [],
         $body = null,
         string $version = '2.0',
-        ?HttpHandler $handler = null
     ) {
-        $this->handler = $handler;
         $this->optionsBuilder = new OptionsBuilderHandler();
         $this->method = strtoupper($method);
         $this->uri = $uri instanceof UriInterface ? $uri : new Uri($uri);
@@ -898,7 +896,7 @@ class Request extends Message implements CompleteHttpClientInterface
         }
 
         $multipart = $new->options['multipart'];
-        if (! is_array($multipart)) {
+        if (! \is_array($multipart)) {
             $multipart = [];
         }
 
@@ -909,7 +907,7 @@ class Request extends Message implements CompleteHttpClientInterface
                 'filename' => $filename ?? $file->getClientFilename(),
                 'Content-Type' => $contentType ?? $file->getClientMediaType(),
             ];
-        } elseif (is_string($file) && file_exists($file)) {
+        } elseif (\is_string($file) && file_exists($file)) {
             $resource = fopen($file, 'r');
             if ($resource === false) {
                 throw new InvalidArgumentException("Unable to open file: {$file}");
@@ -921,7 +919,7 @@ class Request extends Message implements CompleteHttpClientInterface
                 'filename' => $filename ?? basename($file),
                 'Content-Type' => $contentType ?? ($mimeType !== false ? $mimeType : 'application/octet-stream'),
             ];
-        } elseif (is_resource($file)) {
+        } elseif (\is_resource($file)) {
             $multipart[$name] = [
                 'name' => $name,
                 'contents' => $file,
@@ -994,7 +992,7 @@ class Request extends Message implements CompleteHttpClientInterface
         return $this->getRequestInterceptorHandler()
             ->processInterceptors($initialRequest, $this->requestInterceptors)
             ->then(
-                fn ($processedRequest) => $this->executeRequest($processedRequest)
+                fn($processedRequest) => $this->executeRequest($processedRequest)
             )
         ;
     }
@@ -1451,7 +1449,7 @@ class Request extends Message implements CompleteHttpClientInterface
         }
 
         return $httpPromise->then(
-            fn ($response) => $this->getResponseInterceptorHandler()
+            fn($response) => $this->getResponseInterceptorHandler()
                 ->processInterceptors($response, $processedRequest->responseInterceptors)
         );
     }

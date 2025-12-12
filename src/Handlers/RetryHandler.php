@@ -13,7 +13,7 @@ use Hibla\HttpClient\Traits\NormalizeHeaderTrait;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Hibla\Promise\Promise;
 
-final class RetryHandler implements RetryHandlerInterface
+class RetryHandler implements RetryHandlerInterface
 {
     use NormalizeHeaderTrait;
 
