@@ -18,7 +18,7 @@ class StreamingResponse extends Response
     /**
      * Default chunk size for reading streams in bytes (8KB).
      */
-    private const CHUNK_SIZE = 8192;
+    private const int CHUNK_SIZE = 8192;
 
     /**
      * The stream interface for reading response data.

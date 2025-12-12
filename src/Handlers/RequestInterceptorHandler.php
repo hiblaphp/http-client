@@ -12,7 +12,7 @@ use Hibla\Promise\Promise;
 /**
  * Handles sequential processing of request interceptors.
  */
-class RequestInterceptorHandler
+final class RequestInterceptorHandler
 {
     /**
      * Process request interceptors sequentially, handling both sync and async interceptors.

@@ -24,7 +24,7 @@ use Symfony\Component\Cache\Psr16Cache;
  * This handler implements HTTP caching semantics including ETags,
  * Last-Modified headers, and Cache-Control directives.
  */
-class CacheHandler implements CacheHandlerInterface
+final class CacheHandler implements CacheHandlerInterface
 {
     private static ?CacheInterface $defaultCache = null;
     private RetryHandlerInterface $retryHandler;

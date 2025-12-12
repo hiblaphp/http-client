@@ -17,10 +17,7 @@ use Hibla\HttpClient\Stream;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Hibla\Promise\Promise;
 
-/**
- * Dedicated handler for Server-Sent Events (SSE) connections with reconnection support.
- */
-class SSEHandler implements SSEHandlerInterface
+final class SSEHandler implements SSEHandlerInterface
 {
     /**
      * {@inheritDoc}

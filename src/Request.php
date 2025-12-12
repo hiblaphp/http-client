@@ -35,32 +35,32 @@ class Request extends Message implements CompleteHttpClientInterface
     use StreamTrait;
 
     /**
-     * @var array{0: string, 1: string, 2: string}|null 
+     * @var array{0: string, 1: string, 2: string}|null
      */
     private ?array $auth = null;
 
     /**
-     *  @var array<int|string, mixed> 
+     *  @var array<int|string, mixed>
      */
     private array $options = [];
 
-    /** 
-     *  @var array<string, mixed> 
+    /**
+     *  @var array<string, mixed>
      */
     private array $urlParameters = [];
 
-    /** 
-     * @var array<int, callable(Request): Request> 
+    /**
+     * @var array<int, callable(Request): Request>
      */
     private array $requestInterceptors = [];
 
-    /** 
-     * @var array<int, callable(Response): Response> 
+    /**
+     * @var array<int, callable(Response): Response>
      */
     private array $responseInterceptors = [];
 
-    /** 
-     *  @var (callable(mixed): mixed)|null 
+    /**
+     *  @var (callable(mixed): mixed)|null
      */
     private $sseMapper = null;
 
@@ -994,7 +994,7 @@ class Request extends Message implements CompleteHttpClientInterface
         return $this->getRequestInterceptorHandler()
             ->processInterceptors($initialRequest, $this->requestInterceptors)
             ->then(
-                fn($processedRequest) => $this->executeRequest($processedRequest)
+                fn ($processedRequest) => $this->executeRequest($processedRequest)
             )
         ;
     }
@@ -1451,7 +1451,7 @@ class Request extends Message implements CompleteHttpClientInterface
         }
 
         return $httpPromise->then(
-            fn($response) => $this->getResponseInterceptorHandler()
+            fn ($response) => $this->getResponseInterceptorHandler()
                 ->processInterceptors($response, $processedRequest->responseInterceptors)
         );
     }

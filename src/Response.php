@@ -103,7 +103,7 @@ class Response extends Message implements EnhancedResponseInterface
             if ($resource === false) {
                 throw new \RuntimeException('Unable to create temporary stream');
             }
-            if (is_string($body)) {
+            if (\is_string($body)) {
 
                 if ($body !== '') {
                     $writeResult = fwrite($resource, $body);
@@ -218,7 +218,7 @@ class Response extends Message implements EnhancedResponseInterface
     {
         $decoded = json_decode((string) $this->body, true);
 
-        if (! is_array($decoded)) {
+        if (! \is_array($decoded)) {
             return $default;
         }
 

@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Interfaces;
 
-use Hibla\HttpClient\Response;
-use Hibla\HttpClient\SSE\SSEResponse;
 use Hibla\HttpClient\StreamingResponse;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
@@ -26,7 +24,7 @@ interface StreamingHandlerInterface
      *                                           - Custom implementation-specific options
      * @param callable|null $onChunk Optional callback to process each chunk as it arrives.
      *                                Signature: function(string $data): void
-     * 
+     *
      * @return PromiseInterface<StreamingResponse> A promise that resolves to a StreamingResponse
      *                                              or rejects with HttpStreamException or NetworkException
      */
@@ -43,7 +41,7 @@ interface StreamingHandlerInterface
      *                                           - Timeout settings
      *                                           - Progress tracking configuration
      *                                           - Custom implementation-specific options
-     * 
+     *
      * @return PromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}>
      *         A promise that resolves to an array containing download information
      *         or rejects with HttpStreamException or NetworkException

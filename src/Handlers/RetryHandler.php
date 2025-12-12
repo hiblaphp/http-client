@@ -13,7 +13,7 @@ use Hibla\HttpClient\Traits\NormalizeHeaderTrait;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Hibla\Promise\Promise;
 
-class RetryHandler implements RetryHandlerInterface
+final class RetryHandler implements RetryHandlerInterface
 {
     use NormalizeHeaderTrait;
 
@@ -58,7 +58,7 @@ class RetryHandler implements RetryHandlerInterface
                     if ($promise->isCancelled()) {
                         return;
                     }
-                    
+
                     // Cancel any pending timer if we're about to resolve/reject
                     if ($timerId !== null) {
                         Loop::cancelTimer($timerId);
@@ -68,8 +68,6 @@ class RetryHandler implements RetryHandlerInterface
                     $isRetryable = ($error !== null && $retryConfig->isRetryableError($error)) ||
                         ($httpCode !== null && \in_array($httpCode, $retryConfig->retryableStatusCodes, true));
 
-
-
                     if ($isRetryable && $attempt < $retryConfig->maxRetries) {
                         $attempt++;
                         $delay = $retryConfig->getDelay($attempt);
@@ -78,6 +76,7 @@ class RetryHandler implements RetryHandlerInterface
                             $timerId = null;
                             $executeRequest();
                         });
+
                         return;
                     }
 

@@ -32,7 +32,7 @@ interface SSEHandlerInterface
      * @param SSEReconnectConfig|null $reconnectConfig Optional configuration for automatic reconnection behavior.
      *                                                  If provided with enabled=true, the handler will
      *                                                  automatically attempt to reconnect on connection failures.
-     * 
+     *
      * @return PromiseInterface<SSEResponse> A promise that resolves to an SSEResponse when the connection
      *                                        is established, or rejects with HttpStreamException,
      *                                        NetworkException, or RequestException on failure

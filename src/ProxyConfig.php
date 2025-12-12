@@ -4,45 +4,33 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient;
 
-class ProxyConfig
+final readonly class ProxyConfig
 {
     public function __construct(
-        public readonly string $host,
-        public readonly int $port,
-        public readonly ?string $username = null,
-        public readonly ?string $password = null,
-        public readonly string $type = 'http', // 'http', 'socks4', 'socks5'
-        public readonly ?int $tunnelPort = null
+        public string $host,
+        public int $port,
+        public ?string $username = null,
+        public ?string $password = null,
+        public string $type = 'http', // 'http', 'socks4', 'socks5'
+        public ?int $tunnelPort = null
     ) {
     }
 
-    /**
-     * Create HTTP proxy configuration
-     */
     public static function http(string $host, int $port, ?string $username = null, ?string $password = null): self
     {
         return new self($host, $port, $username, $password, 'http');
     }
 
-    /**
-     * Create SOCKS4 proxy configuration
-     */
     public static function socks4(string $host, int $port, ?string $username = null): self
     {
         return new self($host, $port, $username, null, 'socks4');
     }
 
-    /**
-     * Create SOCKS5 proxy configuration
-     */
     public static function socks5(string $host, int $port, ?string $username = null, ?string $password = null): self
     {
         return new self($host, $port, $username, $password, 'socks5');
     }
 
-    /**
-     * Get the proxy URL string
-     */
     public function getProxyUrl(): string
     {
         $auth = '';
@@ -57,9 +45,6 @@ class ProxyConfig
         return "{$this->type}://{$auth}{$this->host}:{$this->port}";
     }
 
-    /**
-     * Get cURL proxy type constant
-     */
     public function getCurlProxyType(): int
     {
         return match ($this->type) {

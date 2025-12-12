@@ -30,27 +30,18 @@ class FileCookieJar extends CookieJar
         $this->save();
     }
 
-    /**
-     * Sets a cookie and saves to file.
-     */
     public function setCookie(Cookie $cookie): void
     {
         parent::setCookie($cookie);
         $this->save();
     }
 
-    /**
-     * Clears all cookies and saves to file.
-     */
     public function clear(): void
     {
         parent::clear();
         $this->save();
     }
 
-    /**
-     * Loads cookies from file.
-     */
     private function load(): void
     {
         if (! file_exists($this->filename)) {
@@ -63,35 +54,35 @@ class FileCookieJar extends CookieJar
         }
 
         $data = json_decode($content, true);
-        if (! is_array($data)) {
+        if (! \is_array($data)) {
             return;
         }
 
         foreach ($data as $cookieData) {
-            if (! is_array($cookieData)) {
+            if (! \is_array($cookieData)) {
                 continue;
             }
 
-            $name = isset($cookieData['name']) && is_string($cookieData['name']) ? $cookieData['name'] : '';
-            $value = isset($cookieData['value']) && is_string($cookieData['value']) ? $cookieData['value'] : '';
+            $name = isset($cookieData['name']) && \is_string($cookieData['name']) ? $cookieData['name'] : '';
+            $value = isset($cookieData['value']) && \is_string($cookieData['value']) ? $cookieData['value'] : '';
 
             $expires = null;
             if (isset($cookieData['expires'])) {
-                if (is_int($cookieData['expires'])) {
+                if (\is_int($cookieData['expires'])) {
                     $expires = $cookieData['expires'];
                 }
             }
 
             $domain = null;
             if (isset($cookieData['domain'])) {
-                if (is_string($cookieData['domain'])) {
+                if (\is_string($cookieData['domain'])) {
                     $domain = $cookieData['domain'];
                 }
             }
 
             $path = null;
             if (isset($cookieData['path'])) {
-                if (is_string($cookieData['path'])) {
+                if (\is_string($cookieData['path'])) {
                     $path = $cookieData['path'];
                 }
             }
@@ -101,14 +92,14 @@ class FileCookieJar extends CookieJar
 
             $maxAge = null;
             if (isset($cookieData['maxAge'])) {
-                if (is_int($cookieData['maxAge'])) {
+                if (\is_int($cookieData['maxAge'])) {
                     $maxAge = $cookieData['maxAge'];
                 }
             }
 
             $sameSite = null;
             if (isset($cookieData['sameSite'])) {
-                if (is_string($cookieData['sameSite'])) {
+                if (\is_string($cookieData['sameSite'])) {
                     $sameSite = $cookieData['sameSite'];
                 }
             }

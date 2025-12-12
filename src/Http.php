@@ -272,7 +272,7 @@ class Http
      */
     public static function request(): Request
     {
-        $request = new Request(); 
+        $request = new Request();
 
         if (self::$isTesting && self::$testingInstance !== null) {
             $request = $request->setHandler(self::$testingInstance);

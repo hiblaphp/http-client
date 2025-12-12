@@ -49,7 +49,7 @@ interface CacheHandlerInterface
      * @param RetryConfig|null $retryConfig Optional retry configuration for failed requests.
      *                                       If provided, the handler will automatically retry
      *                                       according to the retry policy.
-     * 
+     *
      * @return PromiseInterface<Response> A promise that resolves to a Response.
      *                                     The response may be from cache or freshly fetched.
      *                                     Rejects with NetworkException on network failures

@@ -35,7 +35,7 @@ interface RetryHandlerInterface
      *                                  - Retryable status codes
      *                                  - Retryable error patterns
      *                                  - Delay calculation strategy (fixed, exponential backoff, etc.)
-     * 
+     *
      * @return PromiseInterface<Response> A promise that resolves to a Response on success
      *                                     or rejects with NetworkException after all retry
      *                                     attempts have been exhausted

@@ -13,7 +13,6 @@ use Hibla\HttpClient\Interfaces\RequestExecutorHandlerInterface;
 use Hibla\HttpClient\Interfaces\RetryHandlerInterface;
 use Hibla\HttpClient\Interfaces\SSEHandlerInterface;
 use Hibla\HttpClient\Interfaces\StreamingHandlerInterface;
-use Hibla\HttpClient\Request;
 use Hibla\HttpClient\Response;
 use Hibla\HttpClient\RetryConfig;
 use Hibla\HttpClient\SSE\SSEEvent;

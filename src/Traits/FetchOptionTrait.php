@@ -27,7 +27,7 @@ trait FetchOptionTrait
         $cookieOptions = $this->extractCookieOptions($options);
 
         $cleanOptions = array_filter($options, function ($key) {
-            return ! in_array($key, [
+            return ! \in_array($key, [
                 'stream',
                 'on_chunk',
                 'onChunk',
@@ -81,14 +81,14 @@ trait FetchOptionTrait
             CURLOPT_NOBODY => false,
         ];
 
-        if (isset($options['method']) && is_string($options['method'])) {
+        if (isset($options['method']) && \is_string($options['method'])) {
             $curlOptions[CURLOPT_CUSTOMREQUEST] = strtoupper($options['method']);
         }
 
-        if (isset($options['headers']) && is_array($options['headers'])) {
+        if (isset($options['headers']) && \is_array($options['headers'])) {
             $headerStrings = [];
             foreach ($options['headers'] as $name => $value) {
-                if (is_string($name) && (is_string($value) || is_scalar($value))) {
+                if (\is_string($name) && (\is_string($value) || is_scalar($value))) {
                     $headerStrings[] = "{$name}: {$value}";
                 }
             }
@@ -98,7 +98,7 @@ trait FetchOptionTrait
         if (isset($options['http_version']) && is_string($options['http_version'])) {
             $curlOptions[CURLOPT_HTTP_VERSION] = match ($options['http_version']) {
                 '2.0', '2' => CURL_HTTP_VERSION_2TLS,
-                '3.0', '3' => defined('CURL_HTTP_VERSION_3')
+                '3.0', '3' => \defined('CURL_HTTP_VERSION_3')
                     ? CURL_HTTP_VERSION_3
                     : CURL_HTTP_VERSION_1_1,
                 '1.0' => CURL_HTTP_VERSION_1_0,
@@ -110,7 +110,7 @@ trait FetchOptionTrait
         if (isset($options['protocol']) && is_string($options['protocol'])) {
             $curlOptions[CURLOPT_HTTP_VERSION] = match ($options['protocol']) {
                 '2.0', '2' => CURL_HTTP_VERSION_2TLS,
-                '3.0', '3' => defined('CURL_HTTP_VERSION_3')
+                '3.0', '3' => \defined('CURL_HTTP_VERSION_3')
                     ? CURL_HTTP_VERSION_3
                     : CURL_HTTP_VERSION_1_1,
                 '1.0' => CURL_HTTP_VERSION_1_0,
@@ -133,10 +133,10 @@ trait FetchOptionTrait
             $curlOptions[CURLOPT_HTTPHEADER] = $headers;
         }
 
-        if (isset($options['form']) && is_array($options['form'])) {
+        if (isset($options['form']) && \is_array($options['form'])) {
             $curlOptions[CURLOPT_POSTFIELDS] = http_build_query($options['form']);
             $headers = [];
-            if (isset($curlOptions[CURLOPT_HTTPHEADER]) && is_array($curlOptions[CURLOPT_HTTPHEADER])) {
+            if (isset($curlOptions[CURLOPT_HTTPHEADER]) && \is_array($curlOptions[CURLOPT_HTTPHEADER])) {
                 $headers = $curlOptions[CURLOPT_HTTPHEADER];
             }
             $headers[] = 'Content-Type: application/x-www-form-urlencoded';
@@ -165,16 +165,16 @@ trait FetchOptionTrait
             $curlOptions[CURLOPT_SSL_VERIFYHOST] = $verifySSL ? 2 : 0;
         }
 
-        if (isset($options['user_agent']) && is_string($options['user_agent'])) {
+        if (isset($options['user_agent']) && \is_string($options['user_agent'])) {
             $curlOptions[CURLOPT_USERAGENT] = $options['user_agent'];
         }
 
-        if (isset($options['auth']) && is_array($options['auth'])) {
+        if (isset($options['auth']) && \is_array($options['auth'])) {
             $auth = $options['auth'];
 
-            if (isset($auth['bearer']) && is_string($auth['bearer'])) {
+            if (isset($auth['bearer']) && \is_string($auth['bearer'])) {
                 $headers = [];
-                if (isset($curlOptions[CURLOPT_HTTPHEADER]) && is_array($curlOptions[CURLOPT_HTTPHEADER])) {
+                if (isset($curlOptions[CURLOPT_HTTPHEADER]) && \is_array($curlOptions[CURLOPT_HTTPHEADER])) {
                     $headers = $curlOptions[CURLOPT_HTTPHEADER];
                 }
                 $headers[] = 'Authorization: Bearer ' . $auth['bearer'];
@@ -185,7 +185,7 @@ trait FetchOptionTrait
                 $basic = $auth['basic'];
                 if (
                     isset($basic['username'], $basic['password']) &&
-                    is_string($basic['username']) && is_string($basic['password'])
+                    \is_string($basic['username']) && \is_string($basic['password'])
                 ) {
                     $curlOptions[CURLOPT_USERPWD] = $basic['username'] . ':' . $basic['password'];
                     $curlOptions[CURLOPT_HTTPAUTH] = CURLAUTH_BASIC;
@@ -196,7 +196,7 @@ trait FetchOptionTrait
                 $digest = $auth['digest'];
                 if (
                     isset($digest['username'], $digest['password']) &&
-                    is_string($digest['username']) && is_string($digest['password'])
+                    \is_string($digest['username']) && is_string($digest['password'])
                 ) {
                     $curlOptions[CURLOPT_USERPWD] = $digest['username'] . ':' . $digest['password'];
                     $curlOptions[CURLOPT_HTTPAUTH] = CURLAUTH_DIGEST;
@@ -234,7 +234,7 @@ trait FetchOptionTrait
         $hasCache = false;
 
         foreach ($headers as $header) {
-            if (! is_string($header)) {
+            if (! \is_string($header)) {
                 continue;
             }
             if (stripos($header, 'Accept:') === 0) {
@@ -272,16 +272,16 @@ trait FetchOptionTrait
             return $proxy;
         }
 
-        if (is_string($proxy)) {
+        if (\is_string($proxy)) {
             // Parse proxy URL string like "http://user:pass@host:port"
             return $this->parseProxyUrl($proxy);
         }
 
-        if (is_array($proxy)) {
+        if (\is_array($proxy)) {
             $host = $proxy['host'] ?? $proxy['server'] ?? '';
             $port = $proxy['port'] ?? 8080;
 
-            if (! is_string($host) || $host === '' || ! is_numeric($port)) {
+            if (! \is_string($host) || $host === '' || ! \is_numeric($port)) {
                 return null;
             }
 
@@ -292,9 +292,9 @@ trait FetchOptionTrait
             return new ProxyConfig(
                 host: $host,
                 port: (int) $port,
-                username: is_string($username) ? $username : null,
-                password: is_string($password) ? $password : null,
-                type: is_string($type) ? $type : 'http'
+                username: \is_string($username) ? $username : null,
+                password: \is_string($password) ? $password : null,
+                type: \is_string($type) ? $type : 'http'
             );
         }
 
@@ -307,7 +307,7 @@ trait FetchOptionTrait
     private function parseProxyUrl(string $proxyUrl): ?ProxyConfig
     {
         $parsed = parse_url($proxyUrl);
-        if (! is_array($parsed) || ! isset($parsed['host']) || ! is_string($parsed['host'])) {
+        if (! \is_array($parsed) || ! isset($parsed['host']) || ! is_string($parsed['host'])) {
             return null;
         }
 
@@ -351,7 +351,7 @@ trait FetchOptionTrait
         }
 
         // Configure tunneling based on proxy type
-        if (in_array($proxyConfig->type, ['socks4', 'socks5'], true)) {
+        if (\in_array($proxyConfig->type, ['socks4', 'socks5'], true)) {
             $curlOptions[CURLOPT_HTTPPROXYTUNNEL] = false;
         } else {
             $curlOptions[CURLOPT_HTTPPROXYTUNNEL] = true;
@@ -364,7 +364,7 @@ trait FetchOptionTrait
     private function isCurlOptionsFormat(array $options): bool
     {
         foreach (array_keys($options) as $key) {
-            if (is_int($key) && $key > 0) {
+            if (\is_int($key) && $key > 0) {
                 return true;
             }
         }
@@ -391,7 +391,7 @@ trait FetchOptionTrait
             return $cache;
         }
 
-        if (is_array($cache)) {
+        if (\is_array($cache)) {
             $cacheInstance = null;
             if (isset($cache['cache_instance'])) {
                 if ($cache['cache_instance'] instanceof PsrCacheInterface) {
@@ -410,7 +410,7 @@ trait FetchOptionTrait
             );
         }
 
-        if (is_int($cache)) {
+        if (\is_int($cache)) {
             return new CacheConfig($cache);
         }
 
@@ -438,7 +438,7 @@ trait FetchOptionTrait
             return $retry;
         }
 
-        if (is_array($retry)) {
+        if (\is_array($retry)) {
             $retryableStatusCodes = [408, 429, 500, 502, 503, 504];
             if (isset($retry['retryable_status_codes']) && is_array($retry['retryable_status_codes'])) {
                 $codes = [];
@@ -514,7 +514,7 @@ trait FetchOptionTrait
             unset($options['cookie']);
         }
 
-        return count($cookieOptions) > 0 ? $cookieOptions : null;
+        return \count($cookieOptions) > 0 ? $cookieOptions : null;
     }
 
     /**
@@ -530,9 +530,9 @@ trait FetchOptionTrait
             $jar = $cookieOptions['jar'];
             $url = $curlOptions[CURLOPT_URL] ?? '';
 
-            if (is_string($url) && $url !== '') {
+            if (\is_string($url) && $url !== '') {
                 $parsedUrl = parse_url($url);
-                if (is_array($parsedUrl)) {
+                if (\is_array($parsedUrl)) {
                     $domain = isset($parsedUrl['host']) && is_string($parsedUrl['host']) ? $parsedUrl['host'] : '';
                     $path = isset($parsedUrl['path']) && is_string($parsedUrl['path']) ? $parsedUrl['path'] : '/';
                     $scheme = isset($parsedUrl['scheme']) && is_string($parsedUrl['scheme']) ? $parsedUrl['scheme'] : 'http';
@@ -550,14 +550,14 @@ trait FetchOptionTrait
         }
 
         // Handle individual cookies array
-        if (isset($cookieOptions['cookies']) && is_array($cookieOptions['cookies'])) {
+        if (isset($cookieOptions['cookies']) && \is_array($cookieOptions['cookies'])) {
             $cookies = [];
             foreach ($cookieOptions['cookies'] as $name => $value) {
-                if (is_string($name) && is_scalar($value)) {
+                if (\is_string($name) && \is_scalar($value)) {
                     $cookies[] = $name . '=' . urlencode((string)$value);
                 }
             }
-            if (count($cookies) > 0) {
+            if (\count($cookies) > 0) {
                 $cookieHeaders[] = implode('; ', $cookies);
             }
         }
@@ -571,13 +571,13 @@ trait FetchOptionTrait
         if (count($cookieHeaders) > 0) {
             $existingHeaders = $curlOptions[CURLOPT_HTTPHEADER] ?? [];
 
-            if (! is_array($existingHeaders)) {
+            if (! \is_array($existingHeaders)) {
                 $existingHeaders = [];
             }
 
             // Remove any existing Cookie headers
             $existingHeaders = array_filter($existingHeaders, function ($header) {
-                return ! is_string($header) || stripos($header, 'Cookie:') !== 0;
+                return ! \is_string($header) || stripos($header, 'Cookie:') !== 0;
             });
 
             // Add new Cookie header

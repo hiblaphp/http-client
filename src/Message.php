@@ -190,14 +190,14 @@ abstract class Message implements MessageInterface
         $this->headers = [];
 
         foreach ($headers as $header => $value) {
-            if (is_int($header)) {
+            if (\is_int($header)) {
                 $header = (string) $header;
             }
             $value = $this->normalizeHeaderValue($value);
             $normalized = strtolower($header);
             if (isset($this->headerNames[$normalized])) {
                 $header = $this->headerNames[$normalized];
-                $this->headers[$header] = array_merge($this->headers[$header], $value);
+                $this->headers[$header] = \array_merge($this->headers[$header], $value);
             } else {
                 $this->headerNames[$normalized] = $header;
                 $this->headers[$header] = $value;
@@ -215,28 +215,28 @@ abstract class Message implements MessageInterface
      */
     private function normalizeHeaderValue($value): array
     {
-        if (! is_array($value)) {
-            if (is_object($value) && method_exists($value, '__toString')) {
+        if (! \is_array($value)) {
+            if (\is_object($value) && method_exists($value, '__toString')) {
                 return [trim((string) $value)];
             }
 
-            if (is_scalar($value) || $value === null) {
+            if (\is_scalar($value) || $value === null) {
                 return [trim((string) $value)];
             }
 
             return [trim(var_export($value, true))];
         }
 
-        if (count($value) === 0) {
+        if (\count($value) === 0) {
             throw new \InvalidArgumentException('Header value must be a string or a non-empty array of strings.');
         }
 
         return array_map(function ($v) {
-            if (is_object($v) && method_exists($v, '__toString')) {
+            if (\is_object($v) && method_exists($v, '__toString')) {
                 return trim((string) $v);
             }
 
-            if (is_scalar($v) || $v === null) {
+            if (\is_scalar($v) || $v === null) {
                 return trim((string) $v);
             }
 

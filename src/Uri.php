@@ -41,15 +41,15 @@ class Uri implements UriInterface
             throw new \InvalidArgumentException("Invalid URI: $uri");
         }
 
-        $this->scheme = isset($parts['scheme']) && is_string($parts['scheme']) ? $parts['scheme'] : '';
-        $this->host = isset($parts['host']) && is_string($parts['host']) ? $parts['host'] : '';
-        $this->port = isset($parts['port']) && is_int($parts['port']) ? $parts['port'] : null;
-        $this->path = isset($parts['path']) && is_string($parts['path']) ? $parts['path'] : '/';
-        $this->query = isset($parts['query']) && is_string($parts['query']) ? $parts['query'] : '';
-        $this->fragment = isset($parts['fragment']) && is_string($parts['fragment']) ? $parts['fragment'] : '';
+        $this->scheme = isset($parts['scheme']) && \is_string($parts['scheme']) ? $parts['scheme'] : '';
+        $this->host = isset($parts['host']) && \is_string($parts['host']) ? $parts['host'] : '';
+        $this->port = isset($parts['port']) && \is_int($parts['port']) ? $parts['port'] : null;
+        $this->path = isset($parts['path']) && \is_string($parts['path']) ? $parts['path'] : '/';
+        $this->query = isset($parts['query']) && \is_string($parts['query']) ? $parts['query'] : '';
+        $this->fragment = isset($parts['fragment']) && \is_string($parts['fragment']) ? $parts['fragment'] : '';
 
-        if (isset($parts['user']) && is_string($parts['user'])) {
-            $password = isset($parts['pass']) && is_string($parts['pass']) ? $parts['pass'] : null;
+        if (isset($parts['user']) && \is_string($parts['user'])) {
+            $password = isset($parts['pass']) && \is_string($parts['pass']) ? $parts['pass'] : null;
             $this->userInfo = $parts['user'].($password !== null ? ':'.$password : '');
         }
     }

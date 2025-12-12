@@ -23,7 +23,7 @@ use Hibla\Promise\Interfaces\PromiseInterface;
  * This class provides a flexible, fetch-like interface for making HTTP requests
  * with support for streaming, downloads, retry logic, and caching.
  */
-class FetchHandler implements FetchHandlerInterface
+final class FetchHandler implements FetchHandlerInterface
 {
     use FetchOptionTrait;
 

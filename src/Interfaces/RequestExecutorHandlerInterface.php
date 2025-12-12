@@ -47,14 +47,14 @@ interface RequestExecutorHandlerInterface
      *                                           - Cookie jar for cookie handling
      *                                           - Proxy configuration
      *                                           - Custom implementation-specific options
-     * 
+     *
      * @return PromiseInterface<Response> A promise that resolves to a Response object containing:
      *                                     - Response body (string)
      *                                     - HTTP status code (int)
      *                                     - Response headers (normalized array)
      *                                     - HTTP protocol version (if available)
      *                                     - Cookies applied to jar (if provided)
-     *                                     
+     *
      *                                     The promise rejects with:
      *                                     - TimeoutException: On timeout errors
      *                                     - NetworkException: On other network failures

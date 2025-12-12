@@ -13,14 +13,14 @@ use Psr\Http\Message\StreamInterface;
 class Stream implements StreamInterface
 {
     /** @var resource|null The underlying PHP stream resource. */
-    private $resource;
+    private $resource = null;
     private ?string $uri;
     private bool $seekable;
     private bool $readable;
     private bool $writable;
     private ?int $size = null;
 
-    private const READ_WRITE_HASH = [
+    private const array READ_WRITE_HASH = [
         'read' => [
             'r' => true,
             'w+' => true,
@@ -70,7 +70,7 @@ class Stream implements StreamInterface
      */
     public function __construct($resource, ?string $uri = null)
     {
-        if (! is_resource($resource)) {
+        if (! \is_resource($resource)) {
             throw new HttpStreamException('Stream must be a resource');
         }
 
@@ -206,7 +206,7 @@ class Stream implements StreamInterface
      */
     public function eof(): bool
     {
-        if (! is_resource($this->resource)) {
+        if (! \is_resource($this->resource)) {
             return true;
         }
 

@@ -4,44 +4,19 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient;
 
-/**
- * Represents an HTTP cookie with all its attributes.
- */
 class Cookie
 {
-    private string $name;
-    private string $value;
-    private ?int $expires = null;
-    private ?int $maxAge = null;
-    private ?string $domain = null;
-    private ?string $path = null;
-    private bool $secure = false;
-    private bool $httpOnly = false;
-    private ?string $sameSite = null;
-
-    /**
-     * Creates a new Cookie instance.
-     */
     public function __construct(
-        string $name,
-        string $value,
-        ?int $expires = null,
-        ?string $domain = null,
-        ?string $path = null,
-        bool $secure = false,
-        bool $httpOnly = false,
-        ?int $maxAge = null,
-        ?string $sameSite = null
+        private string $name,
+        private string $value,
+        private ?int $expires = null,
+        private ?string $domain = null,
+        private ?string $path = null,
+        private bool $secure = false,
+        private bool $httpOnly = false,
+        private ?int $maxAge = null,
+        private ?string $sameSite = null
     ) {
-        $this->name = $name;
-        $this->value = $value;
-        $this->expires = $expires;
-        $this->domain = $domain;
-        $this->path = $path;
-        $this->secure = $secure;
-        $this->httpOnly = $httpOnly;
-        $this->maxAge = $maxAge;
-        $this->sameSite = $sameSite;
     }
 
     /**
@@ -180,7 +155,7 @@ class Cookie
         }
 
         if (str_starts_with($this->domain, '.')) {
-            return str_ends_with($requestDomain, '.'.$cookieDomain) || $requestDomain === $cookieDomain;
+            return str_ends_with($requestDomain, '.' . $cookieDomain) || $requestDomain === $cookieDomain;
         }
 
         return false;
@@ -214,22 +189,22 @@ class Cookie
      */
     public function toSetCookieHeader(): string
     {
-        $parts = [$this->name.'='.urlencode($this->value)];
+        $parts = [$this->name . '=' . urlencode($this->value)];
 
         if ($this->expires !== null) {
-            $parts[] = 'Expires='.gmdate('D, d M Y H:i:s T', $this->expires);
+            $parts[] = 'Expires=' . gmdate('D, d M Y H:i:s T', $this->expires);
         }
 
         if ($this->maxAge !== null) {
-            $parts[] = 'Max-Age='.$this->maxAge;
+            $parts[] = 'Max-Age=' . $this->maxAge;
         }
 
         if ($this->domain !== null) {
-            $parts[] = 'Domain='.$this->domain;
+            $parts[] = 'Domain=' . $this->domain;
         }
 
         if ($this->path !== null) {
-            $parts[] = 'Path='.$this->path;
+            $parts[] = 'Path=' . $this->path;
         }
 
         if ($this->secure) {
@@ -241,7 +216,7 @@ class Cookie
         }
 
         if ($this->sameSite !== null) {
-            $parts[] = 'SameSite='.$this->sameSite;
+            $parts[] = 'SameSite=' . $this->sameSite;
         }
 
         return implode('; ', $parts);
@@ -252,7 +227,7 @@ class Cookie
      */
     public function toCookieHeader(): string
     {
-        return $this->name.'='.$this->value;
+        return $this->name . '=' . $this->value;
     }
 
     /**
@@ -262,7 +237,7 @@ class Cookie
     {
         $parts = array_map('trim', explode(';', $setCookieHeader));
 
-        if (count($parts) === 0) {
+        if (\count($parts) === 0) {
             return null;
         }
 

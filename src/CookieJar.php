@@ -75,7 +75,7 @@ class CookieJar implements CookieJarInterface
     {
         $matchingCookies = $this->getCookies($domain, $path, $isSecure);
 
-        if (count($matchingCookies) === 0) {
+        if (\count($matchingCookies) === 0) {
             return '';
         }
 

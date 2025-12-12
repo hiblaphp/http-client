@@ -29,13 +29,13 @@ trait StreamTrait
      */
     private function convertToString($value): string
     {
-        if (is_string($value)) {
+        if (\is_string($value)) {
             return $value;
         }
-        if (is_scalar($value) || is_null($value)) {
+        if (\is_scalar($value) || \is_null($value)) {
             return (string) $value;
         }
-        if (is_object($value) && method_exists($value, '__toString')) {
+        if (\is_object($value) && method_exists($value, '__toString')) {
             return (string) $value;
         }
 

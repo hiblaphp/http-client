@@ -40,14 +40,14 @@ interface FetchHandlerInterface
      *        - 'retry': Retry configuration (RetryConfig)
      *        - 'cache': Cache configuration (CacheConfig)
      *        - Standard cURL options can also be included
-     * 
+     *
      * @return PromiseInterface<Response>|PromiseInterface<StreamingResponse>|PromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}>|PromiseInterface<SSEResponse>
      *         A promise that resolves with one of:
      *         - Response: For standard requests
      *         - StreamingResponse: For streaming requests
      *         - array: Download metadata with file path, status, headers, protocol version, and size
      *         - SSEResponse: For Server-Sent Events connections
-     *         
+     *
      *         The promise may reject with:
      *         - NetworkException: On network failures
      *         - HttpStreamException: On streaming errors

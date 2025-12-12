@@ -13,10 +13,7 @@ use Hibla\HttpClient\StreamingResponse;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Hibla\Promise\Promise;
 
-/**
- * Handles non-blocking HTTP streaming operations with cancellation support.
- */
-class StreamingHandler implements StreamingHandlerInterface
+final class StreamingHandler implements StreamingHandlerInterface
 {
     /**
      * @inheritDoc
