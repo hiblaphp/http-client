@@ -1102,7 +1102,7 @@ class Request extends Message implements CompleteHttpClientInterface
         return $this->getRequestInterceptorHandler()
             ->processInterceptors($initialRequest, $this->requestInterceptors)
             ->then(
-                fn ($processedRequest) => $this->executeRequest($processedRequest)
+                fn($processedRequest) => $this->executeRequest($processedRequest)
             )
         ;
     }
@@ -1378,6 +1378,8 @@ class Request extends Message implements CompleteHttpClientInterface
      */
     public function withCurlOption(int $option, $value): self
     {
+        $this->ensureCurlExtensionLoaded();
+
         $new = clone $this;
         $new->options[$option] = $value;
 
@@ -1392,6 +1394,8 @@ class Request extends Message implements CompleteHttpClientInterface
      */
     public function withCurlOptions(array $options): self
     {
+        $this->ensureCurlExtensionLoaded();
+
         $new = clone $this;
         foreach ($options as $option => $value) {
             if (\is_int($option)) {
@@ -1518,6 +1522,18 @@ class Request extends Message implements CompleteHttpClientInterface
     }
 
     /**
+     * Verify that the cURL extension is loaded.
+     *
+     * @throws \RuntimeException If the cURL extension is not loaded
+     */
+    private function ensureCurlExtensionLoaded(): void
+    {
+        if (!extension_loaded('curl')) {
+            throw new \RuntimeException('The cURL extension is not loaded. Please install and enable ext-curl.');
+        }
+    }
+
+    /**
      * Updates the Host header from the URI if necessary.
      */
     private function updateHostFromUri(): static
@@ -1586,7 +1602,7 @@ class Request extends Message implements CompleteHttpClientInterface
         }
 
         return $httpPromise->then(
-            fn ($response) => $this->getResponseInterceptorHandler()
+            fn($response) => $this->getResponseInterceptorHandler()
                 ->processInterceptors($response, $processedRequest->responseInterceptors)
         );
     }
