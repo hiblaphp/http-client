@@ -6,13 +6,14 @@ namespace Hibla\HttpClient\Traits;
 
 use Hibla\HttpClient\Exceptions\HttpStreamException;
 use Hibla\HttpClient\Stream;
+use Psr\Http\Message\StreamInterface;
 
 trait StreamTrait
 {
     /**
      * Creates a temporary stream resource safely.
      */
-    private function createTempStream(): Stream
+    private function createTempStream(): StreamInterface
     {
         $resource = fopen('php://temp', 'r+');
         if ($resource === false) {
@@ -32,7 +33,7 @@ trait StreamTrait
      *
      * @internal This method is designed for extension by TestingHttpHandler for stream mocking.
      */
-    public function createStream(string $content = ''): Stream
+    public function createStream(string $content = ''): StreamInterface
     {
         $resource = fopen('php://temp', 'w+b');
         if ($resource === false) {

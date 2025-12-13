@@ -7,15 +7,20 @@ namespace Hibla\HttpClient;
 use Hibla\HttpClient\Interfaces\CookieJarInterface;
 use Hibla\HttpClient\ProxyConfig;
 use Hibla\HttpClient\RetryConfig;
-use Hibla\HttpClient\Stream;
+use Psr\Http\Message\StreamInterface;
 
 final readonly class ClientOptions
 {
+    /**
+     * @param array<string, array<string>> $headers
+     * @param array{0: string, 1: string, 2: string}|null $auth
+     * @param array<int|string, mixed> $additionalOptions
+     */
     public function __construct(
         public string $method,
         public string $url,
         public array $headers,
-        public Stream $body,
+        public StreamInterface $body,
         public int $timeout,
         public int $connectTimeout,
         public bool $followRedirects,

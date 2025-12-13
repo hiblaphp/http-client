@@ -19,6 +19,7 @@ use Hibla\HttpClient\Traits\StreamTrait;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use InvalidArgumentException;
 use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UploadedFileInterface;
 use Psr\Http\Message\UriInterface;
 
@@ -66,6 +67,11 @@ class Request extends Message implements CompleteHttpClientInterface
      */
     private $sseMapper = null;
 
+    /**
+     * @var TransportOptionsBuilderInterface<array<int|string, mixed>>|null
+     */
+    private ?TransportOptionsBuilderInterface $transportOptionsBuilder = null;
+
     private int $timeout = 30;
 
     private string $method = 'GET';
@@ -103,11 +109,6 @@ class Request extends Message implements CompleteHttpClientInterface
     private ?SSEReconnectConfig $sseReconnectConfig = null;
 
     /**
-     * @var TransportOptionsBuilderInterface|null
-     */
-    private ?TransportOptionsBuilderInterface $transportOptionsBuilder = null;
-
-    /**
      * Initializes a new Request builder instance.
      *
      * @param  string  $method  The HTTP method for the request.
@@ -130,8 +131,8 @@ class Request extends Message implements CompleteHttpClientInterface
         $this->userAgent = GlobalConfig::getUserAgent();
 
         if ($body !== '' && $body !== null) {
-            $this->body = $body instanceof Stream ? $body : $this->createTempStream();
-            if (! ($body instanceof Stream)) {
+            $this->body = $body instanceof StreamInterface ? $body : $this->createTempStream();
+            if (! ($body instanceof StreamInterface)) {
                 $bodyString = $this->convertToString($body);
                 $this->body->write($bodyString);
                 $this->body->rewind();
@@ -147,7 +148,7 @@ class Request extends Message implements CompleteHttpClientInterface
      * Allows replacing the default cURL builder with a custom implementation
      * (e.g., for Stream Context or Swoole).
      *
-     * @param TransportOptionsBuilderInterface $builder
+     * @param TransportOptionsBuilderInterface<array<int|string, mixed>> $builder
      * @return self
      */
     public function setTransportOptionsBuilder(TransportOptionsBuilderInterface $builder): self
@@ -159,6 +160,8 @@ class Request extends Message implements CompleteHttpClientInterface
 
     /**
      * Get the transport builder, lazy loading the default (cURL) if not set.
+     * 
+     * @return TransportOptionsBuilderInterface<array<int|string, mixed>>
      */
     private function getTransportOptionsBuilder(): TransportOptionsBuilderInterface
     {
@@ -168,7 +171,6 @@ class Request extends Message implements CompleteHttpClientInterface
 
         return $this->transportOptionsBuilder;
     }
-
     /**
      * Set the HTTP handler for this request.
      *
@@ -618,7 +620,28 @@ class Request extends Message implements CompleteHttpClientInterface
         ?SSEReconnectConfig $reconnectConfig = null
     ): PromiseInterface {
         $method = $this->body->getSize() > 0 ? 'POST' : 'GET';
-        $options = $this->buildCurlOptions($method, $url);
+
+        $clientOptions = new ClientOptions(
+            method: $method,
+            url: $url,
+            headers: $this->headers,
+            body: $this->body,
+            timeout: $this->timeout,
+            connectTimeout: $this->connectTimeout,
+            followRedirects: $this->followRedirects,
+            maxRedirects: $this->maxRedirects,
+            verifySSL: $this->verifySSL,
+            userAgent: $this->userAgent,
+            protocol: $this->protocol,
+            cookieJar: $this->cookieJar,
+            proxyConfig: $this->proxyConfig,
+            auth: $this->auth,
+            additionalOptions: $this->options,
+            retryConfig: $this->retryConfig
+        );
+
+        /** @var array<int|string, mixed> $options */
+        $options = $this->getTransportOptionsBuilder()->buildForSSE($clientOptions);
 
         $effectiveReconnectConfig = $reconnectConfig ?? $this->sseReconnectConfig;
         $wrappedCallback = $this->wrapSSECallback($onEvent);
@@ -716,28 +739,62 @@ class Request extends Message implements CompleteHttpClientInterface
      */
     public function stream(string $url, ?callable $onChunk = null): PromiseInterface
     {
-        $options = $this->buildCurlOptions('GET', $url);
-        $options[CURLOPT_HEADER] = false;
+        $clientOptions = new ClientOptions(
+            method: 'GET',
+            url: $url,
+            headers: $this->headers,
+            body: $this->createTempStream(),
+            timeout: $this->timeout,
+            connectTimeout: $this->connectTimeout,
+            followRedirects: $this->followRedirects,
+            maxRedirects: $this->maxRedirects,
+            verifySSL: $this->verifySSL,
+            userAgent: $this->userAgent,
+            protocol: $this->protocol,
+            cookieJar: $this->cookieJar,
+            proxyConfig: $this->proxyConfig,
+            auth: $this->auth,
+            additionalOptions: $this->options,
+            retryConfig: $this->retryConfig
+        );
 
-        /** @var PromiseInterface<StreamingResponse> */
+        /** @var array<int|string, mixed> $options */
+        $options = $this->getTransportOptionsBuilder()->buildForStreaming($clientOptions);
         return $this->getHandler()->stream($url, $options, $onChunk);
     }
 
     /**
      * {@inheritdoc}
-     * @return PromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}> A promise that resolves with download metadata.
      */
     public function download(string $url, string $destination): PromiseInterface
     {
-        $options = $this->buildCurlOptions('GET', $url);
-        $options['retry'] = $this->retryConfig;
+        $clientOptions = new ClientOptions(
+            method: 'GET',
+            url: $url,
+            headers: $this->headers,
+            body: $this->createTempStream(),
+            timeout: $this->timeout,
+            connectTimeout: $this->connectTimeout,
+            followRedirects: $this->followRedirects,
+            maxRedirects: $this->maxRedirects,
+            verifySSL: $this->verifySSL,
+            userAgent: $this->userAgent,
+            protocol: $this->protocol,
+            cookieJar: $this->cookieJar,
+            proxyConfig: $this->proxyConfig,
+            auth: $this->auth,
+            additionalOptions: $this->options,
+            retryConfig: $this->retryConfig
+        );
 
-        return $this->getHandler()->download($url,  $destination, $options);
+        /** @var array<int|string, mixed> $options */
+        $options = $this->getTransportOptionsBuilder()->buildForDownload($clientOptions, $destination);
+        return $this->getHandler()->download($url, $destination, $options);
     }
 
     /**
      * Streams the response body of a POST request.
-     *
+     *      
      * @param  string  $url  The target URL.
      * @param  mixed|null  $body  The request body.
      * @param  (callable(string): void)|null  $onChunk  An optional callback for each data chunk.
@@ -745,15 +802,38 @@ class Request extends Message implements CompleteHttpClientInterface
      */
     public function streamPost(string $url, $body = null, ?callable $onChunk = null): PromiseInterface
     {
-        $new = $this;
-        if ($body !== null) {
-            $new = $new->body($this->convertToString($body));
-        }
-        $options = $new->buildCurlOptions('POST', $url);
-        $options[CURLOPT_HEADER] = false;
+        $postBody = $this->body;
 
+        if ($body !== null) {
+            $postBody = $this->createTempStream();
+            $postBody->write($this->convertToString($body));
+            $postBody->rewind();
+        }
+
+        $clientOptions = new ClientOptions(
+            method: 'POST',
+            url: $url,
+            headers: $this->headers,
+            body: $postBody,
+            timeout: $this->timeout,
+            connectTimeout: $this->connectTimeout,
+            followRedirects: $this->followRedirects,
+            maxRedirects: $this->maxRedirects,
+            verifySSL: $this->verifySSL,
+            userAgent: $this->userAgent,
+            protocol: $this->protocol,
+            cookieJar: $this->cookieJar,
+            proxyConfig: $this->proxyConfig,
+            auth: $this->auth,
+            additionalOptions: $this->options,
+            retryConfig: $this->retryConfig
+        );
+
+        /** @var array<int|string, mixed> $options */
+        $options = $this->getTransportOptionsBuilder()->buildForStreaming($clientOptions);
         return $this->getHandler()->stream($url, $options, $onChunk);
     }
+
 
     /**
      * Performs an asynchronous GET request.
@@ -1456,9 +1536,7 @@ class Request extends Message implements CompleteHttpClientInterface
      */
     private function createClientOptions(Request $request): ClientOptions
     {
-        $body = $request->body instanceof Stream ? $request->body : $request->createTempStream();
-
-        $effectiveCookieJar = $request->cookieJar ?? $request->getHandler()->getCookieJar();
+        $body = $request->body;
 
         return new ClientOptions(
             method: $request->getMethod(),
@@ -1472,7 +1550,7 @@ class Request extends Message implements CompleteHttpClientInterface
             verifySSL: $request->verifySSL,
             userAgent: $request->userAgent,
             protocol: $request->protocol,
-            cookieJar: $effectiveCookieJar,
+            cookieJar: $request->cookieJar,
             proxyConfig: $request->proxyConfig,
             auth: $request->auth,
             additionalOptions: $request->options,
@@ -1490,6 +1568,7 @@ class Request extends Message implements CompleteHttpClientInterface
     {
         $clientOptions = $this->createClientOptions($processedRequest);
 
+        /** @var array<int|string, mixed> $transportOptions */
         $transportOptions = $this->getTransportOptionsBuilder()->build($clientOptions);
 
         $httpPromise = $this->getHandler()->sendRequest(
@@ -1507,24 +1586,6 @@ class Request extends Message implements CompleteHttpClientInterface
             fn($response) => $this->getResponseInterceptorHandler()
                 ->processInterceptors($response, $processedRequest->responseInterceptors)
         );
-    }
-
-    /**
-     * Build cURL options using the active TransportBuilder.
-     *
-     * @param  string  $method  The HTTP method.
-     * @param  string  $url  The target URL.
-     * @return array<int|string, mixed> The final cURL options array.
-     */
-    private function buildCurlOptions(string $method, string $url): array
-    {
-        $tempRequest = clone $this;
-        $tempRequest->method = strtoupper($method);
-        $tempRequest->uri = new Uri($url);
-
-        $clientOptions = $this->createClientOptions($tempRequest);
-
-        return $this->getTransportOptionsBuilder()->build($clientOptions);
     }
 
     /**

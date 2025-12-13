@@ -53,8 +53,13 @@ class HttpHandler
         $this->streamingHandler = $streamingHandler ?? new StreamingHandler();
         $this->requestExecutorHandler = $requestExecutor ?? new RequestExecutorHandler();
         $this->retryHandler = $retryHandler ?? new RetryHandler();
-        $this->cacheHandler = $cacheHandler ?? new CacheHandler($this->requestExecutorHandler, $this->retryHandler);
-        $this->fetchHandler = $fetchHandler ?? new FetchHandler($this->streamingHandler);
+        $this->cacheHandler = $cacheHandler ?? new CacheHandler(
+            $this->requestExecutorHandler,
+            $this->retryHandler
+        );
+        $this->fetchHandler = $fetchHandler ?? new FetchHandler(
+            $this->streamingHandler
+        );
         $this->sseHandler = $sseHandler ?? new SSEHandler();
     }
 
@@ -62,7 +67,7 @@ class HttpHandler
      * Creates an SSE (Server-Sent Events) connection with optional reconnection.
      *
      * @param  string  $url  The SSE endpoint URL
-     * @param  array<int|string, mixed>  $options  Request options
+     * @param  array<int|string, mixed>  $options  Request options (already prepared by builder)
      * @param  callable(SSEEvent): void|null  $onEvent  Optional callback for each SSE event
      * @param  callable(string): void|null  $onError  Optional callback for connection errors
      * @param  SSEReconnectConfig|null  $reconnectConfig  Optional reconnection configuration
@@ -77,10 +82,8 @@ class HttpHandler
         ?callable $onError = null,
         ?SSEReconnectConfig $reconnectConfig = null
     ): PromiseInterface {
-        $curlOptions = $this->fetchHandler->normalizeFetchOptions($url, $options, true);
-
         /** @var array<int, mixed> $curlOnlyOptions */
-        $curlOnlyOptions = array_filter($curlOptions, 'is_int', ARRAY_FILTER_USE_KEY);
+        $curlOnlyOptions = array_filter($options, 'is_int', ARRAY_FILTER_USE_KEY);
 
         return $this->sseHandler->connect($url, $curlOnlyOptions, $onEvent, $onError, $reconnectConfig);
     }
@@ -104,10 +107,8 @@ class HttpHandler
      */
     public function stream(string $url, array $options = [], ?callable $onChunk = null): PromiseInterface
     {
-        $curlOptions = $this->fetchHandler->normalizeFetchOptions($url, $options);
-
         /** @var array<int, mixed> $curlOnlyOptions */
-        $curlOnlyOptions = array_filter($curlOptions, 'is_int', ARRAY_FILTER_USE_KEY);
+        $curlOnlyOptions = array_filter($options, 'is_int', ARRAY_FILTER_USE_KEY);
 
         return $this->streamingHandler->streamRequest($url, $curlOnlyOptions, $onChunk);
     }
@@ -124,10 +125,8 @@ class HttpHandler
      */
     public function download(string $url, string $destination, array $options = []): PromiseInterface
     {
-        $curlOptions = $this->fetchHandler->normalizeFetchOptions($url, $options);
-
         /** @var array<int, mixed> $curlOnlyOptions */
-        $curlOnlyOptions = array_filter($curlOptions, 'is_int', ARRAY_FILTER_USE_KEY);
+        $curlOnlyOptions = array_filter($options, 'is_int', ARRAY_FILTER_USE_KEY);
 
         return $this->streamingHandler->downloadFile($url, $destination, $curlOnlyOptions);
     }
@@ -177,15 +176,5 @@ class HttpHandler
     public function fetch(string $url, array $options = []): PromiseInterface
     {
         return $this->fetchHandler->fetch($url, $options);
-    }
-
-    /**
-     * Get the default cookie jar.
-     *
-     * @internal This method is for internal cookie jar access and may be used by extensions.
-     */
-    public function getCookieJar(): ?CookieJarInterface
-    {
-        return $this->defaultCookieJar;
     }
 }

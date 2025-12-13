@@ -8,18 +8,18 @@ use Hibla\HttpClient\ClientOptions;
 use Hibla\HttpClient\Interfaces\CookieJarInterface;
 use Hibla\HttpClient\Interfaces\TransportOptionsBuilderInterface;
 use Hibla\HttpClient\ProxyConfig;
-use Hibla\HttpClient\Stream;
 use Hibla\HttpClient\Uri;
+use Psr\Http\Message\StreamInterface;
 
 /**
  * Builds cURL-specific options from ClientOptions.
  * 
- * @implements TransportOptionsBuilderInterface<array<int, mixed>>
+ * @implements TransportOptionsBuilderInterface<array<int|string, mixed>>
  */
 class CurlOptionsBuilder implements TransportOptionsBuilderInterface
 {
     /**
-     * @return array<int, mixed>
+     * @return array<int|string, mixed>
      */
     public function build(ClientOptions $options): array
     {
@@ -58,7 +58,7 @@ class CurlOptionsBuilder implements TransportOptionsBuilderInterface
 
         $stringKeyOptions = array_filter(
             $options->additionalOptions,
-            fn ($key) => \is_string($key),
+            fn($key) => \is_string($key),
             ARRAY_FILTER_USE_KEY
         );
 
@@ -69,12 +69,62 @@ class CurlOptionsBuilder implements TransportOptionsBuilderInterface
             $curlOptions['_cookie_jar'] = $options->cookieJar;
         }
 
-        // Merge additional options (integer keys only for cURL options)
         foreach ($options->additionalOptions as $key => $value) {
             if (\is_int($key)) {
                 $curlOptions[$key] = $value;
             }
         }
+
+        return $curlOptions;
+    }
+
+    /**
+     * @return array<int|string, mixed>
+     */
+    public function buildForStreaming(ClientOptions $options): array
+    {
+        $curlOptions = $this->build($options);
+
+        unset($curlOptions[CURLOPT_HEADER]);
+
+        return $curlOptions;
+    }
+
+    /**
+     * @return array<int|string, mixed>
+     */
+    public function buildForDownload(ClientOptions $options, string $destination): array
+    {
+        $curlOptions = $this->build($options);
+
+        unset($curlOptions[CURLOPT_HEADER]);
+
+        $curlOptions['_destination'] = $destination;
+
+        return $curlOptions;
+    }
+
+    /**
+     * @return array<int|string, mixed>
+     */
+    public function buildForSSE(ClientOptions $options): array
+    {
+        $curlOptions = $this->build($options);
+
+        unset($curlOptions[CURLOPT_HEADER]);
+
+        $existingHeaders = $curlOptions[CURLOPT_HTTPHEADER] ?? [];
+        if (!\is_array($existingHeaders)) {
+            $existingHeaders = [];
+        }
+
+        $sseHeaders = [
+            'Accept: text/event-stream',
+            'Cache-Control: no-cache',
+            'Connection: keep-alive'
+        ];
+
+        $curlOptions[CURLOPT_HTTPHEADER] = array_merge($existingHeaders, $sseHeaders);
 
         return $curlOptions;
     }
@@ -132,7 +182,7 @@ class CurlOptionsBuilder implements TransportOptionsBuilderInterface
     }
 
     /**
-     * @param array<int, mixed> $options
+     * @param array<int|string, mixed> $options
      */
     private function addProxyOptions(array &$options, ProxyConfig $proxyConfig): void
     {
@@ -155,7 +205,7 @@ class CurlOptionsBuilder implements TransportOptionsBuilderInterface
     }
 
     /**
-     * @param array<int, mixed> $options
+     * @param array<int|string, mixed> $options
      * @param array<string, array<string>> $headers
      */
     private function addHeaderOptions(array &$options, array $headers): void
@@ -170,10 +220,10 @@ class CurlOptionsBuilder implements TransportOptionsBuilderInterface
     }
 
     /**
-     * @param array<int, mixed> $options
+     * @param array<int|string, mixed> $options
      * @param array<string, mixed> $additionalOptions
      */
-    private function addBodyOptions(array &$options, Stream $body, array $additionalOptions): void
+    private function addBodyOptions(array &$options, StreamInterface $body, array $additionalOptions): void
     {
         if (isset($additionalOptions['multipart'])) {
             $options[CURLOPT_POSTFIELDS] = $additionalOptions['multipart'];
@@ -183,7 +233,7 @@ class CurlOptionsBuilder implements TransportOptionsBuilderInterface
     }
 
     /**
-     * @param array<int, mixed> $options
+     * @param array<int|string, mixed> $options
      * @param array{0: string, 1: string, 2: string}|null $auth
      */
     private function addAuthenticationOptions(array &$options, ?array $auth): void
