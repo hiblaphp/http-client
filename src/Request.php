@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient;
 
+use Hibla\HttpClient\Builders\CurlOptionsBuilder;
+use Hibla\HttpClient\ClientOptions;
 use Hibla\HttpClient\Handlers\HttpHandler;
-use Hibla\HttpClient\Handlers\OptionsBuilderHandler;
 use Hibla\HttpClient\Handlers\RequestInterceptorHandler;
 use Hibla\HttpClient\Handlers\ResponseInterceptorHandler;
 use Hibla\HttpClient\Interfaces\CompleteHttpClientInterface;
 use Hibla\HttpClient\Interfaces\CookieJarInterface;
+use Hibla\HttpClient\Interfaces\TransportOptionsBuilderInterface;
 use Hibla\HttpClient\SSE\SSEEvent;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
 use Hibla\HttpClient\SSE\SSEResponse;
@@ -82,8 +84,6 @@ class Request extends Message implements CompleteHttpClientInterface
 
     private ?string $requestTarget = null;
 
-    private OptionsBuilderHandler $optionsBuilder;
-
     private UriInterface $uri;
 
     private ?HttpHandler $handler = null;
@@ -103,6 +103,11 @@ class Request extends Message implements CompleteHttpClientInterface
     private ?SSEReconnectConfig $sseReconnectConfig = null;
 
     /**
+     * @var TransportOptionsBuilderInterface|null
+     */
+    private ?TransportOptionsBuilderInterface $transportOptionsBuilder = null;
+
+    /**
      * Initializes a new Request builder instance.
      *
      * @param  string  $method  The HTTP method for the request.
@@ -110,7 +115,6 @@ class Request extends Message implements CompleteHttpClientInterface
      * @param  array<string, string|string[]>  $headers  An associative array of headers.
      * @param  mixed|null  $body  The request body.
      * @param  string  $version  The HTTP protocol version.
-     * @param  HttpHandler|null  $handler  Optional HTTP handler instance.
      */
     public function __construct(
         string $method = 'GET',
@@ -119,7 +123,6 @@ class Request extends Message implements CompleteHttpClientInterface
         $body = null,
         string $version = '2.0',
     ) {
-        $this->optionsBuilder = new OptionsBuilderHandler();
         $this->method = strtoupper($method);
         $this->uri = $uri instanceof UriInterface ? $uri : new Uri($uri);
         $this->setHeaders($headers);
@@ -136,6 +139,34 @@ class Request extends Message implements CompleteHttpClientInterface
         } else {
             $this->body = $this->createTempStream();
         }
+    }
+
+    /**
+     * Set a custom transport options builder.
+     *
+     * Allows replacing the default cURL builder with a custom implementation
+     * (e.g., for Stream Context or Swoole).
+     *
+     * @param TransportOptionsBuilderInterface $builder
+     * @return self
+     */
+    public function setTransportOptionsBuilder(TransportOptionsBuilderInterface $builder): self
+    {
+        $new = clone $this;
+        $new->transportOptionsBuilder = $builder;
+        return $new;
+    }
+
+    /**
+     * Get the transport builder, lazy loading the default (cURL) if not set.
+     */
+    private function getTransportOptionsBuilder(): TransportOptionsBuilderInterface
+    {
+        if ($this->transportOptionsBuilder === null) {
+            $this->transportOptionsBuilder = new CurlOptionsBuilder();
+        }
+
+        return $this->transportOptionsBuilder;
     }
 
     /**
@@ -685,15 +716,11 @@ class Request extends Message implements CompleteHttpClientInterface
      */
     public function stream(string $url, ?callable $onChunk = null): PromiseInterface
     {
-        $options = $this->buildFetchOptions('GET');
-        $options['stream'] = true;
-
-        if ($onChunk !== null) {
-            $options['on_chunk'] = $onChunk;
-        }
+        $options = $this->buildCurlOptions('GET', $url);
+        $options[CURLOPT_HEADER] = false;
 
         /** @var PromiseInterface<StreamingResponse> */
-        return $this->getHandler()->fetch($url, $options);
+        return $this->getHandler()->stream($url, $options, $onChunk);
     }
 
     /**
@@ -705,7 +732,7 @@ class Request extends Message implements CompleteHttpClientInterface
         $options = $this->buildCurlOptions('GET', $url);
         $options['retry'] = $this->retryConfig;
 
-        return $this->getHandler()->download($url, $destination, $options);
+        return $this->getHandler()->download($url,  $destination, $options);
     }
 
     /**
@@ -946,13 +973,13 @@ class Request extends Message implements CompleteHttpClientInterface
         $new = $this;
         foreach ($files as $name => $file) {
             if (\is_array($file)) {
-                if (! isset($file['path']) || ! is_string($file['path'])) {
+                if (! isset($file['path']) || ! \is_string($file['path'])) {
                     throw new InvalidArgumentException("File array for '{$name}' must contain a string 'path' key.");
                 }
 
                 $filePath = $file['path'];
-                $fileName = (isset($file['name']) && is_string($file['name'])) ? $file['name'] : null;
-                $fileType = (isset($file['type']) && is_string($file['type'])) ? $file['type'] : null;
+                $fileName = (isset($file['name']) && \is_string($file['name'])) ? $file['name'] : null;
+                $fileType = (isset($file['type']) && \is_string($file['type'])) ? $file['type'] : null;
 
                 $new = $new->withFile($name, $filePath, $fileName, $fileType);
             } else {
@@ -1425,6 +1452,35 @@ class Request extends Message implements CompleteHttpClientInterface
     }
 
     /**
+     * Creates the Value Object representing the request configuration.
+     */
+    private function createClientOptions(Request $request): ClientOptions
+    {
+        $body = $request->body instanceof Stream ? $request->body : $request->createTempStream();
+
+        $effectiveCookieJar = $request->cookieJar ?? $request->getHandler()->getCookieJar();
+
+        return new ClientOptions(
+            method: $request->getMethod(),
+            url: (string) $request->getUri(),
+            headers: $request->headers,
+            body: $body,
+            timeout: $request->timeout,
+            connectTimeout: $request->connectTimeout,
+            followRedirects: $request->followRedirects,
+            maxRedirects: $request->maxRedirects,
+            verifySSL: $request->verifySSL,
+            userAgent: $request->userAgent,
+            protocol: $request->protocol,
+            cookieJar: $effectiveCookieJar,
+            proxyConfig: $request->proxyConfig,
+            auth: $request->auth,
+            additionalOptions: $request->options,
+            retryConfig: $request->retryConfig
+        );
+    }
+
+    /**
      * Execute the actual request after all interceptors have been processed.
      *
      * @param Request $processedRequest The request after interceptor processing.
@@ -1432,14 +1488,13 @@ class Request extends Message implements CompleteHttpClientInterface
      */
     private function executeRequest(Request $processedRequest): PromiseInterface
     {
-        $options = $processedRequest->buildCurlOptions(
-            $processedRequest->getMethod(),
-            (string) $processedRequest->getUri()
-        );
+        $clientOptions = $this->createClientOptions($processedRequest);
+
+        $transportOptions = $this->getTransportOptionsBuilder()->build($clientOptions);
 
         $httpPromise = $this->getHandler()->sendRequest(
             (string) $processedRequest->getUri(),
-            $options,
+            $transportOptions,
             $processedRequest->cacheConfig,
             $processedRequest->retryConfig
         );
@@ -1455,7 +1510,7 @@ class Request extends Message implements CompleteHttpClientInterface
     }
 
     /**
-     * Build cURL options using the OptionsBuilder.
+     * Build cURL options using the active TransportBuilder.
      *
      * @param  string  $method  The HTTP method.
      * @param  string  $url  The target URL.
@@ -1463,51 +1518,13 @@ class Request extends Message implements CompleteHttpClientInterface
      */
     private function buildCurlOptions(string $method, string $url): array
     {
-        $body = $this->body instanceof Stream ? $this->body : $this->createTempStream();
+        $tempRequest = clone $this;
+        $tempRequest->method = strtoupper($method);
+        $tempRequest->uri = new Uri($url);
 
-        return $this->optionsBuilder->buildCurlOptions(
-            method: $method,
-            url: $url,
-            headers: $this->headers,
-            body: $body,
-            timeout: $this->timeout,
-            connectTimeout: $this->connectTimeout,
-            followRedirects: $this->followRedirects,
-            maxRedirects: $this->maxRedirects,
-            verifySSL: $this->verifySSL,
-            userAgent: $this->userAgent,
-            protocol: $this->protocol,
-            cookieJar: $this->cookieJar,
-            handlerCookieJar: $this->getHandler()->getCookieJar(),
-            proxyConfig: $this->proxyConfig,
-            auth: $this->auth,
-            additionalOptions: $this->options
-        );
-    }
+        $clientOptions = $this->createClientOptions($tempRequest);
 
-    /**
-     * Build fetch options using the OptionsBuilder.
-     *
-     * @param  string  $method  The HTTP method.
-     * @return array<string, mixed> The fetch options array.
-     */
-    private function buildFetchOptions(string $method): array
-    {
-        $body = $this->body instanceof Stream ? $this->body : $this->createTempStream();
-
-        return $this->optionsBuilder->buildFetchOptions(
-            method: $method,
-            headers: $this->headers,
-            body: $body,
-            timeout: $this->timeout,
-            connectTimeout: $this->connectTimeout,
-            followRedirects: $this->followRedirects,
-            maxRedirects: $this->maxRedirects,
-            verifySSL: $this->verifySSL,
-            userAgent: $this->userAgent,
-            auth: $this->auth,
-            retryConfig: $this->retryConfig
-        );
+        return $this->getTransportOptionsBuilder()->build($clientOptions);
     }
 
     /**
@@ -1549,7 +1566,7 @@ class Request extends Message implements CompleteHttpClientInterface
     {
         $array = $event->toArray();
 
-        if ($array['data'] !== null && is_string($array['data'])) {
+        if ($array['data'] !== null && \is_string($array['data'])) {
             $parsed = json_decode($array['data'], true);
             if (json_last_error() === JSON_ERROR_NONE && \is_array($parsed)) {
                 $array['data'] = $parsed;
