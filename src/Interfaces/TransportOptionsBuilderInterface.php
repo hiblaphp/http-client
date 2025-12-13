@@ -8,14 +8,14 @@ use Hibla\HttpClient\ClientOptions;
 
 /**
  * Interface for building transport-specific options from ClientOptions.
- * 
+ *
  * @template-covariant TOptions
  */
 interface TransportOptionsBuilderInterface
 {
     /**
      * Build transport options for a standard request.
-     * 
+     *
      * @param ClientOptions $options
      * @return TOptions
      */
@@ -23,7 +23,7 @@ interface TransportOptionsBuilderInterface
 
     /**
      * Build transport options for streaming requests.
-     * 
+     *
      * @param ClientOptions $options
      * @return TOptions
      */
@@ -31,7 +31,7 @@ interface TransportOptionsBuilderInterface
 
     /**
      * Build transport options for download requests.
-     * 
+     *
      * @param ClientOptions $options
      * @param string $destination
      * @return TOptions
@@ -40,7 +40,7 @@ interface TransportOptionsBuilderInterface
 
     /**
      * Build transport options for SSE (Server-Sent Events) requests.
-     * 
+     *
      * @param ClientOptions $options
      * @return TOptions
      */

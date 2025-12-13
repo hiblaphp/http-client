@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace Hibla\HttpClient;
 
 use Hibla\HttpClient\Interfaces\CookieJarInterface;
-use Hibla\HttpClient\ProxyConfig;
-use Hibla\HttpClient\RetryConfig;
 use Psr\Http\Message\StreamInterface;
 
 final readonly class ClientOptions
@@ -33,5 +31,6 @@ final readonly class ClientOptions
         public ?array $auth = null,
         public array $additionalOptions = [],
         public ?RetryConfig $retryConfig = null
-    ) {}
+    ) {
+    }
 }

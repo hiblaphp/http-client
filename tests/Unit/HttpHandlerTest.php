@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use Hibla\HttpClient\Handlers\FetchHandler;
+use Hibla\HttpClient\Handlers\Curl\FetchHandler;
+use Hibla\HttpClient\Handlers\Curl\RequestExecutorHandler;
+use Hibla\HttpClient\Handlers\Curl\RetryHandler;
+use Hibla\HttpClient\Handlers\Curl\StreamingHandler;
 use Hibla\HttpClient\Handlers\HttpHandler;
-use Hibla\HttpClient\Handlers\RequestExecutorHandler;
-use Hibla\HttpClient\Handlers\RetryHandler;
-use Hibla\HttpClient\Handlers\StreamingHandler;
 use Hibla\HttpClient\RetryConfig;
 use Hibla\Promise\Promise;
 
@@ -101,10 +101,10 @@ it('filters integer-only options for streaming handler', function () {
     $streamingHandlerMock = Mockery::mock(StreamingHandler::class);
 
     $options = [
-        CURLOPT_TIMEOUT => 30,          
-        CURLOPT_CONNECTTIMEOUT => 10, 
-        '_cookie_jar' => 'something',     
-        'retry' => 'config',      
+        CURLOPT_TIMEOUT => 30,
+        CURLOPT_CONNECTTIMEOUT => 10,
+        '_cookie_jar' => 'something',
+        'retry' => 'config',
     ];
 
     $streamingHandlerMock
@@ -115,10 +115,11 @@ it('filters integer-only options for streaming handler', function () {
             Mockery::on(function ($arg) {
                 // Verify only integer keys are passed
                 foreach (array_keys($arg) as $key) {
-                    if (!is_int($key)) {
+                    if (! is_int($key)) {
                         return false;
                     }
                 }
+
                 return true;
             }),
             null
@@ -148,10 +149,11 @@ it('filters integer-only options for download handler', function () {
             '/tmp/file.zip',
             Mockery::on(function ($arg) {
                 foreach (array_keys($arg) as $key) {
-                    if (!is_int($key)) {
+                    if (! is_int($key)) {
                         return false;
                     }
                 }
+
                 return true;
             })
         )

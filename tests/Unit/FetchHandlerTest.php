@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Hibla\HttpClient\Handlers\FetchHandler;
+use Hibla\HttpClient\Handlers\Curl\FetchHandler;
 use Hibla\HttpClient\ProxyConfig;
 
 test('it normalizes basic method and headers', function () {

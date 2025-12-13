@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use Hibla\HttpClient\CacheConfig;
-use Hibla\HttpClient\Handlers\CacheHandler;
-use Hibla\HttpClient\Handlers\RequestExecutorHandler;
-use Hibla\HttpClient\Handlers\RetryHandler;
+use Hibla\HttpClient\Handlers\Curl\CacheHandler;
+use Hibla\HttpClient\Handlers\Curl\RequestExecutorHandler;
+use Hibla\HttpClient\Handlers\Curl\RetryHandler;
 use Hibla\HttpClient\Response;
 use Psr\Http\Message\StreamInterface;
 use Psr\SimpleCache\CacheInterface;

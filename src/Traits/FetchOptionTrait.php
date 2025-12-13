@@ -459,10 +459,10 @@ trait FetchOptionTrait
                 'Connection timed out',
                 'SSL connection timeout',
             ];
-            if (isset($retry['retryable_exceptions']) && is_array($retry['retryable_exceptions'])) {
+            if (isset($retry['retryable_exceptions']) && \is_array($retry['retryable_exceptions'])) {
                 $exceptions = [];
                 foreach ($retry['retryable_exceptions'] as $exception) {
-                    if (is_scalar($exception)) {
+                    if (\is_scalar($exception)) {
                         $exceptions[] = (string) $exception;
                     }
                 }
@@ -503,13 +503,13 @@ trait FetchOptionTrait
         }
 
         // Extract individual cookies
-        if (isset($options['cookies']) && is_array($options['cookies'])) {
+        if (isset($options['cookies']) && \is_array($options['cookies'])) {
             $cookieOptions['cookies'] = $options['cookies'];
             unset($options['cookies']);
         }
 
         // Extract single cookie
-        if (isset($options['cookie']) && is_string($options['cookie'])) {
+        if (isset($options['cookie']) && \is_string($options['cookie'])) {
             $cookieOptions['cookie_header'] = $options['cookie'];
             unset($options['cookie']);
         }
@@ -533,9 +533,9 @@ trait FetchOptionTrait
             if (\is_string($url) && $url !== '') {
                 $parsedUrl = parse_url($url);
                 if (\is_array($parsedUrl)) {
-                    $domain = isset($parsedUrl['host']) && is_string($parsedUrl['host']) ? $parsedUrl['host'] : '';
-                    $path = isset($parsedUrl['path']) && is_string($parsedUrl['path']) ? $parsedUrl['path'] : '/';
-                    $scheme = isset($parsedUrl['scheme']) && is_string($parsedUrl['scheme']) ? $parsedUrl['scheme'] : 'http';
+                    $domain = isset($parsedUrl['host']) && \is_string($parsedUrl['host']) ? $parsedUrl['host'] : '';
+                    $path = isset($parsedUrl['path']) && \is_string($parsedUrl['path']) ? $parsedUrl['path'] : '/';
+                    $scheme = isset($parsedUrl['scheme']) && \is_string($parsedUrl['scheme']) ? $parsedUrl['scheme'] : 'http';
                     $isSecure = $scheme === 'https';
 
                     $cookieHeader = $jar->getCookieHeader($domain, $path, $isSecure);
@@ -568,7 +568,7 @@ trait FetchOptionTrait
         }
 
         // Apply cookies to headers
-        if (count($cookieHeaders) > 0) {
+        if (\count($cookieHeaders) > 0) {
             $existingHeaders = $curlOptions[CURLOPT_HTTPHEADER] ?? [];
 
             if (! \is_array($existingHeaders)) {

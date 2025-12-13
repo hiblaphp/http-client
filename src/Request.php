@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Hibla\HttpClient;
 
 use Hibla\HttpClient\Builders\CurlOptionsBuilder;
-use Hibla\HttpClient\ClientOptions;
 use Hibla\HttpClient\Handlers\HttpHandler;
 use Hibla\HttpClient\Handlers\RequestInterceptorHandler;
 use Hibla\HttpClient\Handlers\ResponseInterceptorHandler;
@@ -155,12 +154,13 @@ class Request extends Message implements CompleteHttpClientInterface
     {
         $new = clone $this;
         $new->transportOptionsBuilder = $builder;
+
         return $new;
     }
 
     /**
      * Get the transport builder, lazy loading the default (cURL) if not set.
-     * 
+     *
      * @return TransportOptionsBuilderInterface<array<int|string, mixed>>
      */
     private function getTransportOptionsBuilder(): TransportOptionsBuilderInterface
@@ -171,6 +171,7 @@ class Request extends Message implements CompleteHttpClientInterface
 
         return $this->transportOptionsBuilder;
     }
+
     /**
      * Set the HTTP handler for this request.
      *
@@ -760,6 +761,7 @@ class Request extends Message implements CompleteHttpClientInterface
 
         /** @var array<int|string, mixed> $options */
         $options = $this->getTransportOptionsBuilder()->buildForStreaming($clientOptions);
+
         return $this->getHandler()->stream($url, $options, $onChunk);
     }
 
@@ -789,12 +791,13 @@ class Request extends Message implements CompleteHttpClientInterface
 
         /** @var array<int|string, mixed> $options */
         $options = $this->getTransportOptionsBuilder()->buildForDownload($clientOptions, $destination);
+
         return $this->getHandler()->download($url, $destination, $options);
     }
 
     /**
      * Streams the response body of a POST request.
-     *      
+     *
      * @param  string  $url  The target URL.
      * @param  mixed|null  $body  The request body.
      * @param  (callable(string): void)|null  $onChunk  An optional callback for each data chunk.
@@ -831,9 +834,9 @@ class Request extends Message implements CompleteHttpClientInterface
 
         /** @var array<int|string, mixed> $options */
         $options = $this->getTransportOptionsBuilder()->buildForStreaming($clientOptions);
+
         return $this->getHandler()->stream($url, $options, $onChunk);
     }
-
 
     /**
      * Performs an asynchronous GET request.
@@ -1099,7 +1102,7 @@ class Request extends Message implements CompleteHttpClientInterface
         return $this->getRequestInterceptorHandler()
             ->processInterceptors($initialRequest, $this->requestInterceptors)
             ->then(
-                fn($processedRequest) => $this->executeRequest($processedRequest)
+                fn ($processedRequest) => $this->executeRequest($processedRequest)
             )
         ;
     }
@@ -1583,7 +1586,7 @@ class Request extends Message implements CompleteHttpClientInterface
         }
 
         return $httpPromise->then(
-            fn($response) => $this->getResponseInterceptorHandler()
+            fn ($response) => $this->getResponseInterceptorHandler()
                 ->processInterceptors($response, $processedRequest->responseInterceptors)
         );
     }

@@ -13,7 +13,7 @@ use Psr\Http\Message\StreamInterface;
 
 /**
  * Builds cURL-specific options from ClientOptions.
- * 
+ *
  * @implements TransportOptionsBuilderInterface<array<int|string, mixed>>
  */
 class CurlOptionsBuilder implements TransportOptionsBuilderInterface
@@ -58,7 +58,7 @@ class CurlOptionsBuilder implements TransportOptionsBuilderInterface
 
         $stringKeyOptions = array_filter(
             $options->additionalOptions,
-            fn($key) => \is_string($key),
+            fn ($key) => \is_string($key),
             ARRAY_FILTER_USE_KEY
         );
 
@@ -114,14 +114,14 @@ class CurlOptionsBuilder implements TransportOptionsBuilderInterface
         unset($curlOptions[CURLOPT_HEADER]);
 
         $existingHeaders = $curlOptions[CURLOPT_HTTPHEADER] ?? [];
-        if (!\is_array($existingHeaders)) {
+        if (! \is_array($existingHeaders)) {
             $existingHeaders = [];
         }
 
         $sseHeaders = [
             'Accept: text/event-stream',
             'Cache-Control: no-cache',
-            'Connection: keep-alive'
+            'Connection: keep-alive',
         ];
 
         $curlOptions[CURLOPT_HTTPHEADER] = array_merge($existingHeaders, $sseHeaders);
@@ -167,6 +167,7 @@ class CurlOptionsBuilder implements TransportOptionsBuilderInterface
             foreach ($headers as $name => $value) {
                 if (strtolower($name) === 'cookie') {
                     unset($headers[$name]);
+
                     break;
                 }
             }

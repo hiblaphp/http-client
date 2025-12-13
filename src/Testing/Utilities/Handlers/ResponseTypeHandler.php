@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Hibla\HttpClient\Testing\Utilities\Handlers;
 
 use Hibla\HttpClient\CacheConfig;
-use Hibla\HttpClient\Handlers\HttpHandler;
 use Hibla\HttpClient\Response;
 use Hibla\HttpClient\StreamingResponse;
 use Hibla\HttpClient\Testing\MockedRequest;

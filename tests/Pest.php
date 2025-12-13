@@ -8,7 +8,7 @@ declare(strict_types=1);
 |--------------------------------------------------------------------------
 */
 
-use Hibla\HttpClient\Handlers\CacheHandler;
+use Hibla\HttpClient\Handlers\Curl\CacheHandler;
 use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Testing\TestingHttpHandler;
 use Hibla\HttpClient\Testing\Utilities\CacheManager;

@@ -5,6 +5,12 @@ declare(strict_types=1);
 namespace Hibla\HttpClient\Handlers;
 
 use Hibla\HttpClient\CacheConfig;
+use Hibla\HttpClient\Handlers\Curl\CacheHandler;
+use Hibla\HttpClient\Handlers\Curl\FetchHandler;
+use Hibla\HttpClient\Handlers\Curl\RequestExecutorHandler;
+use Hibla\HttpClient\Handlers\Curl\RetryHandler;
+use Hibla\HttpClient\Handlers\Curl\SSEHandler;
+use Hibla\HttpClient\Handlers\Curl\StreamingHandler;
 use Hibla\HttpClient\Interfaces\CacheHandlerInterface;
 use Hibla\HttpClient\Interfaces\CookieJarInterface;
 use Hibla\HttpClient\Interfaces\FetchHandlerInterface;

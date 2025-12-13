@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Hibla\HttpClient\Handlers;
+namespace Hibla\HttpClient\Handlers\Curl;
 
 use Hibla\HttpClient\CacheConfig;
 use Hibla\HttpClient\GlobalConfig;
