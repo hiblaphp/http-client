@@ -6,7 +6,7 @@ namespace Hibla\HttpClient;
 
 use Psr\SimpleCache\CacheInterface;
 
-final readonly class CacheConfig
+readonly class CacheConfig
 {
     /**
      * Initializes a new cache configuration instance.

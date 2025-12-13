@@ -50,7 +50,6 @@ class TestingHttpHandler extends HttpHandler implements
     AssertsRequestBodyInterface,
     AssertsRequestsExtendedInterface
 {
-    use FetchOptionTrait;
     use StreamTrait;
     use AssertsRequests;
     use AssertsHeaders;
@@ -503,7 +502,7 @@ class TestingHttpHandler extends HttpHandler implements
         ?callable $onError = null,
         ?SSEReconnectConfig $reconnectConfig = null
     ): PromiseInterface {
-        $curlOptions = $this->normalizeFetchOptions($url, $options, true);
+        $curlOptions = $this->fetchHandler->normalizeFetchOptions($url, $options, true);
         $mockedRequests = array_values($this->mockedRequests);
 
         /** @var array<int, mixed> $normalizedCurlOptions */

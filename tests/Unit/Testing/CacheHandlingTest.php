@@ -20,14 +20,14 @@ describe('CacheHandler', function () {
         it('returns false for non-GET requests', function () {
             $cacheManager = Mockery::mock(CacheManager::class);
             $handler = new CacheHandler($cacheManager);
-            $cacheConfig = Mockery::mock(CacheConfig::class);
+            $cacheConfig = new CacheConfig();
 
             expect($handler->tryServeFromCache('https://example.com', 'POST', $cacheConfig))->toBeFalse();
         });
 
         it('returns true when cached response exists', function () {
             $cacheManager = Mockery::mock(CacheManager::class);
-            $cacheConfig = Mockery::mock(CacheConfig::class);
+            $cacheConfig = new CacheConfig();
             $response = Mockery::mock(Response::class);
 
             $cacheManager->shouldReceive('getCachedResponse')->andReturn($response);
@@ -39,7 +39,7 @@ describe('CacheHandler', function () {
 
         it('returns false when no cached response exists', function () {
             $cacheManager = Mockery::mock(CacheManager::class);
-            $cacheConfig = Mockery::mock(CacheConfig::class);
+            $cacheConfig = new CacheConfig();
 
             $cacheManager->shouldReceive('getCachedResponse')->andReturn(null);
 
@@ -59,7 +59,7 @@ describe('CacheHandler', function () {
 
         it('returns cached response when available', function () {
             $cacheManager = Mockery::mock(CacheManager::class);
-            $cacheConfig = Mockery::mock(CacheConfig::class);
+            $cacheConfig = new CacheConfig();
             $response = Mockery::mock(Response::class);
 
             $cacheManager->shouldReceive('getCachedResponse')->andReturn($response);
@@ -71,7 +71,7 @@ describe('CacheHandler', function () {
 
         it('throws exception when cache indicates availability but returns null', function () {
             $cacheManager = Mockery::mock(CacheManager::class);
-            $cacheConfig = Mockery::mock(CacheConfig::class);
+            $cacheConfig = new CacheConfig();
 
             $cacheManager->shouldReceive('getCachedResponse')->andReturn(null);
 
@@ -86,7 +86,7 @@ describe('CacheHandler', function () {
     describe('cacheIfNeeded', function () {
         it('caches GET request with ok response', function () {
             $cacheManager = Mockery::mock(CacheManager::class);
-            $cacheConfig = Mockery::mock(CacheConfig::class);
+            $cacheConfig = new CacheConfig();
             $response = Mockery::mock(Response::class);
 
             $response->shouldReceive('successful')->andReturn(true);
@@ -108,7 +108,7 @@ describe('CacheHandler', function () {
 
         it('does not cache POST requests', function () {
             $cacheManager = Mockery::mock(CacheManager::class);
-            $cacheConfig = Mockery::mock(CacheConfig::class);
+            $cacheConfig = new CacheConfig();
             $response = Mockery::mock(Response::class);
 
             $cacheManager->shouldReceive('cacheResponse')->never();
@@ -119,7 +119,7 @@ describe('CacheHandler', function () {
 
         it('does not cache failed responses', function () {
             $cacheManager = Mockery::mock(CacheManager::class);
-            $cacheConfig = Mockery::mock(CacheConfig::class);
+            $cacheConfig = new CacheConfig();
             $response = Mockery::mock(Response::class);
 
             $response->shouldReceive('successful')->andReturn(false);
@@ -133,7 +133,7 @@ describe('CacheHandler', function () {
     describe('cacheResponse', function () {
         it('caches ok response with config', function () {
             $cacheManager = Mockery::mock(CacheManager::class);
-            $cacheConfig = Mockery::mock(CacheConfig::class);
+            $cacheConfig = new CacheConfig();
             $response = Mockery::mock(Response::class);
 
             $response->shouldReceive('successful')->andReturn(true);
@@ -155,7 +155,7 @@ describe('CacheHandler', function () {
 
         it('does not cache failed responses', function () {
             $cacheManager = Mockery::mock(CacheManager::class);
-            $cacheConfig = Mockery::mock(CacheConfig::class);
+            $cacheConfig = new CacheConfig();
             $response = Mockery::mock(Response::class);
 
             $response->shouldReceive('successful')->andReturn(false);

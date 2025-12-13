@@ -83,7 +83,7 @@ class FetchHandler implements FetchHandlerInterface
             return $this->fetchStream($url, $options, $onChunk);
         }
 
-        $retryConfig = $this->extractRetryConfig($options);
+        $retryConfig = $this->extractRetryConfig(options: $options);
         $cacheConfig = $this->extractCacheConfig($options);
 
         $curlOptions = $this->normalizeFetchOptions($url, $options);

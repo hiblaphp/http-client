@@ -103,7 +103,7 @@ describe('ResponseTypeHandler', function () {
             $fileManager = Mockery::mock(FileManager::class);
             $cacheHandler = Mockery::mock(CacheHandler::class);
             $mock = Mockery::mock(MockedRequest::class);
-            $cacheConfig = Mockery::mock(CacheConfig::class);
+            $cacheConfig = new CacheConfig();
             $response = Mockery::mock(Response::class);
 
             $promise = new Promise(function ($resolve) use ($response) {

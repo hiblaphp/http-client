@@ -77,7 +77,7 @@ class HttpHandler
         ?callable $onError = null,
         ?SSEReconnectConfig $reconnectConfig = null
     ): PromiseInterface {
-        $curlOptions = $this->normalizeFetchOptions($url, $options, true);
+        $curlOptions = $this->fetchHandler->normalizeFetchOptions($url, $options, true);
 
         /** @var array<int, mixed> $curlOnlyOptions */
         $curlOnlyOptions = array_filter($curlOptions, 'is_int', ARRAY_FILTER_USE_KEY);
@@ -104,7 +104,7 @@ class HttpHandler
      */
     public function stream(string $url, array $options = [], ?callable $onChunk = null): PromiseInterface
     {
-        $curlOptions = $this->normalizeFetchOptions($url, $options);
+        $curlOptions = $this->fetchHandler->normalizeFetchOptions($url, $options);
 
         /** @var array<int, mixed> $curlOnlyOptions */
         $curlOnlyOptions = array_filter($curlOptions, 'is_int', ARRAY_FILTER_USE_KEY);
@@ -124,7 +124,7 @@ class HttpHandler
      */
     public function download(string $url, string $destination, array $options = []): PromiseInterface
     {
-        $curlOptions = $this->normalizeFetchOptions($url, $options);
+        $curlOptions = $this->fetchHandler->normalizeFetchOptions($url, $options);
 
         /** @var array<int, mixed> $curlOnlyOptions */
         $curlOnlyOptions = array_filter($curlOptions, 'is_int', ARRAY_FILTER_USE_KEY);
@@ -187,22 +187,5 @@ class HttpHandler
     public function getCookieJar(): ?CookieJarInterface
     {
         return $this->defaultCookieJar;
-    }
-
-    /**
-     * Normalizes fetch options from various formats to cURL options.
-     * This method delegates to the FetchHandler for implementation.
-     *
-     * @param  string  $url  The target URL.
-     * @param  array<int|string, mixed>  $options  The options to normalize.
-     * @param  bool  $ensureSSEHeaders  Whether to ensure SSE-specific headers are set.
-     * @return array<int|string, mixed> Normalized cURL options.
-     *
-     * @internal This method converts user-friendly options to cURL options. TestingHttpHandler
-     *           may use this to understand request configuration before mocking.
-     */
-    protected function normalizeFetchOptions(string $url, array $options, bool $ensureSSEHeaders = false): array
-    {
-        return $this->fetchHandler->normalizeFetchOptions($url, $options, $ensureSSEHeaders);
     }
 }
