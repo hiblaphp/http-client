@@ -1,7 +1,6 @@
 includes:
     - vendor/phpstan/phpstan-strict-rules/rules.neon
-    - vendor/hiblaphp/promise/extension.neon
-
+    
 parameters:
     level: 10
     paths:
