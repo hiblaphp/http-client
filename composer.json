@@ -2,6 +2,8 @@
     "name": "hiblaphp/http-client",
     "type": "library",
     "license": "MIT",
+    "minimum-stability": "dev",
+    "prefer-stable": true,
     "autoload": {
         "psr-4": {
             "Hibla\\HttpClient\\": "src/"

@@ -69,7 +69,7 @@ class SSEReconnectConfig
     public function isRetryableError(Exception $error): bool
     {
         if (is_callable($this->shouldReconnect)) {
-            return (bool) call_user_func($this->shouldReconnect, $error);
+            return (bool) \call_user_func($this->shouldReconnect, $error);
         }
 
         $message = $error->getMessage();

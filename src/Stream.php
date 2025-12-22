@@ -84,7 +84,11 @@ class Stream implements StreamInterface
     }
 
     /**
-     * {@inheritdoc}
+     * Creates a new Stream instance from a string.
+     *
+     * @param  string  $content  The content to be streamed.
+     *
+     * @return self A new Stream instance.
      */
     public static function fromString(string $content): self
     {

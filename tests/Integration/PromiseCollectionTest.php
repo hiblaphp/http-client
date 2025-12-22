@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Http;
 use Hibla\Promise\Promise;
 
@@ -218,24 +219,24 @@ describe('Promise::allSettled() with Mocks using Http Facade', function () {
         ;
 
         // First request - successful
-        expect($results[0])->toHaveKey('status', 'fulfilled')
-            ->and($results[0])->toHaveKey('value')
-            ->and($results[0]['value']->successful())->toBeTrue()
+        expect($results[0]->status)->toBe('fulfilled')
+            ->and($results[0]->value->json())->toHaveKey('title')
+            ->and($results[0]->value->successful())->toBeTrue()
         ;
 
         // Second request - 404 but fulfilled
-        expect($results[1])->toHaveKey('status', 'fulfilled')
-            ->and($results[1]['value']->status())->toBe(404)
+        expect($results[1]->status)->toBe('fulfilled')
+            ->and($results[1]->value->status())->toBe(404)
         ;
 
         // Third request - successful
-        expect($results[2])->toHaveKey('status', 'fulfilled')
-            ->and($results[2]['value']->successful())->toBeTrue()
+        expect($results[2]->status)->toBe('fulfilled')
+            ->and($results[2]->value->successful())->toBeTrue()
         ;
 
         // Fourth request - rejected due to network error
-        expect($results[3])->toHaveKey('status', 'rejected')
-            ->and($results[3])->toHaveKey('reason')
+        expect($results[3]->status)->toBe('rejected')
+            ->and($results[3]->reason)->toBeInstanceOf(NetworkException::class)
         ;
     });
 
@@ -263,8 +264,8 @@ describe('Promise::allSettled() with Mocks using Http Facade', function () {
         expect($results)->toHaveCount(3);
 
         foreach ($results as $result) {
-            expect($result)->toHaveKey('status', 'fulfilled')
-                ->and($result['value']->successful())->toBeTrue()
+            expect($result->status)->toBe('fulfilled')
+                ->and($result->value->successful())->toBeTrue()
             ;
         }
     });
@@ -420,7 +421,7 @@ describe('Promise::concurrent() with Mocks using Http Facade', function () {
 
         $tasks = [];
         for ($i = 1; $i <= 20; $i++) {
-            $tasks[] = fn () => Http::get("https://jsonplaceholder.typicode.com/posts/{$i}");
+            $tasks[] = fn() => Http::get("https://jsonplaceholder.typicode.com/posts/{$i}");
         }
 
         $start = microtime(true);
@@ -474,12 +475,12 @@ describe('Promise::concurrent() with Mocks using Http Facade', function () {
         ;
 
         $tasks = [
-            fn () => Http::get('https://jsonplaceholder.typicode.com/posts/1'),
-            fn () => Http::get('https://jsonplaceholder.typicode.com/users/1'),
-            fn () => Http::get('https://jsonplaceholder.typicode.com/comments/1'),
-            fn () => Http::get('https://jsonplaceholder.typicode.com/albums/1'),
-            fn () => Http::get('https://jsonplaceholder.typicode.com/photos/1'),
-            fn () => Http::get('https://jsonplaceholder.typicode.com/todos/1'),
+            fn() => Http::get('https://jsonplaceholder.typicode.com/posts/1'),
+            fn() => Http::get('https://jsonplaceholder.typicode.com/users/1'),
+            fn() => Http::get('https://jsonplaceholder.typicode.com/comments/1'),
+            fn() => Http::get('https://jsonplaceholder.typicode.com/albums/1'),
+            fn() => Http::get('https://jsonplaceholder.typicode.com/photos/1'),
+            fn() => Http::get('https://jsonplaceholder.typicode.com/todos/1'),
         ];
 
         $results = Promise::concurrent($tasks, 3)->wait();
@@ -508,7 +509,7 @@ describe('Promise::concurrent() with Mocks using Http Facade', function () {
 
         $tasks = [];
         for ($i = 1; $i <= 5; $i++) {
-            $tasks[] = fn () => Http::post('https://jsonplaceholder.typicode.com/posts', [
+            $tasks[] = fn() => Http::post('https://jsonplaceholder.typicode.com/posts', [
                 'title' => "Post {$i}",
                 'body' => "Body content {$i}",
                 'userId' => 1,
@@ -542,7 +543,7 @@ describe('Promise::batch() with Mocks using Http Facade', function () {
 
         $tasks = [];
         for ($i = 1; $i <= 15; $i++) {
-            $tasks[] = fn () => Http::get("https://jsonplaceholder.typicode.com/posts/{$i}");
+            $tasks[] = fn() => Http::get("https://jsonplaceholder.typicode.com/posts/{$i}");
         }
 
         $results = Promise::batch($tasks, 5, 3)->wait();
@@ -589,11 +590,11 @@ describe('Promise::batch() with Mocks using Http Facade', function () {
         ;
 
         $tasks = [
-            fn () => Http::get('https://jsonplaceholder.typicode.com/posts/1'),
-            fn () => Http::post('https://jsonplaceholder.typicode.com/posts', ['title' => 'Test']),
-            fn () => Http::put('https://jsonplaceholder.typicode.com/posts/1', ['title' => 'Updated']),
-            fn () => Http::delete('https://jsonplaceholder.typicode.com/posts/1'),
-            fn () => Http::patch('https://jsonplaceholder.typicode.com/posts/1', ['title' => 'Patched']),
+            fn() => Http::get('https://jsonplaceholder.typicode.com/posts/1'),
+            fn() => Http::post('https://jsonplaceholder.typicode.com/posts', ['title' => 'Test']),
+            fn() => Http::put('https://jsonplaceholder.typicode.com/posts/1', ['title' => 'Updated']),
+            fn() => Http::delete('https://jsonplaceholder.typicode.com/posts/1'),
+            fn() => Http::patch('https://jsonplaceholder.typicode.com/posts/1', ['title' => 'Patched']),
         ];
 
         $results = Promise::batch($tasks, 2, 2)->wait();
@@ -645,10 +646,10 @@ describe('Promise::concurrentSettled() with Mocks using Http Facade', function (
         ;
 
         $tasks = [
-            fn () => Http::get('https://jsonplaceholder.typicode.com/posts/1'),
-            fn () => Http::get('https://jsonplaceholder.typicode.com/posts/99999'),
-            fn () => Http::get('https://invalid-domain-test-12345.com/fail'),
-            fn () => Http::get('https://jsonplaceholder.typicode.com/posts/3'),
+            fn() => Http::get('https://jsonplaceholder.typicode.com/posts/1'),
+            fn() => Http::get('https://jsonplaceholder.typicode.com/posts/99999'),
+            fn() => Http::get('https://invalid-domain-test-12345.com/fail'),
+            fn() => Http::get('https://jsonplaceholder.typicode.com/posts/3'),
         ];
 
         $results = Promise::concurrentSettled($tasks, 2)->wait();
@@ -656,21 +657,20 @@ describe('Promise::concurrentSettled() with Mocks using Http Facade', function (
         expect($results)->toHaveCount(4);
 
         // First - fulfilled
-        expect($results[0])->toHaveKey('status', 'fulfilled')
-            ->and($results[0]['value']->successful())->toBeTrue()
+        expect($results[0]->status)->toBe('fulfilled')
+            ->and($results[0]->value->successful())->toBeTrue()
         ;
 
         // Second - fulfilled but 404
-        expect($results[1])->toHaveKey('status', 'fulfilled')
-            ->and($results[1]['value']->status())->toBe(404)
+        expect($results[1]->status)->toBe('fulfilled')
+            ->and($results[1]->value->status())->toBe(404)
         ;
 
         // Third - rejected
-        expect($results[2])->toHaveKey('status', 'rejected');
-
+        expect($results[2]->status)->toBe('rejected');
         // Fourth - fulfilled
-        expect($results[3])->toHaveKey('status', 'fulfilled')
-            ->and($results[3]['value']->successful())->toBeTrue()
+        expect($results[3]->status)->toBe('fulfilled')
+            ->and($results[3]->value->successful())->toBeTrue()
         ;
     });
 
@@ -689,7 +689,7 @@ describe('Promise::concurrentSettled() with Mocks using Http Facade', function (
 
         $tasks = [];
         for ($i = 1; $i <= 10; $i++) {
-            $tasks[] = fn () => Http::get("https://jsonplaceholder.typicode.com/users/{$i}");
+            $tasks[] = fn() => Http::get("https://jsonplaceholder.typicode.com/users/{$i}");
         }
 
         $results = Promise::concurrentSettled($tasks, 5)->wait();
@@ -697,8 +697,8 @@ describe('Promise::concurrentSettled() with Mocks using Http Facade', function (
         expect($results)->toHaveCount(10);
 
         foreach ($results as $result) {
-            expect($result)->toHaveKey('status', 'fulfilled')
-                ->and($result['value']->successful())->toBeTrue()
+            expect($result->status)->toBe('fulfilled')  
+                ->and($result->value->successful())->toBeTrue()
             ;
         }
     });
@@ -752,12 +752,12 @@ describe('Promise::batchSettled() with Mocks using Http Facade', function () {
         ;
 
         $tasks = [
-            fn () => Http::get('https://jsonplaceholder.typicode.com/posts/1'),
-            fn () => Http::get('https://jsonplaceholder.typicode.com/posts/2'),
-            fn () => Http::get('https://invalid-test-domain-99999.com/fail'),
-            fn () => Http::get('https://jsonplaceholder.typicode.com/posts/3'),
-            fn () => Http::get('https://jsonplaceholder.typicode.com/posts/99999'),
-            fn () => Http::get('https://jsonplaceholder.typicode.com/posts/4'),
+            fn() => Http::get('https://jsonplaceholder.typicode.com/posts/1'),
+            fn() => Http::get('https://jsonplaceholder.typicode.com/posts/2'),
+            fn() => Http::get('https://invalid-test-domain-99999.com/fail'),
+            fn() => Http::get('https://jsonplaceholder.typicode.com/posts/3'),
+            fn() => Http::get('https://jsonplaceholder.typicode.com/posts/99999'),
+            fn() => Http::get('https://jsonplaceholder.typicode.com/posts/4'),
         ];
 
         $results = Promise::batchSettled($tasks, 3, 2)->wait();
@@ -768,7 +768,7 @@ describe('Promise::batchSettled() with Mocks using Http Facade', function () {
         $rejectedCount = 0;
 
         foreach ($results as $result) {
-            if ($result['status'] === 'fulfilled') {
+            if ($result->status === 'fulfilled') {
                 $successCount++;
             } else {
                 $rejectedCount++;
@@ -839,9 +839,9 @@ describe('Concurrent Requests with Mocks using Http Facade', function () {
         ;
 
         $tasks = [
-            fn () => Http::retry(5, 0.01)->get('https://api.example.com/retry-test'),
-            fn () => Http::get('https://jsonplaceholder.typicode.com/posts/1'),
-            fn () => Http::get('https://jsonplaceholder.typicode.com/posts/2'),
+            fn() => Http::retry(5, 0.01)->get('https://api.example.com/retry-test'),
+            fn() => Http::get('https://jsonplaceholder.typicode.com/posts/1'),
+            fn() => Http::get('https://jsonplaceholder.typicode.com/posts/2'),
         ];
 
         $results = Promise::concurrent($tasks, 2)->wait();
@@ -864,9 +864,8 @@ describe('Concurrent Requests with Mocks using Http Facade', function () {
 
         $tasks = [];
         for ($i = 1; $i <= 5; $i++) {
-            $tasks[] = fn () => Http::retry(5, 0.01)
-                ->get("https://api.example.com/rate-limited/{$i}")
-            ;
+            $tasks[] = fn() => Http::retry(5, 0.01)
+                ->get("https://api.example.com/rate-limited/{$i}");
         }
 
         $results = Promise::batch($tasks, 2, 2)->wait();
@@ -914,10 +913,10 @@ describe('Concurrent Requests with Mocks using Http Facade', function () {
         $results = Promise::allSettled($promises)->wait();
 
         expect($results)->toHaveCount(4)
-            ->and($results[0]['status'])->toBe('fulfilled')
-            ->and($results[1]['status'])->toBe('rejected')
-            ->and($results[2]['status'])->toBe('fulfilled')
-            ->and($results[3]['status'])->toBe('fulfilled')
+            ->and($results[0]->status)->toBe('fulfilled')
+            ->and($results[1]->status)->toBe('rejected')
+            ->and($results[2]->status)->toBe('fulfilled')
+            ->and($results[3]->status)->toBe('fulfilled')
         ;
     });
 });
@@ -983,7 +982,7 @@ describe('Concurrency Performance Tests with Mocks using Http Facade', function 
 
         $tasks = [];
         for ($i = 1; $i <= 20; $i++) {
-            $tasks[] = fn () => Http::get("https://jsonplaceholder.typicode.com/posts/{$i}");
+            $tasks[] = fn() => Http::get("https://jsonplaceholder.typicode.com/posts/{$i}");
         }
 
         $start = microtime(true);
@@ -1166,8 +1165,8 @@ describe('Error Handling with Concurrent Requests', function () {
 
         expect($results)->toHaveCount(4);
 
-        $fulfilled = array_filter($results, fn ($r) => $r['status'] === 'fulfilled');
-        $rejected = array_filter($results, fn ($r) => $r['status'] === 'rejected');
+        $fulfilled = array_filter($results, fn($r) => $r->status === 'fulfilled');
+        $rejected = array_filter($results, fn($r) => $r->status === 'rejected');
 
         expect(count($fulfilled))->toBe(3) // endpoints 1, 3, 4 (3 is HTTP error but fulfilled)
             ->and(count($rejected))->toBe(1) // endpoint 2 (network error)
@@ -1197,9 +1196,9 @@ describe('Error Handling with Concurrent Requests', function () {
         ;
 
         $tasks = [
-            fn () => Http::retry(5, 0.01)->get('https://api.example.com/retry1'),
-            fn () => Http::get('https://api.example.com/retry2'),
-            fn () => Http::retry(5, 0.01)->get('https://api.example.com/retry3'),
+            fn() => Http::retry(5, 0.01)->get('https://api.example.com/retry1'),
+            fn() => Http::get('https://api.example.com/retry2'),
+            fn() => Http::retry(5, 0.01)->get('https://api.example.com/retry3'),
         ];
 
         $results = Promise::concurrent($tasks, 3)->wait();
@@ -1241,9 +1240,9 @@ describe('Error Handling with Concurrent Requests', function () {
         $results = Promise::allSettled($promises)->wait();
 
         expect($results)->toHaveCount(3);
-        expect($results['fast']['status'])->toBe('fulfilled');
-        expect($results['slow']['status'])->toBe('rejected'); // Timeout
-        expect($results['normal']['status'])->toBe('fulfilled');
+        expect($results['fast']->status)->toBe('fulfilled');
+        expect($results['slow']->status)->toBe('rejected'); // Timeout
+        expect($results['normal']->status)->toBe('fulfilled');
     });
 });
 
