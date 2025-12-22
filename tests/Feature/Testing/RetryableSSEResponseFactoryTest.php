@@ -286,6 +286,8 @@ describe('RetryableSSEResponseFactory', function () {
 
         $promise = $factory->create($reconnectConfig, $mockProvider, $onEvent, null);
         $response = $promise->wait();
+        
+        Loop::run();
 
         expect($response)->toBeInstanceOf(SSEResponse::class);
         expect($receivedEvents)->toHaveCount(2);
