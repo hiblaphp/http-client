@@ -222,15 +222,15 @@ class SSEHandler implements SSEHandlerInterface
                     }
                 }
 
-                return strlen($data);
+                return \strlen($data);
             },
             CURLOPT_HEADERFUNCTION => function ($ch, string $header) use ($url, $promise, &$sseResponse, &$headersProcessed) {
                 if ($promise->isSettled()) {
-                    return strlen($header);
+                    return \strlen($header);
                 }
 
                 if (! ($ch instanceof \CurlHandle)) {
-                    return strlen($header);
+                    return \strlen($header);
                 }
 
                 $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -263,7 +263,7 @@ class SSEHandler implements SSEHandlerInterface
                     $headersProcessed = true;
                 }
 
-                return strlen($header);
+                return \strlen($header);
             },
         ]);
 
@@ -290,8 +290,25 @@ class SSEHandler implements SSEHandlerInterface
             }
         );
 
-        $promise->onCancel(function () use ($requestId): void {
-            Loop::cancelHttpRequest($requestId);
+        if ($sseResponse !== null) {
+            $sseResponse->setRequestId($requestId);
+        } else {
+            $promise->then(function ($response) use ($requestId) {
+                if ($response instanceof SSEResponse) {
+                    $response->setRequestId($requestId);
+                }
+            });
+        }
+
+        $promise->onCancel(function () use ($requestId, &$sseResponse): void {
+            if ($sseResponse !== null && method_exists($sseResponse, 'close')) {
+                $sseResponse->close();
+            } else {
+                Loop::cancelHttpRequest($requestId);
+                if ($sseResponse !== null) {
+                    $sseResponse->getStream()->close();
+                }
+            }
         });
 
         return $promise;

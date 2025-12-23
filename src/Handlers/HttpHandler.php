@@ -20,6 +20,7 @@ use Hibla\HttpClient\Interfaces\SSEHandlerInterface;
 use Hibla\HttpClient\Interfaces\StreamingHandlerInterface;
 use Hibla\HttpClient\Response;
 use Hibla\HttpClient\RetryConfig;
+use Hibla\HttpClient\SSE\CancelableSSEPromise;
 use Hibla\HttpClient\SSE\SSEEvent;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
 use Hibla\HttpClient\SSE\SSEResponse;
@@ -91,7 +92,9 @@ class HttpHandler
         /** @var array<int, mixed> $curlOnlyOptions */
         $curlOnlyOptions = array_filter($options, 'is_int', ARRAY_FILTER_USE_KEY);
 
-        return $this->sseHandler->connect($url, $curlOnlyOptions, $onEvent, $onError, $reconnectConfig);
+        $innerPromise = $this->sseHandler->connect($url, $curlOnlyOptions, $onEvent, $onError, $reconnectConfig);
+
+        return new CancelableSSEPromise($innerPromise);
     }
 
     /**

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\SSE;
 
+use Hibla\EventLoop\Loop;
 use Hibla\HttpClient\Stream;
 use Hibla\HttpClient\StreamingResponse;
 use Psr\Http\Message\StreamInterface;
@@ -15,6 +16,7 @@ class SSEResponse extends StreamingResponse
 {
     private string $buffer = '';
     private ?string $lastEventId = null;
+    private ?string $requestId = null; 
 
     /**
      * Constructs the SSEResponse.
@@ -22,11 +24,35 @@ class SSEResponse extends StreamingResponse
      * @param Stream $stream
      * @param int $statusCode
      * @param array<string, string|string[]> $headers
+     * @param string|null $requestId The event loop request ID for this SSE connection
      */
-    public function __construct(Stream $stream, int $statusCode = 200, array $headers = [])
+    public function __construct(Stream $stream, int $statusCode = 200, array $headers = [], ?string $requestId = null)
     {
         parent::__construct($stream, $statusCode, $headers);
+        $this->requestId = $requestId;
     }
+
+    /**
+     * Sets the request ID for this SSE connection.
+     */
+    public function setRequestId(?string $requestId): void
+    {
+        $this->requestId = $requestId;
+    }
+
+    /**
+     * Closes the SSE connection and cancels the underlying HTTP request.
+     */
+    public function close(): void
+    {
+        if ($this->requestId !== null) {
+            Loop::cancelHttpRequest($this->requestId);
+            $this->requestId = null;
+        }
+
+        $this->getStream()->close();
+    }
+
 
     /**
      * Gets the underlying stream.

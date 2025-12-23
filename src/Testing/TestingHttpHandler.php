@@ -8,8 +8,8 @@ use Hibla\HttpClient\CacheConfig;
 use Hibla\HttpClient\Handlers\HttpHandler;
 use Hibla\HttpClient\Interfaces\CookieJarInterface;
 use Hibla\HttpClient\RetryConfig;
+use Hibla\HttpClient\SSE\CancelableSSEPromise;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
-use Hibla\HttpClient\SSE\SSEResponse;
 use Hibla\HttpClient\Testing\Interfaces\AssertsCookiesInterface;
 use Hibla\HttpClient\Testing\Interfaces\AssertsDownloadsInterface;
 use Hibla\HttpClient\Testing\Interfaces\AssertsHeadersInterface;
@@ -36,7 +36,6 @@ use Hibla\HttpClient\Testing\Utilities\RequestRecorder;
 use Hibla\HttpClient\Testing\Utilities\ResponseFactory;
 use Hibla\HttpClient\Traits\StreamTrait;
 use Hibla\Promise\Interfaces\PromiseInterface;
-use Hibla\Promise\Promise;
 
 /**
  * Robust HTTP testing handler with comprehensive mocking capabilities.
@@ -521,50 +520,7 @@ class TestingHttpHandler extends HttpHandler implements
             $reconnectConfig
         );
 
-        return new class($innerPromise) extends Promise {
-            private $innerPromise;
-            private $sseResponse = null;
-            private $cancelCallbacks = [];
-
-            public function __construct($innerPromise)
-            {
-                parent::__construct();
-                $this->innerPromise = $innerPromise;
-
-                $innerPromise->then(
-                    function ($response) {
-                        $this->sseResponse = $response;
-                        $this->resolve($response);
-                    },
-                    function ($error) {
-                        $this->reject($error);
-                    }
-                );
-            }
-
-            public function cancel(): void
-            {
-                foreach ($this->cancelCallbacks as $callback) {
-                    $callback();
-                }
-
-                if ($this->sseResponse instanceof SSEResponse) {
-                    $this->sseResponse->getStream()->close();
-                }
-
-                if (method_exists($this->innerPromise, 'cancel')) {
-                    $this->innerPromise->cancel();
-                }
-
-                parent::cancel();
-            }
-
-            public function onCancel(callable $callback): self
-            {
-                $this->cancelCallbacks[] = $callback;
-                return $this;
-            }
-        };
+        return new CancelableSSEPromise($innerPromise);
     }
 
     /**
