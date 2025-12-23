@@ -784,7 +784,7 @@ describe('Promise::batchSettled() with Mocks using Http Facade', function () {
 describe('Concurrent Requests with Mocks using Http Facade', function () {
 
     beforeEach(function () {
-        Http::startTesting()->allowPassthrough()->withGlobalRandomDelay(0.1, 0.3);
+        Http::startTesting()->enablePassthrough()->withGlobalRandomDelay(0.1, 0.3);
     });
 
     afterEach(function () {

@@ -380,16 +380,6 @@ class TestingHttpHandler extends HttpHandler implements
     }
 
     /**
-     * Allow unmocked requests to pass through to real HTTP.
-     */
-    public function setAllowPassthrough(bool $allow): self
-    {
-        $this->globalSettings['allow_passthrough'] = $allow;
-
-        return $this;
-    }
-
-    /**
      * Throw exception when an unexpected request is made.
      */
     public function throwOnUnexpected(bool $throw = true): self
@@ -400,13 +390,24 @@ class TestingHttpHandler extends HttpHandler implements
     }
 
     /**
-     * Allow passthrough and disable throwing on unexpected requests.
+     * Allow requests that don't match a mock to be sent to the real network.
+     * Automatically disables throwing exceptions on unexpected requests.
      */
-    public function allowPassthrough(bool $allow = true): self
+    public function enablePassthrough(): self
     {
-        $this->globalSettings['allow_passthrough'] = $allow;
-        $this->globalSettings['throw_on_unexpected'] = ! $allow;
+        $this->globalSettings['allow_passthrough'] = true;
+        $this->globalSettings['throw_on_unexpected'] = false;
+        return $this;
+    }
 
+    /**
+     * Prevent requests that don't match a mock from being sent.
+     * Will throw an exception if a request is made without a matching mock.
+     */
+    public function disablePassthrough(): self
+    {
+        $this->globalSettings['allow_passthrough'] = false;
+        $this->globalSettings['throw_on_unexpected'] = true;
         return $this;
     }
 

@@ -73,6 +73,8 @@ class Request extends Message implements CompleteHttpClientInterface
 
     private int $timeout = 30;
 
+    private bool $timeoutExplicitlySet = false;
+
     private string $method = 'GET';
 
     private int $connectTimeout = 10;
@@ -416,7 +418,7 @@ class Request extends Message implements CompleteHttpClientInterface
     {
         $new = clone $this;
         $new->timeout = $seconds;
-
+        $new->timeoutExplicitlySet = true;
         return $new;
     }
 
@@ -622,12 +624,14 @@ class Request extends Message implements CompleteHttpClientInterface
     ): PromiseInterface {
         $method = $this->body->getSize() > 0 ? 'POST' : 'GET';
 
+        $effectiveTimeout = $this->timeoutExplicitlySet ? $this->timeout : 0;
+
         $clientOptions = new ClientOptions(
             method: $method,
             url: $url,
             headers: $this->headers,
             body: $this->body,
-            timeout: $this->timeout,
+            timeout: $effectiveTimeout,
             connectTimeout: $this->connectTimeout,
             followRedirects: $this->followRedirects,
             maxRedirects: $this->maxRedirects,
