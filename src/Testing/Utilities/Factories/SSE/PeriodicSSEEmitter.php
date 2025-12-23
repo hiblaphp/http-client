@@ -60,9 +60,9 @@ class PeriodicSSEEmitter
         $jitter = $this->getConfigValue($config, 'jitter', 0.0);
 
         if ($type === 'infinite' && isset($config['event_generator']) && is_callable($config['event_generator'])) {
-            $this->setupInfiniteEmitter($config, $onEvent, $interval, $jitter, $periodicTimerId);
+            $this->setupInfiniteEmitter($config, $onEvent, $interval, $jitter, $periodicTimerId, $resource);
         } else {
-            $this->setupFiniteEmitter($config, $mock, $onEvent, $onError, $interval, $jitter, $periodicTimerId);
+            $this->setupFiniteEmitter($config, $mock, $onEvent, $onError, $interval, $jitter, $periodicTimerId, $resource);
         }
     }
 
@@ -72,6 +72,7 @@ class PeriodicSSEEmitter
      * @param float $interval
      * @param float $jitter
      * @param string|null &$periodicTimerId
+     * @param resource $resource The stream resource to check for liveness
      * @param-out string $periodicTimerId
      */
     private function setupInfiniteEmitter(
@@ -79,7 +80,8 @@ class PeriodicSSEEmitter
         ?callable $onEvent,
         float $interval,
         float $jitter,
-        ?string &$periodicTimerId
+        ?string &$periodicTimerId,
+        $resource
     ): void {
         if (! isset($config['event_generator'])) {
             return;
@@ -87,7 +89,6 @@ class PeriodicSSEEmitter
 
         $eventGenerator = $config['event_generator'];
 
-        // Validate it's callable
         if (! is_callable($eventGenerator)) {
             return;
         }
@@ -104,8 +105,18 @@ class PeriodicSSEEmitter
                 $onEvent,
                 $jitter,
                 $interval,
-                &$periodicTimerId
+                &$periodicTimerId,
+                $resource
             ) {
+                if (! \is_resource($resource)) {
+                    if ($periodicTimerId !== null) {
+                        Loop::cancelTimer($periodicTimerId);
+                        $periodicTimerId = null;
+                    }
+
+                    return;
+                }
+
                 if ($maxEvents !== null && $eventIndex >= $maxEvents) {
                     if ($periodicTimerId !== null) {
                         Loop::cancelTimer($periodicTimerId);
@@ -115,10 +126,9 @@ class PeriodicSSEEmitter
                     return;
                 }
 
-                // Safe to call now since we validated it's callable
                 /** @var callable $eventGenerator */
                 $eventData = $eventGenerator($eventIndex);
-                if (is_array($eventData)) {
+                if (\is_array($eventData)) {
                     /** @var array{data?: string, event?: string, id?: string, retry?: int} $eventData */
                     $event = $this->formatter->createSSEEvent($eventData);
                     if ($onEvent !== null) {
@@ -141,6 +151,7 @@ class PeriodicSSEEmitter
      * @param float $interval
      * @param float $jitter
      * @param string|null &$periodicTimerId
+     * @param resource $resource The stream resource to check for liveness
      * @param-out string $periodicTimerId
      */
     private function setupFiniteEmitter(
@@ -150,24 +161,25 @@ class PeriodicSSEEmitter
         ?callable $onError,
         float $interval,
         float $jitter,
-        ?string &$periodicTimerId
+        ?string &$periodicTimerId,
+        $resource
     ): void {
         $events = $config['events'] ?? [];
-        if (! is_array($events)) {
+        if (! \is_array($events)) {
             $events = [];
         }
 
         /** @var array<array{data?: string, event?: string, id?: string, retry?: int}> $validatedEvents */
         $validatedEvents = [];
         foreach ($events as $event) {
-            if (is_array($event)) {
+            if (\is_array($event)) {
                 $validatedEvents[] = $event;
             }
         }
         $events = $validatedEvents;
 
         $eventIndex = 0;
-        $totalEvents = count($events);
+        $totalEvents = \count($events);
         $autoClose = isset($config['auto_close']) && is_bool($config['auto_close']) ? $config['auto_close'] : false;
 
         $periodicTimerId = Loop::addPeriodicTimer(
@@ -182,8 +194,18 @@ class PeriodicSSEEmitter
                 $autoClose,
                 $jitter,
                 $interval,
-                &$periodicTimerId
+                &$periodicTimerId,
+                $resource
             ) {
+                if (! \is_resource($resource)) {
+                    if ($periodicTimerId !== null) {
+                        Loop::cancelTimer($periodicTimerId);
+                        $periodicTimerId = null;
+                    }
+
+                    return;
+                }
+
                 if ($eventIndex >= $totalEvents) {
                     if ($periodicTimerId !== null) {
                         Loop::cancelTimer($periodicTimerId);
@@ -224,7 +246,7 @@ class PeriodicSSEEmitter
         }
 
         $value = $config[$key];
-        if (is_float($value) || is_int($value)) {
+        if (\is_float($value) || \is_int($value)) {
             return (float)$value;
         }
 
