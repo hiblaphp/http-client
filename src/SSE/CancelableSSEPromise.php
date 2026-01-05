@@ -13,10 +13,15 @@ use Hibla\Promise\Promise;
  * 
  * This wrapper ensures that calling cancel() will properly close the SSE response
  * and clean up the underlying connection, whether it's a real SSE stream or a mock.
+ * 
+ * @template-extends Promise<SSEResponse>
+ * @implements PromiseInterface<SSEResponse>
  */
 class CancelableSSEPromise extends Promise implements PromiseInterface
 {
+    /** @var PromiseInterface<SSEResponse> */
     private PromiseInterface $innerPromise;
+    
     private ?SSEResponse $sseResponse = null;
 
     /** @var list<callable> */
@@ -118,6 +123,8 @@ class CancelableSSEPromise extends Promise implements PromiseInterface
 
     /**
      * Registers a callback to be called when the promise is cancelled.
+     * 
+     * @return $this
      */
     public function onCancel(callable $callback): self
     {

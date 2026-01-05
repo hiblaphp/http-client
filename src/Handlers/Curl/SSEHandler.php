@@ -196,6 +196,7 @@ class SSEHandler implements SSEHandlerInterface
         /** @var SSEResponse|null $sseResponse */
         $sseResponse = null;
         $headersProcessed = false;
+        $streamComplete = false;
 
         $curlOnlyOptions = array_filter($options, 'is_int', ARRAY_FILTER_USE_KEY);
 
@@ -248,7 +249,6 @@ class SSEHandler implements SSEHandlerInterface
                             $promise->reject($exception);
                         } else {
                             $sseResponse = new SSEResponse(new Stream($tempStream), $httpCode, []);
-                            $promise->resolve($sseResponse);
                         }
                     } else {
                         $exception = new HttpStreamException(
@@ -270,45 +270,50 @@ class SSEHandler implements SSEHandlerInterface
         $requestId = Loop::addHttpRequest(
             $url,
             $sseOptions,
-            function (?string $error) use ($url, $promise, $onError) {
+            function (?string $error) use ($url, $promise, $onError, &$sseResponse, &$streamComplete) {
+                $streamComplete = true;
+
                 if ($promise->isSettled()) {
                     if ($onError !== null && $error !== null) {
                         $onError($error);
                     }
-
                     return;
                 }
 
-                $exception = new NetworkException(
-                    "SSE connection failed: {$error}",
-                    0,
-                    null,
-                    $url,
-                    $error
-                );
-                $promise->reject($exception);
+                if ($error !== null) {
+                    $exception = new NetworkException(
+                        "SSE connection failed: {$error}",
+                        0,
+                        null,
+                        $url,
+                        $error
+                    );
+                    $promise->reject($exception);
+                } else {
+                    if ($sseResponse !== null) {
+                        $promise->resolve($sseResponse);
+                    } else {
+                        $exception = new HttpStreamException(
+                            'SSE stream completed without response',
+                            0,
+                            null,
+                            $url
+                        );
+                        $promise->reject($exception);
+                    }
+                }
             }
         );
 
         if ($sseResponse !== null) {
             $sseResponse->setRequestId($requestId);
-        } else {
-            $promise->then(function ($response) use ($requestId) {
-                if ($response instanceof SSEResponse) {
-                    $response->setRequestId($requestId);
-                }
-            });
         }
 
         $promise->onCancel(function () use ($requestId, &$sseResponse): void {
-            if ($sseResponse !== null && method_exists($sseResponse, 'close')) {
-                $sseResponse->close();
-            } else {
-                Loop::cancelHttpRequest($requestId);
-                if ($sseResponse !== null) {
-                    $sseResponse->getStream()->close();
-                }
-            }
+            Loop::cancelHttpRequest($requestId);
+            
+            //@phpstan-ignore-next-line
+            $sseResponse->getStream()->close();
         });
 
         return $promise;
