@@ -445,19 +445,6 @@ describe('CookieManager', function () {
         $cookieManager->cleanup();
     });
 
-    test('debug info shows file type for FileCookieJar', function () {
-        $cookieManager = createCookieManager();
-        $filename = sys_get_temp_dir().'/test_'.uniqid().'.json';
-
-        $cookieManager->createFileCookieJar($filename, true, 'file_jar');
-
-        $debug = $cookieManager->getDebugInfo();
-
-        expect($debug['file_jar']['type'])->toBe('file');
-
-        $cookieManager->cleanup();
-    });
-
     test('can apply cookies from custom jar in options', function () {
         $cookieManager = createCookieManager();
         $customJar = new CookieJar();

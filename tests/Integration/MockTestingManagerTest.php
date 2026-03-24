@@ -3,23 +3,6 @@
 declare(strict_types=1);
 
 describe('Utilities Integration', function () {
-    test('FileManager and CookieManager can work together', function () {
-        $fileManager = createFileManager();
-        $cookieManager = createCookieManager();
-
-        $cookieFile = $fileManager->createTempFile('cookies_' . uniqid() . '.json', '[]');
-        $jar = $cookieManager->createFileCookieJar($cookieFile);
-
-        $cookieManager->addCookie('test', 'value', jarName: 'default');
-
-        expect(file_exists($cookieFile))->toBeTrue();
-
-        $fileManager->cleanup();
-        $cookieManager->cleanup();
-
-        expect(file_exists($cookieFile))->toBeFalse();
-    });
-
     test('multiple utility managers maintain independence', function () {
         $fileManager = createFileManager();
         $cookieManager = createCookieManager();

@@ -303,7 +303,6 @@ test('executes with retry config', function () {
         [CURLOPT_CUSTOMREQUEST => 'GET'],
         $mocks,
         [],
-        null,
         $retryConfig
     )->wait();
 

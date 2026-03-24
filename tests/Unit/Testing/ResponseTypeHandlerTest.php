@@ -53,7 +53,6 @@ describe('ResponseTypeHandler', function () {
                 $match,
                 [],
                 $mockedRequests,
-                null,
                 'https://example.com',
                 'GET'
             );
