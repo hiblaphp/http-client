@@ -211,7 +211,7 @@ class CurlOptionsBuilder implements TransportOptionsBuilderInterface
      */
     private function addHeaderOptions(array &$options, array $headers): void
     {
-        if (count($headers) > 0) {
+        if (\count($headers) > 0) {
             $headerStrings = [];
             foreach ($headers as $name => $values) {
                 $headerStrings[] = "{$name}: " . implode(', ', $values);

@@ -7,11 +7,8 @@ declare(strict_types=1);
 | Test Case
 |--------------------------------------------------------------------------
 */
-
-use Hibla\HttpClient\Handlers\Curl\CacheHandler;
 use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Testing\TestingHttpHandler;
-use Hibla\HttpClient\Testing\Utilities\CacheManager;
 use Hibla\HttpClient\Testing\Utilities\CookieManager;
 use Hibla\HttpClient\Testing\Utilities\Executors\FetchRequestExecutor;
 use Hibla\HttpClient\Testing\Utilities\Executors\RetryableRequestExecutor;
@@ -41,8 +38,6 @@ function getPrivateProperty($object, string $property)
 {
     $reflection = new ReflectionClass($object);
     $prop = $reflection->getProperty($property);
-    $prop->setAccessible(true);
-
     return $prop->getValue($object);
 }
 
@@ -50,14 +45,8 @@ function callPrivateMethod($object, string $method, array $args = [])
 {
     $reflection = new ReflectionClass($object);
     $method = $reflection->getMethod($method);
-    $method->setAccessible(true);
 
     return $method->invoke($object, ...$args);
-}
-
-function createCacheManager(): CacheManager
-{
-    return new CacheManager();
 }
 
 function createCookieManager(bool $autoManage = true): CookieManager
@@ -113,12 +102,6 @@ function createNetworkHandler(NetworkSimulator $simulator): NetworkSimulationHan
 {
     return new NetworkSimulationHandler($simulator);
 }
-
-function createCacheHandler(CacheManager $manager): CacheHandler
-{
-    return new CacheHandler($manager);
-}
-
 function createImmediateSSEEmitter(): ImmediateSSEEmitter
 {
     return new ImmediateSSEEmitter();
@@ -136,7 +119,7 @@ function createPromise(): Promise
 
 function createMockRequest(): MockedRequest
 {
-    return new MockedRequest(); // Use the real class
+    return new MockedRequest(); 
 }
 
 function createMockedSSERequest(
@@ -214,17 +197,11 @@ function createRequestValidator(): RequestValidator
     return mock(RequestValidator::class);
 }
 
-function createMockCacheHandler(): Hibla\HttpClient\Testing\Utilities\Handlers\CacheHandler
-{
-    return mock(Hibla\HttpClient\Testing\Utilities\Handlers\CacheHandler::class);
-}
-
 function createFetchRequestExecutor(
     ?RequestMatcher $requestMatcher = null,
     ?ResponseFactory $responseFactory = null,
     ?FileManager $fileManager = null,
     ?RequestRecorder $requestRecorder = null,
-    ?Hibla\HttpClient\Testing\Utilities\Handlers\CacheHandler $cacheHandler = null,
     ?RequestValidator $validator = null
 ): FetchRequestExecutor {
     return new FetchRequestExecutor(
@@ -232,7 +209,6 @@ function createFetchRequestExecutor(
         $responseFactory ?? createResponseFactory(),
         $fileManager ?? createFileManager(),
         $requestRecorder ?? createRequestRecorder(),
-        $cacheHandler ?? createMockCacheHandler(),
         $validator ?? createRequestValidator()
     );
 }
@@ -266,7 +242,6 @@ function createStandardRequestExecutor(
     ?ResponseFactory $responseFactory = null,
     ?CookieManager $cookieManager = null,
     ?RequestRecorder $requestRecorder = null,
-    ?Hibla\HttpClient\Testing\Utilities\Handlers\CacheHandler $cacheHandler = null,
     ?RequestValidator $validator = null
 ): StandardRequestExecutor {
     return new StandardRequestExecutor(
@@ -274,7 +249,6 @@ function createStandardRequestExecutor(
         $responseFactory ?? createResponseFactory(),
         $cookieManager ?? createCookieManager(),
         $requestRecorder ?? createRequestRecorder(),
-        $cacheHandler ?? createMockCacheHandler(),
         $validator ?? createRequestValidator()
     );
 }

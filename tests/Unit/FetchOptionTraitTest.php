@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Hibla\HttpClient\CacheConfig;
 use Hibla\HttpClient\Cookie;
 use Hibla\HttpClient\CookieJar;
 use Hibla\HttpClient\ProxyConfig;
@@ -483,7 +482,6 @@ describe('FetchOptionTrait: Special Options Filtering', function () {
             'method' => 'GET',
             'stream' => true,
             'retry' => true,
-            'cache' => true,
             'sse' => true,
             'on_chunk' => function () {},
             'on_event' => function () {},
@@ -493,62 +491,9 @@ describe('FetchOptionTrait: Special Options Filtering', function () {
 
         expect(isset($result['stream']))->toBeFalse();
         expect(isset($result['retry']))->toBeFalse();
-        expect(isset($result['cache']))->toBeFalse();
         expect(isset($result['sse']))->toBeFalse();
         expect(isset($result['on_chunk']))->toBeFalse();
         expect(isset($result['on_event']))->toBeFalse();
-    });
-});
-
-describe('FetchOptionTrait: Private Method - Extract Cache Config', function () {
-    it('extracts cache config from boolean true', function () {
-        $trait = new FetchOptionTraitTestClass();
-
-        $config = callPrivateMethod($trait, 'extractCacheConfig', [['cache' => true]]);
-
-        expect($config)->toBeInstanceOf(CacheConfig::class);
-        expect($config->ttlSeconds)->toBe(3600);
-    });
-
-    it('extracts cache config from CacheConfig object', function () {
-        $trait = new FetchOptionTraitTestClass();
-
-        $cacheConfig = new CacheConfig(7200);
-        $config = callPrivateMethod($trait, 'extractCacheConfig', [['cache' => $cacheConfig]]);
-
-        expect($config)->toBe($cacheConfig);
-    });
-
-    it('extracts cache config from integer TTL', function () {
-        $trait = new FetchOptionTraitTestClass();
-
-        $config = callPrivateMethod($trait, 'extractCacheConfig', [['cache' => 1800]]);
-
-        expect($config)->toBeInstanceOf(CacheConfig::class);
-        expect($config->ttlSeconds)->toBe(1800);
-    });
-
-    it('extracts cache config from array', function () {
-        $trait = new FetchOptionTraitTestClass();
-
-        $config = callPrivateMethod($trait, 'extractCacheConfig', [[
-            'cache' => [
-                'ttl' => 3600,
-                'respect_server_headers' => false,
-            ],
-        ]]);
-
-        expect($config)->toBeInstanceOf(CacheConfig::class);
-        expect($config->ttlSeconds)->toBe(3600);
-        expect($config->respectServerHeaders)->toBeFalse();
-    });
-
-    it('returns null when cache is not set', function () {
-        $trait = new FetchOptionTraitTestClass();
-
-        $config = callPrivateMethod($trait, 'extractCacheConfig', [[]]);
-
-        expect($config)->toBeNull();
     });
 });
 

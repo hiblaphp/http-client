@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Testing\Utilities\Executors;
 
-use Hibla\HttpClient\CacheConfig;
 use Hibla\HttpClient\Testing\Exceptions\UnexpectedRequestException;
 use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Testing\Utilities\FileManager;
-use Hibla\HttpClient\Testing\Utilities\Handlers\CacheHandler;
 use Hibla\HttpClient\Testing\Utilities\Handlers\ResponseTypeHandler;
 use Hibla\HttpClient\Testing\Utilities\RequestMatcher;
 use Hibla\HttpClient\Testing\Utilities\RequestRecorder;
@@ -16,7 +14,6 @@ use Hibla\HttpClient\Testing\Utilities\ResponseFactory;
 use Hibla\HttpClient\Testing\Utilities\Validators\RequestValidator;
 use Hibla\HttpClient\Traits\FetchOptionTrait;
 use Hibla\Promise\Interfaces\PromiseInterface;
-use Hibla\Promise\Promise;
 
 class FetchRequestExecutor
 {
@@ -26,7 +23,6 @@ class FetchRequestExecutor
     private ResponseFactory $responseFactory;
     private FileManager $fileManager;
     private RequestRecorder $requestRecorder;
-    private CacheHandler $cacheHandler;
     private RequestValidator $validator;
     private ResponseTypeHandler $responseTypeHandler;
     private RetryableRequestExecutor $retryExecutor;
@@ -36,20 +32,17 @@ class FetchRequestExecutor
         ResponseFactory $responseFactory,
         FileManager $fileManager,
         RequestRecorder $requestRecorder,
-        CacheHandler $cacheHandler,
         RequestValidator $validator
     ) {
         $this->requestMatcher = $requestMatcher;
         $this->responseFactory = $responseFactory;
         $this->fileManager = $fileManager;
         $this->requestRecorder = $requestRecorder;
-        $this->cacheHandler = $cacheHandler;
         $this->validator = $validator;
 
         $this->responseTypeHandler = new ResponseTypeHandler(
             $responseFactory,
             $fileManager,
-            $cacheHandler
         );
 
         $this->retryExecutor = new RetryableRequestExecutor(
@@ -79,16 +72,10 @@ class FetchRequestExecutor
         $curlOnlyOptions = array_filter($curlOptions, 'is_int', ARRAY_FILTER_USE_KEY);
 
         $retryConfig = $this->extractRetryConfig($options);
-        $cacheConfig = $this->extractCacheConfig($options);
 
         if ($this->validator->isSSERequested($options)) {
             /** @var PromiseInterface<mixed> */
             return $this->handleSSERequest($url, $options, $method, $curlOnlyOptions, $mockedRequests);
-        }
-
-        if ($this->cacheHandler->tryServeFromCache($url, $method, $cacheConfig)) {
-            /** @var PromiseInterface<mixed> */
-            return Promise::resolved($this->cacheHandler->getCachedResponse($url, $cacheConfig));
         }
 
         if ($retryConfig !== null) {
@@ -111,7 +98,6 @@ class FetchRequestExecutor
             $curlOnlyOptions,
             $mockedRequests,
             $globalSettings,
-            $cacheConfig,
             $parentFetch,
             $createStream
         );
@@ -178,7 +164,6 @@ class FetchRequestExecutor
         array $curlOnlyOptions,
         array &$mockedRequests,
         array $globalSettings,
-        CacheConfig|null $cacheConfig,
         ?callable $parentFetch,
         ?callable $createStream
     ): PromiseInterface {
@@ -192,7 +177,6 @@ class FetchRequestExecutor
                 $match,
                 $options,
                 $mockedRequests,
-                $cacheConfig,
                 $url,
                 $method,
                 $createStream

@@ -35,9 +35,6 @@ use Psr\Http\Message\UploadedFileInterface;
  * @method static PromiseInterface<array{file: string, status: int, headers: array<mixed>}> download(string $url, string $destination) Downloads a file.
  *
  * Request builder methods:
- * @method static Request cache(int $ttlSeconds = 3600, bool $respectServerHeaders = true) Start building a request with caching enabled.
- * @method static Request cacheWithKey(string $cacheKey, int $ttlSeconds = 3600, bool $respectServerHeaders = true) Start building a request with custom cache key.
- * @method static Request cacheWith(CacheConfig $config) Start building a request with custom cache configuration.
  * @method static Request timeout(int $seconds) Start building a request with timeout.
  * @method static Request connectTimeout(int $seconds) Start building a request with connection timeout.
  * @method static Request headers(array<string, string> $headers) Start building a request with headers.
@@ -70,9 +67,7 @@ use Psr\Http\Message\UploadedFileInterface;
  * @method static Request withCookie(string $name, string $value) Start building a request with a single cookie.
  * @method static Request withCookies(array<string, string> $cookies) Start building a request with multiple cookies.
  * @method static Request withCookieJar() Start building a request with an in-memory cookie jar.
- * @method static Request withFileCookieJar(string $filename, bool $includeSessionCookies = false) Start building a request with a file-based cookie jar.
  * @method static Request useCookieJar(CookieJarInterface $cookieJar) Start building a request with a custom cookie jar.
- * @method static Request withAllCookiesSaved(string $filename) Start building a request with all cookies saved to file.
  * @method static Request clearCookies() Start building a request with cookies cleared.
  * @method static Request cookieWithAttributes(string $name, string $value, array<string, mixed> $attributes = []) Start building a request with a cookie with additional attributes.
  *
@@ -377,16 +372,12 @@ class Http
     /**
      * Configure global settings for the HTTP client.
      *
-     * @param array{user_agent?: string, cache_path?: string} $settings
+     * @param array{user_agent?: string} $settings
      */
     public static function configure(array $settings): void
     {
         if (isset($settings['user_agent'])) {
             GlobalConfig::setUserAgent($settings['user_agent']);
-        }
-
-        if (isset($settings['cache_path'])) {
-            GlobalConfig::setCachePath($settings['cache_path']);
         }
     }
 

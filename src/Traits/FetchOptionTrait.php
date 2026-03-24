@@ -4,13 +4,9 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Traits;
 
-use Hibla\HttpClient\CacheConfig;
 use Hibla\HttpClient\Interfaces\CookieJarInterface;
 use Hibla\HttpClient\ProxyConfig;
 use Hibla\HttpClient\RetryConfig;
-use Psr\Cache\CacheItemPoolInterface;
-use Psr\SimpleCache\CacheInterface as PsrCacheInterface;
-use Symfony\Component\Cache\Psr16Cache;
 
 trait FetchOptionTrait
 {
@@ -34,9 +30,7 @@ trait FetchOptionTrait
                 'download',
                 'save_to',
                 'retry',
-                'cache',
                 'retry_config',
-                'cache_config',
                 'proxy',
                 'sse',
                 'on_event',
@@ -226,7 +220,7 @@ trait FetchOptionTrait
     {
         $headers = $curlOptions[CURLOPT_HTTPHEADER] ?? [];
 
-        if (! is_array($headers)) {
+        if (! \is_array($headers)) {
             $headers = [];
         }
 
@@ -370,51 +364,6 @@ trait FetchOptionTrait
         }
 
         return false;
-    }
-
-    /**
-     * @param array<int|string, mixed> $options
-     */
-    private function extractCacheConfig(array $options): ?CacheConfig
-    {
-        if (! isset($options['cache'])) {
-            return null;
-        }
-
-        $cache = $options['cache'];
-
-        if ($cache === true) {
-            return new CacheConfig();
-        }
-
-        if ($cache instanceof CacheConfig) {
-            return $cache;
-        }
-
-        if (\is_array($cache)) {
-            $cacheInstance = null;
-            if (isset($cache['cache_instance'])) {
-                if ($cache['cache_instance'] instanceof PsrCacheInterface) {
-                    $cacheInstance = $cache['cache_instance'];
-                } elseif ($cache['cache_instance'] instanceof CacheItemPoolInterface) {
-                    $cacheInstance = new Psr16Cache($cache['cache_instance']);
-                }
-            }
-
-            $ttl = $cache['ttl'] ?? 3600;
-
-            return new CacheConfig(
-                ttlSeconds: is_numeric($ttl) ? (int) $ttl : 3600,
-                respectServerHeaders: (bool) ($cache['respect_server_headers'] ?? true),
-                cache: $cacheInstance
-            );
-        }
-
-        if (\is_int($cache)) {
-            return new CacheConfig($cache);
-        }
-
-        return null;
     }
 
     /**

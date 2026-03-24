@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Interfaces;
 
-use Hibla\HttpClient\CacheConfig;
 use Hibla\HttpClient\ProxyConfig;
 use Hibla\HttpClient\RetryConfig;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
@@ -36,16 +35,6 @@ interface AdvancedHttpClientInterface extends HttpClientBuilderInterface
     public function noRetry(): self;
 
     /**
-     * Enable response caching with default settings.
-     */
-    public function cache(int $ttlSeconds = 3600, bool $respectServerHeaders = true): self;
-
-    /**
-     * Configure caching with a CacheConfig object.
-     */
-    public function cacheWith(CacheConfig $config): self;
-
-    /**
      * Add a single cookie to the request.
      */
     public function withCookie(string $name, string $value): self;
@@ -63,19 +52,9 @@ interface AdvancedHttpClientInterface extends HttpClientBuilderInterface
     public function withCookieJar(): self;
 
     /**
-     * Enable file-based cookie jar with persistence.
-     */
-    public function withFileCookieJar(string $filename, bool $includeSessionCookies = false): self;
-
-    /**
      * Use a custom cookie jar instance.
      */
     public function useCookieJar(CookieJarInterface $cookieJar): self;
-
-    /**
-     * Save all cookies (including session cookies) to a file.
-     */
-    public function withAllCookiesSaved(string $filename): self;
 
     /**
      * Clear all cookies from the cookie jar.

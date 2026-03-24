@@ -97,8 +97,6 @@ class Request extends Message implements CompleteHttpClientInterface
 
     private ?RetryConfig $retryConfig = null;
 
-    private ?CacheConfig $cacheConfig = null;
-
     private ?CookieJarInterface $cookieJar = null;
 
     private ?RequestInterceptorHandler $requestInterceptorHandler = null;
@@ -943,57 +941,6 @@ class Request extends Message implements CompleteHttpClientInterface
     }
 
     /**
-     * Enables caching for this request with a specific Time-To-Live.
-     *
-     * This enables a zero-config, file-based cache for the request.
-     * The underlying handler will automatically manage the cache instance.
-     *
-     * @param  int  $ttlSeconds  The number of seconds the response should be cached.
-     * @param  bool  $respectServerHeaders  If true, the server's `Cache-Control: max-age` header will override the provided TTL.
-     * @return self For fluent method chaining.
-     */
-    public function cache(int $ttlSeconds = 3600, bool $respectServerHeaders = true): self
-    {
-        $new = clone $this;
-        $new->cacheConfig = new CacheConfig($ttlSeconds, $respectServerHeaders);
-
-        return $new;
-    }
-
-    /**
-     * Enables caching for this request using a custom configuration object.
-     *
-     * This method is for advanced use cases where you need to provide a specific
-     * cache implementation (e.g., Redis, Memcached) or more complex rules.
-     *
-     * @param  CacheConfig  $config  The custom caching configuration object.
-     * @return self For fluent method chaining.
-     */
-    public function cacheWith(CacheConfig $config): self
-    {
-        $new = clone $this;
-        $new->cacheConfig = $config;
-
-        return $new;
-    }
-
-    /**
-     * Enables caching with a custom cache key.
-     *
-     * @param  string  $cacheKey  The custom cache key to use
-     * @param  int  $ttlSeconds  The number of seconds the response should be cached.
-     * @param  bool  $respectServerHeaders  If true, server's Cache-Control will override TTL.
-     * @return self For fluent method chaining.
-     */
-    public function cacheWithKey(string $cacheKey, int $ttlSeconds = 3600, bool $respectServerHeaders = true): self
-    {
-        $new = clone $this;
-        $new->cacheConfig = new CacheConfig($ttlSeconds, $respectServerHeaders, null, $cacheKey);
-
-        return $new;
-    }
-
-    /**
      * Add a file to the multipart request.
      *
      * @param string $name The form field name
@@ -1158,18 +1105,6 @@ class Request extends Message implements CompleteHttpClientInterface
     }
 
     /**
-     * Enable automatic cookie management with a file-based cookie jar.
-     *
-     * @param  string  $filename  The file path to store cookies.
-     * @param  bool  $includeSessionCookies  Whether to persist session cookies (cookies without expiration).
-     * @return self For fluent method chaining.
-     */
-    public function withFileCookieJar(string $filename, bool $includeSessionCookies = false): self
-    {
-        return $this->useCookieJar(new FileCookieJar($filename, $includeSessionCookies));
-    }
-
-    /**
      * Use a custom cookie jar for automatic cookie management.
      *
      * @param  CookieJarInterface  $cookieJar  The cookie jar to use.
@@ -1181,18 +1116,6 @@ class Request extends Message implements CompleteHttpClientInterface
         $new->cookieJar = $cookieJar;
 
         return $new;
-    }
-
-    /**
-     * Convenience: Enable file-based cookie storage including session cookies.
-     * Perfect for testing or when you want to persist all cookies.
-     *
-     * @param  string  $filename  The file path to store cookies.
-     * @return self For fluent method chaining.
-     */
-    public function withAllCookiesSaved(string $filename): self
-    {
-        return $this->withFileCookieJar($filename, true);
     }
 
     /**
@@ -1597,7 +1520,6 @@ class Request extends Message implements CompleteHttpClientInterface
         $httpPromise = $this->getHandler()->sendRequest(
             (string) $processedRequest->getUri(),
             $transportOptions,
-            $processedRequest->cacheConfig,
             $processedRequest->retryConfig
         );
 

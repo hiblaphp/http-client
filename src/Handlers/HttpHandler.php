@@ -4,14 +4,11 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Handlers;
 
-use Hibla\HttpClient\CacheConfig;
-use Hibla\HttpClient\Handlers\Curl\CacheHandler;
 use Hibla\HttpClient\Handlers\Curl\FetchHandler;
 use Hibla\HttpClient\Handlers\Curl\RequestExecutorHandler;
 use Hibla\HttpClient\Handlers\Curl\RetryHandler;
 use Hibla\HttpClient\Handlers\Curl\SSEHandler;
 use Hibla\HttpClient\Handlers\Curl\StreamingHandler;
-use Hibla\HttpClient\Interfaces\CacheHandlerInterface;
 use Hibla\HttpClient\Interfaces\CookieJarInterface;
 use Hibla\HttpClient\Interfaces\FetchHandlerInterface;
 use Hibla\HttpClient\Interfaces\RequestExecutorHandlerInterface;
@@ -42,7 +39,6 @@ class HttpHandler
     protected FetchHandlerInterface $fetchHandler;
     protected RequestExecutorHandlerInterface $requestExecutorHandler;
     protected RetryHandlerInterface $retryHandler;
-    protected CacheHandlerInterface $cacheHandler;
     protected SSEHandlerInterface $sseHandler;
     protected ?CookieJarInterface $defaultCookieJar = null;
 
@@ -54,16 +50,11 @@ class HttpHandler
         ?FetchHandlerInterface $fetchHandler = null,
         ?RequestExecutorHandlerInterface $requestExecutor = null,
         ?RetryHandlerInterface $retryHandler = null,
-        ?CacheHandlerInterface $cacheHandler = null,
         ?SSEHandlerInterface $sseHandler = null
     ) {
         $this->streamingHandler = $streamingHandler ?? new StreamingHandler();
         $this->requestExecutorHandler = $requestExecutor ?? new RequestExecutorHandler();
         $this->retryHandler = $retryHandler ?? new RetryHandler();
-        $this->cacheHandler = $cacheHandler ?? new CacheHandler(
-            $this->requestExecutorHandler,
-            $this->retryHandler
-        );
         $this->fetchHandler = $fetchHandler ?? new FetchHandler(
             $this->streamingHandler
         );
@@ -148,7 +139,6 @@ class HttpHandler
      *
      * @param  string  $url  The target URL.
      * @param  array<int|string, mixed>  $curlOptions  cURL options for the request.
-     * @param  CacheConfig|null  $cacheConfig  Optional cache configuration.
      * @param  RetryConfig|null  $retryConfig  Optional retry configuration.
      * @return PromiseInterface<Response> A promise that resolves with a Response object.
      *
@@ -156,12 +146,8 @@ class HttpHandler
      *           the Request builder and can be overridden to intercept all requests made through
      *           the fluent Request API.
      */
-    public function sendRequest(string $url, array $curlOptions, ?CacheConfig $cacheConfig = null, ?RetryConfig $retryConfig = null): PromiseInterface
+    public function sendRequest(string $url, array $curlOptions, ?RetryConfig $retryConfig = null): PromiseInterface
     {
-        if ($cacheConfig !== null && ($curlOptions[CURLOPT_CUSTOMREQUEST] ?? 'GET') === 'GET') {
-            return $this->cacheHandler->execute($url, $curlOptions, $cacheConfig, $retryConfig);
-        }
-
         if ($retryConfig !== null) {
             return $this->retryHandler->execute($url, $curlOptions, $retryConfig);
         }

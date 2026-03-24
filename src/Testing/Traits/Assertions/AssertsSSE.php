@@ -27,8 +27,8 @@ trait AssertsSSE
             if ($request->getUrl() === $url || fnmatch($url, $request->getUrl())) {
                 $accept = $request->getHeader('accept');
                 if ($accept !== null && (
-                    (is_string($accept) && str_contains($accept, 'text/event-stream')) ||
-                    (is_array($accept) && in_array('text/event-stream', $accept, true))
+                    (\is_string($accept) && str_contains($accept, 'text/event-stream')) ||
+                    (\is_array($accept) && \in_array('text/event-stream', $accept, true))
                 )) {
                     return;
                 }
@@ -47,8 +47,8 @@ trait AssertsSSE
         foreach ($this->getRequestHistory() as $request) {
             $accept = $request->getHeader('accept');
             if ($accept !== null && (
-                (is_string($accept) && str_contains($accept, 'text/event-stream')) ||
-                (is_array($accept) && in_array('text/event-stream', $accept, true))
+                (\is_string($accept) && str_contains($accept, 'text/event-stream')) ||
+                (\is_array($accept) && \in_array('text/event-stream', $accept, true))
             )) {
                 $this->failAssertion(
                     "Expected no SSE connections, but found connection to: {$request->getUrl()}"
@@ -76,7 +76,7 @@ trait AssertsSSE
             $this->failAssertion('Last-Event-ID header was not sent in the request');
         }
 
-        $actualId = is_array($lastEventId) ? $lastEventId[0] : $lastEventId;
+        $actualId = \is_array($lastEventId) ? $lastEventId[0] : $lastEventId;
         if ($actualId !== $expectedId) {
             $this->failAssertion(
                 "Last-Event-ID mismatch. Expected: '{$expectedId}', Got: '{$actualId}'"
@@ -96,8 +96,8 @@ trait AssertsSSE
             if ($request->getUrl() === $url || fnmatch($url, $request->getUrl())) {
                 $accept = $request->getHeader('accept');
                 if ($accept !== null && (
-                    (is_string($accept) && str_contains($accept, 'text/event-stream')) ||
-                    (is_array($accept) && in_array('text/event-stream', $accept, true))
+                    (\is_string($accept) && str_contains($accept, 'text/event-stream')) ||
+                    (\is_array($accept) && \in_array('text/event-stream', $accept, true))
                 )) {
                     $actualAttempts++;
                 }
@@ -123,8 +123,8 @@ trait AssertsSSE
             if ($request->getUrl() === $url || fnmatch($url, $request->getUrl())) {
                 $accept = $request->getHeader('accept');
                 if ($accept !== null && (
-                    (is_string($accept) && str_contains($accept, 'text/event-stream')) ||
-                    (is_array($accept) && in_array('text/event-stream', $accept, true))
+                    (\is_string($accept) && str_contains($accept, 'text/event-stream')) ||
+                    (\is_array($accept) && \in_array('text/event-stream', $accept, true))
                 )) {
                     $actualAttempts++;
                 }
@@ -150,8 +150,8 @@ trait AssertsSSE
             if ($request->getUrl() === $url || fnmatch($url, $request->getUrl())) {
                 $accept = $request->getHeader('accept');
                 if ($accept !== null && (
-                    (is_string($accept) && str_contains($accept, 'text/event-stream')) ||
-                    (is_array($accept) && in_array('text/event-stream', $accept, true))
+                    (\is_string($accept) && str_contains($accept, 'text/event-stream')) ||
+                    (\is_array($accept) && \in_array('text/event-stream', $accept, true))
                 )) {
                     $actualAttempts++;
                 }
@@ -179,8 +179,8 @@ trait AssertsSSE
                 $lastEventId = $request->getHeader('last-event-id');
 
                 if ($accept !== null && $lastEventId !== null && (
-                    (is_string($accept) && str_contains($accept, 'text/event-stream')) ||
-                    (is_array($accept) && in_array('text/event-stream', $accept, true))
+                    (\is_string($accept) && str_contains($accept, 'text/event-stream')) ||
+                    (\is_array($accept) && \in_array('text/event-stream', $accept, true))
                 )) {
                     $hasReconnection = true;
 
@@ -206,8 +206,8 @@ trait AssertsSSE
             if ($request->getUrl() === $url || fnmatch($url, $request->getUrl())) {
                 $accept = $request->getHeader('accept');
                 if ($accept !== null && (
-                    (is_string($accept) && str_contains($accept, 'text/event-stream')) ||
-                    (is_array($accept) && in_array('text/event-stream', $accept, true))
+                    (\is_string($accept) && str_contains($accept, 'text/event-stream')) ||
+                    (\is_array($accept) && \in_array('text/event-stream', $accept, true))
                 )) {
                     $headerValue = $request->getHeader($headerName);
                     if ($headerValue === null) {
@@ -241,8 +241,8 @@ trait AssertsSSE
             if ($request->getUrl() === $url || fnmatch($url, $request->getUrl())) {
                 $accept = $request->getHeader('accept');
                 if ($accept !== null && (
-                    (is_string($accept) && str_contains($accept, 'text/event-stream')) ||
-                    (is_array($accept) && in_array('text/event-stream', $accept, true))
+                    (\is_string($accept) && str_contains($accept, 'text/event-stream')) ||
+                    (\is_array($accept) && \in_array('text/event-stream', $accept, true))
                 )) {
                     $headerValue = $request->getHeader($headerName);
                     if ($headerValue !== null) {
@@ -272,12 +272,12 @@ trait AssertsSSE
         foreach ($this->getRequestHistory() as $request) {
             $accept = $request->getHeader('accept');
             if ($accept !== null && (
-                (is_string($accept) && str_contains($accept, 'text/event-stream')) ||
-                (is_array($accept) && in_array('text/event-stream', $accept, true))
+                (\is_string($accept) && str_contains($accept, 'text/event-stream')) ||
+                (\is_array($accept) && \in_array('text/event-stream', $accept, true))
             )) {
                 foreach ($urls as $url) {
                     if (($request->getUrl() === $url || fnmatch($url, $request->getUrl()))
-                        && ! in_array($url, $foundUrls, true)) {
+                        && ! \in_array($url, $foundUrls, true)) {
                         $foundUrls[] = $url;
                     }
                 }
@@ -305,8 +305,8 @@ trait AssertsSSE
         foreach ($this->getRequestHistory() as $request) {
             $accept = $request->getHeader('accept');
             if ($accept !== null && (
-                (is_string($accept) && str_contains($accept, 'text/event-stream')) ||
-                (is_array($accept) && in_array('text/event-stream', $accept, true))
+                (\is_string($accept) && str_contains($accept, 'text/event-stream')) ||
+                (\is_array($accept) && \in_array('text/event-stream', $accept, true))
             )) {
                 $sseRequests[] = $request->getUrl();
             }
@@ -317,7 +317,7 @@ trait AssertsSSE
 
         foreach ($urls as $expectedUrl) {
             $found = false;
-            for ($i = $sseIndex; $i < count($sseRequests); $i++) {
+            for ($i = $sseIndex; $i < \count($sseRequests); $i++) {
                 if ($sseRequests[$i] === $expectedUrl || fnmatch($expectedUrl, $sseRequests[$i])) {
                     $matchedCount++;
                     $sseIndex = $i + 1;
@@ -345,8 +345,8 @@ trait AssertsSSE
             if ($request->getUrl() === $url || fnmatch($url, $request->getUrl())) {
                 $accept = $request->getHeader('accept');
                 if ($accept !== null && (
-                    (is_string($accept) && str_contains($accept, 'text/event-stream')) ||
-                    (is_array($accept) && in_array('text/event-stream', $accept, true))
+                    (\is_string($accept) && str_contains($accept, 'text/event-stream')) ||
+                    (\is_array($accept) && \in_array('text/event-stream', $accept, true))
                 )) {
                     $authHeader = $request->getHeader('authorization');
                     if ($authHeader === null) {
@@ -356,7 +356,7 @@ trait AssertsSSE
                     }
 
                     if ($expectedToken !== null) {
-                        $actualToken = is_array($authHeader) ? $authHeader[0] : $authHeader;
+                        $actualToken = \is_array($authHeader) ? $authHeader[0] : $authHeader;
                         if (! str_contains($actualToken, $expectedToken)) {
                             $this->failAssertion(
                                 "SSE connection Authorization token mismatch. Expected token containing '{$expectedToken}', Got: '{$actualToken}'"
@@ -384,26 +384,26 @@ trait AssertsSSE
             if ($request->getUrl() === $url || fnmatch($url, $request->getUrl())) {
                 $accept = $request->getHeader('accept');
                 if ($accept !== null && (
-                    (is_string($accept) && str_contains($accept, 'text/event-stream')) ||
-                    (is_array($accept) && in_array('text/event-stream', $accept, true))
+                    (\is_string($accept) && str_contains($accept, 'text/event-stream')) ||
+                    (\is_array($accept) && \in_array('text/event-stream', $accept, true))
                 )) {
                     $lastEventId = $request->getHeader('last-event-id');
                     if ($lastEventId !== null) {
-                        $eventIds[] = is_array($lastEventId) ? $lastEventId[0] : $lastEventId;
+                        $eventIds[] = \is_array($lastEventId) ? $lastEventId[0] : $lastEventId;
                     }
                 }
             }
         }
 
-        if (count($eventIds) < 2) {
+        if (\count($eventIds) < 2) {
             $this->failAssertion(
                 'Not enough SSE reconnections with Last-Event-ID to verify progression. Found: ' . count($eventIds)
             );
         }
 
         // Check if event IDs are sequential (assuming numeric IDs)
-        for ($i = 1; $i < count($eventIds); $i++) {
-            if (is_numeric($eventIds[$i]) && is_numeric($eventIds[$i - 1])) {
+        for ($i = 1; $i < \count($eventIds); $i++) {
+            if (\is_numeric($eventIds[$i]) && \is_numeric($eventIds[$i - 1])) {
                 if ((int)$eventIds[$i] <= (int)$eventIds[$i - 1]) {
                     $this->failAssertion(
                         'SSE reconnection Last-Event-IDs are not progressing. ' .
@@ -426,14 +426,14 @@ trait AssertsSSE
             if ($request->getUrl() === $url || fnmatch($url, $request->getUrl())) {
                 $accept = $request->getHeader('accept');
                 if ($accept !== null && (
-                    (is_string($accept) && str_contains($accept, 'text/event-stream')) ||
-                    (is_array($accept) && in_array('text/event-stream', $accept, true))
+                    (\is_string($accept) && str_contains($accept, 'text/event-stream')) ||
+                    (\is_array($accept) && \in_array('text/event-stream', $accept, true))
                 )) {
                     $lastEventId = $request->getHeader('last-event-id');
                     if ($lastEventId !== null) {
                         $this->failAssertion(
                             "First SSE connection to {$url} should not have Last-Event-ID header, but found: " .
-                            (is_array($lastEventId) ? $lastEventId[0] : $lastEventId)
+                            (\is_array($lastEventId) ? $lastEventId[0] : $lastEventId)
                         );
                     }
                     $foundFirst = true;
@@ -459,13 +459,13 @@ trait AssertsSSE
             if ($request->getUrl() === $url || fnmatch($url, $request->getUrl())) {
                 $accept = $request->getHeader('accept');
                 if ($accept !== null && (
-                    (is_string($accept) && str_contains($accept, 'text/event-stream')) ||
-                    (is_array($accept) && in_array('text/event-stream', $accept, true))
+                    (\is_string($accept) && str_contains($accept, 'text/event-stream')) ||
+                    (\is_array($accept) && \in_array('text/event-stream', $accept, true))
                 )) {
                     // Verify the request has proper SSE headers
                     $cacheControl = $request->getHeader('cache-control');
                     if ($cacheControl !== null) {
-                        $cacheValue = is_array($cacheControl) ? $cacheControl[0] : $cacheControl;
+                        $cacheValue = \is_array($cacheControl) ? $cacheControl[0] : $cacheControl;
                         if (! str_contains(strtolower($cacheValue), 'no-cache') &&
                             ! str_contains(strtolower($cacheValue), 'no-store')) {
                             $this->failAssertion(
@@ -495,8 +495,8 @@ trait AssertsSSE
             if ($request->getUrl() === $url || fnmatch($url, $request->getUrl())) {
                 $accept = $request->getHeader('accept');
                 if ($accept !== null && (
-                    (is_string($accept) && str_contains($accept, 'text/event-stream')) ||
-                    (is_array($accept) && in_array('text/event-stream', $accept, true))
+                    (\is_string($accept) && str_contains($accept, 'text/event-stream')) ||
+                    (\is_array($accept) && \in_array('text/event-stream', $accept, true))
                 )) {
                     $attempts[] = $request;
                 }
@@ -512,7 +512,7 @@ trait AssertsSSE
     public function assertSSEConnectionCount(string $url, int $expectedCount): void
     {
         $attempts = $this->getSSEConnectionAttempts($url);
-        $actualCount = count($attempts);
+        $actualCount = \count($attempts);
 
         if ($actualCount !== $expectedCount) {
             $this->failAssertion(

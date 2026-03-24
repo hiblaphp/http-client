@@ -4,19 +4,16 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Testing\Utilities\Executors;
 
-use Hibla\HttpClient\CacheConfig;
 use Hibla\HttpClient\Response;
 use Hibla\HttpClient\RetryConfig;
 use Hibla\HttpClient\Testing\Exceptions\UnexpectedRequestException;
 use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Testing\Utilities\CookieManager;
-use Hibla\HttpClient\Testing\Utilities\Handlers\CacheHandler;
 use Hibla\HttpClient\Testing\Utilities\RequestMatcher;
 use Hibla\HttpClient\Testing\Utilities\RequestRecorder;
 use Hibla\HttpClient\Testing\Utilities\ResponseFactory;
 use Hibla\HttpClient\Testing\Utilities\Validators\RequestValidator;
 use Hibla\Promise\Interfaces\PromiseInterface;
-use Hibla\Promise\Promise;
 
 class StandardRequestExecutor
 {
@@ -24,7 +21,6 @@ class StandardRequestExecutor
     private ResponseFactory $responseFactory;
     private CookieManager $cookieManager;
     private RequestRecorder $requestRecorder;
-    private CacheHandler $cacheHandler;
     private RequestValidator $validator;
     private RetryableRequestExecutor $retryExecutor;
 
@@ -33,14 +29,12 @@ class StandardRequestExecutor
         ResponseFactory $responseFactory,
         CookieManager $cookieManager,
         RequestRecorder $requestRecorder,
-        CacheHandler $cacheHandler,
         RequestValidator $validator
     ) {
         $this->requestMatcher = $requestMatcher;
         $this->responseFactory = $responseFactory;
         $this->cookieManager = $cookieManager;
         $this->requestRecorder = $requestRecorder;
-        $this->cacheHandler = $cacheHandler;
         $this->validator = $validator;
 
         $this->retryExecutor = new RetryableRequestExecutor(
@@ -61,7 +55,6 @@ class StandardRequestExecutor
         array $curlOptions,
         array &$mockedRequests,
         array $globalSettings,
-        ?CacheConfig $cacheConfig = null,
         ?RetryConfig $retryConfig = null,
         ?callable $parentSendRequest = null
     ): PromiseInterface {
@@ -72,13 +65,6 @@ class StandardRequestExecutor
         $this->cookieManager->applyCookiesForRequestOptions($curlOptions, $url);
 
         $method = $this->extractMethod($curlOptions);
-
-        if ($this->cacheHandler->tryServeFromCache($url, $method, $cacheConfig)) {
-            /** @var Response $cachedResponse */
-            $cachedResponse = $this->cacheHandler->getCachedResponse($url, $cacheConfig);
-
-            return Promise::resolved($cachedResponse);
-        }
 
         $matchedMock = $this->requestMatcher->findMatchingMock(
             $mockedRequests,
@@ -95,7 +81,6 @@ class StandardRequestExecutor
                 $curlOnlyOptions,
                 $mockedRequests,
                 $globalSettings,
-                $cacheConfig,
                 $retryConfig,
                 $parentSendRequest
             );
@@ -111,7 +96,7 @@ class StandardRequestExecutor
             $parentSendRequest
         );
 
-        return $this->applyPostProcessing($promise, $curlOptions, $url, $cacheConfig, $method);
+        return $this->applyPostProcessing($promise, $curlOptions, $url, $method);
     }
 
     /**
@@ -138,7 +123,6 @@ class StandardRequestExecutor
         array $curlOnlyOptions,
         array $mockedRequests,
         array $globalSettings,
-        ?CacheConfig $cacheConfig,
         ?RetryConfig $retryConfig,
         ?callable $parentSendRequest
     ): PromiseInterface {
@@ -147,7 +131,7 @@ class StandardRequestExecutor
                 throw new \RuntimeException('No parent send request handler available');
             }
             /** @var PromiseInterface<Response> $result */
-            $result = $parentSendRequest($url, $curlOptions, $cacheConfig, $retryConfig);
+            $result = $parentSendRequest($url, $curlOptions, $retryConfig);
 
             return $result;
         }
@@ -169,12 +153,10 @@ class StandardRequestExecutor
         PromiseInterface $promise,
         array $curlOptions,
         string $url,
-        ?CacheConfig $cacheConfig,
         string $method
     ): PromiseInterface {
-        return $promise->then(function (Response $response) use ($curlOptions, $url, $cacheConfig, $method) {
+        return $promise->then(function (Response $response) use ($curlOptions, $url, $method) {
             $this->processCookies($response, $curlOptions, $url);
-            $this->cacheHandler->cacheIfNeeded($url, $response, $cacheConfig, $method);
 
             return $response;
         });

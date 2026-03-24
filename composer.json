@@ -27,9 +27,6 @@
     "require": {
         "hiblaphp/event-loop": "dev-main",
         "hiblaphp/promise": "dev-main",
-        "symfony/cache": "^7.3",
-        "psr/cache": "^3.0",
-        "psr/simple-cache": "^3.0",
         "psr/http-message": "^2.0"
     },
     "require-dev": {

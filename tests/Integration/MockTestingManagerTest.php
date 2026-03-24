@@ -2,9 +2,6 @@
 
 declare(strict_types=1);
 
-use Hibla\HttpClient\CacheConfig;
-use Hibla\HttpClient\Response;
-
 describe('Utilities Integration', function () {
     test('FileManager and CookieManager can work together', function () {
         $fileManager = createFileManager();
@@ -26,7 +23,6 @@ describe('Utilities Integration', function () {
     test('multiple utility managers maintain independence', function () {
         $fileManager = createFileManager();
         $cookieManager = createCookieManager();
-        $cacheManager = createCacheManager();
 
         $file = $fileManager->createTempFile('independence_' . uniqid() . '.txt', 'content');
         $cookieManager->addCookie('test', 'value');
@@ -44,14 +40,11 @@ describe('Utilities Integration', function () {
         $cookieManager->cleanup();
 
         expect($cookieManager->getCookieCount())->toBe(0);
-
-        $cacheManager->reset();
     });
 
     test('cleanup methods are idempotent', function () {
         $fileManager = createFileManager();
         $cookieManager = createCookieManager();
-        $cacheManager = createCacheManager();
 
         $fileManager->createTempFile('idempotent_' . uniqid() . '.txt');
         $cookieManager->addCookie('test', 'value');
@@ -61,9 +54,6 @@ describe('Utilities Integration', function () {
 
         $cookieManager->cleanup();
         $cookieManager->cleanup();
-
-        $cacheManager->reset();
-        $cacheManager->reset();
 
         expect(true)->toBeTrue();
     });
@@ -109,36 +99,5 @@ describe('Utilities Integration', function () {
         foreach ($files as $file) {
             expect(file_exists($file))->toBeFalse();
         }
-    });
-
-    test('CacheManager reset does not affect FileManager', function () {
-        $fileManager = createFileManager();
-        $cacheManager = createCacheManager();
-
-        $file = $fileManager->createTempFile('cache_test_' . uniqid() . '.txt', 'content');
-
-        $cacheManager->reset();
-
-        expect(file_exists($file))->toBeTrue();
-
-        $fileManager->cleanup();
-    });
-
-    test('CookieManager cleanup does not affect CacheManager', function () {
-        $cookieManager = createCookieManager();
-        $cacheManager = createCacheManager();
-
-        $cookieManager->addCookie('test', 'value');
-
-        $config = new CacheConfig(ttlSeconds: 60);
-        $response = new Response('cached', 200, []);
-        $cacheManager->cacheResponse('https://example.com', $response, $config);
-
-        $cookieManager->cleanup();
-
-        $cached = $cacheManager->getCachedResponse('https://example.com', $config);
-        expect($cached)->not->toBeNull();
-
-        $cacheManager->reset();
     });
 });
