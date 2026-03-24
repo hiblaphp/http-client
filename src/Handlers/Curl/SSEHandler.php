@@ -267,7 +267,7 @@ class SSEHandler implements SSEHandlerInterface
             },
         ]);
 
-        $requestId = Loop::addHttpRequest(
+        $requestId = Loop::addCurlRequest(
             $url,
             $sseOptions,
             function (?string $error) use ($url, $promise, $onError, &$sseResponse, &$streamComplete) {
@@ -310,7 +310,7 @@ class SSEHandler implements SSEHandlerInterface
         }
 
         $promise->onCancel(function () use ($requestId, &$sseResponse): void {
-            Loop::cancelHttpRequest($requestId);
+            Loop::cancelCurlRequest($requestId);
             
             //@phpstan-ignore-next-line
             $sseResponse->getStream()->close();

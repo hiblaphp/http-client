@@ -57,7 +57,7 @@ class StreamingHandler implements StreamingHandlerInterface
             },
         ]);
 
-        $requestId = Loop::addHttpRequest(
+        $requestId = Loop::addCurlRequest(
             $url,
             $streamingOptions,
             function (?string $error, $response, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $promise, $responseStream, &$headerAccumulator): void {
@@ -113,7 +113,7 @@ class StreamingHandler implements StreamingHandlerInterface
         );
 
         $promise->onCancel(function () use ($requestId, $responseStream): void {
-            Loop::cancelHttpRequest($requestId);
+            Loop::cancelCurlRequest($requestId);
             if (\is_resource($responseStream)) {
                 fclose($responseStream);
             }
@@ -156,7 +156,7 @@ class StreamingHandler implements StreamingHandlerInterface
             },
         ]);
 
-        $requestId = Loop::addHttpRequest(
+        $requestId = Loop::addCurlRequest(
             $url,
             $downloadOptions,
             function (?string $error, $response, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $promise, $file, $destination): void {
@@ -197,7 +197,7 @@ class StreamingHandler implements StreamingHandlerInterface
         );
 
         $promise->onCancel(function () use ($requestId, $file, $destination): void {
-            Loop::cancelHttpRequest($requestId);
+            Loop::cancelCurlRequest($requestId);
             if (\is_resource($file)) {
                 fclose($file);
             }

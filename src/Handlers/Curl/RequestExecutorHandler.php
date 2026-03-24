@@ -43,7 +43,7 @@ class RequestExecutorHandler implements RequestExecutorHandlerInterface
         $timeout = $curlOptions[CURLOPT_TIMEOUT] ?? $curlOptions[CURLOPT_TIMEOUT_MS] ?? null;
         $connectTimeout = $curlOptions[CURLOPT_CONNECTTIMEOUT] ?? $curlOptions[CURLOPT_CONNECTTIMEOUT_MS] ?? null;
 
-        $requestId = Loop::addHttpRequest(
+        $requestId = Loop::addCurlRequest(
             $url,
             $curlOnlyOptions,
             function (?string $error, ?string $response, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $promise, $cookieJar, $timeout, $connectTimeout) {
@@ -73,7 +73,7 @@ class RequestExecutorHandler implements RequestExecutorHandlerInterface
         );
 
         $promise->onCancel(function () use ($requestId) {
-            Loop::cancelHttpRequest($requestId);
+            Loop::cancelCurlRequest($requestId);
         });
 
         return $promise;

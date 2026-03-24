@@ -46,7 +46,7 @@ class SSEResponse extends StreamingResponse
     public function close(): void
     {
         if ($this->requestId !== null) {
-            Loop::cancelHttpRequest($this->requestId);
+            Loop::cancelCurlRequest($this->requestId);
             $this->requestId = null;
         }
 

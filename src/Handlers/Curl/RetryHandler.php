@@ -51,7 +51,7 @@ class RetryHandler implements RetryHandlerInterface
         ) {
             $totalAttempts++;
 
-            $requestId = Loop::addHttpRequest(
+            $requestId = Loop::addCurlRequest(
                 $url,
                 $curlOnlyOptions,
                 function (?string $error, ?string $responseBody, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $retryConfig, $promise, &$attempt, &$totalAttempts, &$executeRequest, $cookieJar, &$timerId) {
@@ -113,7 +113,7 @@ class RetryHandler implements RetryHandlerInterface
 
         $promise->onCancel(function () use (&$requestId, &$timerId) {
             if ($requestId !== null) {
-                Loop::cancelHttpRequest($requestId);
+                Loop::cancelCurlRequest($requestId);
             }
 
             if ($timerId !== null) {
