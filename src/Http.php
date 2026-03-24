@@ -85,6 +85,7 @@ use Psr\Http\Message\UploadedFileInterface;
  * @method static Request http3() Start building a request with HTTP/3 negotiation.
  *
  * Interceptor methods:
+ * @method static Request intercept(callable $middleware) Add a full pipeline interceptor.
  * @method static Request interceptRequest(callable $callback) Start building a request with a request interceptor.
  * @method static Request interceptResponse(callable $callback) Start building a request with a response interceptor.
  *

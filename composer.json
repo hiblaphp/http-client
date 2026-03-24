@@ -27,7 +27,8 @@
     "require": {
         "hiblaphp/event-loop": "dev-main",
         "hiblaphp/promise": "dev-main",
-        "psr/http-message": "^2.0"
+        "psr/http-message": "^2.0",
+        "hiblaphp/async": "dev-main"
     },
     "require-dev": {
         "pestphp/pest": "^4.0",

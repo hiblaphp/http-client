@@ -6,8 +6,7 @@ namespace Hibla\HttpClient;
 
 use Hibla\HttpClient\Builders\CurlOptionsBuilder;
 use Hibla\HttpClient\Handlers\HttpHandler;
-use Hibla\HttpClient\Handlers\RequestInterceptorHandler;
-use Hibla\HttpClient\Handlers\ResponseInterceptorHandler;
+use Hibla\HttpClient\Handlers\InterceptorHandler;
 use Hibla\HttpClient\Interfaces\CompleteHttpClientInterface;
 use Hibla\HttpClient\Interfaces\CookieJarInterface;
 use Hibla\HttpClient\Interfaces\TransportOptionsBuilderInterface;
@@ -52,19 +51,14 @@ class Request extends Message implements CompleteHttpClientInterface
     private array $urlParameters = [];
 
     /**
-     * @var array<int, callable(Request): Request>
-     */
-    private array $requestInterceptors = [];
-
-    /**
-     * @var array<int, callable(Response): Response>
-     */
-    private array $responseInterceptors = [];
-
-    /**
      *  @var (callable(mixed): mixed)|null
      */
     private $sseMapper = null;
+
+    /**
+     * @var array<int, callable(Request, callable): PromiseInterface<Response>>
+     */
+    private array $interceptors = [];
 
     /**
      * @var TransportOptionsBuilderInterface<array<int|string, mixed>>|null
@@ -99,9 +93,7 @@ class Request extends Message implements CompleteHttpClientInterface
 
     private ?CookieJarInterface $cookieJar = null;
 
-    private ?RequestInterceptorHandler $requestInterceptorHandler = null;
-
-    private ?ResponseInterceptorHandler $responseInterceptorHandler = null;
+    private ?InterceptorHandler $interceptorHandler = null;
 
     private ?ProxyConfig $proxyConfig = null;
 
@@ -187,34 +179,53 @@ class Request extends Message implements CompleteHttpClientInterface
     }
 
     /**
-     * Adds a request interceptor.
+     * Add a request interceptor.
      *
-     * The callback will receive the Request object before it is sent. It MUST
-     * return a Request object, allowing for immutable modifications.
+     * Wraps the simple transform into the unified pipeline format.
+     * await() works freely inside — the master fiber handles it.
      *
-     * @param  callable(Request): Request  $callback
+     * @param callable(Request): Request $callback
      */
     public function interceptRequest(callable $callback): self
     {
-        $new = clone $this;
-        $new->requestInterceptors[] = $callback;
-
-        return $new;
+        return $this->intercept(
+            static function (Request $request, callable $next) use ($callback): PromiseInterface {
+                $modified = $callback($request);
+                return $next($modified);
+            }
+        );
     }
 
     /**
-     * Adds a response interceptor.
+     * Add a response interceptor.
      *
-     * The callback will receive the final Response object. It MUST return a
-     * Response object, allowing for inspection or modification.
+     * Wraps the simple transform into the unified pipeline format.
+     * await() works freely inside — the master fiber handles it.
      *
-     * @param  callable(Response): Response  $callback
+     * @param callable(Response): Response $callback
      */
     public function interceptResponse(callable $callback): self
     {
-        $new = clone $this;
-        $new->responseInterceptors[] = $callback;
+        return $this->intercept(
+            static function (Request $request, callable $next) use ($callback): PromiseInterface {
+                return $next($request)->then(
+                    static function (Response $response) use ($callback): Response {
+                        return $callback($response);
+                    }
+                );
+            }
+        );
+    }
 
+    /**
+     * Add a full pipeline interceptor.
+     *
+     * @param callable(Request, callable): PromiseInterface<Response> $middleware
+     */
+    public function intercept(callable $middleware): self
+    {
+        $new = clone $this;
+        $new->interceptors[] = $middleware;
         return $new;
     }
 
@@ -1046,16 +1057,16 @@ class Request extends Message implements CompleteHttpClientInterface
     public function send(string $method, string $url): PromiseInterface
     {
         $expandedUrl = $this->expandUriTemplate($url);
-
         $initialRequest = $this->withMethod($method)->withUri(new Uri($expandedUrl));
 
-        // Process request interceptors
-        return $this->getRequestInterceptorHandler()
-            ->processInterceptors($initialRequest, $this->requestInterceptors)
-            ->then(
-                fn($processedRequest) => $this->executeRequest($processedRequest)
-            )
-        ;
+        $executor = fn(Request $processedRequest): PromiseInterface
+        => $this->executeRequest($processedRequest);
+
+        return $this->getInterceptorHandler()->process(
+            $initialRequest,
+            $this->interceptors,
+            $executor
+        );
     }
 
     /**
@@ -1514,22 +1525,12 @@ class Request extends Message implements CompleteHttpClientInterface
     {
         $clientOptions = $this->createClientOptions($processedRequest);
 
-        /** @var array<int|string, mixed> $transportOptions */
         $transportOptions = $this->getTransportOptionsBuilder()->build($clientOptions);
 
-        $httpPromise = $this->getHandler()->sendRequest(
+        return $this->getHandler()->sendRequest(
             (string) $processedRequest->getUri(),
             $transportOptions,
             $processedRequest->retryConfig
-        );
-
-        if (\count($processedRequest->responseInterceptors) === 0) {
-            return $httpPromise;
-        }
-
-        return $httpPromise->then(
-            fn($response) => $this->getResponseInterceptorHandler()
-                ->processInterceptors($response, $processedRequest->responseInterceptors)
         );
     }
 
@@ -1596,27 +1597,16 @@ class Request extends Message implements CompleteHttpClientInterface
         return json_last_error() === JSON_ERROR_NONE ? $parsed : $event->data;
     }
 
-    /**
-     * Get or create the request interceptor handler.
-     */
-    private function getRequestInterceptorHandler(): RequestInterceptorHandler
-    {
-        if ($this->requestInterceptorHandler === null) {
-            $this->requestInterceptorHandler = new RequestInterceptorHandler();
-        }
-
-        return $this->requestInterceptorHandler;
-    }
 
     /**
-     * Get or create the response interceptor handler.
+     * Get or create the interceptor handler.
      */
-    private function getResponseInterceptorHandler(): ResponseInterceptorHandler
+    private function getInterceptorHandler(): InterceptorHandler
     {
-        if ($this->responseInterceptorHandler === null) {
-            $this->responseInterceptorHandler = new ResponseInterceptorHandler();
+        if ($this->interceptorHandler === null) {
+            $this->interceptorHandler = new InterceptorHandler();
         }
 
-        return $this->responseInterceptorHandler;
+        return $this->interceptorHandler;
     }
 }
