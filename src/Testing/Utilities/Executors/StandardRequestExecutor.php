@@ -96,7 +96,7 @@ class StandardRequestExecutor
             $parentSendRequest
         );
 
-        return $this->applyPostProcessing($promise, $curlOptions, $url, $method);
+        return $this->applyPostProcessing($promise, $curlOptions, $url);
     }
 
     /**
@@ -152,10 +152,9 @@ class StandardRequestExecutor
     private function applyPostProcessing(
         PromiseInterface $promise,
         array $curlOptions,
-        string $url,
-        string $method
+        string $url
     ): PromiseInterface {
-        return $promise->then(function (Response $response) use ($curlOptions, $url, $method) {
+        return $promise->then(function (Response $response) use ($curlOptions, $url) {
             $this->processCookies($response, $curlOptions, $url);
 
             return $response;

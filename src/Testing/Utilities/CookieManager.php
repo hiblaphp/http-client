@@ -493,8 +493,8 @@ class CookieManager
             }
 
             $info[$name] = [
-                'type' => $jar instanceof FileCookieJar ? 'file' : 'memory',
-                'cookie_count' => count($cookies),
+                'type' => 'memory',
+                'cookie_count' => \count($cookies),
                 'cookies' => $cookies,
             ];
         }

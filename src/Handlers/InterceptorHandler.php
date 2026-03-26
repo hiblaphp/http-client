@@ -38,9 +38,7 @@ use function Hibla\await;
 class InterceptorHandler
 {
     /**
-     * Process the interceptor pipeline inside a single master fiber.
-     *
-     * @param array<callable(Request, callable): PromiseInterface<Response>> $interceptors
+     * @param array<callable(Request, callable): mixed> $interceptors
      * @param callable(Request): PromiseInterface<Response> $executor
      * @return PromiseInterface<Response>
      */
@@ -55,15 +53,29 @@ class InterceptorHandler
 
         $pipeline = array_reduce(
             array_reverse($interceptors),
-            function (callable $next, callable $interceptor): callable {
+            static function (callable $next, callable $interceptor): callable {
                 return function (Request $request) use ($next, $interceptor): PromiseInterface {
                     $result = $interceptor($request, $next);
 
-                    if ($result instanceof PromiseInterface) {
-                        return $result;
+                    if ($result === null) {
+                        throw new \LogicException(
+                            'Callback passed to intercept() must return a ' . PromiseInterface::class . ', ' .
+                            'got null/void. Did you forget to return $next($request) or the response?'
+                        );
                     }
 
-                    return Promise::resolved($result);
+                    if (!$result instanceof PromiseInterface) {
+                        throw new \LogicException(sprintf(
+                            'Callback passed to intercept() must return a %s, got %s. ' .
+                            'Did you forget to return $next($request) or the response?',
+                            PromiseInterface::class,
+                            get_debug_type($result),
+                        ));
+                    }
+
+                    return $result->then(
+                        static fn(mixed $resolved): Response => self::resolveInterceptor($resolved)
+                    );
                 };
             },
             $executor
@@ -72,5 +84,29 @@ class InterceptorHandler
         return async(static function () use ($pipeline, $request) {
             return await($pipeline($request));
         });
+    }
+
+    private static function resolveInterceptor(mixed $value): Response
+    {
+        if ($value === null) {
+            throw new \LogicException(
+                'The ' . PromiseInterface::class . ' returned by the callback passed to intercept() ' .
+                'must resolve to a ' . Response::class . ' instance, got null/void. ' .
+                'Did you forget to return $next($request) or the response?'
+            );
+        }
+
+        if (!$value instanceof Response) {
+            throw new \LogicException(sprintf(
+                'The %s returned by the callback passed to intercept() ' .
+                'must resolve to a %s instance, got %s. ' .
+                'Did you forget to return $next($request) or the response?',
+                PromiseInterface::class,
+                Response::class,
+                get_debug_type($value),
+            ));
+        }
+
+        return $value;
     }
 }

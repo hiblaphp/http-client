@@ -134,11 +134,7 @@ class SSEHandler implements SSEHandlerInterface
             /**
              * @param  mixed  $error
              */
-            function ($error) use ($mainPromise, $connectionState, $onEvent, $onError): void {
-                if (! ($error instanceof \Throwable)) {
-                    return;
-                }
-
+            function (\Throwable $error) use ($mainPromise, $connectionState, $onEvent, $onError): void {
                 if ($connectionState->isCancelled()) {
                     if (! $mainPromise->isSettled()) {
                         $exception = new RequestException(

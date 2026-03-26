@@ -56,7 +56,7 @@ class ResponseTypeHandler
             return $this->handleStream($mock, $options, $createStream);
         }
 
-        return $this->handleStandardResponse($mock, $url);
+        return $this->handleStandardResponse($mock);
     }
 
     /**
@@ -65,13 +65,12 @@ class ResponseTypeHandler
      */
     private function handleDownload(MockedRequest $mock, array $options): PromiseInterface
     {
-        $destination = is_string($options['download']) ? $options['download'] : '';
+        $destination = \is_string($options['download']) ? $options['download'] : '';
 
         if ($destination === '') {
             throw new \InvalidArgumentException('Download destination must be a non-empty string');
         }
 
-        // @phpstan-ignore-next-line
         return $this->responseFactory->createMockedDownload($mock, $destination, $this->fileManager);
     }
 
@@ -94,13 +93,9 @@ class ResponseTypeHandler
      */
     private function handleStandardResponse(
         MockedRequest $mock,
-        string $url
     ): PromiseInterface {
         $responsePromise = $this->responseFactory->createMockedResponse($mock);
 
-        return $responsePromise->then(function (Response $response) use ( $url) {
-
-            return $response;
-        });
+        return $responsePromise->then(fn (Response $response): Response => $response);
     }
 }

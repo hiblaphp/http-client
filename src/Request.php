@@ -179,42 +179,84 @@ class Request extends Message implements CompleteHttpClientInterface
     }
 
     /**
-     * Add a request interceptor.
-     *
-     * Wraps the simple transform into the unified pipeline format.
-     * await() works freely inside — the master fiber handles it.
-     *
-     * @param callable(Request): Request $callback
+     * @param callable(Request): (Request|PromiseInterface<Request>) $callback
      */
     public function interceptRequest(callable $callback): self
     {
         return $this->intercept(
             static function (Request $request, callable $next) use ($callback): PromiseInterface {
-                $modified = $callback($request);
-                return $next($modified);
+                /** @var callable(Request): PromiseInterface<Response> $next */
+                $result = $callback($request);
+
+                if ($result instanceof PromiseInterface) {
+                    return $result->then(
+                        static function (mixed $resolved) use ($next): PromiseInterface {
+                            return $next(self::resolveValue($resolved, Request::class, true));
+                        }
+                    );
+                }
+
+                return $next(self::resolveValue($result, Request::class, false));
             }
         );
     }
 
     /**
-     * Add a response interceptor.
-     *
-     * Wraps the simple transform into the unified pipeline format.
-     * await() works freely inside — the master fiber handles it.
-     *
-     * @param callable(Response): Response $callback
+     * @param callable(Response): (Response|PromiseInterface<Response>) $callback
      */
     public function interceptResponse(callable $callback): self
     {
         return $this->intercept(
             static function (Request $request, callable $next) use ($callback): PromiseInterface {
+                /** @var callable(Request): PromiseInterface<Response> $next */
                 return $next($request)->then(
-                    static function (Response $response) use ($callback): Response {
-                        return $callback($response);
+                    static function (Response $response) use ($callback): mixed {
+                        $result = $callback($response);
+
+                        if ($result instanceof PromiseInterface) {
+                            return $result->then(
+                                static fn(mixed $resolved): Response => self::resolveValue($resolved, Response::class, true)
+                            );
+                        }
+
+                        return self::resolveValue($result, Response::class, false);
                     }
                 );
             }
         );
+    }
+
+    /**
+     * @template T of Request|Response
+     * @param class-string<T> $type
+     * @return T
+     */
+    private static function resolveValue(mixed $value, string $type, bool $fromPromise): Request|Response
+    {
+        $caller = $type === Request::class ? 'interceptRequest' : 'interceptResponse';
+
+        if ($value === null) {
+            throw new \LogicException(\sprintf(
+                '%s passed to %s() must %s a %s instance, got null/void.',
+                $fromPromise ? 'The ' . PromiseInterface::class : 'Callback',
+                $caller,
+                $fromPromise ? 'resolve to' : 'return',
+                $type,
+            ));
+        }
+
+        if (!$value instanceof $type) {
+            throw new \LogicException(\sprintf(
+                '%s passed to %s() must %s a %s instance, got %s.',
+                $fromPromise ? 'The ' . PromiseInterface::class : 'Callback',
+                $caller,
+                $fromPromise ? 'resolve to' : 'return',
+                $type,
+                get_debug_type($value),
+            ));
+        }
+
+        return $value;
     }
 
     /**
