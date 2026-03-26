@@ -8,6 +8,7 @@ use Hibla\HttpClient\Handlers\HttpHandler;
 use Hibla\HttpClient\Interfaces\CookieJarInterface;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
 use Hibla\HttpClient\SSE\SSEResponse;
+use Hibla\HttpClient\SSE\SSEBuilder;
 use Hibla\HttpClient\Testing\MockRequestBuilder;
 use Hibla\HttpClient\Testing\TestingHttpHandler;
 use Hibla\HttpClient\Testing\Utilities\RecordedRequest;
@@ -90,11 +91,7 @@ use Psr\Http\Message\UploadedFileInterface;
  * @method static Request interceptResponse(callable $callback) Start building a request with a response interceptor.
  *
  * SSE (Server-Sent Events) methods:
- * @method static PromiseInterface<SSEResponse> sse(string $url, ?callable $onEvent = null, ?callable $onError = null, ?SSEReconnectConfig $reconnectConfig = null) Start an SSE connection.
- * @method static Request sseDataFormat(string $format = 'json') Start building a request with SSE data format configuration.
- * @method static Request sseMap(callable $mapper) Start building a request with custom SSE event mapper.
- * @method static Request sseReconnect(int $maxAttempts = 10, float $initialDelay = 1.0, float $maxDelay = 30.0, float $backoffMultiplier = 2.0) Start building a request with SSE reconnection configuration.
- * @method static Request noSseReconnect() Start building a request with SSE reconnection disabled.
+ * @method static SSEBuilder sse(string $url) Create a fluent SSE connection builder.
  *
  * Advanced cURL methods:
  * @method static Request withCurlOption(int $option, mixed $value) Start building a request with a raw cURL option.

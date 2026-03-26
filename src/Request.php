@@ -10,9 +10,8 @@ use Hibla\HttpClient\Handlers\InterceptorHandler;
 use Hibla\HttpClient\Interfaces\CompleteHttpClientInterface;
 use Hibla\HttpClient\Interfaces\CookieJarInterface;
 use Hibla\HttpClient\Interfaces\TransportOptionsBuilderInterface;
+use Hibla\HttpClient\SSE\SSEBuilder;
 use Hibla\HttpClient\SSE\SSEEvent;
-use Hibla\HttpClient\SSE\SSEReconnectConfig;
-use Hibla\HttpClient\SSE\SSEResponse;
 use Hibla\HttpClient\Traits\StreamTrait;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use InvalidArgumentException;
@@ -51,11 +50,6 @@ class Request extends Message implements CompleteHttpClientInterface
     private array $urlParameters = [];
 
     /**
-     *  @var (callable(mixed): mixed)|null
-     */
-    private $sseMapper = null;
-
-    /**
      * @var array<int, callable(Request, callable): PromiseInterface<Response>>
      */
     private array $interceptors = [];
@@ -81,8 +75,6 @@ class Request extends Message implements CompleteHttpClientInterface
 
     private ?string $userAgent = null;
 
-    private ?string $sseDataFormat = null;
-
     private ?string $requestTarget = null;
 
     private UriInterface $uri;
@@ -96,8 +88,6 @@ class Request extends Message implements CompleteHttpClientInterface
     private ?InterceptorHandler $interceptorHandler = null;
 
     private ?ProxyConfig $proxyConfig = null;
-
-    private ?SSEReconnectConfig $sseReconnectConfig = null;
 
     /**
      * Initializes a new Request builder instance.
@@ -640,41 +630,18 @@ class Request extends Message implements CompleteHttpClientInterface
         return $new;
     }
 
-    /**
-     * Configure what type of data SSE events should return.
+     /**
+     * Creates a fluent SSE builder for this request's transport configuration.
      *
-     * @param string $format The data format to return:
-     *                          - 'json': Parse event data as JSON (fallback to raw string)
-     *                          - 'array': Convert entire event to array using toArray()
-     *                          - 'raw': Return raw event data string
-     *                          - 'event': Return full SSEEvent object (default)
-     * @return self For fluent method chaining
+     * All authentication, headers, timeout, and proxy settings already
+     * configured on the Request are forwarded automatically.
+     *
+     * @param string $url The SSE endpoint URL.
+     * @return SSEBuilder
      */
-    public function sseDataFormat(string $format = 'json'): self
+    public function sse(string $url): SSEBuilder
     {
-        $new = clone $this;
-        $new->sseDataFormat = $format;
-
-        return $new;
-    }
-
-    /**
-     * Create an SSE connection with configured data format.
-     *
-     * @param string $url The SSE endpoint URL
-     * @param (callable(mixed): void)|null $onEvent Callback for each event (receives data in configured format)
-     * @param callable(string): void|null $onError Optional callback for connection errors
-     * @param SSEReconnectConfig|null $reconnectConfig Optional reconnection configuration
-     * @return PromiseInterface<SSEResponse>
-     */
-    public function sse(
-        string $url,
-        ?callable $onEvent = null,
-        ?callable $onError = null,
-        ?SSEReconnectConfig $reconnectConfig = null
-    ): PromiseInterface {
         $method = $this->body->getSize() > 0 ? 'POST' : 'GET';
-
         $effectiveTimeout = $this->timeoutExplicitlySet ? $this->timeout : 0;
 
         $clientOptions = new ClientOptions(
@@ -693,98 +660,15 @@ class Request extends Message implements CompleteHttpClientInterface
             proxyConfig: $this->proxyConfig,
             auth: $this->auth,
             additionalOptions: $this->options,
-            retryConfig: $this->retryConfig
+            retryConfig: $this->retryConfig,
         );
 
-        /** @var array<int|string, mixed> $options */
-        $options = $this->getTransportOptionsBuilder()->buildForSSE($clientOptions);
+        /** @var array<int|string, mixed> $curlOptions */
+        $curlOptions = $this->getTransportOptionsBuilder()->buildForSSE($clientOptions);
 
-        $effectiveReconnectConfig = $reconnectConfig ?? $this->sseReconnectConfig;
-        $wrappedCallback = $this->wrapSSECallback($onEvent);
-
-        return $this->getHandler()->sse($url, $options, $wrappedCallback, $onError, $effectiveReconnectConfig);
+        return new SSEBuilder($url, $this->getHandler(), $curlOptions);
     }
 
-    /**
-     * Add a custom mapper function to transform SSE event data.
-     *
-     * @param callable(mixed): mixed $mapper Function to transform the event data
-     * @return self For fluent method chaining
-     */
-    public function sseMap(callable $mapper): self
-    {
-        $new = clone $this;
-        $new->sseMapper = $mapper;
-
-        return $new;
-    }
-
-    /**
-     * Enable SSE reconnection with exponential backoff.
-     *
-     * @param  int  $maxAttempts  Maximum reconnection attempts
-     * @param  float  $initialDelay  Initial delay before first reconnection (in seconds)
-     * @param  float  $maxDelay  Maximum delay between attempts (in seconds)
-     * @param  float  $backoffMultiplier  Exponential backoff multiplier
-     * @return self For fluent method chaining.
-     */
-    public function sseReconnect(
-        int $maxAttempts = 10,
-        float $initialDelay = 1.0,
-        float $maxDelay = 30.0,
-        float $backoffMultiplier = 2.0
-    ): self {
-        $new = clone $this;
-        $new->sseReconnectConfig = new SSEReconnectConfig(
-            enabled: true,
-            maxAttempts: $maxAttempts,
-            initialDelay: $initialDelay,
-            maxDelay: $maxDelay,
-            backoffMultiplier: $backoffMultiplier,
-            jitter: true,
-            retryableErrors: [
-                'Connection refused',
-                'Connection reset',
-                'Connection timed out',
-                'Could not resolve host',
-                'Resolving timed out',
-                'SSL connection timeout',
-                'Operation timed out',
-                'Network is unreachable',
-            ],
-            onReconnect: null,
-            shouldReconnect: null
-        );
-
-        return $new;
-    }
-
-    /**
-     * Configure SSE reconnection using a custom configuration object.
-     *
-     * @param  SSEReconnectConfig  $config  The reconnection configuration
-     * @return self For fluent method chaining.
-     */
-    public function sseReconnectWith(SSEReconnectConfig $config): self
-    {
-        $new = clone $this;
-        $new->sseReconnectConfig = $config;
-
-        return $new;
-    }
-
-    /**
-     * Disable SSE reconnection.
-     *
-     * @return self For fluent method chaining.
-     */
-    public function noSseReconnect(): self
-    {
-        $new = clone $this;
-        $new->sseReconnectConfig = null;
-
-        return $new;
-    }
 
     /**
      * Streams the response body of a GET request.
