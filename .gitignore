@@ -3,4 +3,4 @@ composer.lock
 /.qodo
 /.idea
 .env
-test.php
+/test.php
