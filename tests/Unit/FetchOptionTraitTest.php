@@ -6,12 +6,7 @@ use Hibla\HttpClient\Cookie;
 use Hibla\HttpClient\CookieJar;
 use Hibla\HttpClient\ProxyConfig;
 use Hibla\HttpClient\RetryConfig;
-use Hibla\HttpClient\Traits\FetchOptionTrait;
-
-class FetchOptionTraitTestClass
-{
-    use FetchOptionTrait;
-}
+use Tests\Fixtures\FetchOptionTraitTestClass;
 
 describe('FetchOptionTrait: Basic Option Normalization', function () {
     it('normalizes basic GET request options', function () {

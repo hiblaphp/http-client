@@ -2,18 +2,9 @@
 
 declare(strict_types=1);
 
-use Hibla\HttpClient\Message;
 use Hibla\HttpClient\Stream;
 use Psr\Http\Message\StreamInterface;
-
-class ConcreteMessage extends Message
-{
-    public function __construct(array $headers = [])
-    {
-        $this->body = new Stream(fopen('php://memory', 'r+'));
-        $this->setHeaders($headers);
-    }
-}
+use Tests\Fixtures\ConcreteMessage;
 
 describe('Protocol Version', function () {
     it('defaults to protocol version 1.1', function () {
