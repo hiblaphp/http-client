@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Handlers\Curl;
 
-use Hibla\HttpClient\Interfaces\CacheHandlerInterface;
 use Hibla\HttpClient\Interfaces\FetchHandlerInterface;
 use Hibla\HttpClient\Interfaces\RequestExecutorHandlerInterface;
 use Hibla\HttpClient\Interfaces\RetryHandlerInterface;
@@ -31,20 +30,17 @@ class FetchHandler implements FetchHandlerInterface
     private SSEHandlerInterface $sseHandler;
     private RequestExecutorHandlerInterface $requestExecutor;
     private RetryHandlerInterface $retryHandler;
-    private CacheHandlerInterface $cacheHandler;
 
     public function __construct(
         ?StreamingHandlerInterface $streamingHandler = null,
         ?SSEHandlerInterface $sseHandler = null,
         ?RequestExecutorHandlerInterface $requestExecutor = null,
         ?RetryHandlerInterface $retryHandler = null,
-        ?CacheHandlerInterface $cacheHandler = null
     ) {
         $this->streamingHandler = $streamingHandler ?? new StreamingHandler();
         $this->sseHandler = $sseHandler ?? new SSEHandler();
         $this->requestExecutor = $requestExecutor ?? new RequestExecutorHandler();
         $this->retryHandler = $retryHandler ?? new RetryHandler();
-        $this->cacheHandler = $cacheHandler ?? new CacheHandler($this->requestExecutor, $this->retryHandler);
     }
 
     /**
@@ -84,13 +80,8 @@ class FetchHandler implements FetchHandlerInterface
         }
 
         $retryConfig = $this->extractRetryConfig(options: $options);
-        $cacheConfig = $this->extractCacheConfig($options);
 
         $curlOptions = $this->normalizeFetchOptions($url, $options);
-
-        if ($cacheConfig !== null) {
-            return $this->cacheHandler->execute($url, $curlOptions, $cacheConfig, $retryConfig);
-        }
 
         if ($retryConfig !== null) {
             return $this->retryHandler->execute($url, $curlOptions, $retryConfig);

@@ -126,24 +126,6 @@ describe('Retries', function () {
     });
 });
 
-describe('Caching', function () {
-    test('it serves a response from cache on the second request', function () {
-        Http::mock()
-            ->url('/cached-endpoint')
-            ->respondJson(['data' => 'live data'])
-            ->register()
-        ;
-
-        $response1 = Http::cache(60)->get('/cached-endpoint')->wait();
-        $response2 = Http::cache(60)->get('/cached-endpoint')->wait();
-
-        expect($response1->json())->toBe(['data' => 'live data']);
-        expect($response2->json())->toBe(['data' => 'live data']);
-
-        Http::assertRequestCount(1);
-    });
-});
-
 describe('Server-Sent Events (SSE)', function () {
     test('it can mock and receive SSE events', function () {
         Http::mock()

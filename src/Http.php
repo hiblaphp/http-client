@@ -8,6 +8,7 @@ use Hibla\HttpClient\Handlers\HttpHandler;
 use Hibla\HttpClient\Interfaces\CookieJarInterface;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
 use Hibla\HttpClient\SSE\SSEResponse;
+use Hibla\HttpClient\SSE\SSEBuilder;
 use Hibla\HttpClient\Testing\MockRequestBuilder;
 use Hibla\HttpClient\Testing\TestingHttpHandler;
 use Hibla\HttpClient\Testing\Utilities\RecordedRequest;
@@ -35,9 +36,6 @@ use Psr\Http\Message\UploadedFileInterface;
  * @method static PromiseInterface<array{file: string, status: int, headers: array<mixed>}> download(string $url, string $destination) Downloads a file.
  *
  * Request builder methods:
- * @method static Request cache(int $ttlSeconds = 3600, bool $respectServerHeaders = true) Start building a request with caching enabled.
- * @method static Request cacheWithKey(string $cacheKey, int $ttlSeconds = 3600, bool $respectServerHeaders = true) Start building a request with custom cache key.
- * @method static Request cacheWith(CacheConfig $config) Start building a request with custom cache configuration.
  * @method static Request timeout(int $seconds) Start building a request with timeout.
  * @method static Request connectTimeout(int $seconds) Start building a request with connection timeout.
  * @method static Request headers(array<string, string> $headers) Start building a request with headers.
@@ -70,9 +68,7 @@ use Psr\Http\Message\UploadedFileInterface;
  * @method static Request withCookie(string $name, string $value) Start building a request with a single cookie.
  * @method static Request withCookies(array<string, string> $cookies) Start building a request with multiple cookies.
  * @method static Request withCookieJar() Start building a request with an in-memory cookie jar.
- * @method static Request withFileCookieJar(string $filename, bool $includeSessionCookies = false) Start building a request with a file-based cookie jar.
  * @method static Request useCookieJar(CookieJarInterface $cookieJar) Start building a request with a custom cookie jar.
- * @method static Request withAllCookiesSaved(string $filename) Start building a request with all cookies saved to file.
  * @method static Request clearCookies() Start building a request with cookies cleared.
  * @method static Request cookieWithAttributes(string $name, string $value, array<string, mixed> $attributes = []) Start building a request with a cookie with additional attributes.
  *
@@ -90,15 +86,12 @@ use Psr\Http\Message\UploadedFileInterface;
  * @method static Request http3() Start building a request with HTTP/3 negotiation.
  *
  * Interceptor methods:
+ * @method static Request intercept(callable $middleware) Add a full pipeline interceptor.
  * @method static Request interceptRequest(callable $callback) Start building a request with a request interceptor.
  * @method static Request interceptResponse(callable $callback) Start building a request with a response interceptor.
  *
  * SSE (Server-Sent Events) methods:
- * @method static PromiseInterface<SSEResponse> sse(string $url, ?callable $onEvent = null, ?callable $onError = null, ?SSEReconnectConfig $reconnectConfig = null) Start an SSE connection.
- * @method static Request sseDataFormat(string $format = 'json') Start building a request with SSE data format configuration.
- * @method static Request sseMap(callable $mapper) Start building a request with custom SSE event mapper.
- * @method static Request sseReconnect(int $maxAttempts = 10, float $initialDelay = 1.0, float $maxDelay = 30.0, float $backoffMultiplier = 2.0) Start building a request with SSE reconnection configuration.
- * @method static Request noSseReconnect() Start building a request with SSE reconnection disabled.
+ * @method static SSEBuilder sse(string $url) Create a fluent SSE connection builder.
  *
  * Advanced cURL methods:
  * @method static Request withCurlOption(int $option, mixed $value) Start building a request with a raw cURL option.
@@ -377,16 +370,12 @@ class Http
     /**
      * Configure global settings for the HTTP client.
      *
-     * @param array{user_agent?: string, cache_path?: string} $settings
+     * @param array{user_agent?: string} $settings
      */
     public static function configure(array $settings): void
     {
         if (isset($settings['user_agent'])) {
             GlobalConfig::setUserAgent($settings['user_agent']);
-        }
-
-        if (isset($settings['cache_path'])) {
-            GlobalConfig::setCachePath($settings['cache_path']);
         }
     }
 

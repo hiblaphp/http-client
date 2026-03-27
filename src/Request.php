@@ -6,14 +6,12 @@ namespace Hibla\HttpClient;
 
 use Hibla\HttpClient\Builders\CurlOptionsBuilder;
 use Hibla\HttpClient\Handlers\HttpHandler;
-use Hibla\HttpClient\Handlers\RequestInterceptorHandler;
-use Hibla\HttpClient\Handlers\ResponseInterceptorHandler;
+use Hibla\HttpClient\Handlers\InterceptorHandler;
 use Hibla\HttpClient\Interfaces\CompleteHttpClientInterface;
 use Hibla\HttpClient\Interfaces\CookieJarInterface;
 use Hibla\HttpClient\Interfaces\TransportOptionsBuilderInterface;
+use Hibla\HttpClient\SSE\SSEBuilder;
 use Hibla\HttpClient\SSE\SSEEvent;
-use Hibla\HttpClient\SSE\SSEReconnectConfig;
-use Hibla\HttpClient\SSE\SSEResponse;
 use Hibla\HttpClient\Traits\StreamTrait;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use InvalidArgumentException;
@@ -52,19 +50,9 @@ class Request extends Message implements CompleteHttpClientInterface
     private array $urlParameters = [];
 
     /**
-     * @var array<int, callable(Request): Request>
+     * @var array<int, callable(Request, callable): PromiseInterface<Response>>
      */
-    private array $requestInterceptors = [];
-
-    /**
-     * @var array<int, callable(Response): Response>
-     */
-    private array $responseInterceptors = [];
-
-    /**
-     *  @var (callable(mixed): mixed)|null
-     */
-    private $sseMapper = null;
+    private array $interceptors = [];
 
     /**
      * @var TransportOptionsBuilderInterface<array<int|string, mixed>>|null
@@ -87,8 +75,6 @@ class Request extends Message implements CompleteHttpClientInterface
 
     private ?string $userAgent = null;
 
-    private ?string $sseDataFormat = null;
-
     private ?string $requestTarget = null;
 
     private UriInterface $uri;
@@ -97,17 +83,11 @@ class Request extends Message implements CompleteHttpClientInterface
 
     private ?RetryConfig $retryConfig = null;
 
-    private ?CacheConfig $cacheConfig = null;
-
     private ?CookieJarInterface $cookieJar = null;
 
-    private ?RequestInterceptorHandler $requestInterceptorHandler = null;
-
-    private ?ResponseInterceptorHandler $responseInterceptorHandler = null;
+    private ?InterceptorHandler $interceptorHandler = null;
 
     private ?ProxyConfig $proxyConfig = null;
-
-    private ?SSEReconnectConfig $sseReconnectConfig = null;
 
     /**
      * Initializes a new Request builder instance.
@@ -189,34 +169,95 @@ class Request extends Message implements CompleteHttpClientInterface
     }
 
     /**
-     * Adds a request interceptor.
-     *
-     * The callback will receive the Request object before it is sent. It MUST
-     * return a Request object, allowing for immutable modifications.
-     *
-     * @param  callable(Request): Request  $callback
+     * @param callable(Request): (Request|PromiseInterface<Request>) $callback
      */
     public function interceptRequest(callable $callback): self
     {
-        $new = clone $this;
-        $new->requestInterceptors[] = $callback;
+        return $this->intercept(
+            static function (Request $request, callable $next) use ($callback): PromiseInterface {
+                /** @var callable(Request): PromiseInterface<Response> $next */
+                $result = $callback($request);
 
-        return $new;
+                if ($result instanceof PromiseInterface) {
+                    return $result->then(
+                        static function (mixed $resolved) use ($next): PromiseInterface {
+                            return $next(self::resolveValue($resolved, Request::class, true));
+                        }
+                    );
+                }
+
+                return $next(self::resolveValue($result, Request::class, false));
+            }
+        );
     }
 
     /**
-     * Adds a response interceptor.
-     *
-     * The callback will receive the final Response object. It MUST return a
-     * Response object, allowing for inspection or modification.
-     *
-     * @param  callable(Response): Response  $callback
+     * @param callable(Response): (Response|PromiseInterface<Response>) $callback
      */
     public function interceptResponse(callable $callback): self
     {
-        $new = clone $this;
-        $new->responseInterceptors[] = $callback;
+        return $this->intercept(
+            static function (Request $request, callable $next) use ($callback): PromiseInterface {
+                /** @var callable(Request): PromiseInterface<Response> $next */
+                return $next($request)->then(
+                    static function (Response $response) use ($callback): mixed {
+                        $result = $callback($response);
 
+                        if ($result instanceof PromiseInterface) {
+                            return $result->then(
+                                static fn(mixed $resolved): Response => self::resolveValue($resolved, Response::class, true)
+                            );
+                        }
+
+                        return self::resolveValue($result, Response::class, false);
+                    }
+                );
+            }
+        );
+    }
+
+    /**
+     * @template T of Request|Response
+     * @param class-string<T> $type
+     * @return T
+     */
+    private static function resolveValue(mixed $value, string $type, bool $fromPromise): Request|Response
+    {
+        $caller = $type === Request::class ? 'interceptRequest' : 'interceptResponse';
+
+        if ($value === null) {
+            throw new \LogicException(\sprintf(
+                '%s passed to %s() must %s a %s instance, got null/void.',
+                $fromPromise ? 'The ' . PromiseInterface::class : 'Callback',
+                $caller,
+                $fromPromise ? 'resolve to' : 'return',
+                $type,
+            ));
+        }
+
+        if (!$value instanceof $type) {
+            throw new \LogicException(\sprintf(
+                '%s passed to %s() must %s a %s instance, got %s.',
+                $fromPromise ? 'The ' . PromiseInterface::class : 'Callback',
+                $caller,
+                $fromPromise ? 'resolve to' : 'return',
+                $type,
+                get_debug_type($value),
+            ));
+        }
+
+        return $value;
+    }
+
+    /**
+     * Add a full pipeline interceptor.
+     *
+     * @param callable(Request, callable): PromiseInterface<Response> $middleware
+     */
+    public function intercept(callable $middleware): self
+    {
+        $new = clone $this;
+        $new->interceptors[] = $middleware;
         return $new;
     }
 
@@ -589,41 +630,18 @@ class Request extends Message implements CompleteHttpClientInterface
         return $new;
     }
 
-    /**
-     * Configure what type of data SSE events should return.
+     /**
+     * Creates a fluent SSE builder for this request's transport configuration.
      *
-     * @param string $format The data format to return:
-     *                          - 'json': Parse event data as JSON (fallback to raw string)
-     *                          - 'array': Convert entire event to array using toArray()
-     *                          - 'raw': Return raw event data string
-     *                          - 'event': Return full SSEEvent object (default)
-     * @return self For fluent method chaining
+     * All authentication, headers, timeout, and proxy settings already
+     * configured on the Request are forwarded automatically.
+     *
+     * @param string $url The SSE endpoint URL.
+     * @return SSEBuilder
      */
-    public function sseDataFormat(string $format = 'json'): self
+    public function sse(string $url): SSEBuilder
     {
-        $new = clone $this;
-        $new->sseDataFormat = $format;
-
-        return $new;
-    }
-
-    /**
-     * Create an SSE connection with configured data format.
-     *
-     * @param string $url The SSE endpoint URL
-     * @param (callable(mixed): void)|null $onEvent Callback for each event (receives data in configured format)
-     * @param callable(string): void|null $onError Optional callback for connection errors
-     * @param SSEReconnectConfig|null $reconnectConfig Optional reconnection configuration
-     * @return PromiseInterface<SSEResponse>
-     */
-    public function sse(
-        string $url,
-        ?callable $onEvent = null,
-        ?callable $onError = null,
-        ?SSEReconnectConfig $reconnectConfig = null
-    ): PromiseInterface {
         $method = $this->body->getSize() > 0 ? 'POST' : 'GET';
-
         $effectiveTimeout = $this->timeoutExplicitlySet ? $this->timeout : 0;
 
         $clientOptions = new ClientOptions(
@@ -642,98 +660,15 @@ class Request extends Message implements CompleteHttpClientInterface
             proxyConfig: $this->proxyConfig,
             auth: $this->auth,
             additionalOptions: $this->options,
-            retryConfig: $this->retryConfig
+            retryConfig: $this->retryConfig,
         );
 
-        /** @var array<int|string, mixed> $options */
-        $options = $this->getTransportOptionsBuilder()->buildForSSE($clientOptions);
+        /** @var array<int|string, mixed> $curlOptions */
+        $curlOptions = $this->getTransportOptionsBuilder()->buildForSSE($clientOptions);
 
-        $effectiveReconnectConfig = $reconnectConfig ?? $this->sseReconnectConfig;
-        $wrappedCallback = $this->wrapSSECallback($onEvent);
-
-        return $this->getHandler()->sse($url, $options, $wrappedCallback, $onError, $effectiveReconnectConfig);
+        return new SSEBuilder($url, $this->getHandler(), $curlOptions);
     }
 
-    /**
-     * Add a custom mapper function to transform SSE event data.
-     *
-     * @param callable(mixed): mixed $mapper Function to transform the event data
-     * @return self For fluent method chaining
-     */
-    public function sseMap(callable $mapper): self
-    {
-        $new = clone $this;
-        $new->sseMapper = $mapper;
-
-        return $new;
-    }
-
-    /**
-     * Enable SSE reconnection with exponential backoff.
-     *
-     * @param  int  $maxAttempts  Maximum reconnection attempts
-     * @param  float  $initialDelay  Initial delay before first reconnection (in seconds)
-     * @param  float  $maxDelay  Maximum delay between attempts (in seconds)
-     * @param  float  $backoffMultiplier  Exponential backoff multiplier
-     * @return self For fluent method chaining.
-     */
-    public function sseReconnect(
-        int $maxAttempts = 10,
-        float $initialDelay = 1.0,
-        float $maxDelay = 30.0,
-        float $backoffMultiplier = 2.0
-    ): self {
-        $new = clone $this;
-        $new->sseReconnectConfig = new SSEReconnectConfig(
-            enabled: true,
-            maxAttempts: $maxAttempts,
-            initialDelay: $initialDelay,
-            maxDelay: $maxDelay,
-            backoffMultiplier: $backoffMultiplier,
-            jitter: true,
-            retryableErrors: [
-                'Connection refused',
-                'Connection reset',
-                'Connection timed out',
-                'Could not resolve host',
-                'Resolving timed out',
-                'SSL connection timeout',
-                'Operation timed out',
-                'Network is unreachable',
-            ],
-            onReconnect: null,
-            shouldReconnect: null
-        );
-
-        return $new;
-    }
-
-    /**
-     * Configure SSE reconnection using a custom configuration object.
-     *
-     * @param  SSEReconnectConfig  $config  The reconnection configuration
-     * @return self For fluent method chaining.
-     */
-    public function sseReconnectWith(SSEReconnectConfig $config): self
-    {
-        $new = clone $this;
-        $new->sseReconnectConfig = $config;
-
-        return $new;
-    }
-
-    /**
-     * Disable SSE reconnection.
-     *
-     * @return self For fluent method chaining.
-     */
-    public function noSseReconnect(): self
-    {
-        $new = clone $this;
-        $new->sseReconnectConfig = null;
-
-        return $new;
-    }
 
     /**
      * Streams the response body of a GET request.
@@ -943,57 +878,6 @@ class Request extends Message implements CompleteHttpClientInterface
     }
 
     /**
-     * Enables caching for this request with a specific Time-To-Live.
-     *
-     * This enables a zero-config, file-based cache for the request.
-     * The underlying handler will automatically manage the cache instance.
-     *
-     * @param  int  $ttlSeconds  The number of seconds the response should be cached.
-     * @param  bool  $respectServerHeaders  If true, the server's `Cache-Control: max-age` header will override the provided TTL.
-     * @return self For fluent method chaining.
-     */
-    public function cache(int $ttlSeconds = 3600, bool $respectServerHeaders = true): self
-    {
-        $new = clone $this;
-        $new->cacheConfig = new CacheConfig($ttlSeconds, $respectServerHeaders);
-
-        return $new;
-    }
-
-    /**
-     * Enables caching for this request using a custom configuration object.
-     *
-     * This method is for advanced use cases where you need to provide a specific
-     * cache implementation (e.g., Redis, Memcached) or more complex rules.
-     *
-     * @param  CacheConfig  $config  The custom caching configuration object.
-     * @return self For fluent method chaining.
-     */
-    public function cacheWith(CacheConfig $config): self
-    {
-        $new = clone $this;
-        $new->cacheConfig = $config;
-
-        return $new;
-    }
-
-    /**
-     * Enables caching with a custom cache key.
-     *
-     * @param  string  $cacheKey  The custom cache key to use
-     * @param  int  $ttlSeconds  The number of seconds the response should be cached.
-     * @param  bool  $respectServerHeaders  If true, server's Cache-Control will override TTL.
-     * @return self For fluent method chaining.
-     */
-    public function cacheWithKey(string $cacheKey, int $ttlSeconds = 3600, bool $respectServerHeaders = true): self
-    {
-        $new = clone $this;
-        $new->cacheConfig = new CacheConfig($ttlSeconds, $respectServerHeaders, null, $cacheKey);
-
-        return $new;
-    }
-
-    /**
      * Add a file to the multipart request.
      *
      * @param string $name The form field name
@@ -1099,16 +983,16 @@ class Request extends Message implements CompleteHttpClientInterface
     public function send(string $method, string $url): PromiseInterface
     {
         $expandedUrl = $this->expandUriTemplate($url);
-
         $initialRequest = $this->withMethod($method)->withUri(new Uri($expandedUrl));
 
-        // Process request interceptors
-        return $this->getRequestInterceptorHandler()
-            ->processInterceptors($initialRequest, $this->requestInterceptors)
-            ->then(
-                fn($processedRequest) => $this->executeRequest($processedRequest)
-            )
-        ;
+        $executor = fn(Request $processedRequest): PromiseInterface
+        => $this->executeRequest($processedRequest);
+
+        return $this->getInterceptorHandler()->process(
+            $initialRequest,
+            $this->interceptors,
+            $executor
+        );
     }
 
     /**
@@ -1158,18 +1042,6 @@ class Request extends Message implements CompleteHttpClientInterface
     }
 
     /**
-     * Enable automatic cookie management with a file-based cookie jar.
-     *
-     * @param  string  $filename  The file path to store cookies.
-     * @param  bool  $includeSessionCookies  Whether to persist session cookies (cookies without expiration).
-     * @return self For fluent method chaining.
-     */
-    public function withFileCookieJar(string $filename, bool $includeSessionCookies = false): self
-    {
-        return $this->useCookieJar(new FileCookieJar($filename, $includeSessionCookies));
-    }
-
-    /**
      * Use a custom cookie jar for automatic cookie management.
      *
      * @param  CookieJarInterface  $cookieJar  The cookie jar to use.
@@ -1181,18 +1053,6 @@ class Request extends Message implements CompleteHttpClientInterface
         $new->cookieJar = $cookieJar;
 
         return $new;
-    }
-
-    /**
-     * Convenience: Enable file-based cookie storage including session cookies.
-     * Perfect for testing or when you want to persist all cookies.
-     *
-     * @param  string  $filename  The file path to store cookies.
-     * @return self For fluent method chaining.
-     */
-    public function withAllCookiesSaved(string $filename): self
-    {
-        return $this->withFileCookieJar($filename, true);
     }
 
     /**
@@ -1591,23 +1451,12 @@ class Request extends Message implements CompleteHttpClientInterface
     {
         $clientOptions = $this->createClientOptions($processedRequest);
 
-        /** @var array<int|string, mixed> $transportOptions */
         $transportOptions = $this->getTransportOptionsBuilder()->build($clientOptions);
 
-        $httpPromise = $this->getHandler()->sendRequest(
+        return $this->getHandler()->sendRequest(
             (string) $processedRequest->getUri(),
             $transportOptions,
-            $processedRequest->cacheConfig,
             $processedRequest->retryConfig
-        );
-
-        if (\count($processedRequest->responseInterceptors) === 0) {
-            return $httpPromise;
-        }
-
-        return $httpPromise->then(
-            fn($response) => $this->getResponseInterceptorHandler()
-                ->processInterceptors($response, $processedRequest->responseInterceptors)
         );
     }
 
@@ -1674,27 +1523,16 @@ class Request extends Message implements CompleteHttpClientInterface
         return json_last_error() === JSON_ERROR_NONE ? $parsed : $event->data;
     }
 
-    /**
-     * Get or create the request interceptor handler.
-     */
-    private function getRequestInterceptorHandler(): RequestInterceptorHandler
-    {
-        if ($this->requestInterceptorHandler === null) {
-            $this->requestInterceptorHandler = new RequestInterceptorHandler();
-        }
-
-        return $this->requestInterceptorHandler;
-    }
 
     /**
-     * Get or create the response interceptor handler.
+     * Get or create the interceptor handler.
      */
-    private function getResponseInterceptorHandler(): ResponseInterceptorHandler
+    private function getInterceptorHandler(): InterceptorHandler
     {
-        if ($this->responseInterceptorHandler === null) {
-            $this->responseInterceptorHandler = new ResponseInterceptorHandler();
+        if ($this->interceptorHandler === null) {
+            $this->interceptorHandler = new InterceptorHandler();
         }
 
-        return $this->responseInterceptorHandler;
+        return $this->interceptorHandler;
     }
 }

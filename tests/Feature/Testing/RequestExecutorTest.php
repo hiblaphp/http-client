@@ -2,14 +2,12 @@
 
 declare(strict_types=1);
 
-use Hibla\HttpClient\CacheConfig;
 use Hibla\HttpClient\Response;
 use Hibla\HttpClient\RetryConfig;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
 use Hibla\HttpClient\SSE\SSEResponse;
 use Hibla\HttpClient\Stream;
 use Hibla\HttpClient\Testing\MockedRequest;
-use Hibla\HttpClient\Testing\Utilities\CacheManager;
 use Hibla\HttpClient\Testing\Utilities\CookieManager;
 use Hibla\HttpClient\Testing\Utilities\FileManager;
 use Hibla\HttpClient\Testing\Utilities\NetworkSimulator;
@@ -26,8 +24,7 @@ function createRequestExecutor(): RequestExecutor
         new ResponseFactory(new NetworkSimulator()),
         new FileManager(),
         new CookieManager(),
-        new RequestRecorder(),
-        new CacheManager()
+        new RequestRecorder()
     );
 }
 
@@ -91,28 +88,6 @@ test('executes fetch request', function () {
     expect($result)->toBeInstanceOf(Response::class);
 });
 
-test('executes send request with cache config', function () {
-    $executor = createRequestExecutor();
-    $mocks = [];
-
-    $mock = new MockedRequest('GET');
-    $mock->setUrlPattern('https://api.example.com/cached');
-    $mock->setBody('{"cached": true}');
-    $mocks[] = $mock;
-
-    $cacheConfig = new CacheConfig(ttlSeconds: 3600);
-
-    $result = $executor->executeSendRequest(
-        'https://api.example.com/cached',
-        [CURLOPT_CUSTOMREQUEST => 'GET'],
-        $mocks,
-        [],
-        $cacheConfig
-    )->wait();
-
-    expect($result)->toBeInstanceOf(Response::class);
-});
-
 test('executes send request with retry config', function () {
     $executor = createRequestExecutor();
     $mocks = [];
@@ -129,7 +104,6 @@ test('executes send request with retry config', function () {
         [CURLOPT_CUSTOMREQUEST => 'GET'],
         $mocks,
         [],
-        null,
         $retryConfig
     )->wait();
 
@@ -190,7 +164,6 @@ test('executes send request with parent callback', function () {
         [CURLOPT_CUSTOMREQUEST => 'GET'],
         $mocks,
         $globalSettings,
-        null,
         null,
         $parentSendRequest
     )->wait();

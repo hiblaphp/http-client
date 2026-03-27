@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Testing\Utilities\Handlers;
 
-use Hibla\HttpClient\CacheConfig;
 use Hibla\HttpClient\Response;
 use Hibla\HttpClient\StreamingResponse;
 use Hibla\HttpClient\Testing\MockedRequest;
@@ -20,16 +19,13 @@ class ResponseTypeHandler
 
     private ResponseFactory $responseFactory;
     private FileManager $fileManager;
-    private CacheHandler $cacheHandler;
 
     public function __construct(
         ResponseFactory $responseFactory,
         FileManager $fileManager,
-        CacheHandler $cacheHandler
     ) {
         $this->responseFactory = $responseFactory;
         $this->fileManager = $fileManager;
-        $this->cacheHandler = $cacheHandler;
     }
 
     /**
@@ -42,7 +38,6 @@ class ResponseTypeHandler
         array $match,
         array $options,
         array &$mockedRequests,
-        ?CacheConfig $cacheConfig,
         string $url,
         string $method,
         ?callable $createStream = null
@@ -61,7 +56,7 @@ class ResponseTypeHandler
             return $this->handleStream($mock, $options, $createStream);
         }
 
-        return $this->handleStandardResponse($mock, $cacheConfig, $url);
+        return $this->handleStandardResponse($mock);
     }
 
     /**
@@ -70,13 +65,12 @@ class ResponseTypeHandler
      */
     private function handleDownload(MockedRequest $mock, array $options): PromiseInterface
     {
-        $destination = is_string($options['download']) ? $options['download'] : '';
+        $destination = \is_string($options['download']) ? $options['download'] : '';
 
         if ($destination === '') {
             throw new \InvalidArgumentException('Download destination must be a non-empty string');
         }
 
-        // @phpstan-ignore-next-line
         return $this->responseFactory->createMockedDownload($mock, $destination, $this->fileManager);
     }
 
@@ -99,15 +93,9 @@ class ResponseTypeHandler
      */
     private function handleStandardResponse(
         MockedRequest $mock,
-        ?CacheConfig $cacheConfig,
-        string $url
     ): PromiseInterface {
         $responsePromise = $this->responseFactory->createMockedResponse($mock);
 
-        return $responsePromise->then(function (Response $response) use ($cacheConfig, $url) {
-            $this->cacheHandler->cacheResponse($url, $response, $cacheConfig);
-
-            return $response;
-        });
+        return $responsePromise->then(fn (Response $response): Response => $response);
     }
 }

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Interfaces;
 
-use Hibla\HttpClient\CacheConfig;
 use Hibla\HttpClient\ProxyConfig;
 use Hibla\HttpClient\RetryConfig;
+use Hibla\HttpClient\SSE\SSEBuilder;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
 use Hibla\HttpClient\SSE\SSEResponse;
 use Hibla\HttpClient\StreamingResponse;
@@ -36,16 +36,6 @@ interface AdvancedHttpClientInterface extends HttpClientBuilderInterface
     public function noRetry(): self;
 
     /**
-     * Enable response caching with default settings.
-     */
-    public function cache(int $ttlSeconds = 3600, bool $respectServerHeaders = true): self;
-
-    /**
-     * Configure caching with a CacheConfig object.
-     */
-    public function cacheWith(CacheConfig $config): self;
-
-    /**
      * Add a single cookie to the request.
      */
     public function withCookie(string $name, string $value): self;
@@ -63,19 +53,9 @@ interface AdvancedHttpClientInterface extends HttpClientBuilderInterface
     public function withCookieJar(): self;
 
     /**
-     * Enable file-based cookie jar with persistence.
-     */
-    public function withFileCookieJar(string $filename, bool $includeSessionCookies = false): self;
-
-    /**
      * Use a custom cookie jar instance.
      */
     public function useCookieJar(CookieJarInterface $cookieJar): self;
-
-    /**
-     * Save all cookies (including session cookies) to a file.
-     */
-    public function withAllCookiesSaved(string $filename): self;
 
     /**
      * Clear all cookies from the cookie jar.
@@ -144,51 +124,15 @@ interface AdvancedHttpClientInterface extends HttpClientBuilderInterface
     public function download(string $url, string $destination): PromiseInterface;
 
     /**
-     * Set the data format for SSE events (array, object, or raw).
-     */
-    public function sseDataFormat(string $format = 'array'): self;
-
-    /**
-     * Establish a Server-Sent Events connection.
+     * Creates a fluent SSE builder for this request's transport configuration.
      *
-     * @param (callable(mixed): void)|null $onEvent Callback for each event
-     * @param (callable(string): void)|null $onError Callback for connection errors
-     * @return PromiseInterface<SSEResponse>
-     */
-    public function sse(string $url, ?callable $onEvent = null, ?callable $onError = null, ?SSEReconnectConfig $reconnectConfig = null): PromiseInterface;
-
-    /**
-     * Map/transform SSE event data before invoking callbacks.
+     * All authentication, headers, timeout, and proxy settings already
+     * configured on the Request are forwarded automatically.
      *
-     * @param callable(mixed): mixed $mapper Event transformation function
+     * @param string $url The SSE endpoint URL.
+     * @return SSEBuilder
      */
-    public function sseMap(callable $mapper): self;
-
-    /**
-     * Enable SSE reconnection with exponential backoff.
-     *
-     * @param  int  $maxAttempts  Maximum reconnection attempts
-     * @param  float  $initialDelay  Initial delay before first reconnection (in seconds)
-     * @param  float  $maxDelay  Maximum delay between attempts (in seconds)
-     * @param  float  $backoffMultiplier  Exponential backoff multiplier
-     * @return self For fluent method chaining.
-     */
-    public function sseReconnect(
-        int $maxAttempts = 10,
-        float $initialDelay = 1.0,
-        float $maxDelay = 30.0,
-        float $backoffMultiplier = 2.0
-    ): self;
-
-    /**
-     * Configure SSE reconnection with a SSEReconnectConfig object.
-     */
-    public function sseReconnectWith(SSEReconnectConfig $config): self;
-
-    /**
-     * Disable SSE reconnection.
-     */
-    public function noSseReconnect(): self;
+    public function sse(string $url): SSEBuilder;
 
     /**
      * Add a single file to a multipart request.

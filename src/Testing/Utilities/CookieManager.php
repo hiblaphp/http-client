@@ -6,7 +6,6 @@ namespace Hibla\HttpClient\Testing\Utilities;
 
 use Hibla\HttpClient\Cookie;
 use Hibla\HttpClient\CookieJar;
-use Hibla\HttpClient\FileCookieJar;
 use Hibla\HttpClient\Interfaces\CookieJarInterface;
 use Hibla\HttpClient\Testing\Exceptions\MockAssertionException;
 use Hibla\HttpClient\Testing\MockedRequest;
@@ -61,30 +60,6 @@ class CookieManager
     {
         $jar = new CookieJar();
         $this->cookieJars[$name] = $jar;
-
-        if ($name === 'default' || $this->defaultCookieJar === null) {
-            $this->defaultCookieJar = $jar;
-        }
-
-        return $jar;
-    }
-
-    /**
-     * Creates a new file-based cookie jar.
-     *
-     * @param string $filename Path to cookie file
-     * @param bool $includeSessionCookies Whether to include session cookies
-     * @param string $name Name for the jar
-     * @return FileCookieJar The created jar
-     */
-    public function createFileCookieJar(string $filename, bool $includeSessionCookies = true, string $name = 'default'): FileCookieJar
-    {
-        $jar = new FileCookieJar($filename, $includeSessionCookies);
-        $this->cookieJars[$name] = $jar;
-
-        if ($this->autoManage) {
-            $this->createdCookieFiles[] = $filename;
-        }
 
         if ($name === 'default' || $this->defaultCookieJar === null) {
             $this->defaultCookieJar = $jar;
@@ -185,9 +160,9 @@ class CookieManager
     public function addCookies(array $cookies, string $jarName = 'default'): self
     {
         foreach ($cookies as $name => $config) {
-            if (is_string($config)) {
+            if (\is_string($config)) {
                 $this->addCookie($name, $config, null, '/', null, false, false, null, $jarName);
-            } elseif (is_array($config)) {
+            } elseif (\is_array($config)) {
                 $value = $config['value'] ?? '';
                 $domain = $config['domain'] ?? null;
                 $path = $config['path'] ?? '/';
@@ -198,13 +173,13 @@ class CookieManager
 
                 $this->addCookie(
                     $name,
-                    is_string($value) ? $value : '',
-                    is_string($domain) ? $domain : null,
-                    is_string($path) ? $path : '/',
-                    is_int($expires) ? $expires : null,
-                    is_bool($secure) ? $secure : false,
-                    is_bool($httpOnly) ? $httpOnly : false,
-                    is_string($sameSite) ? $sameSite : null,
+                    \is_string($value) ? $value : '',
+                    \is_string($domain) ? $domain : null,
+                    \is_string($path) ? $path : '/',
+                    \is_int($expires) ? $expires : null,
+                    \is_bool($secure) ? $secure : false,
+                    \is_bool($httpOnly) ? $httpOnly : false,
+                    \is_string($sameSite) ? $sameSite : null,
                     $jarName
                 );
             }
@@ -222,9 +197,9 @@ class CookieManager
     public function mockSetCookies(MockedRequest $mock, array $cookies): void
     {
         foreach ($cookies as $name => $config) {
-            if (is_string($config)) {
+            if (\is_string($config)) {
                 $mock->addResponseHeader('Set-Cookie', "{$name}={$config}; Path=/");
-            } elseif (is_array($config)) {
+            } elseif (\is_array($config)) {
                 $value = $config['value'] ?? '';
                 $setCookieValue = $name . '=' . (is_string($value) ? $value : '');
 
@@ -518,8 +493,8 @@ class CookieManager
             }
 
             $info[$name] = [
-                'type' => $jar instanceof FileCookieJar ? 'file' : 'memory',
-                'cookie_count' => count($cookies),
+                'type' => 'memory',
+                'cookie_count' => \count($cookies),
                 'cookies' => $cookies,
             ];
         }
@@ -651,8 +626,8 @@ class CookieManager
             if (strtolower($name) !== 'set-cookie') {
                 continue;
             }
-            if (is_array($value)) {
-                $setCookieHeaders = array_merge($setCookieHeaders, $value);
+            if (\is_array($value)) {
+                $setCookieHeaders = \array_merge($setCookieHeaders, $value);
 
                 continue;
             }
@@ -667,7 +642,7 @@ class CookieManager
         $requestDomain = $uri->getHost();
 
         foreach ($setCookieHeaders as $setCookieHeader) {
-            if (! is_string($setCookieHeader)) {
+            if (! \is_string($setCookieHeader)) {
                 continue;
             }
             $cookie = Cookie::fromSetCookieHeader($setCookieHeader);

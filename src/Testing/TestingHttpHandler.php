@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Testing;
 
-use Hibla\HttpClient\CacheConfig;
 use Hibla\HttpClient\Handlers\HttpHandler;
 use Hibla\HttpClient\Interfaces\CookieJarInterface;
 use Hibla\HttpClient\RetryConfig;
@@ -26,7 +25,6 @@ use Hibla\HttpClient\Testing\Traits\Assertions\AssertsRequests;
 use Hibla\HttpClient\Testing\Traits\Assertions\AssertsRequestsExtended;
 use Hibla\HttpClient\Testing\Traits\Assertions\AssertsSSE;
 use Hibla\HttpClient\Testing\Traits\Assertions\AssertsStreams;
-use Hibla\HttpClient\Testing\Utilities\CacheManager;
 use Hibla\HttpClient\Testing\Utilities\CookieManager;
 use Hibla\HttpClient\Testing\Utilities\FileManager;
 use Hibla\HttpClient\Testing\Utilities\NetworkSimulator;
@@ -125,11 +123,6 @@ class TestingHttpHandler extends HttpHandler implements
     private RequestRecorder $requestRecorder;
 
     /**
-     * Manages HTTP cache for testing.
-     */
-    private CacheManager $cacheManager;
-
-    /**
      * Initialize the testing HTTP handler with all utilities.
      */
     public function __construct()
@@ -140,7 +133,6 @@ class TestingHttpHandler extends HttpHandler implements
         $this->requestMatcher = new RequestMatcher();
         $this->cookieManager = new CookieManager();
         $this->requestRecorder = new RequestRecorder();
-        $this->cacheManager = new CacheManager();
         $this->responseFactory = new ResponseFactory($this->networkSimulator, $this);
 
         $this->requestExecutor = new RequestExecutor(
@@ -149,7 +141,6 @@ class TestingHttpHandler extends HttpHandler implements
             $this->fileManager,
             $this->cookieManager,
             $this->requestRecorder,
-            $this->cacheManager
         );
     }
 
@@ -211,20 +202,6 @@ class TestingHttpHandler extends HttpHandler implements
         }
 
         $this->cookieManager->setDefaultCookieJar($jar);
-
-        return $this;
-    }
-
-    /**
-     * Set a file-based cookie jar for all requests.
-     */
-    public function withGlobalFileCookieJar(?string $filename = null, bool $includeSessionCookies = true): self
-    {
-        if ($filename === null) {
-            $filename = $this->cookieManager->createTempCookieFile();
-        }
-
-        $jar = $this->cookieManager->createFileCookieJar($filename, $includeSessionCookies);
 
         return $this;
     }
@@ -414,7 +391,7 @@ class TestingHttpHandler extends HttpHandler implements
     /**
      * Send an HTTP request with mocking support.
      */
-    public function sendRequest(string $url, array $curlOptions, ?CacheConfig $cacheConfig = null, ?RetryConfig $retryConfig = null): PromiseInterface
+    public function sendRequest(string $url, array $curlOptions, ?RetryConfig $retryConfig = null): PromiseInterface
     {
         $mockedRequests = array_values($this->mockedRequests);
 
@@ -423,9 +400,8 @@ class TestingHttpHandler extends HttpHandler implements
             $curlOptions,
             $mockedRequests,
             $this->globalSettings,
-            $cacheConfig,
             $retryConfig,
-            fn(string $url, array $curlOptions, ?CacheConfig $cacheConfig, ?RetryConfig $retryConfig) => parent::sendRequest($url, $curlOptions, $cacheConfig, $retryConfig)
+            fn(string $url, array $curlOptions, ?RetryConfig $retryConfig) => parent::sendRequest($url, $curlOptions, $retryConfig)
         );
     }
 
@@ -587,6 +563,5 @@ class TestingHttpHandler extends HttpHandler implements
         $this->fileManager->cleanup();
         $this->cookieManager->cleanup();
         $this->requestRecorder->reset();
-        $this->cacheManager->reset();
     }
 }

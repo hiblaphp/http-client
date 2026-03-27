@@ -49,10 +49,3 @@ test('it normalizes proxy settings from a ProxyConfig object', function () {
     expect($curlOpts[CURLOPT_PROXY])->toBe('proxy.host:8080');
 });
 
-test('it ignores special fetch options like retry and cache', function () {
-    $handler = new FetchHandler();
-    $options = ['retry' => true, 'cache' => true, 'stream' => true];
-    $curlOpts = $handler->normalizeFetchOptions('https://example.com', $options);
-
-    expect($curlOpts)->not->toHaveKeys(['retry', 'cache', 'stream']);
-});

@@ -37,8 +37,7 @@ interface FetchHandlerInterface
      *        - 'on_event'/'onEvent': SSE event callback
      *        - 'on_error'/'onError': SSE error callback
      *        - 'reconnect': SSE reconnection config (bool|array|SSEReconnectConfig)
-     *        - 'retry': Retry configuration (RetryConfig)
-     *        - 'cache': Cache configuration (CacheConfig)
+     *        - 'retry': Retry configuration (RetryConfig
      *        - Standard cURL options can also be included
      *
      * @return PromiseInterface<Response>|PromiseInterface<StreamingResponse>|PromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}>|PromiseInterface<SSEResponse>

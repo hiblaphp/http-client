@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Testing\Utilities;
 
-use Hibla\HttpClient\CacheConfig;
 use Hibla\HttpClient\Response;
 use Hibla\HttpClient\RetryConfig;
 use Hibla\HttpClient\StreamingResponse;
@@ -12,7 +11,6 @@ use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Testing\Utilities\Executors\FetchRequestExecutor;
 use Hibla\HttpClient\Testing\Utilities\Executors\SSERequestExecutor;
 use Hibla\HttpClient\Testing\Utilities\Executors\StandardRequestExecutor;
-use Hibla\HttpClient\Testing\Utilities\Handlers\CacheHandler;
 use Hibla\HttpClient\Testing\Utilities\Validators\RequestValidator;
 use Hibla\HttpClient\Traits\FetchOptionTrait;
 use Hibla\Promise\Interfaces\PromiseInterface;
@@ -26,12 +24,10 @@ class RequestExecutor
     private FileManager $fileManager;
     private CookieManager $cookieManager;
     private RequestRecorder $requestRecorder;
-    private CacheManager $cacheManager;
 
     private StandardRequestExecutor $standardExecutor;
     private SSERequestExecutor $sseExecutor;
     private FetchRequestExecutor $fetchExecutor;
-    private CacheHandler $cacheHandler;
     private RequestValidator $validator;
 
     public function __construct(
@@ -40,21 +36,18 @@ class RequestExecutor
         FileManager $fileManager,
         CookieManager $cookieManager,
         RequestRecorder $requestRecorder,
-        CacheManager $cacheManager
     ) {
         $this->requestMatcher = $requestMatcher;
         $this->responseFactory = $responseFactory;
         $this->fileManager = $fileManager;
         $this->cookieManager = $cookieManager;
         $this->requestRecorder = $requestRecorder;
-        $this->cacheManager = $cacheManager;
 
         $this->initializeExecutors();
     }
 
     private function initializeExecutors(): void
     {
-        $this->cacheHandler = new CacheHandler($this->cacheManager);
         $this->validator = new RequestValidator();
 
         $this->standardExecutor = new StandardRequestExecutor(
@@ -62,7 +55,6 @@ class RequestExecutor
             $this->responseFactory,
             $this->cookieManager,
             $this->requestRecorder,
-            $this->cacheHandler,
             $this->validator
         );
 
@@ -77,7 +69,6 @@ class RequestExecutor
             $this->responseFactory,
             $this->fileManager,
             $this->requestRecorder,
-            $this->cacheHandler,
             $this->validator
         );
     }
@@ -93,7 +84,6 @@ class RequestExecutor
         array $curlOptions,
         array &$mockedRequests,
         array $globalSettings,
-        ?CacheConfig $cacheConfig = null,
         ?RetryConfig $retryConfig = null,
         ?callable $parentSendRequest = null
     ): PromiseInterface {
@@ -102,7 +92,6 @@ class RequestExecutor
             $curlOptions,
             $mockedRequests,
             $globalSettings,
-            $cacheConfig,
             $retryConfig,
             $parentSendRequest
         );

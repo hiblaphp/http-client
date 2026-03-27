@@ -75,7 +75,7 @@ it('sends request without retry when no retry is configured', function () {
     ;
 
     $handler = new HttpHandler(null, null, $requestExecutorMock);
-    $handler->sendRequest('https://example.com', [CURLOPT_CUSTOMREQUEST => 'POST'], null, null);
+    $handler->sendRequest('https://example.com', [CURLOPT_CUSTOMREQUEST => 'POST'], null);
 
     expect(true)->toBeTrue();
 });
@@ -92,7 +92,7 @@ it('sends request with retry when retry is configured', function () {
     ;
 
     $handler = new HttpHandler(null, null, null, $retryHandlerMock);
-    $handler->sendRequest('https://example.com', [CURLOPT_CUSTOMREQUEST => 'POST'], null, $retryConfig);
+    $handler->sendRequest('https://example.com', [CURLOPT_CUSTOMREQUEST => 'POST'], $retryConfig);
 
     expect(true)->toBeTrue();
 });

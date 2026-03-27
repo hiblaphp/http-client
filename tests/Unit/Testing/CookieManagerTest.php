@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use Hibla\HttpClient\Cookie;
 use Hibla\HttpClient\CookieJar;
-use Hibla\HttpClient\FileCookieJar;
 use Hibla\HttpClient\Testing\Exceptions\MockAssertionException;
 use Hibla\HttpClient\Testing\MockedRequest;
 
@@ -16,19 +15,6 @@ describe('CookieManager', function () {
 
         expect($jar)->toBeInstanceOf(CookieJar::class)
             ->and($cookieManager->getCookieJar('test'))->toBe($jar)
-        ;
-
-        $cookieManager->cleanup();
-    });
-
-    test('can create file-based cookie jar', function () {
-        $cookieManager = createCookieManager();
-        $filename = sys_get_temp_dir().'/test_cookies_'.uniqid().'.json';
-
-        $jar = $cookieManager->createFileCookieJar($filename, true, 'file_jar');
-
-        expect($jar)->toBeInstanceOf(FileCookieJar::class)
-            ->and($cookieManager->getCookieJar('file_jar'))->toBe($jar)
         ;
 
         $cookieManager->cleanup();
@@ -459,19 +445,6 @@ describe('CookieManager', function () {
         $cookieManager->cleanup();
     });
 
-    test('debug info shows file type for FileCookieJar', function () {
-        $cookieManager = createCookieManager();
-        $filename = sys_get_temp_dir().'/test_'.uniqid().'.json';
-
-        $cookieManager->createFileCookieJar($filename, true, 'file_jar');
-
-        $debug = $cookieManager->getDebugInfo();
-
-        expect($debug['file_jar']['type'])->toBe('file');
-
-        $cookieManager->cleanup();
-    });
-
     test('can apply cookies from custom jar in options', function () {
         $cookieManager = createCookieManager();
         $customJar = new CookieJar();
@@ -559,7 +532,6 @@ describe('CookieManager', function () {
 
         expect(file_exists($filename))->toBeTrue();
 
-        // Manual cleanup
         unlink($filename);
     });
 });

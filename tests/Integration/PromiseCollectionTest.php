@@ -1168,27 +1168,24 @@ describe('Error Handling with Concurrent Requests', function () {
         $fulfilled = array_filter($results, fn($r) => $r->status === 'fulfilled');
         $rejected = array_filter($results, fn($r) => $r->status === 'rejected');
 
-        expect(count($fulfilled))->toBe(3) // endpoints 1, 3, 4 (3 is HTTP error but fulfilled)
-            ->and(count($rejected))->toBe(1) // endpoint 2 (network error)
+        expect(count($fulfilled))->toBe(3) 
+            ->and(count($rejected))->toBe(1)
         ;
     });
 
     test('retry logic works with concurrent requests', function () {
-        // First endpoint: fails twice then succeeds
         Http::mock('GET')
             ->url('https://api.example.com/retry1')
             ->failUntilAttempt(3, 'Temporary failure')
             ->register()
         ;
 
-        // Second endpoint: succeeds immediately
         Http::mock('GET')
             ->url('https://api.example.com/retry2')
             ->respondJson(['id' => 2, 'status' => 'immediate success'])
             ->register()
         ;
 
-        // Third endpoint: rate limited then succeeds
         Http::mock('GET')
             ->url('https://api.example.com/retry3')
             ->rateLimitedUntilAttempt(2)

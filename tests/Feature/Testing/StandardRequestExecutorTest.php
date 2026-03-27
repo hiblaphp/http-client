@@ -2,16 +2,13 @@
 
 declare(strict_types=1);
 
-use Hibla\HttpClient\CacheConfig;
 use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Response;
 use Hibla\HttpClient\RetryConfig;
 use Hibla\HttpClient\Testing\Exceptions\UnexpectedRequestException;
 use Hibla\HttpClient\Testing\MockedRequest;
-use Hibla\HttpClient\Testing\Utilities\CacheManager;
 use Hibla\HttpClient\Testing\Utilities\CookieManager;
 use Hibla\HttpClient\Testing\Utilities\Executors\StandardRequestExecutor;
-use Hibla\HttpClient\Testing\Utilities\Handlers\CacheHandler;
 use Hibla\HttpClient\Testing\Utilities\NetworkSimulator;
 use Hibla\HttpClient\Testing\Utilities\RequestMatcher;
 use Hibla\HttpClient\Testing\Utilities\RequestRecorder;
@@ -28,7 +25,6 @@ function createStandardExecutor(): StandardRequestExecutor
         new ResponseFactory(new NetworkSimulator()),
         new CookieManager(),
         new RequestRecorder(),
-        new CacheHandler(new CacheManager()),
         new RequestValidator()
     );
 }
@@ -178,7 +174,6 @@ test('allows passthrough when enabled', function () {
         $mocks,
         ['allow_passthrough' => true],
         null,
-        null,
         $parentSend
     )->wait();
 
@@ -227,38 +222,6 @@ test('handles error mock', function () {
         []
     )->wait();
 })->throws(NetworkException::class, 'Connection failed');
-
-test('uses cache config when provided', function () {
-    $executor = createStandardExecutor();
-    $mocks = [];
-
-    $mock = new MockedRequest('GET');
-    $mock->setUrlPattern('https://api.example.com/cached');
-    $mock->setBody('{"cached": true}');
-    $mocks[] = $mock;
-
-    $cacheConfig = new CacheConfig(ttlSeconds: 60);
-
-    $result1 = $executor->execute(
-        'https://api.example.com/cached',
-        [CURLOPT_CUSTOMREQUEST => 'GET'],
-        $mocks,
-        [],
-        $cacheConfig
-    )->wait();
-
-    expect($mocks)->toBeEmpty();
-
-    $result2 = $executor->execute(
-        'https://api.example.com/cached',
-        [CURLOPT_CUSTOMREQUEST => 'GET'],
-        $mocks,
-        [],
-        $cacheConfig
-    )->wait();
-
-    expect($result1->body())->toBe($result2->body());
-});
 
 test('matches wildcard method', function () {
     $executor = createStandardExecutor();
@@ -340,7 +303,6 @@ test('executes with retry config', function () {
         [CURLOPT_CUSTOMREQUEST => 'GET'],
         $mocks,
         [],
-        null,
         $retryConfig
     )->wait();
 

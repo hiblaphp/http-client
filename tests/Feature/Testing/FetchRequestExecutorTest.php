@@ -2,15 +2,12 @@
 
 declare(strict_types=1);
 
-use Hibla\HttpClient\CacheConfig;
 use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Response;
 use Hibla\HttpClient\Testing\Exceptions\UnexpectedRequestException;
 use Hibla\HttpClient\Testing\MockedRequest;
-use Hibla\HttpClient\Testing\Utilities\CacheManager;
 use Hibla\HttpClient\Testing\Utilities\Executors\FetchRequestExecutor;
 use Hibla\HttpClient\Testing\Utilities\FileManager;
-use Hibla\HttpClient\Testing\Utilities\Handlers\CacheHandler;
 use Hibla\HttpClient\Testing\Utilities\NetworkSimulator;
 use Hibla\HttpClient\Testing\Utilities\RequestMatcher;
 use Hibla\HttpClient\Testing\Utilities\RequestRecorder;
@@ -25,7 +22,6 @@ function createFetchExcutor(): FetchRequestExecutor
         new ResponseFactory(new NetworkSimulator()),
         new FileManager(),
         new RequestRecorder(),
-        new CacheHandler(new CacheManager()),
         new RequestValidator()
     );
 }
@@ -207,36 +203,6 @@ test('handles error mock', function () {
         []
     )->wait();
 })->throws(NetworkException::class, 'Connection failed');
-
-test('uses cache config when provided', function () {
-    $executor = createFetchExcutor();
-    $mocks = [];
-
-    $mock = new MockedRequest('GET');
-    $mock->setUrlPattern('https://api.example.com/cached');
-    $mock->setBody('{"cached": true}');
-    $mocks[] = $mock;
-
-    $cacheConfig = new CacheConfig(ttlSeconds: 60);
-
-    $result1 = $executor->execute(
-        'https://api.example.com/cached',
-        ['cache' => $cacheConfig],
-        $mocks,
-        []
-    )->wait();
-
-    expect($mocks)->toBeEmpty();
-
-    $result2 = $executor->execute(
-        'https://api.example.com/cached',
-        ['cache' => $cacheConfig],
-        $mocks,
-        []
-    )->wait();
-
-    expect($result1->body())->toBe($result2->body());
-});
 
 test('matches wildcard method', function () {
     $executor = createFetchExcutor();

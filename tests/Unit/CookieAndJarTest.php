@@ -169,46 +169,4 @@ describe('FileCookieJar (Persistence)', function () {
             unlink($tempFile);
         }
     });
-
-    test('it saves persistent and session cookies when configured', function () use (&$tempFile) {
-        $jar = new FileCookieJar($tempFile, true);
-        $jar->setCookie(new Cookie('persistent', 'data1', time() + 3600));
-        $jar->setCookie(new Cookie('session', 'data2'));
-
-        unset($jar);
-
-        $newJar = new FileCookieJar($tempFile, true);
-        expect($newJar->getAllCookies())->toHaveCount(2);
-    });
-
-    test('it does not save session cookies when configured', function () use (&$tempFile) {
-        $jar = new FileCookieJar($tempFile, false);
-        $jar->setCookie(new Cookie('persistent', 'data1', time() + 3600));
-        $jar->setCookie(new Cookie('session', 'data2'));
-
-        unset($jar);
-
-        $newJar = new FileCookieJar($tempFile, false);
-        $cookies = $newJar->getAllCookies();
-
-        expect($cookies)->toHaveCount(1);
-        expect($cookies[0]->getName())->toBe('persistent');
-    });
-
-    test('it loads an empty array from a non-existent file', function () use (&$tempFile) {
-        unlink($tempFile);
-        $jar = new FileCookieJar($tempFile, true);
-        expect($jar->getAllCookies())->toBeEmpty();
-    });
-
-    test('clearing the jar also empties the file', function () use (&$tempFile) {
-        $jar = new FileCookieJar($tempFile, true);
-        $jar->setCookie(new Cookie('test', 'data'));
-
-        $jar->clear();
-        unset($jar);
-
-        $fileContents = file_get_contents($tempFile);
-        expect(json_decode($fileContents, true))->toBe([]);
-    });
 });

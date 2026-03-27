@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Hibla\HttpClient\CacheConfig;
 use Hibla\HttpClient\CookieJar;
 use Hibla\HttpClient\ProxyConfig;
 use Hibla\HttpClient\Request;
@@ -128,13 +127,6 @@ describe('Request Builder: Advanced Features', function () {
         expect($retryConfig->baseDelay)->toBe(2.0);
     });
 
-    it('configures caching settings', function () {
-        $request = (new Request())->cache(120);
-        $cacheConfig = getPrivateProperty($request, 'cacheConfig');
-        expect($cacheConfig)->toBeInstanceOf(CacheConfig::class);
-        expect($cacheConfig->ttlSeconds)->toBe(120);
-    });
-
     it('configures an HTTP proxy', function () {
         $request = (new Request())->withProxy('proxy.host', 8080);
         $proxyConfig = getPrivateProperty($request, 'proxyConfig');
@@ -181,7 +173,6 @@ describe('Request Builder: URI Template Expansion', function () {
 
         $reflection = new ReflectionClass(Request::class);
         $method = $reflection->getMethod('expandUriTemplate');
-        $method->setAccessible(true);
         $expandedUrl = $method->invoke($request, '/users/{userId}/posts');
 
         expect($expandedUrl)->toBe('/users/123/posts');
@@ -192,7 +183,6 @@ describe('Request Builder: URI Template Expansion', function () {
 
         $reflection = new ReflectionClass(Request::class);
         $method = $reflection->getMethod('expandUriTemplate');
-        $method->setAccessible(true);
         $expandedUrl = $method->invoke($request, '/users/{userId}/posts/{postId}');
 
         expect($expandedUrl)->toBe('/users/123/posts/456');
@@ -203,7 +193,6 @@ describe('Request Builder: URI Template Expansion', function () {
 
         $reflection = new ReflectionClass(Request::class);
         $method = $reflection->getMethod('expandUriTemplate');
-        $method->setAccessible(true);
         $expandedUrl = $method->invoke($request, '/search/{query}');
 
         expect($expandedUrl)->toBe('/search/a%20space%20%26%20stuff');
@@ -214,7 +203,6 @@ describe('Request Builder: URI Template Expansion', function () {
 
         $reflection = new ReflectionClass(Request::class);
         $method = $reflection->getMethod('expandUriTemplate');
-        $method->setAccessible(true);
         $expandedUrl = $method->invoke($request, '/files/{+path}');
 
         expect($expandedUrl)->toBe('/files/a/b/c');
@@ -225,7 +213,6 @@ describe('Request Builder: URI Template Expansion', function () {
 
         $reflection = new ReflectionClass(Request::class);
         $method = $reflection->getMethod('expandUriTemplate');
-        $method->setAccessible(true);
         $expandedUrl = $method->invoke($request, '/users/{userId}/posts');
 
         expect($expandedUrl)->toBe('/users/{userId}/posts');

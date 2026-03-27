@@ -2,27 +2,20 @@
 
 declare(strict_types=1);
 
-use Hibla\HttpClient\CacheConfig;
 use Hibla\HttpClient\Exceptions\HttpException;
 use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Response;
 use Hibla\HttpClient\RetryConfig;
 use Hibla\HttpClient\StreamingResponse;
 use Hibla\HttpClient\Testing\MockedRequest;
-use Hibla\HttpClient\Testing\Utilities\CacheManager;
 use Hibla\HttpClient\Testing\Utilities\Factories\DownloadResponseFactory;
 use Hibla\HttpClient\Testing\Utilities\Factories\RetryableResponseFactory;
 use Hibla\HttpClient\Testing\Utilities\Factories\StandardResponseFactory;
 use Hibla\HttpClient\Testing\Utilities\Factories\StreamingResponseFactory;
-use Hibla\HttpClient\Testing\Utilities\Handlers\CacheHandler;
 use Hibla\HttpClient\Testing\Utilities\Handlers\DelayCalculator;
 use Hibla\HttpClient\Testing\Utilities\Handlers\NetworkSimulationHandler;
 use Hibla\HttpClient\Testing\Utilities\NetworkSimulator;
 use Psr\Http\Message\StreamInterface;
-
-beforeEach(function () {
-    (new CacheManager())->reset();
-});
 
 afterEach(function () {
     Mockery::close();
@@ -1281,104 +1274,5 @@ describe('NetworkSimulationHandler', function () {
             ->and($result)->toHaveKey('error_message')
             ->and($result['error_message'])->toContain('Connection refused')
         ;
-    });
-});
-
-describe('CacheHandler', function () {
-    test('tryServeFromCache returns false when cache is null', function () {
-        $cacheManager = createCacheManager();
-        $handler = new CacheHandler($cacheManager);
-
-        $result = $handler->tryServeFromCache('http://example.com', 'GET', null);
-
-        expect($result)->toBeFalse();
-    });
-
-    test('tryServeFromCache returns false for non-GET requests', function () {
-        $cacheManager = createCacheManager();
-        $handler = new CacheHandler($cacheManager);
-        $cacheConfig = new CacheConfig(ttlSeconds: 60);
-
-        $result = $handler->tryServeFromCache('http://example.com', 'POST', $cacheConfig);
-
-        expect($result)->toBeFalse();
-    });
-
-    test('tryServeFromCache returns true when cache hit', function () {
-        $cacheManager = createCacheManager();
-        $cacheConfig = new CacheConfig(ttlSeconds: 60);
-
-        $response = new Response('cached content', 200, []);
-        $cacheManager->cacheResponse('http://example.com', $response, $cacheConfig);
-
-        $handler = new CacheHandler($cacheManager);
-        $result = $handler->tryServeFromCache('http://example.com', 'GET', $cacheConfig);
-
-        expect($result)->toBeTrue();
-    });
-
-    test('getCachedResponse returns cached response', function () {
-        $cacheManager = createCacheManager();
-        $cacheConfig = new CacheConfig(ttlSeconds: 60);
-
-        $response = new Response('cached content', 200, []);
-        $cacheManager->cacheResponse('http://example.com', $response, $cacheConfig);
-
-        $handler = new CacheHandler($cacheManager);
-        $cachedResponse = $handler->getCachedResponse('http://example.com', $cacheConfig);
-
-        expect($cachedResponse)->toBeInstanceOf(Response::class)
-            ->and($cachedResponse->body())->toBe('cached content')
-        ;
-    });
-
-    test('cacheIfNeeded caches successful GET responses', function () {
-        $cacheManager = createCacheManager();
-        $handler = new CacheHandler($cacheManager);
-        $cacheConfig = new CacheConfig(ttlSeconds: 60);
-
-        $response = new Response('new content', 200, []);
-        $handler->cacheIfNeeded('http://example.com', $response, $cacheConfig, 'GET');
-
-        $cached = $cacheManager->getCachedResponse('http://example.com', $cacheConfig);
-        expect($cached)->not->toBeNull()
-            ->and($cached->body())->toBe('new content')
-        ;
-    });
-
-    test('cacheIfNeeded does not cache POST requests', function () {
-        $cacheManager = createCacheManager();
-        $handler = new CacheHandler($cacheManager);
-        $cacheConfig = new CacheConfig(ttlSeconds: 60);
-
-        $response = new Response('content', 200, []);
-        $handler->cacheIfNeeded('http://example.com', $response, $cacheConfig, 'POST');
-
-        $cached = $cacheManager->getCachedResponse('http://example.com', $cacheConfig);
-        expect($cached)->toBeNull();
-    });
-
-    test('cacheIfNeeded does not cache failed responses', function () {
-        $cacheManager = createCacheManager();
-        $handler = new CacheHandler($cacheManager);
-        $cacheConfig = new CacheConfig(ttlSeconds: 60);
-
-        $response = new Response('error', 404, []);
-        $handler->cacheIfNeeded('http://example.com', $response, $cacheConfig, 'GET');
-
-        $cached = $cacheManager->getCachedResponse('http://example.com', $cacheConfig);
-        expect($cached)->toBeNull();
-    });
-
-    test('cacheResponse caches response regardless of method', function () {
-        $cacheManager = createCacheManager();
-        $handler = new CacheHandler($cacheManager);
-        $cacheConfig = new CacheConfig(ttlSeconds: 60);
-
-        $response = new Response('content', 200, []);
-        $handler->cacheResponse('http://example.com', $response, $cacheConfig);
-
-        $cached = $cacheManager->getCachedResponse('http://example.com', $cacheConfig);
-        expect($cached)->not->toBeNull();
     });
 });
