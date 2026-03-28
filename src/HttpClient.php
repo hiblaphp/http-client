@@ -831,7 +831,7 @@ class HttpClient extends Message implements HttpClientInterface
         return $this->interceptorHandler->process(
             $initialRequest,
             $this->interceptors,
-             $this->executeRequest(...),
+            $this->executeRequest(...),
         );
     }
 

@@ -32,9 +32,6 @@ class StreamingHandler implements StreamingHandlerInterface
             return $promise;
         }
 
-        /** @var list<string> $headerAccumulator */
-        $headerAccumulator = [];
-
         $curlOnlyOptions = array_filter($options, 'is_int', ARRAY_FILTER_USE_KEY);
 
         $streamingOptions = array_replace($curlOnlyOptions, [
@@ -47,20 +44,12 @@ class StreamingHandler implements StreamingHandlerInterface
 
                 return \strlen($data);
             },
-            CURLOPT_HEADERFUNCTION => function ($ch, string $header) use (&$headerAccumulator): int {
-                $trimmedHeader = trim($header);
-                if ($trimmedHeader !== '') {
-                    $headerAccumulator[] = $trimmedHeader;
-                }
-
-                return \strlen($header);
-            },
         ]);
 
         $requestId = Loop::addCurlRequest(
             $url,
             $streamingOptions,
-            function (?string $error, $response, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $promise, $responseStream, &$headerAccumulator): void {
+            function (?string $error, $response, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $promise, $responseStream): void {
                 if ($promise->isCancelled()) {
                     fclose($responseStream);
 
@@ -82,26 +71,7 @@ class StreamingHandler implements StreamingHandlerInterface
                     rewind($responseStream);
                     $stream = new Stream($responseStream);
 
-                    /** @var array<string, string|list<string>> $formattedHeaders */
-                    $formattedHeaders = [];
-                    foreach ($headerAccumulator as $header) {
-                        if (str_contains($header, ':')) {
-                            [$key, $value] = explode(':', $header, 2);
-                            $key = trim($key);
-                            $value = trim($value);
-                            if (isset($formattedHeaders[$key])) {
-                                if (\is_array($formattedHeaders[$key])) {
-                                    $formattedHeaders[$key][] = $value;
-                                } else {
-                                    $formattedHeaders[$key] = [$formattedHeaders[$key], $value];
-                                }
-                            } else {
-                                $formattedHeaders[$key] = $value;
-                            }
-                        }
-                    }
-
-                    $streamingResponse = new StreamingResponse($stream, $httpCode ?? 200, $formattedHeaders);
+                    $streamingResponse = new StreamingResponse($stream, $httpCode ?? 200, $headers);
 
                     if ($httpVersion !== null) {
                         $streamingResponse->setHttpVersion($httpVersion);
@@ -185,6 +155,7 @@ class StreamingHandler implements StreamingHandlerInterface
                     $promise->reject($exception);
                 } else {
                     $fileSize = file_exists($destination) ? filesize($destination) : 0;
+
                     $promise->resolve([
                         'file' => $destination,
                         'status' => $httpCode ?? 0,

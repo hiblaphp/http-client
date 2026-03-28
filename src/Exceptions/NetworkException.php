@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Exceptions;
 
-use Hibla\HttpClient\Interfaces\NetworkExceptionInterface;
+use Hibla\HttpClient\Interfaces\Exception\NetworkExceptionInterface;
 
 /**
  * Thrown when network-level errors occur.

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Hibla\HttpClient\Exceptions;
 
 use Exception;
-use Hibla\HttpClient\Interfaces\RequestExceptionInterface;
+use Hibla\HttpClient\Interfaces\Exception\RequestExceptionInterface;
 
 class HttpException extends Exception implements RequestExceptionInterface
 {

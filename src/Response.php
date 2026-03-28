@@ -104,7 +104,6 @@ class Response extends Message implements EnhancedResponseInterface
                 throw new \RuntimeException('Unable to create temporary stream');
             }
             if (\is_string($body)) {
-
                 if ($body !== '') {
                     $writeResult = fwrite($resource, $body);
                     if ($writeResult === false) {
@@ -308,7 +307,11 @@ class Response extends Message implements EnhancedResponseInterface
     }
 
     /**
-     * Get the negotiated HTTP version from the actual response
+     * Get the negotiated HTTP version as a canonical string.
+     *
+     * Returns '1.0', '1.1', '2', or '3' — or null if the version
+     * was never set (e.g. the request has not completed yet, or the
+     * event loop did not report a version).
      */
     public function getHttpVersion(): ?string
     {
@@ -318,22 +321,36 @@ class Response extends Message implements EnhancedResponseInterface
     /**
      * @internal
      *
-     * Set the negotiated HTTP version (called internally)
+     * Set the negotiated HTTP version (called internally).
+     * Normalizes the version string to a canonical form:
+     *   '1.0', '1.1'  → kept as-is   (minor version is meaningful)
+     *   '2', '2.0'    → '2'          (HTTP/2 has no minor version)
+     *   '3', '3.0'    → '3'          (HTTP/3 has no minor version)
      */
     public function setHttpVersion(?string $version): void
     {
-        $this->negotiatedHttpVersion = $version;
-        if ($version !== null) {
-            $this->protocol = $version;
+        if ($version === null) {
+            $this->negotiatedHttpVersion = null;
+
+            return;
         }
+
+        $this->negotiatedHttpVersion = $this->normalizeHttpVersion($version);
+
+        $this->protocol = $this->negotiatedHttpVersion;
     }
 
     /**
-     * Get a more detailed version string
+     * Get the HTTP version as a full protocol string (e.g. 'HTTP/2').
+     *
+     * Falls back to the PSR-7 protocol version when no negotiated
+     * version has been recorded.
      */
     public function getHttpVersionString(): string
     {
-        return $this->negotiatedHttpVersion ?? 'HTTP/'.$this->protocol;
+        $version = $this->negotiatedHttpVersion ?? $this->protocol;
+
+        return 'HTTP/' . $version;
     }
 
     /**
@@ -357,5 +374,25 @@ class Response extends Message implements EnhancedResponseInterface
         }
 
         return $array;
+    }
+
+    /**
+     * Normalize a raw version string to a canonical form.
+     *
+     *   '1.0'          → '1.0'
+     *   '1.1'          → '1.1'
+     *   '2' or '2.0'   → '2'
+     *   '3' or '3.0'   → '3'
+     *
+     * Any unrecognised value is returned unchanged so future versions
+     * are handled gracefully without a code change here.
+     */
+    private function normalizeHttpVersion(string $version): string
+    {
+        return match ($version) {
+            '2', '2.0' => '2',
+            '3', '3.0' => '3',
+            default => $version,
+        };
     }
 }

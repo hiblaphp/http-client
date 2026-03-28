@@ -9,6 +9,7 @@ use Hibla\HttpClient\Exceptions\HttpStreamException;
 use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Exceptions\RequestException;
 use Hibla\HttpClient\Interfaces\Handler\SSEHandlerInterface;
+use Hibla\HttpClient\Response;
 use Hibla\HttpClient\SSE\SSEConnectionState;
 use Hibla\HttpClient\SSE\SSEEvent;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
@@ -266,7 +267,7 @@ class SSEHandler implements SSEHandlerInterface
         $requestId = Loop::addCurlRequest(
             $url,
             $sseOptions,
-            function (?string $error) use ($url, $promise, $onError, &$sseResponse, &$streamComplete) {
+            function (?string $error, ?string $response, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $promise, $onError, &$sseResponse, &$streamComplete) {
                 $streamComplete = true;
 
                 if ($promise->isSettled()) {
@@ -288,6 +289,16 @@ class SSEHandler implements SSEHandlerInterface
                     $promise->reject($exception);
                 } else {
                     if ($sseResponse !== null) {
+                        $injector = \Closure::bind(function (array $h, ?string $v): void {
+                            /** @var Response $this */
+                            $this->setHeaders($h);
+                            if ($v !== null) {
+                                $this->setHttpVersion($v);
+                            }
+                        }, $sseResponse, Response::class);
+
+                        $injector($headers, $httpVersion);
+
                         $promise->resolve($sseResponse);
                     } else {
                         $exception = new HttpStreamException(
@@ -310,7 +321,7 @@ class SSEHandler implements SSEHandlerInterface
             Loop::cancelCurlRequest($requestId);
 
             //@phpstan-ignore-next-line
-            $sseResponse->getStream()->close();
+            $sseResponse?->getStream()->close();
         });
 
         return $promise;
