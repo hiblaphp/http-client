@@ -66,7 +66,7 @@ describe('SSEResponseFactory', function () {
 
             $promise = $factory->create($mock, null, $onError);
 
-            expect(fn() => $promise->wait())
+            expect(fn () => $promise->wait())
                 ->toThrow(NetworkException::class) // Remove specific message check
             ;
             expect($errorCallbackCalled)->toBeTrue();
@@ -87,8 +87,9 @@ describe('SSEResponseFactory', function () {
 
             $promise = $factory->create($mock, null, $onError);
 
-            expect(fn() => $promise->wait())
-                ->toThrow(NetworkException::class);
+            expect(fn () => $promise->wait())
+                ->toThrow(NetworkException::class)
+            ;
             expect($errorCallbackCalled)->toBeTrue();
         });
 
@@ -232,7 +233,7 @@ describe('SSEResponseFactory', function () {
 
             $promise = $factory->create($mock, null, null);
 
-            expect(fn() => $promise->wait())
+            expect(fn () => $promise->wait())
                 ->toThrow(NetworkException::class) // Remove specific message check
             ;
         });
@@ -251,8 +252,9 @@ describe('SSEResponseFactory', function () {
 
             $promise = $factory->create($mock, null, null);
 
-            expect(fn() => $promise->wait())
-                ->toThrow(NetworkException::class);
+            expect(fn () => $promise->wait())
+                ->toThrow(NetworkException::class)
+            ;
         });
 
         it('allows mock failure with auto_close', function () {

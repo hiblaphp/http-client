@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Handlers;
 
-use Hibla\HttpClient\Request;
-use Hibla\HttpClient\Response;
-use Hibla\Promise\Interfaces\PromiseInterface;
-use Hibla\Promise\Promise;
-
 use function Hibla\async;
 use function Hibla\await;
+
+use Hibla\HttpClient\Interfaces\PendingRequestInterface;
+
+use Hibla\HttpClient\Response;
+use Hibla\Promise\Interfaces\PromiseInterface;
 
 /**
  * Handles the unified interceptor pipeline.
@@ -21,31 +21,34 @@ use function Hibla\await;
  *
  * Three ways to register interceptors:
  *
- * // Tier 1 - simple request transform:
- * Http::interceptRequest(fn(Request $r) => $r->withHeader('X-App', 'my-app'));
+ *   // Tier 1 — simple request transform:
+ *   Http::interceptRequest(fn(PendingRequestInterface $r) =>
+ *       $r->withHeader('X-App', 'my-app')
+ *   );
  *
- * // Tier 1 - simple response transform:
- * Http::interceptResponse(fn(Response $r) => $r);
+ *   // Tier 1 — simple response transform:
+ *   Http::interceptResponse(fn(Response $r) => $r);
  *
- * // Tier 2 - full pipeline control with await() support:
- * Http::intercept(function (Request $request, callable $next) {
- *     $token = await(TokenStore::get('api_token'));
- *     $request = $request->withHeader('Authorization', "Bearer {$token}");
- *     $response = await($next($request));
- *     return $response;
- * });
+ *   // Tier 2 — full pipeline control with await() support:
+ *   Http::intercept(function (PendingRequestInterface $request, callable $next) {
+ *       $token = await(TokenStore::get('api_token'));
+ *       $request = $request->withToken($token);
+ *       $response = await($next($request));
+ *       return $response;
+ *   });
  */
 class InterceptorHandler
 {
     /**
-     * @param array<callable(Request, callable): mixed> $interceptors
-     * @param callable(Request): PromiseInterface<Response> $executor
+     * @param  PendingRequestInterface $request
+     * @param  array<callable(PendingRequestInterface, callable): mixed> $interceptors
+     * @param  callable(PendingRequestInterface): PromiseInterface<Response> $executor
      * @return PromiseInterface<Response>
      */
     public function process(
-        Request $request,
+        PendingRequestInterface $request,
         array $interceptors,
-        callable $executor
+        callable $executor,
     ): PromiseInterface {
         if ($interceptors === []) {
             return $executor($request);
@@ -54,7 +57,7 @@ class InterceptorHandler
         $pipeline = array_reduce(
             array_reverse($interceptors),
             static function (callable $next, callable $interceptor): callable {
-                return function (Request $request) use ($next, $interceptor): PromiseInterface {
+                return static function (PendingRequestInterface $request) use ($next, $interceptor): PromiseInterface {
                     $result = $interceptor($request, $next);
 
                     if ($result === null) {
@@ -64,7 +67,7 @@ class InterceptorHandler
                         );
                     }
 
-                    if (!$result instanceof PromiseInterface) {
+                    if (! $result instanceof PromiseInterface) {
                         throw new \LogicException(sprintf(
                             'Callback passed to intercept() must return a %s, got %s. ' .
                             'Did you forget to return $next($request) or the response?',
@@ -74,19 +77,24 @@ class InterceptorHandler
                     }
 
                     return $result->then(
-                        static fn(mixed $resolved): Response => self::resolveInterceptor($resolved)
+                        static fn (mixed $resolved): Response => self::resolveResponse($resolved)
                     );
                 };
             },
-            $executor
+            $executor,
         );
 
-        return async(static function () use ($pipeline, $request) {
+        return async(static function () use ($pipeline, $request): mixed {
             return await($pipeline($request));
         });
     }
 
-    private static function resolveInterceptor(mixed $value): Response
+    /**
+     * Assert the resolved pipeline value is a Response.
+     *
+     * @throws \LogicException When the resolved value is not a Response.
+     */
+    private static function resolveResponse(mixed $value): Response
     {
         if ($value === null) {
             throw new \LogicException(
@@ -96,7 +104,7 @@ class InterceptorHandler
             );
         }
 
-        if (!$value instanceof Response) {
+        if (! $value instanceof Response) {
             throw new \LogicException(sprintf(
                 'The %s returned by the callback passed to intercept() ' .
                 'must resolve to a %s instance, got %s. ' .

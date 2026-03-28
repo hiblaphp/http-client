@@ -21,7 +21,8 @@ describe('Server-Sent Events Features', function () {
             ->sseFailUntilAttempt(2, [
                 ['event' => 'reconnected', 'data' => 'hello again', 'id' => '2'],
             ])
-            ->register();
+            ->register()
+        ;
 
         $events = [];
 
@@ -35,7 +36,8 @@ describe('Server-Sent Events Features', function () {
                 initialDelay: 0.01,
             ))
             ->connect()
-            ->wait();
+            ->wait()
+        ;
 
         Http::assertSSEConnectionAttempts('/sse-stream', 2);
         expect($events)->toHaveCount(1);
@@ -49,7 +51,8 @@ describe('Server-Sent Events Features', function () {
                 ['error' => 'Connection lost', 'retryable' => true],
             ])
             ->respondWithSSE([['id' => 'event-2', 'data' => 'reconnected successfully']])
-            ->register();
+            ->register()
+        ;
 
         $events = [];
 
@@ -63,7 +66,8 @@ describe('Server-Sent Events Features', function () {
                 initialDelay: 0.01,
             ))
             ->connect()
-            ->wait();
+            ->wait()
+        ;
 
         Http::assertSSEConnectionAttempts('/sse-reconnect', 2);
 

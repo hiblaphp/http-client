@@ -1,11 +1,14 @@
 <?php
 
-use Hibla\HttpClient\Http;
-use Hibla\HttpClient\Request;
-use Hibla\HttpClient\Response;
+declare(strict_types=1);
 
 use function Hibla\asyncFn;
 use function Hibla\await;
+
+use Hibla\HttpClient\Http;
+
+use Hibla\HttpClient\Request;
+use Hibla\HttpClient\Response;
 
 describe('Interceptor Pipeline Validation', function () {
     describe('intercept()', function () {
@@ -17,7 +20,7 @@ describe('Interceptor Pipeline Validation', function () {
                 })
                 ->get('https://httpbin.org/get'));
         })->throws(
-            \LogicException::class,
+            LogicException::class,
             'Callback passed to intercept() must return a Hibla\Promise\Interfaces\PromiseInterface, got null/void.'
         );
 
@@ -28,7 +31,7 @@ describe('Interceptor Pipeline Validation', function () {
                 })
                 ->get('https://httpbin.org/get'));
         })->throws(
-            \LogicException::class,
+            LogicException::class,
             'Callback passed to intercept() must return a Hibla\Promise\Interfaces\PromiseInterface, got string.'
         );
 
@@ -39,7 +42,7 @@ describe('Interceptor Pipeline Validation', function () {
                 }))
                 ->get('https://httpbin.org/get'));
         })->throws(
-            \LogicException::class,
+            LogicException::class,
             'The Hibla\Promise\Interfaces\PromiseInterface returned by the callback passed to intercept() must resolve to a Hibla\HttpClient\Response instance, got null/void.'
         );
     });
@@ -53,7 +56,7 @@ describe('Interceptor Pipeline Validation', function () {
                 })
                 ->get('https://httpbin.org/get'));
         })->throws(
-            \LogicException::class,
+            LogicException::class,
             'Callback passed to interceptRequest() must return a Hibla\HttpClient\Request instance, got null/void.'
         );
 
@@ -64,7 +67,7 @@ describe('Interceptor Pipeline Validation', function () {
                 })
                 ->get('https://httpbin.org/get'));
         })->throws(
-            \LogicException::class,
+            LogicException::class,
             'Callback passed to interceptRequest() must return a Hibla\HttpClient\Request instance, got string.'
         );
 
@@ -75,7 +78,7 @@ describe('Interceptor Pipeline Validation', function () {
                 }))
                 ->get('https://httpbin.org/get'));
         })->throws(
-            \LogicException::class,
+            LogicException::class,
             'The Hibla\Promise\Interfaces\PromiseInterface passed to interceptRequest() must resolve to a Hibla\HttpClient\Request instance, got null/void.'
         );
     });
@@ -89,7 +92,7 @@ describe('Interceptor Pipeline Validation', function () {
                 })
                 ->get('https://httpbin.org/get'));
         })->throws(
-            \LogicException::class,
+            LogicException::class,
             'Callback passed to interceptResponse() must return a Hibla\HttpClient\Response instance, got null/void.'
         );
 
@@ -100,7 +103,7 @@ describe('Interceptor Pipeline Validation', function () {
                 })
                 ->get('https://httpbin.org/get'));
         })->throws(
-            \LogicException::class,
+            LogicException::class,
             'Callback passed to interceptResponse() must return a Hibla\HttpClient\Response instance, got string.'
         );
 
@@ -111,7 +114,7 @@ describe('Interceptor Pipeline Validation', function () {
                 }))
                 ->get('https://httpbin.org/get'));
         })->throws(
-            \LogicException::class,
+            LogicException::class,
             'The Hibla\Promise\Interfaces\PromiseInterface passed to interceptResponse() must resolve to a Hibla\HttpClient\Response instance, got null/void.'
         );
     });

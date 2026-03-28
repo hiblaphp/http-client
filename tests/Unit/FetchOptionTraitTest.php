@@ -478,8 +478,10 @@ describe('FetchOptionTrait: Special Options Filtering', function () {
             'stream' => true,
             'retry' => true,
             'sse' => true,
-            'on_chunk' => function () {},
-            'on_event' => function () {},
+            'on_chunk' => function () {
+            },
+            'on_event' => function () {
+            },
         ];
 
         $result = $trait->normalizeFetchOptions('https://example.com', $options);

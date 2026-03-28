@@ -273,6 +273,7 @@ class SSEHandler implements SSEHandlerInterface
                     if ($onError !== null && $error !== null) {
                         $onError($error);
                     }
+
                     return;
                 }
 
@@ -307,7 +308,7 @@ class SSEHandler implements SSEHandlerInterface
 
         $promise->onCancel(function () use ($requestId, &$sseResponse): void {
             Loop::cancelCurlRequest($requestId);
-            
+
             //@phpstan-ignore-next-line
             $sseResponse->getStream()->close();
         });

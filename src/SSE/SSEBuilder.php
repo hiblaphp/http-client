@@ -51,7 +51,8 @@ class SSEBuilder
         private readonly string $url,
         private readonly HttpHandler $handler,
         private readonly array $curlOptions,
-    ) {}
+    ) {
+    }
 
     /**
      * Register a callback to receive each SSE event.
@@ -199,9 +200,9 @@ class SSEBuilder
             return null;
         }
 
-        $onEvent    = $this->onEvent;
+        $onEvent = $this->onEvent;
         $dataFormat = $this->dataFormat;
-        $mapper     = $this->mapper;
+        $mapper = $this->mapper;
 
         return function (SSEEvent $event) use ($onEvent, $dataFormat, $mapper, $control): void {
             if ($control->isCancelled()) {
@@ -248,7 +249,7 @@ class SSEBuilder
     }
 
     /**
-     *  @return array<string, mixed> 
+     *  @return array<string, mixed>
      */
     private function toArrayWithParsedData(SSEEvent $event): array
     {

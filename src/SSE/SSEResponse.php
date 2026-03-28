@@ -16,7 +16,7 @@ class SSEResponse extends StreamingResponse
 {
     private string $buffer = '';
     private ?string $lastEventId = null;
-    private ?string $requestId = null; 
+    private ?string $requestId = null;
 
     /**
      * Constructs the SSEResponse.
@@ -52,7 +52,6 @@ class SSEResponse extends StreamingResponse
 
         $this->getStream()->close();
     }
-
 
     /**
      * Gets the underlying stream.

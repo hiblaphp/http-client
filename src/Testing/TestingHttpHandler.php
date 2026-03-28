@@ -374,6 +374,7 @@ class TestingHttpHandler extends HttpHandler implements
     {
         $this->globalSettings['allow_passthrough'] = true;
         $this->globalSettings['throw_on_unexpected'] = false;
+
         return $this;
     }
 
@@ -385,6 +386,7 @@ class TestingHttpHandler extends HttpHandler implements
     {
         $this->globalSettings['allow_passthrough'] = false;
         $this->globalSettings['throw_on_unexpected'] = true;
+
         return $this;
     }
 
@@ -401,7 +403,7 @@ class TestingHttpHandler extends HttpHandler implements
             $mockedRequests,
             $this->globalSettings,
             $retryConfig,
-            fn(string $url, array $curlOptions, ?RetryConfig $retryConfig) => parent::sendRequest($url, $curlOptions, $retryConfig)
+            fn (string $url, array $curlOptions, ?RetryConfig $retryConfig) => parent::sendRequest($url, $curlOptions, $retryConfig)
         );
     }
 
@@ -423,7 +425,7 @@ class TestingHttpHandler extends HttpHandler implements
             $normalizedOptions,
             $mockedRequests,
             $this->globalSettings,
-            fn(string $url, array $options) => parent::fetch($url, $options),
+            fn (string $url, array $options) => parent::fetch($url, $options),
             [$this, 'createStream']
         );
     }
@@ -492,8 +494,7 @@ class TestingHttpHandler extends HttpHandler implements
             $this->globalSettings,
             $onEvent,
             $onError,
-            fn(string $url, array $options, ?callable $onEvent, ?callable $onError, ?SSEReconnectConfig $reconnectConfig) =>
-            parent::sse($url, $options, $onEvent, $onError, $reconnectConfig),
+            fn (string $url, array $options, ?callable $onEvent, ?callable $onError, ?SSEReconnectConfig $reconnectConfig) => parent::sse($url, $options, $onEvent, $onError, $reconnectConfig),
             $reconnectConfig
         );
 

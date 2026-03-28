@@ -4,12 +4,8 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Interfaces;
 
-use Hibla\HttpClient\Interfaces\Builder\ConfiguresAuthInterface;
-use Hibla\HttpClient\Interfaces\Builder\ConfiguresBodyInterface;
-use Hibla\HttpClient\Interfaces\Builder\ConfiguresCookiesInterface;
 use Hibla\HttpClient\Interfaces\Builder\ConfiguresCurlInterface;
 use Hibla\HttpClient\Interfaces\Builder\ConfiguresFilesInterface;
-use Hibla\HttpClient\Interfaces\Builder\ConfiguresHeadersInterface;
 use Hibla\HttpClient\Interfaces\Builder\ConfiguresProxyInterface;
 use Hibla\HttpClient\Interfaces\Builder\ConfiguresRetryInterface;
 use Hibla\HttpClient\Interfaces\Builder\ConfiguresTransportInterface;
@@ -38,16 +34,15 @@ use Hibla\HttpClient\Interfaces\Execution\HttpInterceptorInterface;
  *     be visible to userland callers.
  */
 interface HttpClientInterface extends
-    ConfiguresHeadersInterface,
-    ConfiguresAuthInterface,
-    ConfiguresBodyInterface,
+    PendingRequestInterface,
     ConfiguresFilesInterface,
     ConfiguresUrlInterface,
     ConfiguresTransportInterface,
-    ConfiguresCookiesInterface,
     ConfiguresProxyInterface,
     ConfiguresRetryInterface,
     ConfiguresCurlInterface,
     HttpInterceptorInterface,
     ExecutesRequestsInterface,
-    ExecutesStreamingInterface {}
+    ExecutesStreamingInterface
+{
+}
