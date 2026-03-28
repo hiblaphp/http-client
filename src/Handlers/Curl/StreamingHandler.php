@@ -7,7 +7,7 @@ namespace Hibla\HttpClient\Handlers\Curl;
 use Hibla\EventLoop\Loop;
 use Hibla\HttpClient\Exceptions\HttpStreamException;
 use Hibla\HttpClient\Exceptions\NetworkException;
-use Hibla\HttpClient\Interfaces\StreamingHandlerInterface;
+use Hibla\HttpClient\Interfaces\Handler\StreamingHandlerInterface;
 use Hibla\HttpClient\Stream;
 use Hibla\HttpClient\StreamingResponse;
 use Hibla\Promise\Interfaces\PromiseInterface;

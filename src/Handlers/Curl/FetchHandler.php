@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Handlers\Curl;
 
-use Hibla\HttpClient\Interfaces\FetchHandlerInterface;
-use Hibla\HttpClient\Interfaces\RequestExecutorHandlerInterface;
-use Hibla\HttpClient\Interfaces\RetryHandlerInterface;
-use Hibla\HttpClient\Interfaces\SSEHandlerInterface;
-use Hibla\HttpClient\Interfaces\StreamingHandlerInterface;
+use Hibla\HttpClient\Interfaces\Handler\FetchHandlerInterface;
+use Hibla\HttpClient\Interfaces\Handler\RequestExecutorHandlerInterface;
+use Hibla\HttpClient\Interfaces\Handler\RetryHandlerInterface;
+use Hibla\HttpClient\Interfaces\Handler\SSEHandlerInterface;
+use Hibla\HttpClient\Interfaces\Handler\StreamingHandlerInterface;
 use Hibla\HttpClient\Response;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
 use Hibla\HttpClient\SSE\SSEResponse;

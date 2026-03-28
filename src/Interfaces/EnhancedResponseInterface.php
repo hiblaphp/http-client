@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Hibla\HttpClient\Interfaces\Response;
+namespace Hibla\HttpClient\Interfaces;
 
 use Psr\Http\Message\ResponseInterface;
 

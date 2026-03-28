@@ -8,7 +8,7 @@ use Hibla\EventLoop\Loop;
 use Hibla\HttpClient\Exceptions\HttpStreamException;
 use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Exceptions\RequestException;
-use Hibla\HttpClient\Interfaces\SSEHandlerInterface;
+use Hibla\HttpClient\Interfaces\Handler\SSEHandlerInterface;
 use Hibla\HttpClient\SSE\SSEConnectionState;
 use Hibla\HttpClient\SSE\SSEEvent;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;

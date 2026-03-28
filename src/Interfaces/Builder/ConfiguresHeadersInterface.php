@@ -9,6 +9,10 @@ namespace Hibla\HttpClient\Interfaces\Builder;
  *
  * All methods return a new instance — implementations must
  * preserve immutability so chains can branch without side effects.
+ *
+ * Note: withHeader(), withAddedHeader(), and withoutHeader() are
+ * intentionally omitted here — they are inherited from PSR-7's
+ * MessageInterface and must not be redeclared with a different signature.
  */
 interface ConfiguresHeadersInterface
 {
@@ -55,18 +59,4 @@ interface ConfiguresHeadersInterface
      * @param  array<string, string|string[]>  $headers
      */
     public function withHeaders(array $headers): static;
-
-    /**
-     * Set a single header, replacing any existing value for that name.
-     *
-     * @param  string|string[]  $value
-     */
-    public function withHeader(string $name, string|array $value): static;
-
-    /**
-     * Remove a header by name.
-     *
-     * No-op when the header is not present.
-     */
-    public function withoutHeader(string $name): static;
 }
