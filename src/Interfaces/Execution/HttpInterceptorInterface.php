@@ -41,28 +41,28 @@ interface HttpInterceptorInterface
     /**
      * Register a request interceptor.
      *
-     * The callback receives the in-flight request just before it enters
-     * the network layer and must return a PendingRequestInterface.
-     * It may modify headers, auth, URI, or method.
+     * The callback may return a plain PendingRequestInterface or a
+     * PromiseInterface that resolves to one, allowing async work
+     * (e.g. token refresh) before the request is dispatched.
      *
      * await() is safe to use inside the callback.
      *
-     * @param  callable(PendingRequestInterface): PendingRequestInterface $callback
+     * @param  callable(PendingRequestInterface): (PendingRequestInterface|PromiseInterface<PendingRequestInterface>) $callback
      */
     public function interceptRequest(callable $callback): static;
 
     /**
      * Register a response interceptor.
      *
-     * The callback receives the EnhancedResponseInterface after the network
-     * call completes and must return an EnhancedResponseInterface.
+     * The callback may return a plain EnhancedResponseInterface or a
+     * PromiseInterface that resolves to one, allowing async post-processing.
      *
      * await() is safe to use inside the callback.
      *
-     * @param  callable(EnhancedResponseInterface): EnhancedResponseInterface $callback
+     * @param  callable(EnhancedResponseInterface): (EnhancedResponseInterface|PromiseInterface<EnhancedResponseInterface>) $callback
      */
     public function interceptResponse(callable $callback): static;
-
+    
     /**
      * Register a full pipeline interceptor.
      *

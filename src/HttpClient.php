@@ -747,9 +747,12 @@ class HttpClient implements HttpClientInterface
     {
         return $this->intercept(
             static function (PendingRequestInterface $request, callable $next) use ($callback): PromiseInterface {
+                /** @var callable(PendingRequestInterface): PromiseInterface<EnhancedResponseInterface> $next */ 
                 $result = $callback($request);
 
                 if ($result instanceof PromiseInterface) {
+                    /** @var PromiseInterface<PendingRequestInterface> $result */
+                    /** @var PromiseInterface<EnhancedResponseInterface> $chained */
                     $chained = $result->then(
                         static fn(mixed $resolved): PromiseInterface => $next(self::resolvePendingRequest($resolved, true))
                     );
@@ -772,13 +775,17 @@ class HttpClient implements HttpClientInterface
     {
         return $this->intercept(
             static function (PendingRequestInterface $request, callable $next) use ($callback): PromiseInterface {
+                /** @var callable(PendingRequestInterface): PromiseInterface<EnhancedResponseInterface> $next */ 
+                /** @var PromiseInterface<EnhancedResponseInterface> $nextPromise */
                 $nextPromise = $next($request);
 
-                return $nextPromise->then(
-                    static function (Response $response) use ($callback): mixed {
+                /** @var PromiseInterface<EnhancedResponseInterface> $result */
+                $result = $nextPromise->then(
+                    static function (EnhancedResponseInterface $response) use ($callback): EnhancedResponseInterface|PromiseInterface {
                         $result = $callback($response);
 
                         if ($result instanceof PromiseInterface) {
+                            /** @var PromiseInterface<EnhancedResponseInterface> $result */
                             return $result->then(
                                 static fn(mixed $resolved): EnhancedResponseInterface => self::resolveResponse($resolved, true)
                             );
@@ -787,6 +794,8 @@ class HttpClient implements HttpClientInterface
                         return self::resolveResponse($result, false);
                     }
                 );
+
+                return $result;
             }
         );
     }
