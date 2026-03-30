@@ -8,7 +8,7 @@ use Hibla\HttpClient\Handlers\HttpHandler;
 use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
 use Hibla\HttpClient\Interfaces\EnhancedResponseInterface;
 use Hibla\HttpClient\Interfaces\StreamingResponseInterface;
-use Hibla\HttpClient\SSE\SSEBuilder;
+use Hibla\HttpClient\Interfaces\SSE\SSEBuilderInterface;
 use Hibla\HttpClient\Testing\MockRequestBuilder;
 use Hibla\HttpClient\Testing\TestingHttpHandler;
 use Hibla\HttpClient\Testing\Utilities\RecordedRequest;
@@ -35,7 +35,7 @@ use Psr\Http\Message\UploadedFileInterface;
  * @method static PromiseInterface<StreamingResponseInterface> streamPost(string $url, mixed $body = null, ?callable $onChunk = null) Streams the response body of a POST request.
  * @method static PromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}> download(string $url, string $destination) Downloads a file to the given destination path.
  * @method static PromiseInterface<EnhancedResponseInterface> send(string $method, string $url) Dispatches the configured request.
- * @method static SSEBuilder sse(string $url) Create a fluent SSE connection builder.
+ * @method static SSEBuilderInterface sse(string $url) Create a fluent SSE connection builder.
  *
  * Header configuration methods (ConfiguresHeadersInterface):
  * @method static HttpClient contentType(string $type) Start building a request with Content-Type header.

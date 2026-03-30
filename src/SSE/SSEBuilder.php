@@ -56,17 +56,7 @@ class SSEBuilder implements SSEBuilderInterface
     }
 
     /**
-     * Register a callback to receive each SSE event.
-     *
-     * The value passed to the callback depends on the configured dataFormat:
-     *   - 'event' (default): SSEEvent object
-     *   - 'json':  decoded array/scalar, or raw string if not valid JSON
-     *   - 'array': event as array with data key auto-decoded
-     *   - 'raw':   raw data string
-     *
-     * If map() is also configured, the callback receives the mapped value.
-     *
-     * @param callable(mixed, SSEControl): void $callback
+     *  @inheritDoc
      */
     public function onEvent(callable $callback): static
     {
@@ -77,11 +67,7 @@ class SSEBuilder implements SSEBuilderInterface
     }
 
     /**
-     * Register a callback to receive connection errors.
-     *
-     * Always receives a \Throwable for consistency with the rest of the library.
-     *
-     * @param callable(\Throwable): void $callback
+     *  @inheritDoc
      */
     public function onError(callable $callback): static
     {
@@ -92,13 +78,7 @@ class SSEBuilder implements SSEBuilderInterface
     }
 
     /**
-     * Configure the format of data passed to the onEvent callback.
-     *
-     * @param SSEDataFormat $format
-     *   - SSEDataFormat::Event  — full SSEEvent object (default)
-     *   - SSEDataFormat::Json   — event data decoded as JSON, falls back to raw string
-     *   - SSEDataFormat::Array_ — event->toArray() with data key auto-decoded from JSON
-     *   - SSEDataFormat::Raw    — raw event data string
+     *  @inheritDoc
      */
     public function dataFormat(SSEDataFormat $format): static
     {
@@ -109,10 +89,7 @@ class SSEBuilder implements SSEBuilderInterface
     }
 
     /**
-     * Apply a transformation to each event value after dataFormat is applied
-     * but before the onEvent callback receives it.
-     *
-     * @param callable(mixed): mixed $mapper
+     *  @inheritDoc
      */
     public function map(callable $mapper): static
     {
@@ -123,13 +100,7 @@ class SSEBuilder implements SSEBuilderInterface
     }
 
     /**
-     * Enable automatic reconnection with exponential backoff.
-     *
-     * @param int   $maxAttempts      Maximum reconnection attempts before giving up.
-     * @param float $initialDelay     Seconds before the first retry.
-     * @param float $maxDelay         Upper bound on delay between retries.
-     * @param float $backoffMultiplier Factor applied to delay on each attempt.
-     * @param bool  $jitter           Adds randomness to prevent thundering herd.
+     *  @inheritDoc
      */
     public function reconnect(
         int $maxAttempts = 10,
@@ -152,7 +123,7 @@ class SSEBuilder implements SSEBuilderInterface
     }
 
     /**
-     * Provide a fully custom reconnection configuration.
+     *  @inheritDoc
      */
     public function reconnectWith(SSEReconnectConfig $config): static
     {
@@ -163,7 +134,7 @@ class SSEBuilder implements SSEBuilderInterface
     }
 
     /**
-     * Explicitly disable reconnection (overrides any previously set config).
+     *  @inheritDoc
      */
     public function noReconnect(): static
     {
@@ -174,9 +145,7 @@ class SSEBuilder implements SSEBuilderInterface
     }
 
     /**
-     * Open the SSE connection with the current configuration.
-     *
-     * @return PromiseInterface<SSEResponse>
+     *  @inheritDoc
      */
     public function connect(): PromiseInterface
     {

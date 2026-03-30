@@ -12,6 +12,7 @@ use Hibla\HttpClient\Interfaces\EnhancedResponseInterface;
 use Hibla\HttpClient\Interfaces\Handler\TransportOptionsBuilderInterface;
 use Hibla\HttpClient\Interfaces\HttpClientInterface;
 use Hibla\HttpClient\Interfaces\PendingRequestInterface;
+use Hibla\HttpClient\Interfaces\SSE\SSEBuilderInterface;
 use Hibla\HttpClient\SSE\SSEBuilder;
 use Hibla\HttpClient\Traits\StreamTrait;
 use Hibla\Promise\Interfaces\PromiseInterface;
@@ -949,7 +950,7 @@ class HttpClient implements HttpClientInterface
     /**
      * @inheritDoc
      */
-    public function sse(string $url): SSEBuilder
+    public function sse(string $url): SSEBuilderInterface
     {
         $effectiveTimeout = $this->timeoutExplicitlySet ? $this->timeout : 0;
         $clientOptions = $this->buildClientOptions(

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Interfaces\Execution;
 
+use Hibla\HttpClient\Interfaces\SSE\SSEBuilderInterface;
 use Hibla\HttpClient\Interfaces\StreamingResponseInterface; 
-use Hibla\HttpClient\SSE\SSEBuilder;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
 interface ExecutesStreamingInterface
@@ -45,6 +45,7 @@ interface ExecutesStreamingInterface
      * Create a fluent SSE connection builder.
      *
      * @param  string  $url  The SSE endpoint URL.
+     * @return SSEBuilderInterface Fluent SSE connection builder.
      */
-    public function sse(string $url): SSEBuilder;
+    public function sse(string $url): SSEBuilderInterface;
 }

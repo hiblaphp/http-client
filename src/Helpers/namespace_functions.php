@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Hibla\HttpClient;
 
 use Hibla\Promise\Interfaces\PromiseInterface;
+use Hibla\HttpClient\Interfaces\EnhancedResponseInterface;
+use Hibla\HttpClient\Interfaces\StreamingResponseInterface;
 
 /**
  * Get HTTP request builder instance.
@@ -30,7 +32,7 @@ function http(): HttpClient
  *
  * @param  string  $url  The URL to send the request to
  * @param  array<string, mixed>  $query  Optional query parameters
- * @return PromiseInterface<Response> Promise that resolves with the response
+ * @return PromiseInterface<EnhancedResponseInterface> Promise that resolves with the response
  *
  * @example
  * $response = await(http_get('https://api.example.com', ['key' => 'value']));
@@ -48,7 +50,7 @@ function http_get(string $url, array $query = []): PromiseInterface
  *
  * @param  string  $url  The URL to send the request to
  * @param  array<string, mixed>  $data  Optional data payload
- * @return PromiseInterface<Response> Promise that resolves with the response
+ * @return PromiseInterface<EnhancedResponseInterface> Promise that resolves with the response
  *
  * @example
  * $response = await(http_post('https://api.example.com', ['name' => 'John']));
@@ -66,7 +68,7 @@ function http_post(string $url, array $data = []): PromiseInterface
  *
  * @param  string  $url  The URL to stream from
  * @param  callable|null  $onChunk  Callback to handle each chunk
- * @return PromiseInterface<StreamingResponse> Promise that resolves when streaming completes
+ * @return PromiseInterface<StreamingResponseInterface> Promise that resolves when streaming completes
  *
  * @example
  * await(http_stream('https://api.example.com/data', [], function($chunk) {
@@ -75,7 +77,7 @@ function http_post(string $url, array $data = []): PromiseInterface
  */
 function http_stream(string $url, ?callable $onChunk = null): PromiseInterface
 {
-    /** @var PromiseInterface<StreamingResponse> */
+    /** @var PromiseInterface<StreamingResponseInterface> */
     return Http::stream($url,  $onChunk);
 }
 
@@ -105,7 +107,7 @@ function http_download(string $url, string $destination): PromiseInterface
  *
  * @param  string  $url  The URL to send the request to
  * @param  array<string, mixed>  $data  Optional data payload
- * @return PromiseInterface<Response> Promise that resolves with the response
+ * @return PromiseInterface<EnhancedResponseInterface> Promise that resolves with the response
  *
  * @example
  * $response = await(http_put('https://api.example.com/resource/1', ['name' => 'Updated']));
@@ -121,7 +123,7 @@ function http_put(string $url, array $data = []): PromiseInterface
  * Sends a DELETE request to the specified URL without blocking the event loop.
  *
  * @param  string  $url  The URL to send the request to
- * @return PromiseInterface<Response> Promise that resolves with the response
+ * @return PromiseInterface<EnhancedResponseInterface> Promise that resolves with the response
  *
  * @example
  * $response = await(http_delete('https://api.example.com/resource/1'));
@@ -139,7 +141,7 @@ function http_delete(string $url): PromiseInterface
  *
  * @param  string  $url  The URL to fetch from
  * @param  array<int|string, mixed>  $options  Request options (method, headers, body, etc.)
- * @return PromiseInterface<Response> Promise that resolves with the response
+ * @return PromiseInterface<EnhancedResponseInterface> Promise that resolves with the response
  *
  * @example
  * $response = await(fetch('https://api.example.com', [
