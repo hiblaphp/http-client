@@ -14,6 +14,7 @@ use Hibla\HttpClient\Testing\TestingHttpHandler;
 use Hibla\HttpClient\Testing\Utilities\RecordedRequest;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Psr\Http\Message\UploadedFileInterface;
+
 /**
  * A static API for clean, expressive, and asynchronous HTTP operations.
  *
@@ -100,9 +101,9 @@ use Psr\Http\Message\UploadedFileInterface;
  * @method static HttpClient withUrlParameters(array<string, mixed> $parameters) Set multiple URL parameters for URI template substitution.
  *
  * Interceptor methods (HttpInterceptorInterface):
- * @method static HttpClient intercept(callable $middleware) Add a full pipeline interceptor.
- * @method static HttpClient interceptRequest(callable $callback) Start building a request with a request interceptor.
- * @method static HttpClient interceptResponse(callable $callback) Start building a request with a response interceptor.
+ * @method static HttpClient intercept(callable(PendingRequestInterface, callable): PromiseInterface<EnhancedResponseInterface> $middleware) Add a full pipeline interceptor.
+ * @method static HttpClient interceptRequest(callable(PendingRequestInterface): (PendingRequestInterface|PromiseInterface<PendingRequestInterface>) $callback) Start building a request with a request interceptor.
+ * @method static HttpClient interceptResponse(callable(EnhancedResponseInterface): (EnhancedResponseInterface|PromiseInterface<EnhancedResponseInterface>) $callback) Start building a request with a response interceptor.
  *
  * cURL escape-hatch methods (ConfiguresCurlInterface):
  * @method static HttpClient withCurlOption(int $option, mixed $value) Start building a request with a raw cURL option.
