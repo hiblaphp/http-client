@@ -32,14 +32,14 @@ interface FetchHandlerInterface
      *   - 'download'/'save_to' → resolves to download metadata array
      *   - 'sse' => true        → resolves to SSEResponse
      *
-     * @param  string                    $url      The target URL.
-     * @param  array<int|string, mixed>  $options  Option map. Recognised keys include:
-     *                                             'method', 'headers', 'body',
-     *                                             'stream', 'on_chunk'/'onChunk',
-     *                                             'download'/'save_to',
-     *                                             'sse', 'on_event'/'onEvent',
-     *                                             'on_error'/'onError',
-     *                                             'reconnect', 'retry',
+     * @param  string $url The target URL.
+     * @param  array<int|string, mixed> $options Option map. Recognised keys include:
+     *                                            'method', 'headers', 'body',
+     *                                            'stream', 'on_chunk'/'onChunk',
+     *                                            'download'/'save_to',
+     *                                            'sse', 'on_event'/'onEvent',
+     *                                            'on_error'/'onError',
+     *                                            'reconnect', 'retry',
      *                                             plus any raw transport options.
      * @return PromiseInterface<Response>|PromiseInterface<StreamingResponse>|PromiseInterface<SSEResponse>|PromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}>
      */
@@ -51,11 +51,10 @@ interface FetchHandlerInterface
      * Separates concerns between option interpretation (this method)
      * and request execution (fetch()), making both independently testable.
      *
-     * @param  string                    $url               The target URL.
-     * @param  array<int|string, mixed>  $options           Raw fetch options.
-     * @param  bool                      $ensureSSEHeaders  When true, ensures Accept and
-     *                                                      Cache-Control headers required
-     *                                                      for SSE are present.
+     * @param  string $url The target URL.
+     * @param  array<int|string, mixed> $options Raw fetch options.
+     * @param  bool $ensureSSEHeaders When true, ensures Accept and
+     * Cache-Control headers required     for SSE are present.
      * @return array<int|string, mixed>
      */
     public function normalizeFetchOptions(string $url, array $options, bool $ensureSSEHeaders = false): array;

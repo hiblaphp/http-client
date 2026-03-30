@@ -19,8 +19,8 @@ interface ConfiguresUrlInterface
     /**
      * Set a single URI template parameter.
      *
-     * @param  string  $key    Parameter name as it appears in the template (without braces).
-     * @param  mixed   $value  Scalar value or stringable object. Non-stringable values are ignored.
+     * @param string $key Parameter name as it appears in the template (without braces).
+     * @param mixed $value Scalar value or stringable object. Non-stringable values are ignored.
      */
     public function withUrlParameter(string $key, mixed $value): static;
 
@@ -30,7 +30,7 @@ interface ConfiguresUrlInterface
      * Merges with any previously set parameters — existing keys are overwritten,
      * keys not present in $parameters are preserved.
      *
-     * @param  array<string, mixed>  $parameters
+     * @param array<string, mixed> $parameters
      */
     public function withUrlParameters(array $parameters): static;
 }

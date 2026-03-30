@@ -72,7 +72,7 @@ interface ConfiguresCookiesInterface
      * Recognised $attributes keys: domain, path, expires, maxAge,
      * secure, httpOnly, sameSite.
      *
-     * @param  array<string, mixed>  $attributes
+     * @param array<string, mixed> $attributes
      */
     public function cookieWithAttributes(string $name, string $value, array $attributes = []): static;
 

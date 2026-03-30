@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Hibla\HttpClient\Interfaces\Execution;
 
 use Hibla\HttpClient\Interfaces\PendingRequestInterface;
-use Hibla\HttpClient\Interfaces\Response\EnhancedResponseInterface;
+use Hibla\HttpClient\Interfaces\EnhancedResponseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
 /**
@@ -47,7 +47,7 @@ interface HttpInterceptorInterface
      *
      * await() is safe to use inside the callback.
      *
-     * @param  callable(PendingRequestInterface): PendingRequestInterface  $callback
+     * @param  callable(PendingRequestInterface): PendingRequestInterface $callback
      */
     public function interceptRequest(callable $callback): static;
 
@@ -59,7 +59,7 @@ interface HttpInterceptorInterface
      *
      * await() is safe to use inside the callback.
      *
-     * @param  callable(EnhancedResponseInterface): EnhancedResponseInterface  $callback
+     * @param  callable(EnhancedResponseInterface): EnhancedResponseInterface $callback
      */
     public function interceptResponse(callable $callback): static;
 
@@ -76,7 +76,7 @@ interface HttpInterceptorInterface
      *
      * await() is safe to use inside the callback.
      *
-     * @param  callable(PendingRequestInterface, callable): PromiseInterface<EnhancedResponseInterface>  $middleware
+     * @param  callable(PendingRequestInterface, callable): PromiseInterface<EnhancedResponseInterface> $middleware
      */
     public function intercept(callable $middleware): static;
 }

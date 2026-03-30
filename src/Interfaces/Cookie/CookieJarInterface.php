@@ -30,9 +30,9 @@ interface CookieJarInterface
      * Implementations must honour domain matching (including sub-domain rules),
      * path prefix matching, and the secure flag when $isSecure is false.
      *
-     * @param  string  $domain    The effective request domain (e.g. 'api.example.com').
-     * @param  string  $path      The effective request path (e.g. '/v1/users').
-     * @param  bool    $isSecure  Whether the request is being made over HTTPS.
+     * @param  string $domain The effective request domain (e.g. 'api.example.com').
+     * @param  string $path The effective request path (e.g. '/v1/users').
+     * @param  bool $isSecure Whether the request is being made over HTTPS.
      * @return Cookie[]
      */
     public function getCookies(string $domain, string $path, bool $isSecure = false): array;
@@ -65,9 +65,9 @@ interface CookieJarInterface
      * Returns an empty string when no cookies match, so callers can
      * check for emptiness before setting the header.
      *
-     * @param  string  $domain    The effective request domain.
-     * @param  string  $path      The effective request path.
-     * @param  bool    $isSecure  Whether the request is being made over HTTPS.
+     * @param  string $domain The effective request domain.
+     * @param  string $path The effective request path.
+     * @param  bool $isSecure Whether the request is being made over HTTPS.
      */
     public function getCookieHeader(string $domain, string $path, bool $isSecure = false): string;
 }

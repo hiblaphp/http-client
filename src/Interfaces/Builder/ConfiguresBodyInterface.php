@@ -27,7 +27,7 @@ interface ConfiguresBodyInterface
      *
      * Automatically sets Content-Type: application/json.
      *
-     * @param  array<string, mixed>  $data
+     * @param array<string, mixed> $data
      *
      * @throws \InvalidArgumentException  When $data cannot be JSON-encoded.
      */
@@ -38,7 +38,7 @@ interface ConfiguresBodyInterface
      *
      * Automatically sets Content-Type: application/x-www-form-urlencoded.
      *
-     * @param  array<string, mixed>  $data
+     * @param array<string, mixed> $data
      */
     public function withForm(array $data): static;
 
@@ -48,7 +48,7 @@ interface ConfiguresBodyInterface
      * Removes any explicit Content-Type header so the transport layer
      * can append the generated boundary parameter.
      *
-     * @param  array<string, mixed>  $data
+     * @param array<string, mixed> $data
      */
     public function withMultipart(array $data): static;
 }

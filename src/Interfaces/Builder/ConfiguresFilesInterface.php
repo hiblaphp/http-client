@@ -25,10 +25,10 @@ interface ConfiguresFilesInterface
      * client filename is used. When $contentType is null the MIME
      * type is detected from the file or defaults to application/octet-stream.
      *
-     * @param  string                                             $name         Form field name.
-     * @param  string|resource|\Psr\Http\Message\UploadedFileInterface  $file
-     * @param  string|null                                        $filename     Override the filename sent to the server.
-     * @param  string|null                                        $contentType  Override the MIME type.
+     * @param string  $name Form field name.
+     * @param string|resource|\Psr\Http\Message\UploadedFileInterface $file
+     * @param string|null $filename Override the filename sent to the server.
+     * @param string|null $contentType Override the MIME type.
      *
      * @throws \InvalidArgumentException  When $file is not a readable path, resource, or UploadedFileInterface.
      */
@@ -48,7 +48,7 @@ interface ConfiguresFilesInterface
      *   - 'name'  (string, optional) — filename override
      *   - 'type'  (string, optional) — MIME type override
      *
-     * @param  array<string, string|resource|\Psr\Http\Message\UploadedFileInterface|array{path: string, name?: string, type?: string}>  $files
+     * @param array<string, string|resource|\Psr\Http\Message\UploadedFileInterface|array{path: string, name?: string, type?: string}> $files
      */
     public function withFiles(array $files): static;
 
@@ -58,8 +58,8 @@ interface ConfiguresFilesInterface
      * Equivalent to calling withMultipart($data)->withFiles($files) but
      * more expressive when both are known at the same point in code.
      *
-     * @param  array<string, mixed>                                                                                                       $data
-     * @param  array<string, string|resource|\Psr\Http\Message\UploadedFileInterface|array{path: string, name?: string, type?: string}>  $files
+     * @param array<string, mixed> $data
+     * @param array<string, string|resource|\Psr\Http\Message\UploadedFileInterface|array{path: string, name?: string, type?: string}> $files
      */
     public function multipartWithFiles(array $data = [], array $files = []): static;
 }

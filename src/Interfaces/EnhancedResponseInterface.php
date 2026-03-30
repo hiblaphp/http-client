@@ -33,8 +33,8 @@ interface EnhancedResponseInterface extends ResponseInterface
      * If the key cannot be found, or the body is not valid JSON,
      * $default is returned instead.
      *
-     * @param  string|null  $key      Optional dot-notation path to a specific value.
-     * @param  mixed        $default  Fallback value when the key is absent or decode fails.
+     * @param string|null $key Optional dot-notation path to a specific value.
+     * @param mixed $default Fallback value when the key is absent or decode fails.
      * @return mixed
      */
     public function json(?string $key = null, mixed $default = null): mixed;

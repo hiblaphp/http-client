@@ -19,10 +19,10 @@ interface ConfiguresProxyInterface
     /**
      * Route this request through an HTTP or HTTPS proxy.
      *
-     * @param  string       $host      Proxy hostname or IP address.
-     * @param  int          $port      Proxy port.
-     * @param  string|null  $username  Optional proxy username.
-     * @param  string|null  $password  Optional proxy password.
+     * @param string $host Proxy hostname or IP address.
+     * @param int $port Proxy port.
+     * @param string|null $username Optional proxy username.
+     * @param string|null $password Optional proxy password.
      */
     public function withProxy(
         string $host,
@@ -34,19 +34,19 @@ interface ConfiguresProxyInterface
     /**
      * Route this request through a SOCKS4 proxy.
      *
-     * @param  string       $host      Proxy hostname or IP address.
-     * @param  int          $port      Proxy port.
-     * @param  string|null  $username  Optional proxy username.
+     * @param string $host Proxy hostname or IP address.
+     * @param int $port Proxy port.
+     * @param string|null $username Optional proxy username.
      */
     public function withSocks4Proxy(string $host, int $port, ?string $username = null): static;
 
     /**
      * Route this request through a SOCKS5 proxy.
      *
-     * @param  string       $host      Proxy hostname or IP address.
-     * @param  int          $port      Proxy port.
-     * @param  string|null  $username  Optional proxy username.
-     * @param  string|null  $password  Optional proxy password.
+     * @param string $host Proxy hostname or IP address.
+     * @param int $port Proxy port.
+     * @param string|null $username Optional proxy username.
+     * @param string|null $password Optional proxy password.
      */
     public function withSocks5Proxy(
         string $host,

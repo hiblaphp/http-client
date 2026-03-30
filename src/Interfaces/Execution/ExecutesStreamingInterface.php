@@ -24,7 +24,7 @@ interface ExecutesStreamingInterface
      * invoked for each chunk of data as it arrives from the server,
      * allowing real-time processing without waiting for the full response.
      *
-     * @param  (callable(string): void)|null  $onChunk
+     * @param  (callable(string): void)|null $onChunk
      * @return PromiseInterface<StreamingResponse>
      */
     public function stream(string $url, ?callable $onChunk = null): PromiseInterface;
@@ -35,8 +35,8 @@ interface ExecutesStreamingInterface
      * Behaves identically to stream() but sends a POST body.
      * When $body is null the body already configured on the builder is used.
      *
-     * @param  string|resource|array<string, mixed>|null  $body
-     * @param  (callable(string): void)|null              $onChunk
+     * @param  string|resource|array<string, mixed>|null $body
+     * @param  (callable(string): void)|null $onChunk
      * @return PromiseInterface<StreamingResponse>
      */
     public function streamPost(string $url, mixed $body = null, ?callable $onChunk = null): PromiseInterface;

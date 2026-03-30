@@ -19,14 +19,14 @@ interface ConfiguresHeadersInterface
     /**
      * Set the Content-Type header.
      *
-     * @param  string  $type  Media type value (e.g. 'application/json').
+     * @param string $type Media type value (e.g. 'application/json').
      */
     public function contentType(string $type): static;
 
     /**
      * Set the Accept header.
      *
-     * @param  string  $type  Desired media type (e.g. 'application/json').
+     * @param string $type Desired media type (e.g. 'application/json').
      */
     public function accept(string $type): static;
 

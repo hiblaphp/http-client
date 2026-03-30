@@ -26,7 +26,7 @@ interface ExecutesRequestsInterface
     /**
      * Dispatch a GET request.
      *
-     * @param  array<string, scalar|null>  $query  Query parameters appended to the URL.
+     * @param  array<string, scalar|null> $query Query parameters appended to the URL.
      * @return PromiseInterface<Response>
      */
     public function get(string $url, array $query = []): PromiseInterface;
@@ -37,7 +37,7 @@ interface ExecutesRequestsInterface
      * When $data is non-empty and no body has been explicitly configured,
      * $data is JSON-encoded and Content-Type is set to application/json.
      *
-     * @param  array<string, mixed>  $data
+     * @param  array<string, mixed> $data
      * @return PromiseInterface<Response>
      */
     public function post(string $url, array $data = []): PromiseInterface;
@@ -47,7 +47,7 @@ interface ExecutesRequestsInterface
      *
      * Applies the same automatic JSON encoding rule as post().
      *
-     * @param  array<string, mixed>  $data
+     * @param  array<string, mixed> $data
      * @return PromiseInterface<Response>
      */
     public function put(string $url, array $data = []): PromiseInterface;
@@ -64,7 +64,7 @@ interface ExecutesRequestsInterface
      *
      * Applies the same automatic JSON encoding rule as post().
      *
-     * @param  array<string, mixed>  $data
+     * @param  array<string, mixed> $data
      * @return PromiseInterface<Response>
      */
     public function patch(string $url, array $data = []): PromiseInterface;

@@ -21,8 +21,8 @@ interface ConfiguresCurlInterface
     /**
      * Set a single raw cURL option.
      *
-     * @param  int    $option  A CURLOPT_* constant.
-     * @param  mixed  $value   The value for the option.
+     * @param int $option A CURLOPT_* constant.
+     * @param mixed $value The value for the option.
      *
      * @throws \RuntimeException  When the cURL extension is not loaded.
      */
@@ -34,7 +34,7 @@ interface ConfiguresCurlInterface
      * Non-integer keys are silently ignored. Integer keys are merged
      * with any previously set cURL options — existing keys are overwritten.
      *
-     * @param  array<int, mixed>  $options
+     * @param array<int, mixed> $options
      *
      * @throws \RuntimeException  When the cURL extension is not loaded.
      */

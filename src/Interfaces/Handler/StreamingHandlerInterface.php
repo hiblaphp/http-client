@@ -24,10 +24,10 @@ interface StreamingHandlerInterface
      * The response body is not buffered. If $onChunk is provided it is
      * invoked synchronously for each chunk of data as it arrives.
      *
-     * @param  string                    $url      The fully resolved target URL.
-     * @param  array<int|string, mixed>  $options  Transport-specific options produced
-     *                                             by TransportOptionsBuilderInterface::buildForStreaming().
-     * @param  (callable(string): void)|null  $onChunk  Optional callback invoked per data chunk.
+     * @param  string $url The fully resolved target URL.
+     * @param  array<int|string, mixed> $options Transport-specific options produced
+     * by TransportOptionsBuilderInterface::buildForStreaming().
+     * @param  (callable(string): void)|null $onChunk Optional callback invoked per data chunk.
      * @return PromiseInterface<StreamingResponse>
      */
     public function streamRequest(string $url, array $options, ?callable $onChunk = null): PromiseInterface;
@@ -38,10 +38,10 @@ interface StreamingHandlerInterface
      * Returns a promise that resolves to a metadata array once the
      * transfer is complete.
      *
-     * @param  string                    $url          The fully resolved target URL.
-     * @param  string                    $destination  Absolute path for the downloaded file.
-     * @param  array<int|string, mixed>  $options      Transport-specific options produced
-     *                                                 by TransportOptionsBuilderInterface::buildForDownload().
+     * @param  string $url The fully resolved target URL.
+     * @param  string $destination Absolute path for the downloaded file.
+     * @param  array<int|string, mixed> $options Transport-specific options produced
+     * by TransportOptionsBuilderInterface::buildForDownload().
      * @return PromiseInterface<array{
      *     file: string,
      *     status: int,
