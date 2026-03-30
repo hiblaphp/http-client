@@ -985,10 +985,13 @@ class HttpClient implements HttpClientInterface
         $bodyOptions = $processed instanceof PendingRequest ? $processed->getOptions() : [];
         $userAgent = $processed instanceof PendingRequest ? $processed->getUserAgent() : null;
 
+        /** @var array<string, array<string>> $headers */
+        $headers = $processed->getHeaders();
+
         $clientOptions = new ClientOptions(
             method: $processed->getMethod(),
             url: (string) $processed->getUri(),
-            headers: $processed->getHeaders(),
+            headers: $headers,
             body: $processed->getBody(),
             timeout: $this->timeout,
             connectTimeout: $this->connectTimeout,
@@ -1027,10 +1030,13 @@ class HttpClient implements HttpClientInterface
         ?StreamInterface $bodyOverride = null,
         ?int $timeout = null,
     ): ClientOptions {
+        /** @var array<string, array<string>> $headers */
+        $headers = $this->request->getHeaders();
+
         return new ClientOptions(
             method: $method,
             url: $url,
-            headers: $this->request->getHeaders(),
+            headers: $headers,
             body: $bodyOverride ?? $this->request->getBody(),
             timeout: $timeout ?? $this->timeout,
             connectTimeout: $this->connectTimeout,
