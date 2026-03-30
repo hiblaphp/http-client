@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use Hibla\HttpClient\Http;
-use Hibla\HttpClient\Request;
-use Hibla\HttpClient\Response;
-use Hibla\HttpClient\StreamingResponse;
+use Hibla\HttpClient\HttpClient;
+use Hibla\HttpClient\Interfaces\EnhancedResponseInterface;
+use Hibla\HttpClient\Interfaces\StreamingResponseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
 if (! function_exists('http')) {
@@ -15,12 +15,12 @@ if (! function_exists('http')) {
      * Returns a new HTTP request builder that can be used to configure
      * and execute HTTP requests with method chaining.
      *
-     * @return Request HTTP request builder instance
+     * @return HttpClient HTTP request builder instance
      *
      * @example
      * $response = await(http()->get('https://api.example.com'));
      */
-    function http(): Request
+    function http(): HttpClient
     {
         return Http::request();
     }
@@ -35,7 +35,7 @@ if (! function_exists('http_get')) {
      *
      * @param  string  $url  The URL to send the request to
      * @param  array<string, mixed>  $query  Optional query parameters
-     * @return PromiseInterface<Response> Promise that resolves with the response
+     * @return PromiseInterface<EnhancedResponseInterface> Promise that resolves with the response
      *
      * @example
      * $response = await(http_get('https://api.example.com', ['key' => 'value']));
@@ -55,7 +55,7 @@ if (! function_exists('http_post')) {
      *
      * @param  string  $url  The URL to send the request to
      * @param  array<string, mixed>  $data  Optional data payload
-     * @return PromiseInterface<Response> Promise that resolves with the response
+     * @return PromiseInterface<EnhancedResponseInterface> Promise that resolves with the response
      *
      * @example
      * $response = await(http_post('https://api.example.com', ['name' => 'John']));
@@ -75,7 +75,7 @@ if (! function_exists('http_stream')) {
      *
      * @param  string  $url  The URL to stream from
      * @param  callable|null  $onChunk  Callback to handle each chunk
-     * @return PromiseInterface<StreamingResponse> Promise that resolves when streaming completes
+     * @return PromiseInterface<StreamingResponseInterface> Promise that resolves when streaming completes
      *
      * @example
      * await(http_stream('https://api.example.com/data', [], function($chunk) {
@@ -84,7 +84,7 @@ if (! function_exists('http_stream')) {
      */
     function http_stream(string $url, ?callable $onChunk = null): PromiseInterface
     {
-        /** @var PromiseInterface<StreamingResponse> */
+        /** @var PromiseInterface<StreamingResponseInterface> */
         return Http::stream($url,  $onChunk);
     }
 }
@@ -118,7 +118,7 @@ if (! function_exists('http_put')) {
      *
      * @param  string  $url  The URL to send the request to
      * @param  array<string, mixed>  $data  Optional data payload
-     * @return PromiseInterface<Response> Promise that resolves with the response
+     * @return PromiseInterface<EnhancedResponseInterface> Promise that resolves with the response
      *
      * @example
      * $response = await(http_put('https://api.example.com/resource/1', ['name' => 'Updated']));
@@ -136,7 +136,7 @@ if (! function_exists('http_delete')) {
      * Sends a DELETE request to the specified URL without blocking the event loop.
      *
      * @param  string  $url  The URL to send the request to
-     * @return PromiseInterface<Response> Promise that resolves with the response
+     * @return PromiseInterface<EnhancedResponseInterface> Promise that resolves with the response
      *
      * @example
      * $response = await(http_delete('https://api.example.com/resource/1'));
@@ -156,7 +156,7 @@ if (! function_exists('fetch')) {
      *
      * @param  string  $url  The URL to fetch from
      * @param  array<int|string, mixed>  $options  Request options (method, headers, body, etc.)
-     * @return PromiseInterface<Response> Promise that resolves with the response
+     * @return PromiseInterface<EnhancedResponseInterface> Promise that resolves with the response
      *
      * @example
      * $response = await(fetch('https://api.example.com', [

@@ -177,6 +177,9 @@ abstract class Message implements MessageInterface
     }
 
     /**
+     *
+     * @internal
+     *
      * Replaces all headers with a new set from an associative array.
      *
      * This method correctly handles case-insensitivity and preserves the original
@@ -184,7 +187,7 @@ abstract class Message implements MessageInterface
      *
      * @param  array<string, string|string[]>  $headers  An associative array of headers to set.
      */
-    protected function setHeaders(array $headers): void
+    public function setHeaders(array $headers): void
     {
         $this->headerNames = [];
         $this->headers = [];

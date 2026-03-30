@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Exceptions;
 
-use Hibla\HttpClient\Interfaces\ServerExceptionInterface;
+use Hibla\HttpClient\Interfaces\Exception\ServerExceptionInterface;
 
 /**
  * Thrown for server-side HTTP errors (5xx status codes).

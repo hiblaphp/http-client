@@ -4,16 +4,15 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient;
 
+use Hibla\HttpClient\Exceptions\HttpStreamException;
+use Hibla\HttpClient\Interfaces\StreamingResponseInterface;
 use Psr\Http\Message\StreamInterface;
 
 /**
- * StreamingResponse class for handling HTTP responses with streaming capabilities.
- *
- * This class extends the base Response class to provide streaming functionality,
- * allowing for efficient handling of large response bodies without loading
- * the entire content into memory at once.
+ * Handles HTTP responses with streaming capabilities, allowing efficient
+ * processing of large response bodies without loading them fully into memory.
  */
-class StreamingResponse extends Response
+class StreamingResponse extends Response implements StreamingResponseInterface
 {
     /**
      * Default chunk size for reading streams in bytes (8KB).
@@ -31,11 +30,9 @@ class StreamingResponse extends Response
     private bool $streamConsumed = false;
 
     /**
-     * Constructor for StreamingResponse.
-     *
-     * @param  StreamInterface  $stream  The stream containing the response body
-     * @param  int  $status  The HTTP status code
-     * @param  array<string, string|string[]>  $headers  Optional HTTP headers
+     * @param  StreamInterface  $stream  The stream containing the response body.
+     * @param  int  $status  The HTTP status code.
+     * @param  array<string, string|string[]>  $headers  Optional HTTP headers.
      */
     public function __construct(StreamInterface $stream, int $status, array $headers = [])
     {
@@ -44,9 +41,7 @@ class StreamingResponse extends Response
     }
 
     /**
-     * Get the underlying stream interface.
-     *
-     * @return StreamInterface The stream interface for this response
+     * @inheritDoc
      */
     public function getStream(): StreamInterface
     {
@@ -54,15 +49,12 @@ class StreamingResponse extends Response
     }
 
     /**
-     * Get the response body as a string.
+     * @inheritDoc
      *
-     * This method consumes the stream if it hasn't been consumed already.
-     * Once consumed, subsequent calls will return the cached content.
-     * The stream content is stored in a temporary stream for future access.
+     * Consumes the stream on first call and caches the result in a temporary
+     * stream so repeated calls return the same content without re-reading.
      *
-     * @return string The complete response body as a string
-     *
-     * @throws \RuntimeException If temporary stream creation fails
+     * @throws HttpStreamException If the temporary stream cannot be opened.
      */
     public function body(): string
     {
@@ -73,10 +65,9 @@ class StreamingResponse extends Response
         $content = $this->stream->getContents();
         $this->streamConsumed = true;
 
-        // Update the body stream with the consumed content
         $resource = fopen('php://temp', 'r+');
         if ($resource === false) {
-            throw new \RuntimeException('Failed to open temporary stream');
+            throw new HttpStreamException('Failed to open temporary stream');
         }
 
         fwrite($resource, $content);
@@ -87,15 +78,7 @@ class StreamingResponse extends Response
     }
 
     /**
-     * Get the response body decoded from JSON.
-     *
-     * This method attempts to decode the response body as JSON.
-     * Supports dot notation for accessing nested values (e.g., 'user.profile.name').
-     * If the JSON is invalid, the key doesn't exist, or decoding fails, the default value is returned.
-     *
-     * @param string|null $key Optional dot-notation key to extract a specific value
-     * @param mixed $default Default value to return if key is not found or JSON decode fails
-     * @return mixed The decoded JSON data, specific value, or default
+     * @inheritDoc
      */
     public function json(?string $key = null, $default = null): mixed
     {
@@ -113,14 +96,7 @@ class StreamingResponse extends Response
     }
 
     /**
-     * Save the stream contents directly to a file.
-     *
-     * This method streams the response body directly to a file without loading
-     * the entire content into memory, making it efficient for large files.
-     * The stream is rewound if seekable before reading.
-     *
-     * @param  string  $path  The file path where the content should be saved
-     * @return bool True on success, false on failure
+     * @inheritDoc
      */
     public function saveToFile(string $path): bool
     {
@@ -145,7 +121,7 @@ class StreamingResponse extends Response
             }
 
             return true;
-        } catch (\Throwable $e) {
+        } catch (\Throwable) {
             return false;
         } finally {
             fclose($file);
@@ -153,18 +129,7 @@ class StreamingResponse extends Response
     }
 
     /**
-     * Stream the response contents to a destination.
-     *
-     * This method can stream the response body to either a file (by path)
-     * or to an existing resource handle. This is memory-efficient as it
-     * processes the stream in chunks rather than loading everything into memory.
-     *
-     * If the destination is a string, it's treated as a file path.
-     * If the destination is a resource, the content is written directly to it.
-     * The stream is rewound if seekable before streaming begins.
-     *
-     * @param  string|resource  $destination  File path or resource handle to stream to
-     * @return bool True on success, false on failure or invalid destination
+     * @inheritDoc
      */
     public function streamTo($destination): bool
     {
@@ -192,7 +157,7 @@ class StreamingResponse extends Response
             }
 
             return true;
-        } catch (\Throwable $e) {
+        } catch (\Throwable) {
             return false;
         }
     }

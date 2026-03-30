@@ -38,6 +38,7 @@ function getPrivateProperty($object, string $property)
 {
     $reflection = new ReflectionClass($object);
     $prop = $reflection->getProperty($property);
+
     return $prop->getValue($object);
 }
 
@@ -119,7 +120,7 @@ function createPromise(): Promise
 
 function createMockRequest(): MockedRequest
 {
-    return new MockedRequest(); 
+    return new MockedRequest();
 }
 
 function createMockedSSERequest(

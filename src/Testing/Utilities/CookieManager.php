@@ -6,7 +6,7 @@ namespace Hibla\HttpClient\Testing\Utilities;
 
 use Hibla\HttpClient\Cookie;
 use Hibla\HttpClient\CookieJar;
-use Hibla\HttpClient\Interfaces\CookieJarInterface;
+use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
 use Hibla\HttpClient\Testing\Exceptions\MockAssertionException;
 use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Uri;

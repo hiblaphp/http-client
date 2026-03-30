@@ -48,4 +48,3 @@ test('it normalizes proxy settings from a ProxyConfig object', function () {
 
     expect($curlOpts[CURLOPT_PROXY])->toBe('proxy.host:8080');
 });
-

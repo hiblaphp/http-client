@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Hibla\HttpClient\SSE;
 
 use Hibla\EventLoop\Loop;
+use Hibla\HttpClient\Interfaces\SSEResponseInterface;
 use Hibla\HttpClient\Stream;
 use Hibla\HttpClient\StreamingResponse;
 use Psr\Http\Message\StreamInterface;
@@ -12,15 +13,13 @@ use Psr\Http\Message\StreamInterface;
 /**
  * Represents an SSE streaming response with event parsing capabilities.
  */
-class SSEResponse extends StreamingResponse
+class SSEResponse extends StreamingResponse implements SSEResponseInterface
 {
     private string $buffer = '';
     private ?string $lastEventId = null;
-    private ?string $requestId = null; 
+    private ?string $requestId = null;
 
     /**
-     * Constructs the SSEResponse.
-     *
      * @param Stream $stream
      * @param int $statusCode
      * @param array<string, string|string[]> $headers
@@ -34,6 +33,8 @@ class SSEResponse extends StreamingResponse
 
     /**
      * Sets the request ID for this SSE connection.
+     *
+     * @internal Called by SSEBuilder::connect() only.
      */
     public function setRequestId(?string $requestId): void
     {
@@ -41,7 +42,7 @@ class SSEResponse extends StreamingResponse
     }
 
     /**
-     * Closes the SSE connection and cancels the underlying HTTP request.
+     * @inheritDoc
      */
     public function close(): void
     {
@@ -53,9 +54,8 @@ class SSEResponse extends StreamingResponse
         $this->getStream()->close();
     }
 
-
     /**
-     * Gets the underlying stream.
+     * @inheritDoc
      */
     public function getStream(): StreamInterface
     {
@@ -63,7 +63,7 @@ class SSEResponse extends StreamingResponse
     }
 
     /**
-     * Gets the ID of the last processed event.
+     * @inheritDoc
      */
     public function getLastEventId(): ?string
     {
@@ -71,7 +71,33 @@ class SSEResponse extends StreamingResponse
     }
 
     /**
+     * @inheritDoc
+     */
+    public function getEvents(): \Generator
+    {
+        $stream = $this->getStream();
+
+        while (! $stream->eof()) {
+            $chunk = $stream->read(8192);
+            if ($chunk === '') {
+                break;
+            }
+
+            yield from $this->parseEvents($chunk);
+        }
+
+        if ($this->buffer !== '') {
+            $event = $this->parseEvent($this->buffer);
+            if ($event !== null) {
+                yield $event;
+            }
+        }
+    }
+
+    /**
      * Parses incoming SSE data chunks and yields events.
+     *
+     * @internal
      *
      * @param  string  $chunk  Raw SSE data chunk.
      * @return \Generator<SSEEvent>
@@ -160,31 +186,5 @@ class SSEResponse extends StreamingResponse
             retry: is_numeric($retryValue) ? (int) $retryValue : null,
             rawFields: $fields
         );
-    }
-
-    /**
-     * Gets a generator that yields all available events from the stream.
-     *
-     * @return \Generator<SSEEvent>
-     */
-    public function getEvents(): \Generator
-    {
-        $stream = $this->getStream();
-
-        while (! $stream->eof()) {
-            $chunk = $stream->read(8192);
-            if ($chunk === '') {
-                break;
-            }
-
-            yield from $this->parseEvents($chunk);
-        }
-
-        if ($this->buffer !== '') {
-            $event = $this->parseEvent($this->buffer);
-            if ($event !== null) {
-                yield $event;
-            }
-        }
     }
 }

@@ -14,10 +14,15 @@ class Stream implements StreamInterface
 {
     /** @var resource|null The underlying PHP stream resource. */
     private $resource = null;
+
     private ?string $uri;
+
     private bool $seekable;
+
     private bool $readable;
+
     private bool $writable;
+    
     private ?int $size = null;
 
     private const array READ_WRITE_HASH = [

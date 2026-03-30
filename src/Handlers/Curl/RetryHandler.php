@@ -6,7 +6,8 @@ namespace Hibla\HttpClient\Handlers\Curl;
 
 use Hibla\EventLoop\Loop;
 use Hibla\HttpClient\Exceptions\NetworkException;
-use Hibla\HttpClient\Interfaces\RetryHandlerInterface;
+use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
+use Hibla\HttpClient\Interfaces\Handler\RetryHandlerInterface;
 use Hibla\HttpClient\Response;
 use Hibla\HttpClient\RetryConfig;
 use Hibla\HttpClient\Traits\NormalizeHeaderTrait;
@@ -100,7 +101,7 @@ class RetryHandler implements RetryHandlerInterface
                         $responseObj->setHttpVersion($httpVersion);
                     }
 
-                    if ($cookieJar instanceof \Hibla\HttpClient\Interfaces\CookieJarInterface) {
+                    if ($cookieJar instanceof CookieJarInterface) {
                         $responseObj->applyCookiesToJar($cookieJar);
                     }
 

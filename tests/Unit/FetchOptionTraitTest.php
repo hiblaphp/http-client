@@ -6,12 +6,7 @@ use Hibla\HttpClient\Cookie;
 use Hibla\HttpClient\CookieJar;
 use Hibla\HttpClient\ProxyConfig;
 use Hibla\HttpClient\RetryConfig;
-use Hibla\HttpClient\Traits\FetchOptionTrait;
-
-class FetchOptionTraitTestClass
-{
-    use FetchOptionTrait;
-}
+use Tests\Fixtures\FetchOptionTraitTestClass;
 
 describe('FetchOptionTrait: Basic Option Normalization', function () {
     it('normalizes basic GET request options', function () {
@@ -483,8 +478,10 @@ describe('FetchOptionTrait: Special Options Filtering', function () {
             'stream' => true,
             'retry' => true,
             'sse' => true,
-            'on_chunk' => function () {},
-            'on_event' => function () {},
+            'on_chunk' => function () {
+            },
+            'on_event' => function () {
+            },
         ];
 
         $result = $trait->normalizeFetchOptions('https://example.com', $options);

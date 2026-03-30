@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Traits;
 
-use Hibla\HttpClient\Interfaces\CookieJarInterface;
+use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
 use Hibla\HttpClient\ProxyConfig;
 use Hibla\HttpClient\RetryConfig;
 

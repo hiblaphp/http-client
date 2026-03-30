@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Exceptions;
 
-use Hibla\HttpClient\Interfaces\RequestExceptionInterface;
+use Hibla\HttpClient\Interfaces\Exception\RequestExceptionInterface;
 
 /**
  * Thrown when streaming-specific errors occur.

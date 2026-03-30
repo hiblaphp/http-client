@@ -5,22 +5,18 @@ declare(strict_types=1);
 namespace Hibla\HttpClient;
 
 use Hibla\HttpClient\Exceptions\HttpStreamException;
-use Hibla\HttpClient\Interfaces\CookieJarInterface;
+use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
 use Hibla\HttpClient\Interfaces\EnhancedResponseInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
 
 /**
- * Represents an HTTP response.
- *
- * This class provides an immutable, PSR-7 compatible representation of an HTTP response,
- * along with several convenient helper methods for inspecting the response status,
- * headers, and body.
+ * Immutable, PSR-7 compatible HTTP response with convenience inspection methods.
  */
 class Response extends Message implements EnhancedResponseInterface
 {
     /**
-     * @var array<int, string> Map of standard HTTP status code/reason phrases.
+     * @var array<int, string> Map of standard HTTP status codes to reason phrases.
      */
     private const array PHRASES = [
         100 => 'Continue',
@@ -85,11 +81,9 @@ class Response extends Message implements EnhancedResponseInterface
     private ?string $negotiatedHttpVersion = null;
 
     /**
-     * Initializes a new Response instance.
-     *
-     * @param  string|StreamInterface  $body  The response body. Can be a string or a StreamInterface object.
-     * @param  int  $status  The HTTP status code.
-     * @param  array<string, string|string[]>  $headers  An associative array of response headers.
+     * @param string|StreamInterface $body The response body as a string or stream.
+     * @param int $status The HTTP status code.
+     * @param array<string, string|string[]> $headers  Response headers.
      *
      * @throws HttpStreamException
      */
@@ -103,17 +97,13 @@ class Response extends Message implements EnhancedResponseInterface
             if ($resource === false) {
                 throw new \RuntimeException('Unable to create temporary stream');
             }
-            if (\is_string($body)) {
-
-                if ($body !== '') {
-                    $writeResult = fwrite($resource, $body);
-                    if ($writeResult === false) {
-                        fclose($resource);
-
-                        throw new \RuntimeException('Unable to write to temporary stream');
-                    }
-                    rewind($resource);
+            if (\is_string($body) && $body !== '') {
+                $writeResult = fwrite($resource, $body);
+                if ($writeResult === false) {
+                    fclose($resource);
+                    throw new \RuntimeException('Unable to write to temporary stream');
                 }
+                rewind($resource);
             }
             $body = new Stream($resource);
         }
@@ -123,7 +113,7 @@ class Response extends Message implements EnhancedResponseInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function getStatusCode(): int
     {
@@ -131,7 +121,7 @@ class Response extends Message implements EnhancedResponseInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function getReasonPhrase(): string
     {
@@ -139,7 +129,7 @@ class Response extends Message implements EnhancedResponseInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      *
      * @throws \InvalidArgumentException For invalid status code arguments.
      */
@@ -160,47 +150,7 @@ class Response extends Message implements EnhancedResponseInterface
     }
 
     /**
-     * Get cookies from Set-Cookie headers.
-     *
-     * @return Cookie[]
-     */
-    public function getCookies(): array
-    {
-        $setCookieHeaders = $this->getHeader('Set-Cookie');
-        $cookies = [];
-
-        foreach ($setCookieHeaders as $header) {
-            $cookie = Cookie::fromSetCookieHeader($header);
-            if ($cookie !== null) {
-                $cookies[] = $cookie;
-            }
-        }
-
-        return $cookies;
-    }
-
-    /**
-     * Apply cookies from this response to a cookie jar.
-     */
-    public function applyCookiesToJar(CookieJarInterface $cookieJar): void
-    {
-        foreach ($this->getCookies() as $cookie) {
-            $cookieJar->setCookie($cookie);
-        }
-    }
-
-    /**
-     * Get the response body as a string.
-     *
-     * @return string The full response body.
-     */
-    public function body(): string
-    {
-        return (string) $this->body;
-    }
-
-    /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function getBody(): StreamInterface
     {
@@ -208,11 +158,15 @@ class Response extends Message implements EnhancedResponseInterface
     }
 
     /**
-     * Get the response body decoded from JSON.
-     *
-     * @param  string|null  $key  Optional dot-notation key to extract a specific value
-     * @param  mixed  $default  Default value to return if key is not found or JSON decode fails
-     * @return mixed The decoded JSON data, specific value, or default
+     * @inheritDoc
+     */
+    public function body(): string
+    {
+        return (string) $this->body;
+    }
+
+    /**
+     * @inheritDoc
      */
     public function json(?string $key = null, $default = null): mixed
     {
@@ -230,9 +184,7 @@ class Response extends Message implements EnhancedResponseInterface
     }
 
     /**
-     * Get the HTTP status code.
-     *
-     * @return int The status code.
+     * @inheritDoc
      */
     public function status(): int
     {
@@ -240,9 +192,7 @@ class Response extends Message implements EnhancedResponseInterface
     }
 
     /**
-     * Get all response headers.
-     *
-     * @return array<string, string> An associative array of header names to values.
+     * @inheritDoc
      */
     public function headers(): array
     {
@@ -255,10 +205,7 @@ class Response extends Message implements EnhancedResponseInterface
     }
 
     /**
-     * Get a single response header by name.
-     *
-     * @param  string  $name  The case-insensitive header name.
-     * @return string|null The header value, or null if the header does not exist.
+     * @inheritDoc
      */
     public function header(string $name): ?string
     {
@@ -268,9 +215,7 @@ class Response extends Message implements EnhancedResponseInterface
     }
 
     /**
-     * Determine if the response has a successful status code (2xx).
-     *
-     * @return bool True if the status code is between 200 and 299.
+     * @inheritDoc
      */
     public function successful(): bool
     {
@@ -278,9 +223,7 @@ class Response extends Message implements EnhancedResponseInterface
     }
 
     /**
-     * Determine if the response indicates a client or server error.
-     *
-     * @return bool True if the status code is 400 or greater.
+     * @inheritDoc
      */
     public function failed(): bool
     {
@@ -288,9 +231,7 @@ class Response extends Message implements EnhancedResponseInterface
     }
 
     /**
-     * Determine if the response has a client error status code (4xx).
-     *
-     * @return bool True if the status code is between 400 and 499.
+     * @inheritDoc
      */
     public function clientError(): bool
     {
@@ -298,9 +239,7 @@ class Response extends Message implements EnhancedResponseInterface
     }
 
     /**
-     * Determine if the response has a server error status code (5xx).
-     *
-     * @return bool True if the status code is 500 or greater.
+     * @inheritDoc
      */
     public function serverError(): bool
     {
@@ -308,7 +247,7 @@ class Response extends Message implements EnhancedResponseInterface
     }
 
     /**
-     * Get the negotiated HTTP version from the actual response
+     * @inheritDoc
      */
     public function getHttpVersion(): ?string
     {
@@ -316,31 +255,72 @@ class Response extends Message implements EnhancedResponseInterface
     }
 
     /**
-     * @internal
-     *
-     * Set the negotiated HTTP version (called internally)
+     * @inheritDoc
      */
-    public function setHttpVersion(?string $version): void
+    public function getHttpVersionString(): string
     {
-        $this->negotiatedHttpVersion = $version;
-        if ($version !== null) {
-            $this->protocol = $version;
+        $version = $this->negotiatedHttpVersion ?? $this->protocol;
+
+        return 'HTTP/' . $version;
+    }
+
+    /**
+     * Extract cookies from Set-Cookie response headers.
+     *
+     * @return Cookie[]
+     */
+    public function getCookies(): array
+    {
+        $cookies = [];
+        foreach ($this->getHeader('Set-Cookie') as $header) {
+            $cookie = Cookie::fromSetCookieHeader($header);
+            if ($cookie !== null) {
+                $cookies[] = $cookie;
+            }
+        }
+
+        return $cookies;
+    }
+
+    /**
+     * Apply all cookies from this response into the given jar.
+     */
+    public function applyCookiesToJar(CookieJarInterface $cookieJar): void
+    {
+        foreach ($this->getCookies() as $cookie) {
+            $cookieJar->setCookie($cookie);
         }
     }
 
     /**
-     * Get a more detailed version string
+     * Record the HTTP version that was negotiated for this response.
+     *
+     * Normalises the raw version string to a canonical form:
+     *   '1.0', '1.1'  → kept as-is
+     *   '2', '2.0'    → '2'
+     *   '3', '3.0'    → '3'
+     *
+     * @internal Called by the transport layer after the request completes.
      */
-    public function getHttpVersionString(): string
+    public function setHttpVersion(?string $version): void
     {
-        return $this->negotiatedHttpVersion ?? 'HTTP/'.$this->protocol;
+        if ($version === null) {
+            $this->negotiatedHttpVersion = null;
+
+            return;
+        }
+
+        $this->negotiatedHttpVersion = $this->normalizeHttpVersion($version);
+        $this->protocol = $this->negotiatedHttpVersion;
     }
 
     /**
-     * Get a value from an array using dot notation.
-     * If a direct key match exists, it takes priority over dot notation.
+     * Resolve a dot-notation key against a nested array.
      *
-     * @param  array<mixed>  $array
+     * A direct key match takes priority over dot-notation traversal,
+     * so keys containing literal dots are still reachable.
+     *
+     * @param array<mixed> $array
      */
     protected function getValueByKey(array $array, string $key, mixed $default): mixed
     {
@@ -357,5 +337,21 @@ class Response extends Message implements EnhancedResponseInterface
         }
 
         return $array;
+    }
+
+    /**
+     * Normalise a raw HTTP version string to canonical form.
+     *
+     *   '2' or '2.0' → '2'
+     *   '3' or '3.0' → '3'
+     *   anything else → returned unchanged
+     */
+    private function normalizeHttpVersion(string $version): string
+    {
+        return match ($version) {
+            '2', '2.0' => '2',
+            '3', '3.0' => '3',
+            default    => $version,
+        };
     }
 }

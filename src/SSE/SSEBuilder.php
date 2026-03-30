@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Hibla\HttpClient\SSE;
 
 use Hibla\HttpClient\Handlers\HttpHandler;
+use Hibla\HttpClient\Interfaces\SSE\SSEBuilderInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
 /**
@@ -23,22 +24,22 @@ use Hibla\Promise\Interfaces\PromiseInterface;
  *   $streamA = $base->onEvent(fn($data) => handleA($data))->connect();
  *   $streamB = $base->onEvent(fn($data) => handleB($data))->connect();
  */
-class SSEBuilder
+class SSEBuilder implements SSEBuilderInterface
 {
     /**
-     * @param callable(mixed): mixed $mapper
+     *  @var (callable(mixed): mixed)|null
      */
-    private mixed $mapper = null;
+    private $mapper = null;
 
     /**
-     * @param callable(mixed): mixed $mapper
+     *  @var (callable(mixed, SSEControl): void)|null
      */
-    private mixed $onEvent = null;
+    private $onEvent = null;
 
     /**
-     * @param callable(\Throwable): mixed $mapper
+     *  @var (callable(\Throwable): void)|null
      */
-    private mixed $onError = null;
+    private $onError = null;
 
     private ?SSEReconnectConfig $reconnectConfig = null;
 
@@ -51,22 +52,13 @@ class SSEBuilder
         private readonly string $url,
         private readonly HttpHandler $handler,
         private readonly array $curlOptions,
-    ) {}
+    ) {
+    }
 
     /**
-     * Register a callback to receive each SSE event.
-     *
-     * The value passed to the callback depends on the configured dataFormat:
-     *   - 'event' (default): SSEEvent object
-     *   - 'json':  decoded array/scalar, or raw string if not valid JSON
-     *   - 'array': event as array with data key auto-decoded
-     *   - 'raw':   raw data string
-     *
-     * If map() is also configured, the callback receives the mapped value.
-     *
-     * @param callable(mixed): void $callback
+     *  @inheritDoc
      */
-    public function onEvent(callable $callback): self
+    public function onEvent(callable $callback): static
     {
         $new = clone $this;
         $new->onEvent = $callback;
@@ -75,13 +67,9 @@ class SSEBuilder
     }
 
     /**
-     * Register a callback to receive connection errors.
-     *
-     * Always receives a \Throwable for consistency with the rest of the library.
-     *
-     * @param callable(\Throwable): void $callback
+     *  @inheritDoc
      */
-    public function onError(callable $callback): self
+    public function onError(callable $callback): static
     {
         $new = clone $this;
         $new->onError = $callback;
@@ -90,15 +78,9 @@ class SSEBuilder
     }
 
     /**
-     * Configure the format of data passed to the onEvent callback.
-     *
-     * @param SSEDataFormat $format
-     *   - SSEDataFormat::Event  — full SSEEvent object (default)
-     *   - SSEDataFormat::Json   — event data decoded as JSON, falls back to raw string
-     *   - SSEDataFormat::Array_ — event->toArray() with data key auto-decoded from JSON
-     *   - SSEDataFormat::Raw    — raw event data string
+     *  @inheritDoc
      */
-    public function dataFormat(SSEDataFormat $format): self
+    public function dataFormat(SSEDataFormat $format): static
     {
         $new = clone $this;
         $new->dataFormat = $format;
@@ -107,12 +89,9 @@ class SSEBuilder
     }
 
     /**
-     * Apply a transformation to each event value after dataFormat is applied
-     * but before the onEvent callback receives it.
-     *
-     * @param callable(mixed): mixed $mapper
+     *  @inheritDoc
      */
-    public function map(callable $mapper): self
+    public function map(callable $mapper): static
     {
         $new = clone $this;
         $new->mapper = $mapper;
@@ -121,13 +100,7 @@ class SSEBuilder
     }
 
     /**
-     * Enable automatic reconnection with exponential backoff.
-     *
-     * @param int   $maxAttempts      Maximum reconnection attempts before giving up.
-     * @param float $initialDelay     Seconds before the first retry.
-     * @param float $maxDelay         Upper bound on delay between retries.
-     * @param float $backoffMultiplier Factor applied to delay on each attempt.
-     * @param bool  $jitter           Adds randomness to prevent thundering herd.
+     *  @inheritDoc
      */
     public function reconnect(
         int $maxAttempts = 10,
@@ -135,7 +108,7 @@ class SSEBuilder
         float $maxDelay = 30.0,
         float $backoffMultiplier = 2.0,
         bool $jitter = true,
-    ): self {
+    ): static {
         $new = clone $this;
         $new->reconnectConfig = new SSEReconnectConfig(
             enabled: true,
@@ -150,9 +123,9 @@ class SSEBuilder
     }
 
     /**
-     * Provide a fully custom reconnection configuration.
+     *  @inheritDoc
      */
-    public function reconnectWith(SSEReconnectConfig $config): self
+    public function reconnectWith(SSEReconnectConfig $config): static
     {
         $new = clone $this;
         $new->reconnectConfig = $config;
@@ -161,9 +134,9 @@ class SSEBuilder
     }
 
     /**
-     * Explicitly disable reconnection (overrides any previously set config).
+     *  @inheritDoc
      */
-    public function noReconnect(): self
+    public function noReconnect(): static
     {
         $new = clone $this;
         $new->reconnectConfig = new SSEReconnectConfig(enabled: false);
@@ -172,9 +145,7 @@ class SSEBuilder
     }
 
     /**
-     * Open the SSE connection with the current configuration.
-     *
-     * @return PromiseInterface<SSEResponse>
+     *  @inheritDoc
      */
     public function connect(): PromiseInterface
     {
@@ -199,9 +170,9 @@ class SSEBuilder
             return null;
         }
 
-        $onEvent    = $this->onEvent;
+        $onEvent = $this->onEvent;
         $dataFormat = $this->dataFormat;
-        $mapper     = $this->mapper;
+        $mapper = $this->mapper;
 
         return function (SSEEvent $event) use ($onEvent, $dataFormat, $mapper, $control): void {
             if ($control->isCancelled()) {
@@ -248,7 +219,7 @@ class SSEBuilder
     }
 
     /**
-     *  @return array<string, mixed> 
+     *  @return array<string, mixed>
      */
     private function toArrayWithParsedData(SSEEvent $event): array
     {

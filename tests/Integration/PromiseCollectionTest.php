@@ -421,7 +421,7 @@ describe('Promise::concurrent() with Mocks using Http Facade', function () {
 
         $tasks = [];
         for ($i = 1; $i <= 20; $i++) {
-            $tasks[] = fn() => Http::get("https://jsonplaceholder.typicode.com/posts/{$i}");
+            $tasks[] = fn () => Http::get("https://jsonplaceholder.typicode.com/posts/{$i}");
         }
 
         $start = microtime(true);
@@ -475,12 +475,12 @@ describe('Promise::concurrent() with Mocks using Http Facade', function () {
         ;
 
         $tasks = [
-            fn() => Http::get('https://jsonplaceholder.typicode.com/posts/1'),
-            fn() => Http::get('https://jsonplaceholder.typicode.com/users/1'),
-            fn() => Http::get('https://jsonplaceholder.typicode.com/comments/1'),
-            fn() => Http::get('https://jsonplaceholder.typicode.com/albums/1'),
-            fn() => Http::get('https://jsonplaceholder.typicode.com/photos/1'),
-            fn() => Http::get('https://jsonplaceholder.typicode.com/todos/1'),
+            fn () => Http::get('https://jsonplaceholder.typicode.com/posts/1'),
+            fn () => Http::get('https://jsonplaceholder.typicode.com/users/1'),
+            fn () => Http::get('https://jsonplaceholder.typicode.com/comments/1'),
+            fn () => Http::get('https://jsonplaceholder.typicode.com/albums/1'),
+            fn () => Http::get('https://jsonplaceholder.typicode.com/photos/1'),
+            fn () => Http::get('https://jsonplaceholder.typicode.com/todos/1'),
         ];
 
         $results = Promise::concurrent($tasks, 3)->wait();
@@ -509,7 +509,7 @@ describe('Promise::concurrent() with Mocks using Http Facade', function () {
 
         $tasks = [];
         for ($i = 1; $i <= 5; $i++) {
-            $tasks[] = fn() => Http::post('https://jsonplaceholder.typicode.com/posts', [
+            $tasks[] = fn () => Http::post('https://jsonplaceholder.typicode.com/posts', [
                 'title' => "Post {$i}",
                 'body' => "Body content {$i}",
                 'userId' => 1,
@@ -543,7 +543,7 @@ describe('Promise::batch() with Mocks using Http Facade', function () {
 
         $tasks = [];
         for ($i = 1; $i <= 15; $i++) {
-            $tasks[] = fn() => Http::get("https://jsonplaceholder.typicode.com/posts/{$i}");
+            $tasks[] = fn () => Http::get("https://jsonplaceholder.typicode.com/posts/{$i}");
         }
 
         $results = Promise::batch($tasks, 5, 3)->wait();
@@ -590,11 +590,11 @@ describe('Promise::batch() with Mocks using Http Facade', function () {
         ;
 
         $tasks = [
-            fn() => Http::get('https://jsonplaceholder.typicode.com/posts/1'),
-            fn() => Http::post('https://jsonplaceholder.typicode.com/posts', ['title' => 'Test']),
-            fn() => Http::put('https://jsonplaceholder.typicode.com/posts/1', ['title' => 'Updated']),
-            fn() => Http::delete('https://jsonplaceholder.typicode.com/posts/1'),
-            fn() => Http::patch('https://jsonplaceholder.typicode.com/posts/1', ['title' => 'Patched']),
+            fn () => Http::get('https://jsonplaceholder.typicode.com/posts/1'),
+            fn () => Http::post('https://jsonplaceholder.typicode.com/posts', ['title' => 'Test']),
+            fn () => Http::put('https://jsonplaceholder.typicode.com/posts/1', ['title' => 'Updated']),
+            fn () => Http::delete('https://jsonplaceholder.typicode.com/posts/1'),
+            fn () => Http::patch('https://jsonplaceholder.typicode.com/posts/1', ['title' => 'Patched']),
         ];
 
         $results = Promise::batch($tasks, 2, 2)->wait();
@@ -646,10 +646,10 @@ describe('Promise::concurrentSettled() with Mocks using Http Facade', function (
         ;
 
         $tasks = [
-            fn() => Http::get('https://jsonplaceholder.typicode.com/posts/1'),
-            fn() => Http::get('https://jsonplaceholder.typicode.com/posts/99999'),
-            fn() => Http::get('https://invalid-domain-test-12345.com/fail'),
-            fn() => Http::get('https://jsonplaceholder.typicode.com/posts/3'),
+            fn () => Http::get('https://jsonplaceholder.typicode.com/posts/1'),
+            fn () => Http::get('https://jsonplaceholder.typicode.com/posts/99999'),
+            fn () => Http::get('https://invalid-domain-test-12345.com/fail'),
+            fn () => Http::get('https://jsonplaceholder.typicode.com/posts/3'),
         ];
 
         $results = Promise::concurrentSettled($tasks, 2)->wait();
@@ -689,7 +689,7 @@ describe('Promise::concurrentSettled() with Mocks using Http Facade', function (
 
         $tasks = [];
         for ($i = 1; $i <= 10; $i++) {
-            $tasks[] = fn() => Http::get("https://jsonplaceholder.typicode.com/users/{$i}");
+            $tasks[] = fn () => Http::get("https://jsonplaceholder.typicode.com/users/{$i}");
         }
 
         $results = Promise::concurrentSettled($tasks, 5)->wait();
@@ -697,7 +697,7 @@ describe('Promise::concurrentSettled() with Mocks using Http Facade', function (
         expect($results)->toHaveCount(10);
 
         foreach ($results as $result) {
-            expect($result->status)->toBe('fulfilled')  
+            expect($result->status)->toBe('fulfilled')
                 ->and($result->value->successful())->toBeTrue()
             ;
         }
@@ -752,12 +752,12 @@ describe('Promise::batchSettled() with Mocks using Http Facade', function () {
         ;
 
         $tasks = [
-            fn() => Http::get('https://jsonplaceholder.typicode.com/posts/1'),
-            fn() => Http::get('https://jsonplaceholder.typicode.com/posts/2'),
-            fn() => Http::get('https://invalid-test-domain-99999.com/fail'),
-            fn() => Http::get('https://jsonplaceholder.typicode.com/posts/3'),
-            fn() => Http::get('https://jsonplaceholder.typicode.com/posts/99999'),
-            fn() => Http::get('https://jsonplaceholder.typicode.com/posts/4'),
+            fn () => Http::get('https://jsonplaceholder.typicode.com/posts/1'),
+            fn () => Http::get('https://jsonplaceholder.typicode.com/posts/2'),
+            fn () => Http::get('https://invalid-test-domain-99999.com/fail'),
+            fn () => Http::get('https://jsonplaceholder.typicode.com/posts/3'),
+            fn () => Http::get('https://jsonplaceholder.typicode.com/posts/99999'),
+            fn () => Http::get('https://jsonplaceholder.typicode.com/posts/4'),
         ];
 
         $results = Promise::batchSettled($tasks, 3, 2)->wait();
@@ -839,9 +839,9 @@ describe('Concurrent Requests with Mocks using Http Facade', function () {
         ;
 
         $tasks = [
-            fn() => Http::retry(5, 0.01)->get('https://api.example.com/retry-test'),
-            fn() => Http::get('https://jsonplaceholder.typicode.com/posts/1'),
-            fn() => Http::get('https://jsonplaceholder.typicode.com/posts/2'),
+            fn () => Http::retry(5, 0.01)->get('https://api.example.com/retry-test'),
+            fn () => Http::get('https://jsonplaceholder.typicode.com/posts/1'),
+            fn () => Http::get('https://jsonplaceholder.typicode.com/posts/2'),
         ];
 
         $results = Promise::concurrent($tasks, 2)->wait();
@@ -864,8 +864,9 @@ describe('Concurrent Requests with Mocks using Http Facade', function () {
 
         $tasks = [];
         for ($i = 1; $i <= 5; $i++) {
-            $tasks[] = fn() => Http::retry(5, 0.01)
-                ->get("https://api.example.com/rate-limited/{$i}");
+            $tasks[] = fn () => Http::retry(5, 0.01)
+                ->get("https://api.example.com/rate-limited/{$i}")
+            ;
         }
 
         $results = Promise::batch($tasks, 2, 2)->wait();
@@ -982,7 +983,7 @@ describe('Concurrency Performance Tests with Mocks using Http Facade', function 
 
         $tasks = [];
         for ($i = 1; $i <= 20; $i++) {
-            $tasks[] = fn() => Http::get("https://jsonplaceholder.typicode.com/posts/{$i}");
+            $tasks[] = fn () => Http::get("https://jsonplaceholder.typicode.com/posts/{$i}");
         }
 
         $start = microtime(true);
@@ -1165,10 +1166,10 @@ describe('Error Handling with Concurrent Requests', function () {
 
         expect($results)->toHaveCount(4);
 
-        $fulfilled = array_filter($results, fn($r) => $r->status === 'fulfilled');
-        $rejected = array_filter($results, fn($r) => $r->status === 'rejected');
+        $fulfilled = array_filter($results, fn ($r) => $r->status === 'fulfilled');
+        $rejected = array_filter($results, fn ($r) => $r->status === 'rejected');
 
-        expect(count($fulfilled))->toBe(3) 
+        expect(count($fulfilled))->toBe(3)
             ->and(count($rejected))->toBe(1)
         ;
     });
@@ -1193,9 +1194,9 @@ describe('Error Handling with Concurrent Requests', function () {
         ;
 
         $tasks = [
-            fn() => Http::retry(5, 0.01)->get('https://api.example.com/retry1'),
-            fn() => Http::get('https://api.example.com/retry2'),
-            fn() => Http::retry(5, 0.01)->get('https://api.example.com/retry3'),
+            fn () => Http::retry(5, 0.01)->get('https://api.example.com/retry1'),
+            fn () => Http::get('https://api.example.com/retry2'),
+            fn () => Http::retry(5, 0.01)->get('https://api.example.com/retry3'),
         ];
 
         $results = Promise::concurrent($tasks, 3)->wait();

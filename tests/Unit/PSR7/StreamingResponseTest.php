@@ -96,7 +96,8 @@ describe('StreamingResponse', function () {
         $tempDir = sys_get_temp_dir() . '/test_dir_' . uniqid();
         mkdir($tempDir);
 
-        set_error_handler(function () {});
+        set_error_handler(function () {
+        });
         $result = $response->saveToFile($tempDir);
         restore_error_handler();
 
