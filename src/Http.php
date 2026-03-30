@@ -7,6 +7,7 @@ namespace Hibla\HttpClient;
 use Hibla\HttpClient\Handlers\HttpHandler;
 use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
 use Hibla\HttpClient\Interfaces\EnhancedResponseInterface;
+use Hibla\HttpClient\Interfaces\HttpClientInterface;
 use Hibla\HttpClient\Interfaces\StreamingResponseInterface;
 use Hibla\HttpClient\Interfaces\SSE\SSEBuilderInterface;
 use Hibla\HttpClient\Testing\MockRequestBuilder;
@@ -39,93 +40,93 @@ use Psr\Http\Message\UploadedFileInterface;
  * @method static SSEBuilderInterface sse(string $url) Create a fluent SSE connection builder.
  *
  * Header configuration methods (ConfiguresHeadersInterface):
- * @method static HttpClient contentType(string $type) Start building a request with Content-Type header.
- * @method static HttpClient accept(string $type) Start building a request with Accept header.
- * @method static HttpClient asJson() Start building a request with Content-Type: application/json.
- * @method static HttpClient asForm() Start building a request with Content-Type: application/x-www-form-urlencoded.
- * @method static HttpClient withUserAgent(string $userAgent) Start building a request with custom User-Agent.
- * @method static HttpClient withHeaders(array<string, string|string[]> $headers) Start building a request with multiple headers.
- * @method static HttpClient withHeader(string $name, string|string[] $value) Start building a request with a single header.
- * @method static HttpClient withAddedHeader(string $name, string|string[] $value) Return an instance with the specified header appended with the given value.
- * @method static HttpClient withoutHeader(string $name) Start building a request without the specified header.
+ * @method static HttpClientInterface contentType(string $type) Start building a request with Content-Type header.
+ * @method static HttpClientInterface accept(string $type) Start building a request with Accept header.
+ * @method static HttpClientInterface asJson() Start building a request with Content-Type: application/json.
+ * @method static HttpClientInterface asForm() Start building a request with Content-Type: application/x-www-form-urlencoded.
+ * @method static HttpClientInterface withUserAgent(string $userAgent) Start building a request with custom User-Agent.
+ * @method static HttpClientInterface withHeaders(array<string, string|string[]> $headers) Start building a request with multiple headers.
+ * @method static HttpClientInterface withHeader(string $name, string|string[] $value) Start building a request with a single header.
+ * @method static HttpClientInterface withAddedHeader(string $name, string|string[] $value) Return an instance with the specified header appended with the given value.
+ * @method static HttpClientInterface withoutHeader(string $name) Start building a request without the specified header.
  *
  * Auth configuration methods (ConfiguresAuthInterface):
- * @method static HttpClient withToken(string $token, string $type = 'Bearer') Start building a request with a token.
- * @method static HttpClient withBasicAuth(string $username, string $password) Start building a request with basic auth.
- * @method static HttpClient withDigestAuth(string $username, string $password) Start building a request with digest auth.
+ * @method static HttpClientInterface withToken(string $token, string $type = 'Bearer') Start building a request with a token.
+ * @method static HttpClientInterface withBasicAuth(string $username, string $password) Start building a request with basic auth.
+ * @method static HttpClientInterface withDigestAuth(string $username, string $password) Start building a request with digest auth.
  *
  * Body configuration methods (ConfiguresBodyInterface):
- * @method static HttpClient body(string $content) Start building a request with string body.
- * @method static HttpClient withJson(array<string, mixed> $data) Start building a request with JSON body.
- * @method static HttpClient withForm(array<string, mixed> $data) Start building a request with form data.
- * @method static HttpClient withMultipart(array<string, mixed> $data) Start building a request with multipart data.
+ * @method static HttpClientInterface body(string $content) Start building a request with string body.
+ * @method static HttpClientInterface withJson(array<string, mixed> $data) Start building a request with JSON body.
+ * @method static HttpClientInterface withForm(array<string, mixed> $data) Start building a request with form data.
+ * @method static HttpClientInterface withMultipart(array<string, mixed> $data) Start building a request with multipart data.
  *
  * Cookie management methods (ConfiguresCookiesInterface):
- * @method static HttpClient withCookie(string $name, string $value) Start building a request with a single cookie.
- * @method static HttpClient withCookies(array<string, string> $cookies) Start building a request with multiple cookies.
- * @method static HttpClient withCookieJar() Start building a request with an in-memory cookie jar.
- * @method static HttpClient useCookieJar(CookieJarInterface $cookieJar) Start building a request with a custom cookie jar.
- * @method static HttpClient clearCookies() Start building a request with cookies cleared.
- * @method static HttpClient cookieWithAttributes(string $name, string $value, array<string, mixed> $attributes = []) Start building a request with a cookie with additional attributes.
+ * @method static HttpClientInterface withCookie(string $name, string $value) Start building a request with a single cookie.
+ * @method static HttpClientInterface withCookies(array<string, string> $cookies) Start building a request with multiple cookies.
+ * @method static HttpClientInterface withCookieJar() Start building a request with an in-memory cookie jar.
+ * @method static HttpClientInterface useCookieJar(CookieJarInterface $cookieJar) Start building a request with a custom cookie jar.
+ * @method static HttpClientInterface clearCookies() Start building a request with cookies cleared.
+ * @method static HttpClientInterface cookieWithAttributes(string $name, string $value, array<string, mixed> $attributes = []) Start building a request with a cookie with additional attributes.
  * @method static CookieJarInterface|null getCookieJar() Return the currently active cookie jar, or null if none is configured.
  *
  * Transport configuration methods (ConfiguresTransportInterface):
- * @method static HttpClient timeout(int $seconds) Start building a request with timeout.
- * @method static HttpClient connectTimeout(int $seconds) Start building a request with connection timeout.
- * @method static HttpClient redirects(bool $follow = true, int $max = 5) Start building a request with redirect configuration.
- * @method static HttpClient verifySSL(bool $verify = true) Start building a request with SSL verification configuration.
- * @method static HttpClient httpVersion(string $version) Start building a request with specific HTTP version.
- * @method static HttpClient http1() Start building a request with HTTP/1.1 protocol version.
- * @method static HttpClient http2() Start building a request with HTTP/2 negotiation.
- * @method static HttpClient http3() Start building a request with HTTP/3 negotiation.
+ * @method static HttpClientInterface timeout(int $seconds) Start building a request with timeout.
+ * @method static HttpClientInterface connectTimeout(int $seconds) Start building a request with connection timeout.
+ * @method static HttpClientInterface redirects(bool $follow = true, int $max = 5) Start building a request with redirect configuration.
+ * @method static HttpClientInterface verifySSL(bool $verify = true) Start building a request with SSL verification configuration.
+ * @method static HttpClientInterface httpVersion(string $version) Start building a request with specific HTTP version.
+ * @method static HttpClientInterface http1() Start building a request with HTTP/1.1 protocol version.
+ * @method static HttpClientInterface http2() Start building a request with HTTP/2 negotiation.
+ * @method static HttpClientInterface http3() Start building a request with HTTP/3 negotiation.
  *
  * Retry configuration methods (ConfiguresRetryInterface):
- * @method static HttpClient retry(int $maxRetries = 3, float $baseDelay = 1.0, float $backoffMultiplier = 2.0) Start building a request with retry logic.
- * @method static HttpClient retryWith(RetryConfig $config) Start building a request with custom retry configuration.
- * @method static HttpClient noRetry() Start building a request with retries disabled.
+ * @method static HttpClientInterface retry(int $maxRetries = 3, float $baseDelay = 1.0, float $backoffMultiplier = 2.0) Start building a request with retry logic.
+ * @method static HttpClientInterface retryWith(RetryConfig $config) Start building a request with custom retry configuration.
+ * @method static HttpClientInterface noRetry() Start building a request with retries disabled.
  *
  * Proxy configuration methods (ConfiguresProxyInterface):
- * @method static HttpClient withProxy(string $host, int $port, ?string $username = null, ?string $password = null) Start building a request with HTTP proxy configuration.
- * @method static HttpClient withSocks4Proxy(string $host, int $port, ?string $username = null) Start building a request with SOCKS4 proxy configuration.
- * @method static HttpClient withSocks5Proxy(string $host, int $port, ?string $username = null, ?string $password = null) Start building a request with SOCKS5 proxy configuration.
- * @method static HttpClient proxyWith(ProxyConfig $config) Start building a request with custom proxy configuration.
- * @method static HttpClient noProxy() Start building a request with proxy disabled.
+ * @method static HttpClientInterface withProxy(string $host, int $port, ?string $username = null, ?string $password = null) Start building a request with HTTP proxy configuration.
+ * @method static HttpClientInterface withSocks4Proxy(string $host, int $port, ?string $username = null) Start building a request with SOCKS4 proxy configuration.
+ * @method static HttpClientInterface withSocks5Proxy(string $host, int $port, ?string $username = null, ?string $password = null) Start building a request with SOCKS5 proxy configuration.
+ * @method static HttpClientInterface proxyWith(ProxyConfig $config) Start building a request with custom proxy configuration.
+ * @method static HttpClientInterface noProxy() Start building a request with proxy disabled.
  *
  * File attachment methods (ConfiguresFilesInterface):
- * @method static HttpClient withFile(string $name, string|UploadedFileInterface|resource $file, ?string $filename = null, ?string $contentType = null) Start building a request with a file attachment.
- * @method static HttpClient withFiles(array<string, mixed> $files) Start building a request with multiple file attachments.
- * @method static HttpClient multipartWithFiles(array<string, mixed> $data = [], array<string, mixed> $files = []) Start building a request with multipart form data and files.
+ * @method static HttpClientInterface withFile(string $name, string|UploadedFileInterface|resource $file, ?string $filename = null, ?string $contentType = null) Start building a request with a file attachment.
+ * @method static HttpClientInterface withFiles(array<string, mixed> $files) Start building a request with multiple file attachments.
+ * @method static HttpClientInterface multipartWithFiles(array<string, mixed> $data = [], array<string, mixed> $files = []) Start building a request with multipart form data and files.
  *
  * URL template methods (ConfiguresUrlInterface):
- * @method static HttpClient withUrlParameter(string $name, mixed $value) Set a single URL parameter for URI template substitution.
- * @method static HttpClient withUrlParameters(array<string, mixed> $parameters) Set multiple URL parameters for URI template substitution.
+ * @method static HttpClientInterface withUrlParameter(string $name, mixed $value) Set a single URL parameter for URI template substitution.
+ * @method static HttpClientInterface withUrlParameters(array<string, mixed> $parameters) Set multiple URL parameters for URI template substitution.
  *
  * Interceptor methods (HttpInterceptorInterface):
- * @method static HttpClient intercept(callable(PendingRequestInterface, callable): PromiseInterface<EnhancedResponseInterface> $middleware) Add a full pipeline interceptor.
- * @method static HttpClient interceptRequest(callable(PendingRequestInterface): (PendingRequestInterface|PromiseInterface<PendingRequestInterface>) $callback) Start building a request with a request interceptor.
- * @method static HttpClient interceptResponse(callable(EnhancedResponseInterface): (EnhancedResponseInterface|PromiseInterface<EnhancedResponseInterface>) $callback) Start building a request with a response interceptor.
+ * @method static HttpClientInterface intercept(callable(PendingRequestInterface, callable): PromiseInterface<EnhancedResponseInterface> $middleware) Add a full pipeline interceptor.
+ * @method static HttpClientInterface interceptRequest(callable(PendingRequestInterface): (PendingRequestInterface|PromiseInterface<PendingRequestInterface>) $callback) Start building a request with a request interceptor.
+ * @method static HttpClientInterface interceptResponse(callable(EnhancedResponseInterface): (EnhancedResponseInterface|PromiseInterface<EnhancedResponseInterface>) $callback) Start building a request with a response interceptor.
  *
  * cURL escape-hatch methods (ConfiguresCurlInterface):
- * @method static HttpClient withCurlOption(int $option, mixed $value) Start building a request with a raw cURL option.
- * @method static HttpClient withCurlOptions(array<int, mixed> $options) Start building a request with multiple raw cURL options.
+ * @method static HttpClientInterface withCurlOption(int $option, mixed $value) Start building a request with a raw cURL option.
+ * @method static HttpClientInterface withCurlOptions(array<int, mixed> $options) Start building a request with multiple raw cURL options.
  *
  * PSR-7 Message interface methods:
  * @method static string getProtocolVersion() Retrieves the HTTP protocol version as a string.
- * @method static HttpClient withProtocolVersion(string $version) Return an instance with the specified HTTP protocol version.
+ * @method static HttpClientInterface withProtocolVersion(string $version) Return an instance with the specified HTTP protocol version.
  * @method static array<string, string[]> getHeaders() Retrieves all message header values.
  * @method static bool hasHeader(string $name) Checks if a header exists by the given case-insensitive name.
  * @method static string[] getHeader(string $name) Retrieves a message header value by the given case-insensitive name.
  * @method static string getHeaderLine(string $name) Retrieves a comma-separated string of the values for a single header.
  * @method static Stream getBody() Gets the body of the message.
- * @method static HttpClient withBody(Stream $body) Return an instance with the specified message body.
+ * @method static HttpClientInterface withBody(Stream $body) Return an instance with the specified message body.
  *
  * PSR-7 Request interface methods:
  * @method static string getRequestTarget() Retrieves the message's request target.
- * @method static HttpClient withRequestTarget(string $requestTarget) Return an instance with the specific request-target.
+ * @method static HttpClientInterface withRequestTarget(string $requestTarget) Return an instance with the specific request-target.
  * @method static string getMethod() Retrieves the HTTP method of the request.
- * @method static HttpClient withMethod(string $method) Return an instance with the provided HTTP method.
+ * @method static HttpClientInterface withMethod(string $method) Return an instance with the provided HTTP method.
  * @method static Uri getUri() Retrieves the URI instance.
- * @method static HttpClient withUri(Uri $uri, bool $preserveHost = false) Returns an instance with the provided URI.
+ * @method static HttpClientInterface withUri(Uri $uri, bool $preserveHost = false) Returns an instance with the provided URI.
  *
  * Testing assertion methods (only available in testing mode):
  *
@@ -264,7 +265,7 @@ class Http
     /**
      * Creates a new fluent HTTP client builder.
      */
-    public static function request(): HttpClient
+    public static function request(): HttpClientInterface
     {
         $client = new HttpClient();
 
