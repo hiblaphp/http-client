@@ -23,27 +23,37 @@ use Psr\Http\Message\UriInterface;
 /**
  * Fluent, immutable, asynchronous HTTP client.
  *
+ * Owns all transport-level configuration — timeouts, redirects, SSL
+ * verification, proxy routing, retry policy, HTTP version negotiation,
+ * and raw cURL options. Request-level state (method, URI, headers, body,
+ * authentication, cookies) is held by the embedded PendingRequest value
+ * object, which is what actually flows through the interceptor pipeline.
+ *
  * Each builder method returns a cloned instance so chains can branch
  * freely without side effects. Terminal methods (get, post, send, stream,
  * download, sse) dispatch the configured request and return a promise.
  *
- * The interceptor pipeline operates on PendingRequestInterface — a narrow
- * contract covering headers, auth, body, cookies, URI and method — so
- * interceptors cannot reach transport-level config (timeout, proxy, retry).
+ * The interceptor pipeline receives a pure PendingRequest — a narrow
+ * contract covering headers, auth, body, cookies, URI, and method — so
+ * interceptors cannot reach or modify transport-level configuration.
  */
-class HttpClient extends Message implements HttpClientInterface
+class HttpClient implements HttpClientInterface
 {
     use StreamTrait;
 
     /**
-     * @var array{0: string, 1: string, 2: string}|null
+     * Carries all request-level state: method, URI, headers, body, auth, cookies.
+     *
+     * Interceptors receive and can mutate a snapshot of this object.
+     * Transport config never travels through the pipeline — it stays
+     * on $this, captured as closure context in executeRequest().
      */
-    private ?array $auth = null;
+    private PendingRequest $request;
 
     /**
-     * @var array<int|string, mixed>
+     * @var array<int, mixed>
      */
-    private array $options = [];
+    private array $curlOptions = [];
 
     /**
      * @var array<string, mixed>
@@ -51,7 +61,7 @@ class HttpClient extends Message implements HttpClientInterface
     private array $urlParameters = [];
 
     /**
-     * @var array<int, callable(PendingRequestInterface, callable): PromiseInterface<Response>>
+     * @var array<int, callable(PendingRequestInterface, callable): PromiseInterface<EnhancedResponseInterface>>
      */
     private array $interceptors = [];
 
@@ -64,8 +74,6 @@ class HttpClient extends Message implements HttpClientInterface
 
     private bool $timeoutExplicitlySet = false;
 
-    private string $method = 'GET';
-
     private int $connectTimeout = 10;
 
     private bool $followRedirects = true;
@@ -74,53 +82,33 @@ class HttpClient extends Message implements HttpClientInterface
 
     private bool $verifySSL = true;
 
-    private ?string $userAgent = null;
+    private string $protocol = '2.0';
 
-    private ?string $requestTarget = null;
-
-    private UriInterface $uri;
-
-    private HttpHandler $handler;
+    private ?HttpHandler $handler = null;
 
     private InterceptorHandler $interceptorHandler;
 
     private ?RetryConfig $retryConfig = null;
 
-    private ?CookieJarInterface $cookieJar = null;
-
     private ?ProxyConfig $proxyConfig = null;
 
     /**
-     * @param  string|UriInterface             $uri
-     * @param  array<string, string|string[]>  $headers
-     * @param  mixed|null                      $body
+     * Initialise a blank HTTP client.
+     *
+     * A fresh PendingRequest is created and seeded with the globally
+     * configured User-Agent (if any). The HttpHandler is NOT instantiated
+     * here — it is created lazily on the first call to a terminal method.
      */
-    public function __construct(
-        string $method = 'GET',
-        string|UriInterface $uri = '',
-        array $headers = [],
-        mixed $body = null,
-        string $version = '2.0',
-        ?HttpHandler $handler = null,
-    ) {
-        $this->method = strtoupper($method);
-        $this->uri = $uri instanceof UriInterface ? $uri : new Uri($uri);
-        $this->protocol = $version;
-        $this->userAgent = GlobalConfig::getUserAgent();
-        $this->handler = $handler ?? new HttpHandler();
+    public function __construct()
+    {
+        $pending = new PendingRequest();
+
+        $defaultAgent = GlobalConfig::getUserAgent();
+        $this->request = $defaultAgent !== ''
+            ? $pending->withUserAgent($defaultAgent)
+            : $pending;
+
         $this->interceptorHandler = new InterceptorHandler();
-
-        $this->setHeaders($headers);
-
-        if ($body !== '' && $body !== null) {
-            $this->body = $body instanceof StreamInterface ? $body : $this->createTempStream();
-            if (! ($body instanceof StreamInterface)) {
-                $this->body->write($this->convertToString($body));
-                $this->body->rewind();
-            }
-        } else {
-            $this->body = $this->createTempStream();
-        }
     }
 
     /**
@@ -141,7 +129,7 @@ class HttpClient extends Message implements HttpClientInterface
      * Return a new instance using the given transport options builder.
      *
      * Allows swapping the default cURL builder for a custom implementation
-     * (e.g. stream contexts, and non-cURL transports).
+     * (e.g. stream contexts or non-cURL transports).
      *
      * @param  TransportOptionsBuilderInterface<array<int|string, mixed>>  $builder
      */
@@ -156,9 +144,152 @@ class HttpClient extends Message implements HttpClientInterface
     /**
      * @inheritDoc
      */
+    public function getProtocolVersion(): string
+    {
+        return $this->request->getProtocolVersion();
+    }
+
+    /**
+     * Sets the HTTP protocol version on both the transport layer and the
+     * underlying PendingRequest so the two remain in sync.
+     *
+     * @inheritDoc
+     */
+    public function withProtocolVersion(string $version): static
+    {
+        $new = clone $this;
+        $new->protocol = $version;
+        $new->request = $this->request->withProtocolVersion($version);
+
+        return $new;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getHeaders(): array
+    {
+        return $this->request->getHeaders();
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function hasHeader(string $name): bool
+    {
+        return $this->request->hasHeader($name);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getHeader(string $name): array
+    {
+        return $this->request->getHeader($name);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getHeaderLine(string $name): string
+    {
+        return $this->request->getHeaderLine($name);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function withHeader(string $name, $value): static
+    {
+        return $this->withUpdatedRequest(fn($r) => $r->withHeader($name, $value));
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function withAddedHeader(string $name, $value): static
+    {
+        return $this->withUpdatedRequest(fn($r) => $r->withAddedHeader($name, $value));
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function withoutHeader(string $name): static
+    {
+        return $this->withUpdatedRequest(fn($r) => $r->withoutHeader($name));
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getBody(): StreamInterface
+    {
+        return $this->request->getBody();
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function withBody(StreamInterface $body): static
+    {
+        return $this->withUpdatedRequest(fn($r) => $r->withBody($body));
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getRequestTarget(): string
+    {
+        return $this->request->getRequestTarget();
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function withRequestTarget(string $requestTarget): static
+    {
+        return $this->withUpdatedRequest(fn($r) => $r->withRequestTarget($requestTarget));
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getMethod(): string
+    {
+        return $this->request->getMethod();
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function withMethod(string $method): static
+    {
+        return $this->withUpdatedRequest(fn($r) => $r->withMethod($method));
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getUri(): UriInterface
+    {
+        return $this->request->getUri();
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function withUri(UriInterface $uri, bool $preserveHost = false): static
+    {
+        return $this->withUpdatedRequest(fn($r) => $r->withUri($uri, $preserveHost));
+    }
+
+    /**
+     * @inheritDoc
+     */
     public function contentType(string $type): static
     {
-        return $this->withHeader('Content-Type', $type);
+        return $this->withUpdatedRequest(fn($r) => $r->contentType($type));
     }
 
     /**
@@ -166,7 +297,7 @@ class HttpClient extends Message implements HttpClientInterface
      */
     public function accept(string $type): static
     {
-        return $this->withHeader('Accept', $type);
+        return $this->withUpdatedRequest(fn($r) => $r->accept($type));
     }
 
     /**
@@ -174,7 +305,7 @@ class HttpClient extends Message implements HttpClientInterface
      */
     public function asJson(): static
     {
-        return $this->contentType('application/json');
+        return $this->withUpdatedRequest(fn($r) => $r->asJson());
     }
 
     /**
@@ -182,7 +313,7 @@ class HttpClient extends Message implements HttpClientInterface
      */
     public function asForm(): static
     {
-        return $this->contentType('application/x-www-form-urlencoded');
+        return $this->withUpdatedRequest(fn($r) => $r->asForm());
     }
 
     /**
@@ -190,10 +321,7 @@ class HttpClient extends Message implements HttpClientInterface
      */
     public function withUserAgent(string $userAgent): static
     {
-        $new = clone $this;
-        $new->userAgent = $userAgent;
-
-        return $new;
+        return $this->withUpdatedRequest(fn($r) => $r->withUserAgent($userAgent));
     }
 
     /**
@@ -201,12 +329,7 @@ class HttpClient extends Message implements HttpClientInterface
      */
     public function withHeaders(array $headers): static
     {
-        $new = clone $this;
-        foreach ($headers as $name => $value) {
-            $new = $new->withHeader($name, $value);
-        }
-
-        return $new;
+        return $this->withUpdatedRequest(fn($r) => $r->withHeaders($headers));
     }
 
     /**
@@ -214,9 +337,7 @@ class HttpClient extends Message implements HttpClientInterface
      */
     public function withToken(string $token, string $type = 'Bearer'): static
     {
-        $token = $this->normalizeToken($token, $type);
-
-        return $this->withHeader('Authorization', "{$type} {$token}");
+        return $this->withUpdatedRequest(fn($r) => $r->withToken($token, $type));
     }
 
     /**
@@ -224,10 +345,7 @@ class HttpClient extends Message implements HttpClientInterface
      */
     public function withBasicAuth(string $username, string $password): static
     {
-        $new = clone $this;
-        $new->auth = ['basic', $username, $password];
-
-        return $new;
+        return $this->withUpdatedRequest(fn($r) => $r->withBasicAuth($username, $password));
     }
 
     /**
@@ -235,10 +353,7 @@ class HttpClient extends Message implements HttpClientInterface
      */
     public function withDigestAuth(string $username, string $password): static
     {
-        $new = clone $this;
-        $new->auth = ['digest', $username, $password];
-
-        return $new;
+        return $this->withUpdatedRequest(fn($r) => $r->withDigestAuth($username, $password));
     }
 
     /**
@@ -246,11 +361,7 @@ class HttpClient extends Message implements HttpClientInterface
      */
     public function body(string $content): static
     {
-        $stream = $this->createTempStream();
-        $stream->write($content);
-        $stream->rewind();
-
-        return $this->withBody($stream);
+        return $this->withUpdatedRequest(fn($r) => $r->body($content));
     }
 
     /**
@@ -258,12 +369,7 @@ class HttpClient extends Message implements HttpClientInterface
      */
     public function withJson(array $data): static
     {
-        $json = json_encode($data);
-        if ($json === false) {
-            throw new InvalidArgumentException('Failed to encode data as JSON.');
-        }
-
-        return $this->body($json)->contentType('application/json');
+        return $this->withUpdatedRequest(fn($r) => $r->withJson($data));
     }
 
     /**
@@ -271,9 +377,7 @@ class HttpClient extends Message implements HttpClientInterface
      */
     public function withForm(array $data): static
     {
-        return $this->body(http_build_query($data))
-                    ->contentType('application/x-www-form-urlencoded')
-        ;
+        return $this->withUpdatedRequest(fn($r) => $r->withForm($data));
     }
 
     /**
@@ -281,12 +385,63 @@ class HttpClient extends Message implements HttpClientInterface
      */
     public function withMultipart(array $data): static
     {
-        $new = clone $this;
-        $new->body = $this->createTempStream();
-        $new->options['multipart'] = $data;
-        $new = $new->withoutHeader('Content-Type');
+        return $this->withUpdatedRequest(fn($r) => $r->withMultipart($data));
+    }
 
-        return $new;
+    /**
+     * @inheritDoc
+     */
+    public function withCookie(string $name, string $value): static
+    {
+        return $this->withUpdatedRequest(fn($r) => $r->withCookie($name, $value));
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function withCookies(array $cookies): static
+    {
+        return $this->withUpdatedRequest(fn($r) => $r->withCookies($cookies));
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function withCookieJar(): static
+    {
+        return $this->withUpdatedRequest(fn($r) => $r->withCookieJar());
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function useCookieJar(CookieJarInterface $cookieJar): static
+    {
+        return $this->withUpdatedRequest(fn($r) => $r->useCookieJar($cookieJar));
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function clearCookies(): static
+    {
+        return $this->withUpdatedRequest(fn($r) => $r->clearCookies());
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getCookieJar(): ?CookieJarInterface
+    {
+        return $this->request->getCookieJar();
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function cookieWithAttributes(string $name, string $value, array $attributes = []): static
+    {
+        return $this->withUpdatedRequest(fn($r) => $r->cookieWithAttributes($name, $value, $attributes));
     }
 
     /**
@@ -374,8 +529,8 @@ class HttpClient extends Message implements HttpClientInterface
     {
         $new = clone $this;
         $new->retryConfig = new RetryConfig(
-            maxRetries:        $maxRetries,
-            baseDelay:         $baseDelay,
+            maxRetries: $maxRetries,
+            baseDelay: $baseDelay,
             backoffMultiplier: $backoffMultiplier,
         );
 
@@ -400,102 +555,6 @@ class HttpClient extends Message implements HttpClientInterface
     {
         $new = clone $this;
         $new->retryConfig = null;
-
-        return $new;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function withCookie(string $name, string $value): static
-    {
-        $existing = $this->getHeaderLine('Cookie');
-        $newCookie = $name . '=' . urlencode($value);
-
-        return $this->withHeader(
-            'Cookie',
-            $existing !== '' ? $existing . '; ' . $newCookie : $newCookie,
-        );
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function withCookies(array $cookies): static
-    {
-        $new = $this;
-        foreach ($cookies as $name => $value) {
-            $new = $new->withCookie($name, $value);
-        }
-
-        return $new;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function withCookieJar(): static
-    {
-        return $this->useCookieJar(new CookieJar());
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function useCookieJar(CookieJarInterface $cookieJar): static
-    {
-        $new = clone $this;
-        $new->cookieJar = $cookieJar;
-
-        return $new;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function clearCookies(): static
-    {
-        $new = clone $this;
-        $new->cookieJar?->clear();
-
-        return $new;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function getCookieJar(): ?CookieJarInterface
-    {
-        return $this->cookieJar;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function cookieWithAttributes(string $name, string $value, array $attributes = []): static
-    {
-        $new = clone $this;
-
-        if ($new->cookieJar === null) {
-            $new->cookieJar = new CookieJar();
-        }
-
-        $new->cookieJar->setCookie(new Cookie(
-            name:     $name,
-            value:    $value,
-            expires:  isset($attributes['expires']) && is_numeric($attributes['expires'])
-                          ? (int) $attributes['expires'] : null,
-            domain:   isset($attributes['domain']) && \is_string($attributes['domain'])
-                          ? $attributes['domain'] : null,
-            path:     isset($attributes['path']) && \is_string($attributes['path'])
-                          ? $attributes['path'] : null,
-            secure:   isset($attributes['secure']) && (bool) $attributes['secure'],
-            httpOnly: isset($attributes['httpOnly']) && (bool) $attributes['httpOnly'],
-            maxAge:   isset($attributes['maxAge']) && \is_numeric($attributes['maxAge'])
-                          ? (int) $attributes['maxAge'] : null,
-            sameSite: isset($attributes['sameSite']) && \is_string($attributes['sameSite'])
-                          ? $attributes['sameSite'] : null,
-        ));
 
         return $new;
     }
@@ -563,7 +622,7 @@ class HttpClient extends Message implements HttpClientInterface
         $this->ensureCurlExtensionLoaded();
 
         $new = clone $this;
-        $new->options[$option] = $value;
+        $new->curlOptions[$option] = $value;
 
         return $new;
     }
@@ -578,7 +637,7 @@ class HttpClient extends Message implements HttpClientInterface
         $new = clone $this;
         foreach ($options as $option => $value) {
             if (\is_int($option)) {
-                $new->options[$option] = $value;
+                $new->curlOptions[$option] = $value;
             }
         }
 
@@ -588,40 +647,10 @@ class HttpClient extends Message implements HttpClientInterface
     /**
      * @inheritDoc
      */
-    public function withUrlParameter(string $key, mixed $value): static
-    {
-        $new = clone $this;
-        $new->urlParameters[$key] = $value;
-
-        return $new;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function withUrlParameters(array $parameters): static
-    {
-        $new = clone $this;
-        $new->urlParameters = array_merge($new->urlParameters, $parameters);
-
-        return $new;
-    }
-
-    /**
-     * @inheritDoc
-     */
     public function withFile(string $name, mixed $file, ?string $filename = null, ?string $contentType = null): static
     {
-        $new = clone $this;
-
-        if (! isset($new->options['multipart'])) {
-            $new->options['multipart'] = [];
-        }
-
-        $multipart = is_array($new->options['multipart']) ? $new->options['multipart'] : [];
-
         if ($file instanceof UploadedFileInterface) {
-            $multipart[$name] = [
+            $entry = [
                 'name' => $name,
                 'contents' => $file->getStream(),
                 'filename' => $filename ?? $file->getClientFilename(),
@@ -633,14 +662,14 @@ class HttpClient extends Message implements HttpClientInterface
                 throw new InvalidArgumentException("Unable to open file: {$file}");
             }
             $mime = mime_content_type($file);
-            $multipart[$name] = [
+            $entry = [
                 'name' => $name,
                 'contents' => $resource,
                 'filename' => $filename ?? basename($file),
                 'Content-Type' => $contentType ?? ($mime !== false ? $mime : 'application/octet-stream'),
             ];
         } elseif (is_resource($file)) {
-            $multipart[$name] = [
+            $entry = [
                 'name' => $name,
                 'contents' => $file,
                 'filename' => $filename ?? 'file',
@@ -650,9 +679,7 @@ class HttpClient extends Message implements HttpClientInterface
             throw new InvalidArgumentException('File must be a file path, UploadedFileInterface, or resource.');
         }
 
-        $new->options['multipart'] = $multipart;
-
-        return $new->withoutHeader('Content-Type');
+        return $this->withUpdatedRequest(fn($r) => $r->withMultipartEntry($name, $entry));
     }
 
     /**
@@ -693,6 +720,25 @@ class HttpClient extends Message implements HttpClientInterface
     /**
      * @inheritDoc
      */
+    public function withUrlParameter(string $key, mixed $value): static
+    {
+        $new = clone $this;
+        $new->urlParameters[$key] = $value;
+
+        return $new;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function withUrlParameters(array $parameters): static
+    {
+        $new = clone $this;
+        $new->urlParameters = array_merge($new->urlParameters, $parameters);
+
+        return $new;
+    }
+
     public function interceptRequest(callable $callback): static
     {
         return $this->intercept(
@@ -700,30 +746,36 @@ class HttpClient extends Message implements HttpClientInterface
                 $result = $callback($request);
 
                 if ($result instanceof PromiseInterface) {
-                    return $result->then(
-                        static fn (mixed $resolved): PromiseInterface => $next(self::resolvePendingRequest($resolved, true))
+                    /** @var PromiseInterface<EnhancedResponseInterface> $chained */
+                    $chained = $result->then(
+                        static fn(mixed $resolved): PromiseInterface => $next(self::resolvePendingRequest($resolved, true))
                     );
+
+                    return $chained;
                 }
 
-                return $next(self::resolvePendingRequest($result, false));
+                /** @var PromiseInterface<EnhancedResponseInterface> $resolved */
+                $resolved = $next(self::resolvePendingRequest($result, false));
+
+                return $resolved;
             }
         );
     }
 
-    /**
-     * @inheritDoc
-     */
     public function interceptResponse(callable $callback): static
     {
         return $this->intercept(
             static function (PendingRequestInterface $request, callable $next) use ($callback): PromiseInterface {
-                return $next($request)->then(
+                /** @var PromiseInterface<EnhancedResponseInterface> $nextPromise */
+                $nextPromise = $next($request);
+
+                return $nextPromise->then(
                     static function (Response $response) use ($callback): mixed {
                         $result = $callback($response);
 
                         if ($result instanceof PromiseInterface) {
                             return $result->then(
-                                static fn (mixed $resolved): EnhancedResponseInterface => self::resolveResponse($resolved, true)
+                                static fn(mixed $resolved): EnhancedResponseInterface => self::resolveResponse($resolved, true)
                             );
                         }
 
@@ -750,7 +802,7 @@ class HttpClient extends Message implements HttpClientInterface
      */
     public function get(string $url, array $query = []): PromiseInterface
     {
-        if (count($query) > 0) {
+        if (\count($query) > 0) {
             $url .= (str_contains($url, '?') ? '&' : '?') . http_build_query($query);
         }
 
@@ -763,7 +815,11 @@ class HttpClient extends Message implements HttpClientInterface
     public function post(string $url, array $data = []): PromiseInterface
     {
         $new = $this;
-        if (count($data) > 0 && $this->body->getSize() === 0 && ! isset($this->options['multipart'])) {
+        if (
+            count($data) > 0
+            && $this->request->getBody()->getSize() === 0
+            && ! isset($this->request->getOptions()['multipart'])
+        ) {
             $new = $new->withJson($data);
         }
 
@@ -776,7 +832,11 @@ class HttpClient extends Message implements HttpClientInterface
     public function put(string $url, array $data = []): PromiseInterface
     {
         $new = $this;
-        if (count($data) > 0 && $this->body->getSize() === 0 && ! isset($this->options['multipart'])) {
+        if (
+            \count($data) > 0
+            && $this->request->getBody()->getSize() === 0
+            && ! isset($this->request->getOptions()['multipart'])
+        ) {
             $new = $new->withJson($data);
         }
 
@@ -797,7 +857,11 @@ class HttpClient extends Message implements HttpClientInterface
     public function patch(string $url, array $data = []): PromiseInterface
     {
         $new = $this;
-        if (\count($data) > 0 && $this->body->getSize() === 0 && ! isset($this->options['multipart'])) {
+        if (
+            \count($data) > 0
+            && $this->request->getBody()->getSize() === 0
+            && ! isset($this->request->getOptions()['multipart'])
+        ) {
             $new = $new->withJson($data);
         }
 
@@ -826,7 +890,9 @@ class HttpClient extends Message implements HttpClientInterface
     public function send(string $method, string $url): PromiseInterface
     {
         $expandedUrl = $this->expandUriTemplate($url);
-        $initialRequest = $this->withMethod($method)->withUri(new Uri($expandedUrl));
+        $initialRequest = $this->request
+            ->withMethod($method)
+            ->withUri(new Uri($expandedUrl));
 
         return $this->interceptorHandler->process(
             $initialRequest,
@@ -835,21 +901,15 @@ class HttpClient extends Message implements HttpClientInterface
         );
     }
 
-    // public function fetch(string $url, array $options = []): PromiseInterface
-    // {
-    //     return $this->send('GET', $url, $options);
-    // }
-
     /**
      * @inheritDoc
      */
     public function stream(string $url, ?callable $onChunk = null): PromiseInterface
     {
         $options = $this->resolveTransportOptionsBuilder()
-                        ->buildForStreaming($this->buildClientOptions('GET', $url))
-        ;
+            ->buildForStreaming($this->buildClientOptions('GET', $url));
 
-        return $this->handler->stream($url, $options, $onChunk);
+        return $this->resolveHandler()->stream($url, $options, $onChunk);
     }
 
     /**
@@ -857,7 +917,7 @@ class HttpClient extends Message implements HttpClientInterface
      */
     public function streamPost(string $url, mixed $body = null, ?callable $onChunk = null): PromiseInterface
     {
-        $postBody = $this->body;
+        $postBody = $this->request->getBody();
 
         if ($body !== null) {
             $postBody = $this->createTempStream();
@@ -866,10 +926,9 @@ class HttpClient extends Message implements HttpClientInterface
         }
 
         $options = $this->resolveTransportOptionsBuilder()
-                        ->buildForStreaming($this->buildClientOptions('POST', $url, $postBody))
-        ;
+            ->buildForStreaming($this->buildClientOptions('POST', $url, $postBody));
 
-        return $this->handler->stream($url, $options, $onChunk);
+        return $this->resolveHandler()->stream($url, $options, $onChunk);
     }
 
     /**
@@ -878,10 +937,9 @@ class HttpClient extends Message implements HttpClientInterface
     public function download(string $url, string $destination): PromiseInterface
     {
         $options = $this->resolveTransportOptionsBuilder()
-                        ->buildForDownload($this->buildClientOptions('GET', $url), $destination)
-        ;
+            ->buildForDownload($this->buildClientOptions('GET', $url), $destination);
 
-        return $this->handler->download($url, $destination, $options);
+        return $this->resolveHandler()->download($url, $destination, $options);
     }
 
     /**
@@ -891,135 +949,59 @@ class HttpClient extends Message implements HttpClientInterface
     {
         $effectiveTimeout = $this->timeoutExplicitlySet ? $this->timeout : 0;
         $clientOptions = $this->buildClientOptions(
-            $this->body->getSize() > 0 ? 'POST' : 'GET',
+            $this->request->getBody()->getSize() > 0 ? 'POST' : 'GET',
             $url,
             timeout: $effectiveTimeout,
         );
 
         $curlOptions = $this->resolveTransportOptionsBuilder()->buildForSSE($clientOptions);
 
-        return new SSEBuilder($url, $this->handler, $curlOptions);
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function getRequestTarget(): string
-    {
-        if ($this->requestTarget !== null) {
-            return $this->requestTarget;
-        }
-
-        $target = $this->uri->getPath() ?: '/';
-
-        if ($this->uri->getQuery() !== '') {
-            $target .= '?' . $this->uri->getQuery();
-        }
-
-        return $target;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function withRequestTarget(string $requestTarget): static
-    {
-        if ($this->requestTarget === $requestTarget) {
-            return $this;
-        }
-
-        $new = clone $this;
-        $new->requestTarget = $requestTarget;
-
-        return $new;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function getMethod(): string
-    {
-        return $this->method;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function withMethod(string $method): static
-    {
-        $method = strtoupper($method);
-        if ($this->method === $method) {
-            return $this;
-        }
-
-        $new = clone $this;
-        $new->method = $method;
-
-        return $new;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function getUri(): UriInterface
-    {
-        return $this->uri;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function withUri(UriInterface $uri, bool $preserveHost = false): static
-    {
-        if ($uri === $this->uri) {
-            return $this;
-        }
-
-        $new = clone $this;
-        $new->uri = $uri;
-
-        if (! $preserveHost || ! isset($this->headerNames['host'])) {
-            $new = $new->updateHostFromUri();
-        }
-
-        return $new;
+        return new SSEBuilder($url, $this->resolveHandler(), $curlOptions);
     }
 
     /**
      * Execute the request after the interceptor pipeline has settled.
      *
-     * Request content (method, URI, headers, body) is read from the
-     * processed PendingRequestInterface — interceptors may have modified
-     * any of these. Transport config (timeout, proxy, retry, curl options)
-     * is always taken from $this, captured via closure at send() time,
+     * Request content (method, URI, headers, body, auth, cookies, user-agent)
+     * is read from the processed PendingRequest — interceptors may have
+     * modified any of these. Transport config (timeout, proxy, retry, cURL
+     * options) is always taken from $this, captured via closure at send() time,
      * because the pipeline has no access to those concerns.
+     *
+     * The instanceof guard future-proofs against third-party PendingRequestInterface
+     * implementations being passed in; in practice $processed is always a
+     * PendingRequest produced by send().
      *
      * @return PromiseInterface<Response>
      */
     private function executeRequest(PendingRequestInterface $processed): PromiseInterface
     {
+        $auth = $processed instanceof PendingRequest ? $processed->getAuth() : null;
+        $bodyOptions = $processed instanceof PendingRequest ? $processed->getOptions() : [];
+        $userAgent = $processed instanceof PendingRequest ? $processed->getUserAgent() : null;
+
         $clientOptions = new ClientOptions(
-            method:            $processed->getMethod(),
-            url:               (string) $processed->getUri(),
-            headers:           $processed->getHeaders(),
-            body:              $processed->getBody(),
-            timeout:           $this->timeout,
-            connectTimeout:    $this->connectTimeout,
-            followRedirects:   $this->followRedirects,
-            maxRedirects:      $this->maxRedirects,
-            verifySSL:         $this->verifySSL,
-            userAgent:         $this->userAgent,
-            protocol:          $this->protocol,
-            cookieJar:         $this->cookieJar,
-            proxyConfig:       $this->proxyConfig,
-            auth:              $this->auth,
-            additionalOptions: $this->options,
-            retryConfig:       $this->retryConfig,
+            method: $processed->getMethod(),
+            url: (string) $processed->getUri(),
+            headers: $processed->getHeaders(),
+            body: $processed->getBody(),
+            timeout: $this->timeout,
+            connectTimeout: $this->connectTimeout,
+            followRedirects: $this->followRedirects,
+            maxRedirects: $this->maxRedirects,
+            verifySSL: $this->verifySSL,
+            userAgent: $userAgent,
+            protocol: $this->protocol,
+            cookieJar: $processed->getCookieJar(),
+            proxyConfig: $this->proxyConfig,
+            auth: $auth,
+            additionalOptions: array_merge($bodyOptions, $this->curlOptions),
+            retryConfig: $this->retryConfig,
         );
 
         $transportOptions = $this->resolveTransportOptionsBuilder()->build($clientOptions);
 
-        return $this->handler->sendRequest(
+        return $this->resolveHandler()->sendRequest(
             (string) $processed->getUri(),
             $transportOptions,
             $this->retryConfig,
@@ -1029,10 +1011,10 @@ class HttpClient extends Message implements HttpClientInterface
     /**
      * Build a ClientOptions VO from current builder state.
      *
-     * Used by streaming/download/sse terminal methods where the full
+     * Used by streaming, download, and SSE terminal methods where the full
      * interceptor pipeline does not run.
      *
-     * @param  StreamInterface|null  $bodyOverride  Replaces $this->body when provided.
+     * @param  StreamInterface|null  $bodyOverride  Replaces the request body when provided.
      */
     private function buildClientOptions(
         string $method,
@@ -1041,23 +1023,43 @@ class HttpClient extends Message implements HttpClientInterface
         ?int $timeout = null,
     ): ClientOptions {
         return new ClientOptions(
-            method:            $method,
-            url:               $url,
-            headers:           $this->headers,
-            body:              $bodyOverride ?? $this->body,
-            timeout:           $timeout ?? $this->timeout,
-            connectTimeout:    $this->connectTimeout,
-            followRedirects:   $this->followRedirects,
-            maxRedirects:      $this->maxRedirects,
-            verifySSL:         $this->verifySSL,
-            userAgent:         $this->userAgent,
-            protocol:          $this->protocol,
-            cookieJar:         $this->cookieJar,
-            proxyConfig:       $this->proxyConfig,
-            auth:              $this->auth,
-            additionalOptions: $this->options,
-            retryConfig:       $this->retryConfig,
+            method: $method,
+            url: $url,
+            headers: $this->request->getHeaders(),
+            body: $bodyOverride ?? $this->request->getBody(),
+            timeout: $timeout ?? $this->timeout,
+            connectTimeout: $this->connectTimeout,
+            followRedirects: $this->followRedirects,
+            maxRedirects: $this->maxRedirects,
+            verifySSL: $this->verifySSL,
+            userAgent: $this->request->getUserAgent(),
+            protocol: $this->protocol,
+            cookieJar: $this->request->getCookieJar(),
+            proxyConfig: $this->proxyConfig,
+            auth: $this->request->getAuth(),
+            additionalOptions: array_merge($this->request->getOptions(), $this->curlOptions),
+            retryConfig: $this->retryConfig,
         );
+    }
+
+    /**
+     * Return a clone of this client with the embedded PendingRequest replaced
+     * by the result of $fn.
+     *
+     * All delegating builder methods funnel through here to guarantee
+     * immutability is preserved on every step of the chain without
+     * repeating the clone-and-assign boilerplate in every method.
+     *
+     * @param  callable(PendingRequest): PendingRequest  $fn
+     */
+    private function withUpdatedRequest(callable $fn): static
+    {
+        $new = clone $this;
+        /** @var PendingRequest $updated */
+        $updated = $fn($this->request);
+        $new->request = $updated;
+
+        return $new;
     }
 
     /**
@@ -1068,6 +1070,56 @@ class HttpClient extends Message implements HttpClientInterface
     private function resolveTransportOptionsBuilder(): TransportOptionsBuilderInterface
     {
         return $this->transportOptionsBuilder ?? new CurlOptionsBuilder();
+    }
+
+    /**
+     * Resolve the HttpHandler, creating the default instance on first call.
+     *
+     * Lazy initialization avoids spinning up cURL multi-handle or event-loop
+     * resources on every HttpClient construction — only requests that
+     * actually dispatch pay the startup cost.
+     */
+    private function resolveHandler(): HttpHandler
+    {
+        return $this->handler ??= new HttpHandler();
+    }
+
+    /**
+     * Expand URI template placeholders using the configured URL parameters.
+     *
+     * Supports simple {param} (percent-encoded) and reserved {+param}
+     * (special characters preserved).
+     */
+    private function expandUriTemplate(string $template): string
+    {
+        if ($this->urlParameters === []) {
+            return $template;
+        }
+
+        $result = preg_replace_callback(
+            '/\{([+]?)([a-zA-Z0-9_]+)\}/',
+            function (array $matches): string {
+                $reserved = $matches[1] === '+';
+                $key = $matches[2];
+
+                if (! isset($this->urlParameters[$key])) {
+                    return $matches[0];
+                }
+
+                $param = $this->urlParameters[$key];
+
+                if (! is_scalar($param) && ! ($param instanceof \Stringable)) {
+                    return $matches[0];
+                }
+
+                $value = (string) $param;
+
+                return $reserved ? $value : rawurlencode($value);
+            },
+            $template,
+        );
+
+        return $result ?? $template;
     }
 
     /**
@@ -1126,75 +1178,6 @@ class HttpClient extends Message implements HttpClientInterface
         }
 
         return $value;
-    }
-
-    /**
-     * Expand URI template placeholders using configured URL parameters.
-     *
-     * Supports simple {param} (percent-encoded) and reserved {+param}
-     * (special characters preserved).
-     */
-    private function expandUriTemplate(string $template): string
-    {
-        if ($this->urlParameters === []) {
-            return $template;
-        }
-
-        $result = preg_replace_callback(
-            '/\{([+]?)([a-zA-Z0-9_]+)\}/',
-            function (array $matches): string {
-                $reserved = $matches[1] === '+';
-                $key = $matches[2];
-
-                if (! isset($this->urlParameters[$key])) {
-                    return $matches[0];
-                }
-
-                $param = $this->urlParameters[$key];
-
-                if (! is_scalar($param) && ! ($param instanceof \Stringable)) {
-                    return $matches[0];
-                }
-
-                $value = (string) $param;
-
-                return $reserved ? $value : rawurlencode($value);
-            },
-            $template,
-        );
-
-        return $result ?? $template;
-    }
-
-    /**
-     * Strip a duplicate token type prefix if the caller already included it.
-     */
-    private function normalizeToken(string $token, string $type): string
-    {
-        $token = trim($token);
-
-        if (stripos($token, $type . ' ') === 0) {
-            return trim(substr($token, strlen($type) + 1));
-        }
-
-        return $token;
-    }
-
-    /**
-     * Sync the Host header from the current URI.
-     */
-    private function updateHostFromUri(): static
-    {
-        $host = $this->uri->getHost();
-        if ($host === '') {
-            return $this;
-        }
-
-        if (($port = $this->uri->getPort()) !== null) {
-            $host .= ':' . $port;
-        }
-
-        return $this->withHeader('Host', $host);
     }
 
     /**

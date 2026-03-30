@@ -71,6 +71,7 @@ class StreamingHandler implements StreamingHandlerInterface
                     rewind($responseStream);
                     $stream = new Stream($responseStream);
 
+                    /** @var array<string, string|string[]> $headers */
                     $streamingResponse = new StreamingResponse($stream, $httpCode ?? 200, $headers);
 
                     if ($httpVersion !== null) {

@@ -26,19 +26,19 @@ use Hibla\Promise\Interfaces\PromiseInterface;
 class SSEBuilder
 {
     /**
-     * @param callable(mixed): mixed $mapper
+     *  @var (callable(mixed): mixed)|null
      */
-    private mixed $mapper = null;
+    private $mapper = null;
 
     /**
-     * @param callable(mixed): mixed $mapper
+     *  @var (callable(mixed, SSEControl): void)|null
      */
-    private mixed $onEvent = null;
+    private $onEvent = null;
 
     /**
-     * @param callable(\Throwable): mixed $mapper
+     *  @var (callable(\Throwable): void)|null
      */
-    private mixed $onError = null;
+    private $onError = null;
 
     private ?SSEReconnectConfig $reconnectConfig = null;
 
@@ -65,7 +65,7 @@ class SSEBuilder
      *
      * If map() is also configured, the callback receives the mapped value.
      *
-     * @param callable(mixed): void $callback
+     * @param callable(mixed, SSEControl): void $callback
      */
     public function onEvent(callable $callback): self
     {

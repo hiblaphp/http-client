@@ -7,6 +7,7 @@ namespace Hibla\HttpClient\Handlers\Curl;
 use Hibla\EventLoop\Loop;
 use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Exceptions\TimeoutException;
+use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
 use Hibla\HttpClient\Interfaces\Handler\RequestExecutorHandlerInterface;
 use Hibla\HttpClient\Response;
 use Hibla\HttpClient\Traits\NormalizeHeaderTrait;
@@ -63,7 +64,7 @@ class RequestExecutorHandler implements RequestExecutorHandlerInterface
                         $responseObj->setHttpVersion($httpVersion);
                     }
 
-                    if ($cookieJar instanceof \Hibla\HttpClient\Interfaces\CookieJarInterface) {
+                    if ($cookieJar instanceof CookieJarInterface) {
                         $responseObj->applyCookiesToJar($cookieJar);
                     }
 

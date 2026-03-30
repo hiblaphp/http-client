@@ -34,7 +34,7 @@ interface SSEHandlerInterface
      * @param  (callable(SSEEvent): void)|null $onEvent Invoked for each successfully parsed event.
      * @param  (callable(string): void)|null $onError Invoked when a connection error occurs.
      * Receives a human-readable error description.
-     * @param  SSEReconnectConfig|null When non-null and When non-null and enabled, governs
+     * @param  SSEReconnectConfig|null $reconnectConfig When non-null and enabled, governs
      * automatic reconnection behaviour.
      * @return PromiseInterface<SSEResponse>
      */

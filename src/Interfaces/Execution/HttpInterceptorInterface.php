@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Interfaces\Execution;
 
-use Hibla\HttpClient\Interfaces\PendingRequestInterface;
 use Hibla\HttpClient\Interfaces\EnhancedResponseInterface;
+use Hibla\HttpClient\Interfaces\PendingRequestInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
 /**

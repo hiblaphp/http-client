@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Hibla\HttpClient\Testing;
 
 use Hibla\HttpClient\Handlers\HttpHandler;
-use Hibla\HttpClient\Interfaces\CookieJarInterface;
+use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
 use Hibla\HttpClient\RetryConfig;
 use Hibla\HttpClient\SSE\CancelableSSEPromise;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;

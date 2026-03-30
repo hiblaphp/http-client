@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use Hibla\HttpClient\Http;
-use Hibla\HttpClient\Request;
+use Hibla\HttpClient\HttpClient;
 use Hibla\HttpClient\Response;
 use Hibla\HttpClient\StreamingResponse;
 use Hibla\Promise\Interfaces\PromiseInterface;
@@ -15,12 +15,12 @@ if (! function_exists('http')) {
      * Returns a new HTTP request builder that can be used to configure
      * and execute HTTP requests with method chaining.
      *
-     * @return Request HTTP request builder instance
+     * @return HttpClient HTTP request builder instance
      *
      * @example
      * $response = await(http()->get('https://api.example.com'));
      */
-    function http(): Request
+    function http(): HttpClient
     {
         return Http::request();
     }

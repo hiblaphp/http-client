@@ -12,12 +12,12 @@ use Hibla\Promise\Interfaces\PromiseInterface;
  * Returns a new HTTP request builder that can be used to configure
  * and execute HTTP requests with method chaining.
  *
- * @return Request HTTP request builder instance
+ * @return HttpClient HTTP request builder instance
  *
  * @example
  * $response = await(http()->get('https://api.example.com'));
  */
-function http(): Request
+function http(): HttpClient
 {
     return Http::request();
 }

@@ -9,7 +9,6 @@ use Hibla\HttpClient\Exceptions\HttpStreamException;
 use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Exceptions\RequestException;
 use Hibla\HttpClient\Interfaces\Handler\SSEHandlerInterface;
-use Hibla\HttpClient\Response;
 use Hibla\HttpClient\SSE\SSEConnectionState;
 use Hibla\HttpClient\SSE\SSEEvent;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
@@ -150,7 +149,7 @@ class SSEHandler implements SSEHandlerInterface
                     return;
                 }
 
-                $errorException = $error instanceof \Exception ? $error : new \Exception($error->getMessage(), (int)$error->getCode(), $error);
+                $errorException = $error instanceof \Exception ? $error : new \Exception($error->getMessage(), (int) $error->getCode(), $error);
 
                 if (! $connectionState->shouldReconnect($errorException)) {
                     if (! $mainPromise->isSettled()) {
@@ -193,7 +192,6 @@ class SSEHandler implements SSEHandlerInterface
         /** @var SSEResponse|null $sseResponse */
         $sseResponse = null;
         $headersProcessed = false;
-        $streamComplete = false;
 
         $curlOnlyOptions = array_filter($options, 'is_int', ARRAY_FILTER_USE_KEY);
 
@@ -267,9 +265,7 @@ class SSEHandler implements SSEHandlerInterface
         $requestId = Loop::addCurlRequest(
             $url,
             $sseOptions,
-            function (?string $error, ?string $response, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $promise, $onError, &$sseResponse, &$streamComplete) {
-                $streamComplete = true;
-
+            function (?string $error, ?string $response, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $promise, $onError, &$sseResponse) {
                 if ($promise->isSettled()) {
                     if ($onError !== null && $error !== null) {
                         $onError($error);
@@ -289,16 +285,11 @@ class SSEHandler implements SSEHandlerInterface
                     $promise->reject($exception);
                 } else {
                     if ($sseResponse !== null) {
-                        $injector = \Closure::bind(function (array $h, ?string $v): void {
-                            /** @var Response $this */
-                            $this->setHeaders($h);
-                            if ($v !== null) {
-                                $this->setHttpVersion($v);
-                            }
-                        }, $sseResponse, Response::class);
-
-                        $injector($headers, $httpVersion);
-
+                        /** @var array<string, string|string[]> $headers */
+                        $sseResponse->setHeaders($headers);
+                        if ($httpVersion !== null) {
+                            $sseResponse->setHttpVersion($httpVersion);
+                        }
                         $promise->resolve($sseResponse);
                     } else {
                         $exception = new HttpStreamException(
@@ -319,8 +310,6 @@ class SSEHandler implements SSEHandlerInterface
 
         $promise->onCancel(function () use ($requestId, &$sseResponse): void {
             Loop::cancelCurlRequest($requestId);
-
-            //@phpstan-ignore-next-line
             $sseResponse?->getStream()->close();
         });
 
