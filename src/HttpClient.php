@@ -739,6 +739,9 @@ class HttpClient implements HttpClientInterface
         return $new;
     }
 
+    /**
+     * @inheritDoc
+     */
     public function interceptRequest(callable $callback): static
     {
         return $this->intercept(
@@ -746,7 +749,6 @@ class HttpClient implements HttpClientInterface
                 $result = $callback($request);
 
                 if ($result instanceof PromiseInterface) {
-                    /** @var PromiseInterface<EnhancedResponseInterface> $chained */
                     $chained = $result->then(
                         static fn(mixed $resolved): PromiseInterface => $next(self::resolvePendingRequest($resolved, true))
                     );
@@ -762,11 +764,13 @@ class HttpClient implements HttpClientInterface
         );
     }
 
+    /**
+     * @inheritDoc
+     */
     public function interceptResponse(callable $callback): static
     {
         return $this->intercept(
             static function (PendingRequestInterface $request, callable $next) use ($callback): PromiseInterface {
-                /** @var PromiseInterface<EnhancedResponseInterface> $nextPromise */
                 $nextPromise = $next($request);
 
                 return $nextPromise->then(
@@ -816,7 +820,7 @@ class HttpClient implements HttpClientInterface
     {
         $new = $this;
         if (
-            count($data) > 0
+            \count($data) > 0
             && $this->request->getBody()->getSize() === 0
             && ! isset($this->request->getOptions()['multipart'])
         ) {

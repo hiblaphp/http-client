@@ -19,11 +19,17 @@ use Psr\Http\Message\UploadedFileInterface;
 class UploadedFile implements UploadedFileInterface
 {
     private ?StreamInterface $stream;
+
     private ?int $size;
+
     private int $error;
+
     private ?string $clientFilename;
+
     private ?string $clientMediaType;
+
     private bool $moved = false;
+    
     private ?string $file = null;
 
     /**

@@ -15,7 +15,7 @@ class CookieJar implements CookieJarInterface
     protected array $cookies = [];
 
     /**
-     * Sets a cookie in the jar, replacing any existing cookie with the same name, domain, and path.
+     * @inheritDoc
      */
     public function setCookie(Cookie $cookie): void
     {
@@ -31,7 +31,7 @@ class CookieJar implements CookieJarInterface
     }
 
     /**
-     * Gets all cookies that match the given domain and path.
+     * @inheritDoc
      */
     public function getCookies(string $domain, string $path, bool $isSecure = false): array
     {
@@ -43,7 +43,7 @@ class CookieJar implements CookieJarInterface
     }
 
     /**
-     * Gets all cookies in the jar.
+     * @inheritDoc
      */
     public function getAllCookies(): array
     {
@@ -51,7 +51,7 @@ class CookieJar implements CookieJarInterface
     }
 
     /**
-     * Removes expired cookies from the jar.
+     * @inheritDoc
      */
     public function clearExpired(): void
     {
@@ -61,7 +61,7 @@ class CookieJar implements CookieJarInterface
     }
 
     /**
-     * Clears all cookies from the jar.
+     * @inheritDoc
      */
     public function clear(): void
     {
@@ -69,7 +69,7 @@ class CookieJar implements CookieJarInterface
     }
 
     /**
-     * Gets the Cookie header value for matching cookies.
+     * @inheritDoc
      */
     public function getCookieHeader(string $domain, string $path, bool $isSecure = false): string
     {
@@ -85,9 +85,9 @@ class CookieJar implements CookieJarInterface
     }
 
     /**
-     * Creates a cookie jar from an array of Set-Cookie headers.
+     * Create a cookie jar pre-populated from an array of Set-Cookie header values.
      *
-     * @param  string[]  $setCookieHeaders  Array of Set-Cookie header values
+     * @param  string[]  $setCookieHeaders
      */
     public static function fromSetCookieHeaders(array $setCookieHeaders): self
     {

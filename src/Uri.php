@@ -15,11 +15,17 @@ use Psr\Http\Message\UriInterface;
 class Uri implements UriInterface
 {
     protected string $scheme = '';
+
     protected string $host = '';
+
     protected ?int $port = null;
+
     protected string $path = '/';
+
     protected string $query = '';
+
     protected string $fragment = '';
+    
     protected string $userInfo = '';
 
     /**
