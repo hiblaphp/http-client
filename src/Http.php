@@ -6,13 +6,14 @@ namespace Hibla\HttpClient;
 
 use Hibla\HttpClient\Handlers\HttpHandler;
 use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
+use Hibla\HttpClient\Interfaces\EnhancedResponseInterface;
+use Hibla\HttpClient\Interfaces\StreamingResponseInterface;
 use Hibla\HttpClient\SSE\SSEBuilder;
 use Hibla\HttpClient\Testing\MockRequestBuilder;
 use Hibla\HttpClient\Testing\TestingHttpHandler;
 use Hibla\HttpClient\Testing\Utilities\RecordedRequest;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Psr\Http\Message\UploadedFileInterface;
-
 /**
  * A static API for clean, expressive, and asynchronous HTTP operations.
  *
@@ -22,18 +23,18 @@ use Psr\Http\Message\UploadedFileInterface;
  *
  * Direct HTTP methods:
  *
- * @method static PromiseInterface<Response> get(string $url, array<string, mixed> $query = []) Performs a GET request.
- * @method static PromiseInterface<Response> post(string $url, array<string, mixed> $data = []) Performs a POST request.
- * @method static PromiseInterface<Response> put(string $url, array<string, mixed> $data = []) Performs a PUT request.
- * @method static PromiseInterface<Response> delete(string $url) Performs a DELETE request.
- * @method static PromiseInterface<Response> patch(string $url, array<string, mixed> $data = []) Performs a PATCH request.
- * @method static PromiseInterface<Response> options(string $url) Performs an OPTIONS request.
- * @method static PromiseInterface<Response> head(string $url) Performs a HEAD request.
- * @method static PromiseInterface<Response> fetch(string $url, array<int|string, mixed> $options = []) A flexible, fetch-like request method.
- * @method static PromiseInterface<StreamingResponse> stream(string $url, ?callable $onChunk = null) Streams a response body.
- * @method static PromiseInterface<StreamingResponse> streamPost(string $url, mixed $body = null, ?callable $onChunk = null) Streams the response body of a POST request.
+ * @method static PromiseInterface<EnhancedResponseInterface> get(string $url, array<string, mixed> $query = []) Performs a GET request.
+ * @method static PromiseInterface<EnhancedResponseInterface> post(string $url, array<string, mixed> $data = []) Performs a POST request.
+ * @method static PromiseInterface<EnhancedResponseInterface> put(string $url, array<string, mixed> $data = []) Performs a PUT request.
+ * @method static PromiseInterface<EnhancedResponseInterface> delete(string $url) Performs a DELETE request.
+ * @method static PromiseInterface<EnhancedResponseInterface> patch(string $url, array<string, mixed> $data = []) Performs a PATCH request.
+ * @method static PromiseInterface<EnhancedResponseInterface> options(string $url) Performs an OPTIONS request.
+ * @method static PromiseInterface<EnhancedResponseInterface> head(string $url) Performs a HEAD request.
+ * @method static PromiseInterface<EnhancedResponseInterface> fetch(string $url, array<int|string, mixed> $options = []) A flexible, fetch-like request method.
+ * @method static PromiseInterface<StreamingResponseInterface> stream(string $url, ?callable $onChunk = null) Streams a response body.
+ * @method static PromiseInterface<StreamingResponseInterface> streamPost(string $url, mixed $body = null, ?callable $onChunk = null) Streams the response body of a POST request.
  * @method static PromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}> download(string $url, string $destination) Downloads a file to the given destination path.
- * @method static PromiseInterface<Response> send(string $method, string $url) Dispatches the configured request.
+ * @method static PromiseInterface<EnhancedResponseInterface> send(string $method, string $url) Dispatches the configured request.
  * @method static SSEBuilder sse(string $url) Create a fluent SSE connection builder.
  *
  * Header configuration methods (ConfiguresHeadersInterface):

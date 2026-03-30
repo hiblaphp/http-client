@@ -4,30 +4,16 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Interfaces\Execution;
 
-use Hibla\HttpClient\Response;
+use Hibla\HttpClient\Interfaces\EnhancedResponseInterface; 
 use Hibla\Promise\Interfaces\PromiseInterface;
 
-/**
- * Contract for dispatching HTTP requests.
- *
- * This interface represents the execution surface of the fluent builder —
- * the point at which configuration is finalised and a network call is made.
- *
- * Each method returns a promise so requests can be composed and awaited
- * in an async context without blocking the event loop.
- *
- * The shorthand methods (get, post, put, etc.) are convenience wrappers
- * around send(). When body data is passed directly to post(), put(), or
- * patch() and no body has been explicitly set, the data is JSON-encoded
- * automatically.
- */
 interface ExecutesRequestsInterface
 {
     /**
      * Dispatch a GET request.
      *
      * @param  array<string, scalar|null> $query Query parameters appended to the URL.
-     * @return PromiseInterface<Response>
+     * @return PromiseInterface<EnhancedResponseInterface>
      */
     public function get(string $url, array $query = []): PromiseInterface;
 
@@ -38,7 +24,7 @@ interface ExecutesRequestsInterface
      * $data is JSON-encoded and Content-Type is set to application/json.
      *
      * @param  array<string, mixed> $data
-     * @return PromiseInterface<Response>
+     * @return PromiseInterface<EnhancedResponseInterface>
      */
     public function post(string $url, array $data = []): PromiseInterface;
 
@@ -48,14 +34,14 @@ interface ExecutesRequestsInterface
      * Applies the same automatic JSON encoding rule as post().
      *
      * @param  array<string, mixed> $data
-     * @return PromiseInterface<Response>
+     * @return PromiseInterface<EnhancedResponseInterface>
      */
     public function put(string $url, array $data = []): PromiseInterface;
 
     /**
      * Dispatch a DELETE request.
      *
-     * @return PromiseInterface<Response>
+     * @return PromiseInterface<EnhancedResponseInterface>
      */
     public function delete(string $url): PromiseInterface;
 
@@ -65,14 +51,14 @@ interface ExecutesRequestsInterface
      * Applies the same automatic JSON encoding rule as post().
      *
      * @param  array<string, mixed> $data
-     * @return PromiseInterface<Response>
+     * @return PromiseInterface<EnhancedResponseInterface>
      */
     public function patch(string $url, array $data = []): PromiseInterface;
 
     /**
      * Dispatch an OPTIONS request.
      *
-     * @return PromiseInterface<Response>
+     * @return PromiseInterface<EnhancedResponseInterface>
      */
     public function options(string $url): PromiseInterface;
 
@@ -81,7 +67,7 @@ interface ExecutesRequestsInterface
      *
      * The response body will be empty per the HTTP specification.
      *
-     * @return PromiseInterface<Response>
+     * @return PromiseInterface<EnhancedResponseInterface>
      */
     public function head(string $url): PromiseInterface;
 
@@ -95,7 +81,7 @@ interface ExecutesRequestsInterface
      * URI template parameters set via withUrlParameter() are expanded
      * before the request is dispatched.
      *
-     * @return PromiseInterface<Response>
+     * @return PromiseInterface<EnhancedResponseInterface>
      */
     public function send(string $method, string $url): PromiseInterface;
 }

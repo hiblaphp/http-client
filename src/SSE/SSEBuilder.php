@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Hibla\HttpClient\SSE;
 
 use Hibla\HttpClient\Handlers\HttpHandler;
+use Hibla\HttpClient\Interfaces\SSE\SSEBuilderInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
 /**
@@ -23,7 +24,7 @@ use Hibla\Promise\Interfaces\PromiseInterface;
  *   $streamA = $base->onEvent(fn($data) => handleA($data))->connect();
  *   $streamB = $base->onEvent(fn($data) => handleB($data))->connect();
  */
-class SSEBuilder
+class SSEBuilder implements SSEBuilderInterface
 {
     /**
      *  @var (callable(mixed): mixed)|null
@@ -67,7 +68,7 @@ class SSEBuilder
      *
      * @param callable(mixed, SSEControl): void $callback
      */
-    public function onEvent(callable $callback): self
+    public function onEvent(callable $callback): static
     {
         $new = clone $this;
         $new->onEvent = $callback;
@@ -82,7 +83,7 @@ class SSEBuilder
      *
      * @param callable(\Throwable): void $callback
      */
-    public function onError(callable $callback): self
+    public function onError(callable $callback): static
     {
         $new = clone $this;
         $new->onError = $callback;
@@ -99,7 +100,7 @@ class SSEBuilder
      *   - SSEDataFormat::Array_ — event->toArray() with data key auto-decoded from JSON
      *   - SSEDataFormat::Raw    — raw event data string
      */
-    public function dataFormat(SSEDataFormat $format): self
+    public function dataFormat(SSEDataFormat $format): static
     {
         $new = clone $this;
         $new->dataFormat = $format;
@@ -113,7 +114,7 @@ class SSEBuilder
      *
      * @param callable(mixed): mixed $mapper
      */
-    public function map(callable $mapper): self
+    public function map(callable $mapper): static
     {
         $new = clone $this;
         $new->mapper = $mapper;
@@ -136,7 +137,7 @@ class SSEBuilder
         float $maxDelay = 30.0,
         float $backoffMultiplier = 2.0,
         bool $jitter = true,
-    ): self {
+    ): static {
         $new = clone $this;
         $new->reconnectConfig = new SSEReconnectConfig(
             enabled: true,
@@ -153,7 +154,7 @@ class SSEBuilder
     /**
      * Provide a fully custom reconnection configuration.
      */
-    public function reconnectWith(SSEReconnectConfig $config): self
+    public function reconnectWith(SSEReconnectConfig $config): static
     {
         $new = clone $this;
         $new->reconnectConfig = $config;
@@ -164,7 +165,7 @@ class SSEBuilder
     /**
      * Explicitly disable reconnection (overrides any previously set config).
      */
-    public function noReconnect(): self
+    public function noReconnect(): static
     {
         $new = clone $this;
         $new->reconnectConfig = new SSEReconnectConfig(enabled: false);
