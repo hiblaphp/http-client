@@ -238,7 +238,6 @@ describe('StreamingResponse', function () {
         ;
     });
 
-    // Additional tests for dot notation support
     it('supports dot notation for nested JSON access', function () {
         $data = ['user' => ['name' => 'John', 'email' => 'john@example.com']];
         $stream = Stream::fromString(json_encode($data));

@@ -51,16 +51,19 @@ describe('Advanced SSE Mocking', function () {
             ->sseWithKeepalive([
                 ['id' => '1', 'data' => 'first'],
                 ['id' => '2', 'data' => 'second'],
-            ], 1) // 1 keepalive event between data events
+            ], 1) 
             ->register()
         ;
 
         $events = [];
-        Http::sse('/sse-keepalive', function (SSEEvent $event) use (&$events) {
-            $events[] = $event;
-        })->wait();
+        
+        Http::sse('/sse-keepalive')
+            ->onEvent(function (SSEEvent $event) use (&$events) {
+                $events[] = $event;
+            })
+            ->connect()
+            ->wait();
 
-        // 1 data, 1 keepalive, 1 data = 3 total events
         expect($events)->toHaveCount(3);
         expect($events[0]->data)->toBe('first');
         expect($events[1]->isKeepAlive())->toBeTrue();
@@ -75,9 +78,13 @@ describe('Advanced SSE Mocking', function () {
         ;
 
         $events = [];
-        Http::sse('/sse-retry-directive', function (SSEEvent $event) use (&$events) {
-            $events[] = $event;
-        })->wait();
+        
+        Http::sse('/sse-retry-directive')
+            ->onEvent(function (SSEEvent $event) use (&$events) {
+                $events[] = $event;
+            })
+            ->connect()
+            ->wait();
 
         expect($events)->toHaveCount(2);
         expect($events[0]->retry)->toBe(5000);

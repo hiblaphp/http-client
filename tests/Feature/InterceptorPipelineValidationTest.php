@@ -6,9 +6,8 @@ use function Hibla\asyncFn;
 use function Hibla\await;
 
 use Hibla\HttpClient\Http;
-
-use Hibla\HttpClient\Request;
-use Hibla\HttpClient\Response;
+use Hibla\HttpClient\Interfaces\EnhancedResponseInterface;
+use Hibla\HttpClient\Interfaces\PendingRequestInterface as Request;
 
 describe('Interceptor Pipeline Validation', function () {
     describe('intercept()', function () {
@@ -57,7 +56,7 @@ describe('Interceptor Pipeline Validation', function () {
                 ->get('https://httpbin.org/get'));
         })->throws(
             LogicException::class,
-            'Callback passed to interceptRequest() must return a Hibla\HttpClient\Request instance, got null/void.'
+            'Callback passed to interceptRequest() must return a Hibla\HttpClient\Interfaces\PendingRequestInterface instance, got null/void.'
         );
 
         test('throws when callback returns wrong type', function () {
@@ -68,7 +67,7 @@ describe('Interceptor Pipeline Validation', function () {
                 ->get('https://httpbin.org/get'));
         })->throws(
             LogicException::class,
-            'Callback passed to interceptRequest() must return a Hibla\HttpClient\Request instance, got string.'
+            'Callback passed to interceptRequest() must return a Hibla\HttpClient\Interfaces\PendingRequestInterface instance, got string.'
         );
 
         test('throws when async callback returns void', function () {
@@ -79,7 +78,7 @@ describe('Interceptor Pipeline Validation', function () {
                 ->get('https://httpbin.org/get'));
         })->throws(
             LogicException::class,
-            'The Hibla\Promise\Interfaces\PromiseInterface passed to interceptRequest() must resolve to a Hibla\HttpClient\Request instance, got null/void.'
+            'The Hibla\Promise\Interfaces\PromiseInterface passed to interceptRequest() must resolve to a Hibla\HttpClient\Interfaces\PendingRequestInterface instance, got null/void.'
         );
     });
 
@@ -87,35 +86,35 @@ describe('Interceptor Pipeline Validation', function () {
 
         test('throws when callback returns void', function () {
             await(Http::request()
-                ->interceptResponse(function (Response $response): void {
+                ->interceptResponse(function (EnhancedResponseInterface $response): void {
                     // forgot to return
                 })
                 ->get('https://httpbin.org/get'));
         })->throws(
             LogicException::class,
-            'Callback passed to interceptResponse() must return a Hibla\HttpClient\Response instance, got null/void.'
+            'Callback passed to interceptResponse() must return a Hibla\HttpClient\Interfaces\EnhancedResponseInterface instance, got null/void.'
         );
 
         test('throws when callback returns wrong type', function () {
             await(Http::request()
-                ->interceptResponse(function (Response $response) {
+                ->interceptResponse(function (EnhancedResponseInterface $response) {
                     return 'oops';
                 })
                 ->get('https://httpbin.org/get'));
         })->throws(
             LogicException::class,
-            'Callback passed to interceptResponse() must return a Hibla\HttpClient\Response instance, got string.'
+            'Callback passed to interceptResponse() must return a Hibla\HttpClient\Interfaces\EnhancedResponseInterface instance, got string.'
         );
 
         test('throws when async callback returns void', function () {
             await(Http::request()
-                ->interceptResponse(asyncFn(function (Response $response): void {
+                ->interceptResponse(asyncFn(function (EnhancedResponseInterface $response): void {
                     // forgot to return
                 }))
                 ->get('https://httpbin.org/get'));
         })->throws(
             LogicException::class,
-            'The Hibla\Promise\Interfaces\PromiseInterface passed to interceptResponse() must resolve to a Hibla\HttpClient\Response instance, got null/void.'
+            'The Hibla\Promise\Interfaces\PromiseInterface passed to interceptResponse() must resolve to a Hibla\HttpClient\Interfaces\EnhancedResponseInterface instance, got null/void.'
         );
     });
 
@@ -129,7 +128,7 @@ describe('Interceptor Pipeline Validation', function () {
                 ->interceptRequest(function (Request $request): Request {
                     return $request->withHeader('X-Test', 'hello');
                 })
-                ->interceptResponse(function (Response $response): Response {
+                ->interceptResponse(function (EnhancedResponseInterface $response): EnhancedResponseInterface {
                     return $response;
                 })
                 ->get('https://httpbin.org/get'));

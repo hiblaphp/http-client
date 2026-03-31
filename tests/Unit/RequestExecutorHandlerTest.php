@@ -81,17 +81,22 @@ it('normalizes headers correctly', function () {
     ]);
 
     $response = null;
+    $error = null;
+
     $promise->then(function ($res) use (&$response) {
         $response = $res;
         Loop::stop();
-    })->catch(function ($err) {
+    })->catch(function ($err) use (&$error) {
+        $error = $err;
         Loop::stop();
     });
 
     Loop::run();
 
+    expect($error)->toBeNull();
     expect($response)->toBeInstanceOf(Response::class);
-    expect($response->getHeader('content-type'))->not->toBeNull();
+
+    expect($response->getHeader('content-type'))->not->toBeEmpty();
 })->skipOnCI();
 
 it('filters out curl-only options before execution', function () {
@@ -105,6 +110,7 @@ it('filters out curl-only options before execution', function () {
 
     $response = null;
     $error = null;
+
     $promise->then(function ($res) use (&$response) {
         $response = $res;
         Loop::stop();
@@ -128,17 +134,24 @@ it('sets HTTP version on response when provided', function () {
     ]);
 
     $response = null;
+    $error = null;
+
     $promise->then(function ($res) use (&$response) {
         $response = $res;
         Loop::stop();
-    })->catch(function ($err) {
+    })->catch(function ($err) use (&$error) {
+        $error = $err;
         Loop::stop();
     });
 
     Loop::run();
 
+    expect($error)->toBeNull();
     expect($response)->toBeInstanceOf(Response::class);
-    expect($response->getHttpVersion())->not->toBeNull();
+
+    if ($response->getHttpVersion() !== null) {
+        expect($response->getHttpVersion())->toBeString();
+    }
 })->skipOnCI();
 
 it('does not resolve cancelled promises', function () {

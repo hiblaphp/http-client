@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use Hibla\HttpClient\Http;
-use Hibla\HttpClient\Request;
-use Hibla\HttpClient\Response;
+use Hibla\HttpClient\Interfaces\PendingRequestInterface as Request;
+use Hibla\HttpClient\Interfaces\EnhancedResponseInterface as Response;
 
 beforeEach(function () {
     Http::startTesting();

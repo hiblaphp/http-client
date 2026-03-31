@@ -3,116 +3,122 @@
 declare(strict_types=1);
 
 use Hibla\HttpClient\CookieJar;
+use Hibla\HttpClient\HttpClient;
 use Hibla\HttpClient\ProxyConfig;
-use Hibla\HttpClient\Request;
-use Hibla\HttpClient\Response;
+use Hibla\HttpClient\Interfaces\EnhancedResponseInterface as Response;
+use Hibla\HttpClient\Interfaces\PendingRequestInterface as Request;
 use Hibla\HttpClient\RetryConfig;
 
 describe('Request Builder: Core Configuration', function () {
     it('sets timeout and connect timeout', function () {
-        $r1 = new Request();
+        $r1 = new HttpClient();
         $r2 = $r1->timeout(15)->connectTimeout(5);
 
-        expect(getPrivateProperty($r1, 'timeout'))->toBe(30); // Original is unchanged
+        expect(getPrivateProperty($r1, 'timeout'))->toBe(30); 
         expect(getPrivateProperty($r2, 'timeout'))->toBe(15);
         expect(getPrivateProperty($r2, 'connectTimeout'))->toBe(5);
     });
 
     it('sets redirect configuration', function () {
-        $r1 = new Request();
+        $r1 = new HttpClient();
         $r2 = $r1->redirects(false, 10);
 
-        expect(getPrivateProperty($r1, 'followRedirects'))->toBeTrue(); // Original
+        expect(getPrivateProperty($r1, 'followRedirects'))->toBeTrue(); 
         expect(getPrivateProperty($r2, 'followRedirects'))->toBeFalse();
         expect(getPrivateProperty($r2, 'maxRedirects'))->toBe(10);
     });
 
     it('sets SSL verification', function () {
-        $r1 = new Request();
+        $r1 = new HttpClient();
         $r2 = $r1->verifySSL(false);
 
-        expect(getPrivateProperty($r1, 'verifySSL'))->toBeTrue(); // Original
+        expect(getPrivateProperty($r1, 'verifySSL'))->toBeTrue();
         expect(getPrivateProperty($r2, 'verifySSL'))->toBeFalse();
     });
 
     it('sets the user agent', function () {
-        $r1 = new Request();
+        $r1 = new HttpClient();
         $r2 = $r1->withUserAgent('Test Agent');
 
-        expect(getPrivateProperty($r1, 'userAgent'))->not->toBe('Test Agent');
-        expect(getPrivateProperty($r2, 'userAgent'))->toBe('Test Agent');
+        $req1 = getPrivateProperty($r1, 'request');
+        $req2 = getPrivateProperty($r2, 'request');
+
+        expect($req1->getUserAgent())->not->toBe('Test Agent');
+        expect($req2->getUserAgent())->toBe('Test Agent');
     });
 
     it('configures HTTP protocol version', function () {
-        $r1 = (new Request())->http1();
+        $r1 = (new HttpClient())->http1();
         expect(getPrivateProperty($r1, 'protocol'))->toBe('1.1');
 
-        $r2 = (new Request())->http2();
+        $r2 = (new HttpClient())->http2();
         expect(getPrivateProperty($r2, 'protocol'))->toBe('2.0');
 
-        $r3 = (new Request())->http3();
+        $r3 = (new HttpClient())->http3();
         expect(getPrivateProperty($r3, 'protocol'))->toBe('3.0');
     });
 });
 
 describe('Request Builder: Headers', function () {
     it('sets a single header with withHeader', function () {
-        $request = (new Request())->withHeader('X-Test', 'Value');
+        $request = (new HttpClient())->withHeader('X-Test', 'Value');
         expect($request->getHeaderLine('X-Test'))->toBe('Value');
     });
 
     it('sets multiple headers with withHeaders', function () {
-        $request = (new Request())->withHeaders(['X-First' => '1', 'X-Second' => '2']);
+        $request = (new HttpClient())->withHeaders(['X-First' => '1', 'X-Second' => '2']);
         expect($request->getHeaderLine('X-First'))->toBe('1');
         expect($request->getHeaderLine('X-Second'))->toBe('2');
     });
 
     it('sets content type header via contentType()', function () {
-        $request = (new Request())->contentType('application/xml');
+        $request = (new HttpClient())->contentType('application/xml');
         expect($request->getHeaderLine('Content-Type'))->toBe('application/xml');
     });
 
     it('sets accept header', function () {
-        $request = (new Request())->accept('application/json');
+        $request = (new HttpClient())->accept('application/json');
         expect($request->getHeaderLine('Accept'))->toBe('application/json');
     });
 
     it('sets JSON content type with asJson()', function () {
-        $request = (new Request())->asJson();
+        $request = (new HttpClient())->asJson();
         expect($request->getHeaderLine('Content-Type'))->toBe('application/json');
     });
 
     it('sets Form content type with asForm()', function () {
-        $request = (new Request())->asForm();
+        $request = (new HttpClient())->asForm();
         expect($request->getHeaderLine('Content-Type'))->toBe('application/x-www-form-urlencoded');
     });
 });
 
 describe('Request Builder: Body', function () {
     it('sets a raw string body', function () {
-        $request = (new Request())->body('raw content');
+        $request = (new HttpClient())->body('raw content');
         expect($request->getBody()->getContents())->toBe('raw content');
     });
 
     it('sets a JSON body and the correct header', function () {
-        $request = (new Request())->withJson(['foo' => 'bar']);
+        $request = (new HttpClient())->withJson(['foo' => 'bar']);
         expect($request->getBody()->getContents())->toBe(json_encode(['foo' => 'bar']));
         expect($request->getHeaderLine('Content-Type'))->toBe('application/json');
     });
 
     it('sets a URL-encoded form body and the correct header', function () {
-        $request = (new Request())->withForm(['user' => 'test', 'pass' => '123']);
+        $request = (new HttpClient())->withForm(['user' => 'test', 'pass' => '123']);
         expect($request->getBody()->getContents())->toBe('user=test&pass=123');
         expect($request->getHeaderLine('Content-Type'))->toBe('application/x-www-form-urlencoded');
     });
 
     it('sets multipart data and removes Content-Type header', function () {
-        $request = (new Request())
+        $request = (new HttpClient())
             ->contentType('should-be-removed')
             ->withMultipart(['field' => 'value'])
         ;
 
-        $options = getPrivateProperty($request, 'options');
+        $pendingRequest = getPrivateProperty($request, 'request');
+        $options = $pendingRequest->getOptions();
+        
         expect($request->hasHeader('Content-Type'))->toBeFalse();
         expect($options['multipart'])->toBe(['field' => 'value']);
     });
@@ -120,7 +126,7 @@ describe('Request Builder: Body', function () {
 
 describe('Request Builder: Advanced Features', function () {
     it('configures retry settings', function () {
-        $request = (new Request())->retry(5, 2.0);
+        $request = (new HttpClient())->retry(5, 2.0);
         $retryConfig = getPrivateProperty($request, 'retryConfig');
         expect($retryConfig)->toBeInstanceOf(RetryConfig::class);
         expect($retryConfig->maxRetries)->toBe(5);
@@ -128,7 +134,7 @@ describe('Request Builder: Advanced Features', function () {
     });
 
     it('configures an HTTP proxy', function () {
-        $request = (new Request())->withProxy('proxy.host', 8080);
+        $request = (new HttpClient())->withProxy('proxy.host', 8080);
         $proxyConfig = getPrivateProperty($request, 'proxyConfig');
         expect($proxyConfig)->toBeInstanceOf(ProxyConfig::class)
             ->and($proxyConfig->type)->toBe('http')
@@ -136,7 +142,7 @@ describe('Request Builder: Advanced Features', function () {
     });
 
     it('configures a SOCKS4 proxy', function () {
-        $request = (new Request())->withSocks4Proxy('proxy.host', 1080);
+        $request = (new HttpClient())->withSocks4Proxy('proxy.host', 1080);
         $proxyConfig = getPrivateProperty($request, 'proxyConfig');
         expect($proxyConfig)->toBeInstanceOf(ProxyConfig::class)
             ->and($proxyConfig->type)->toBe('socks4')
@@ -144,7 +150,7 @@ describe('Request Builder: Advanced Features', function () {
     });
 
     it('configures a SOCKS5 proxy', function () {
-        $request = (new Request())->withSocks5Proxy('proxy.host', 1080);
+        $request = (new HttpClient())->withSocks5Proxy('proxy.host', 1080);
         $proxyConfig = getPrivateProperty($request, 'proxyConfig');
         expect($proxyConfig)->toBeInstanceOf(ProxyConfig::class)
             ->and($proxyConfig->type)->toBe('socks5')
@@ -153,25 +159,28 @@ describe('Request Builder: Advanced Features', function () {
 
     it('configures a custom cookie jar', function () {
         $jar = new CookieJar();
-        $request = (new Request())->useCookieJar($jar);
-        expect(getPrivateProperty($request, 'cookieJar'))->toBe($jar);
+        $request = (new HttpClient())->useCookieJar($jar);
+        
+        // Cookie jar is exposed via a public getter
+        expect($request->getCookieJar())->toBe($jar);
     });
 
     it('configures interceptors', function () {
         $reqInt = fn (Request $r) => $r;
         $resInt = fn (Response $r) => $r;
-        $request = (new Request())->interceptRequest($reqInt)->interceptResponse($resInt);
+        $request = (new HttpClient())->interceptRequest($reqInt)->interceptResponse($resInt);
 
-        expect(getPrivateProperty($request, 'requestInterceptors'))->toContain($reqInt);
-        expect(getPrivateProperty($request, 'responseInterceptors'))->toContain($resInt);
+        // The unified pipeline wraps closures into the `$interceptors` array
+        $interceptors = getPrivateProperty($request, 'interceptors');
+        expect($interceptors)->toHaveCount(2);
     });
 });
 
 describe('Request Builder: URI Template Expansion', function () {
     it('expands simple URI templates', function () {
-        $request = (new Request())->withUrlParameter('userId', '123');
+        $request = (new HttpClient())->withUrlParameter('userId', '123');
 
-        $reflection = new ReflectionClass(Request::class);
+        $reflection = new ReflectionClass(HttpClient::class);
         $method = $reflection->getMethod('expandUriTemplate');
         $expandedUrl = $method->invoke($request, '/users/{userId}/posts');
 
@@ -179,9 +188,9 @@ describe('Request Builder: URI Template Expansion', function () {
     });
 
     it('expands multiple parameters', function () {
-        $request = (new Request())->withUrlParameters(['userId' => 123, 'postId' => 456]);
+        $request = (new HttpClient())->withUrlParameters(['userId' => 123, 'postId' => 456]);
 
-        $reflection = new ReflectionClass(Request::class);
+        $reflection = new ReflectionClass(HttpClient::class);
         $method = $reflection->getMethod('expandUriTemplate');
         $expandedUrl = $method->invoke($request, '/users/{userId}/posts/{postId}');
 
@@ -189,9 +198,9 @@ describe('Request Builder: URI Template Expansion', function () {
     });
 
     it('URL-encodes simple parameters', function () {
-        $request = (new Request())->withUrlParameter('query', 'a space & stuff');
+        $request = (new HttpClient())->withUrlParameter('query', 'a space & stuff');
 
-        $reflection = new ReflectionClass(Request::class);
+        $reflection = new ReflectionClass(HttpClient::class);
         $method = $reflection->getMethod('expandUriTemplate');
         $expandedUrl = $method->invoke($request, '/search/{query}');
 
@@ -199,9 +208,9 @@ describe('Request Builder: URI Template Expansion', function () {
     });
 
     it('does not encode reserved expansion parameters', function () {
-        $request = (new Request())->withUrlParameter('path', 'a/b/c');
+        $request = (new HttpClient())->withUrlParameter('path', 'a/b/c');
 
-        $reflection = new ReflectionClass(Request::class);
+        $reflection = new ReflectionClass(HttpClient::class);
         $method = $reflection->getMethod('expandUriTemplate');
         $expandedUrl = $method->invoke($request, '/files/{+path}');
 
@@ -209,9 +218,9 @@ describe('Request Builder: URI Template Expansion', function () {
     });
 
     it('ignores missing parameters', function () {
-        $request = new Request();
+        $request = new HttpClient();
 
-        $reflection = new ReflectionClass(Request::class);
+        $reflection = new ReflectionClass(HttpClient::class);
         $method = $reflection->getMethod('expandUriTemplate');
         $expandedUrl = $method->invoke($request, '/users/{userId}/posts');
 
