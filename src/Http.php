@@ -10,6 +10,7 @@ use Hibla\HttpClient\Interfaces\EnhancedResponseInterface;
 use Hibla\HttpClient\Interfaces\HttpClientInterface;
 use Hibla\HttpClient\Interfaces\StreamingResponseInterface;
 use Hibla\HttpClient\Interfaces\SSE\SSEBuilderInterface;
+use Hibla\HttpClient\Interfaces\SSEResponseInterface;
 use Hibla\HttpClient\Testing\MockRequestBuilder;
 use Hibla\HttpClient\Testing\TestingHttpHandler;
 use Hibla\HttpClient\Testing\Utilities\RecordedRequest;
@@ -32,7 +33,6 @@ use Psr\Http\Message\UploadedFileInterface;
  * @method static PromiseInterface<EnhancedResponseInterface> patch(string $url, array<string, mixed> $data = []) Performs a PATCH request.
  * @method static PromiseInterface<EnhancedResponseInterface> options(string $url) Performs an OPTIONS request.
  * @method static PromiseInterface<EnhancedResponseInterface> head(string $url) Performs a HEAD request.
- * @method static PromiseInterface<EnhancedResponseInterface> fetch(string $url, array<int|string, mixed> $options = []) A flexible, fetch-like request method.
  * @method static PromiseInterface<StreamingResponseInterface> stream(string $url, ?callable $onChunk = null) Streams a response body.
  * @method static PromiseInterface<StreamingResponseInterface> streamPost(string $url, mixed $body = null, ?callable $onChunk = null) Streams the response body of a POST request.
  * @method static PromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}> download(string $url, string $destination) Downloads a file to the given destination path.
@@ -279,6 +279,26 @@ class Http
     }
 
     /**
+     * Fetch-style entry point — a flat options array translated into fluent
+     * builder calls then dispatched through the interceptor pipeline.
+     *
+     * Delegates all option mapping and dispatch to {@see FetchRequest} so
+     * this facade stays thin. Interceptors registered on the current handler
+     * apply here exactly as they do for the fluent API.
+     *
+     * @param  string $url
+     * @param  array<int|string, mixed> $options
+     * @return PromiseInterface<EnhancedResponseInterface>
+     *       | PromiseInterface<StreamingResponseInterface>
+     *       | PromiseInterface<array{file:string,status:int,headers:array<mixed>,protocol_version:string|null,size:int|false}>
+     *       | PromiseInterface<SSEResponseInterface>
+     */
+    public static function fetch(string $url, array $options = []): PromiseInterface
+    {
+        return (new FetchRequest())->send(self::request(), $url, $options);
+    }
+
+    /**
      * Enable testing mode with a clean TestingHttpHandler instance.
      *
      * This method switches the Http client to use a TestingHttpHandler instead
@@ -385,11 +405,10 @@ class Http
      * Magic method to handle dynamic static calls.
      *
      * Assertion and testing-helper calls are routed to TestingHttpHandler.
-     * The fetch() method is dispatched directly on the handler singleton.
      * All other calls are delegated to a fresh HttpClient builder instance.
      *
-     * @param  string $method The method name.
-     * @param  array<mixed> $arguments  The arguments to pass to the method.
+     * @param  string        $method     The method name.
+     * @param  array<mixed>  $arguments  The arguments to pass to the method.
      * @return mixed The result of the proxied method call.
      */
     public static function __callStatic(string $method, array $arguments): mixed
@@ -506,14 +525,6 @@ class Http
 
             /** @phpstan-ignore-next-line */
             return self::$testingInstance->{$method}(...$arguments);
-        }
-
-        /** @var list<string> */
-        $directMethods = ['fetch'];
-
-        if (\in_array($method, $directMethods, true)) {
-            /** @phpstan-ignore-next-line */
-            return self::getInstance()->{$method}(...$arguments);
         }
 
         $client = self::request();
