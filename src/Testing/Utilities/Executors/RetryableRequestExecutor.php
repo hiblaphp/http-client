@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Hibla\HttpClient\Testing\Utilities\Executors;
 
 use Hibla\HttpClient\Response;
-use Hibla\HttpClient\RetryConfig;
+use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\HttpClient\Testing\Exceptions\MockAssertionException;
 use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Testing\Utilities\RequestMatcher;

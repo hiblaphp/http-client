@@ -6,14 +6,14 @@ namespace Hibla\HttpClient;
 
 use Hibla\HttpClient\Exceptions\HttpStreamException;
 use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
-use Hibla\HttpClient\Interfaces\EnhancedResponseInterface;
-use Psr\Http\Message\ResponseInterface;
+use Hibla\HttpClient\Interfaces\ResponseInterface;
+use Hibla\HttpClient\ValueObjects\Cookie;
 use Psr\Http\Message\StreamInterface;
 
 /**
  * Immutable, PSR-7 compatible HTTP response with convenience inspection methods.
  */
-class Response extends Message implements EnhancedResponseInterface
+class Response extends Message implements ResponseInterface
 {
     /**
      * @var array<int, string> Map of standard HTTP status codes to reason phrases.
@@ -87,7 +87,7 @@ class Response extends Message implements EnhancedResponseInterface
      *
      * @throws HttpStreamException
      */
-    public function __construct($body = 'php://memory', int $status = 200, array $headers = [])
+    public function __construct(string|StreamInterface $body = 'php://memory', int $status = 200, array $headers = [])
     {
         $this->statusCode = $status;
         $this->reasonPhrase = self::PHRASES[$status] ?? 'Unknown Status Code';

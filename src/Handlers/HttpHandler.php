@@ -14,7 +14,7 @@ use Hibla\HttpClient\Interfaces\Handler\RetryHandlerInterface;
 use Hibla\HttpClient\Interfaces\Handler\SSEHandlerInterface;
 use Hibla\HttpClient\Interfaces\Handler\StreamingHandlerInterface;
 use Hibla\HttpClient\Response;
-use Hibla\HttpClient\RetryConfig;
+use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\HttpClient\SSE\CancelableSSEPromise;
 use Hibla\HttpClient\SSE\SSEEvent;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;

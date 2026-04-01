@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use Hibla\HttpClient\CookieJar;
+use Hibla\HttpClient\ValueObjects\CookieJar;
 use Hibla\HttpClient\HttpClient;
-use Hibla\HttpClient\ProxyConfig;
-use Hibla\HttpClient\Interfaces\EnhancedResponseInterface as Response;
-use Hibla\HttpClient\Interfaces\PendingRequestInterface as Request;
-use Hibla\HttpClient\RetryConfig;
+use Hibla\HttpClient\ValueObjects\ProxyConfig;
+use Hibla\HttpClient\Interfaces\ResponseInterface as Response;
+use Hibla\HttpClient\Interfaces\RequestInterface as Request;
+use Hibla\HttpClient\ValueObjects\RetryConfig;
 
 describe('Request Builder: Core Configuration', function () {
     it('sets timeout and connect timeout', function () {
@@ -116,8 +116,8 @@ describe('Request Builder: Body', function () {
             ->withMultipart(['field' => 'value'])
         ;
 
-        $pendingRequest = getPrivateProperty($request, 'request');
-        $options = $pendingRequest->getOptions();
+        $Request = getPrivateProperty($request, 'request');
+        $options = $Request->getOptions();
         
         expect($request->hasHeader('Content-Type'))->toBeFalse();
         expect($options['multipart'])->toBe(['field' => 'value']);

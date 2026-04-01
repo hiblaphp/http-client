@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use Hibla\HttpClient\Response;
-use Hibla\HttpClient\RetryConfig;
+use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\HttpClient\StreamingResponse;
 use Hibla\HttpClient\Testing\Exceptions\MockException;
 use Hibla\HttpClient\Testing\MockedRequest;

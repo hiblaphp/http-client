@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Hibla\HttpClient\RetryConfig;
+use Hibla\HttpClient\ValueObjects\RetryConfig;
 
 afterEach(function () {
     testingHttpHandler()->reset();

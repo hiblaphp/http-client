@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use Hibla\HttpClient\Handlers\HttpHandler;
-use Hibla\HttpClient\RetryConfig;
+use Hibla\HttpClient\ValueObjects\RetryConfig;
 
 describe('Real API Integration Tests', function () {
 

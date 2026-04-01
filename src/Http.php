@@ -6,7 +6,7 @@ namespace Hibla\HttpClient;
 
 use Hibla\HttpClient\Handlers\HttpHandler;
 use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
-use Hibla\HttpClient\Interfaces\EnhancedResponseInterface;
+use Hibla\HttpClient\Interfaces\ResponseInterface;
 use Hibla\HttpClient\Interfaces\HttpClientInterface;
 use Hibla\HttpClient\Interfaces\StreamingResponseInterface;
 use Hibla\HttpClient\Interfaces\SSE\SSEBuilderInterface;
@@ -72,17 +72,17 @@ use Psr\Http\Message\UploadedFileInterface;
  *
  * Direct HTTP methods:
  *
- * @method static PromiseInterface<EnhancedResponseInterface> get(string $url, array<string, mixed> $query = []) Performs a GET request.
- * @method static PromiseInterface<EnhancedResponseInterface> post(string $url, array<string, mixed> $data = []) Performs a POST request.
- * @method static PromiseInterface<EnhancedResponseInterface> put(string $url, array<string, mixed> $data = []) Performs a PUT request.
- * @method static PromiseInterface<EnhancedResponseInterface> delete(string $url) Performs a DELETE request.
- * @method static PromiseInterface<EnhancedResponseInterface> patch(string $url, array<string, mixed> $data = []) Performs a PATCH request.
- * @method static PromiseInterface<EnhancedResponseInterface> options(string $url) Performs an OPTIONS request.
- * @method static PromiseInterface<EnhancedResponseInterface> head(string $url) Performs a HEAD request.
+ * @method static PromiseInterface<ResponseInterface> get(string $url, array<string, mixed> $query = []) Performs a GET request.
+ * @method static PromiseInterface<ResponseInterface> post(string $url, array<string, mixed> $data = []) Performs a POST request.
+ * @method static PromiseInterface<ResponseInterface> put(string $url, array<string, mixed> $data = []) Performs a PUT request.
+ * @method static PromiseInterface<ResponseInterface> delete(string $url) Performs a DELETE request.
+ * @method static PromiseInterface<ResponseInterface> patch(string $url, array<string, mixed> $data = []) Performs a PATCH request.
+ * @method static PromiseInterface<ResponseInterface> options(string $url) Performs an OPTIONS request.
+ * @method static PromiseInterface<ResponseInterface> head(string $url) Performs a HEAD request.
  * @method static PromiseInterface<StreamingResponseInterface> stream(string $url, ?callable $onChunk = null) Streams a response body.
  * @method static PromiseInterface<StreamingResponseInterface> streamPost(string $url, mixed $body = null, ?callable $onChunk = null) Streams the response body of a POST request.
  * @method static PromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}> download(string $url, string $destination) Downloads a file to the given destination path.
- * @method static PromiseInterface<EnhancedResponseInterface> send(string $method, string $url) Dispatches the configured request.
+ * @method static PromiseInterface<ResponseInterface> send(string $method, string $url) Dispatches the configured request.
  * @method static SSEBuilderInterface sse(string $url) Create a fluent SSE connection builder.
  *
  * Header configuration methods (ConfiguresHeadersInterface):
@@ -148,9 +148,9 @@ use Psr\Http\Message\UploadedFileInterface;
  * @method static HttpClientInterface withUrlParameters(array<string, mixed> $parameters) Set multiple URL parameters for URI template substitution.
  *
  * Interceptor methods (HttpInterceptorInterface):
- * @method static HttpClientInterface intercept(callable(PendingRequestInterface, callable): PromiseInterface<EnhancedResponseInterface> $middleware) Add a full pipeline interceptor.
- * @method static HttpClientInterface interceptRequest(callable(PendingRequestInterface): (PendingRequestInterface|PromiseInterface<PendingRequestInterface>) $callback) Start building a request with a request interceptor.
- * @method static HttpClientInterface interceptResponse(callable(EnhancedResponseInterface): (EnhancedResponseInterface|PromiseInterface<EnhancedResponseInterface>) $callback) Start building a request with a response interceptor.
+ * @method static HttpClientInterface intercept(callable(RequestInterface, callable): PromiseInterface<ResponseInterface> $middleware) Add a full pipeline interceptor.
+ * @method static HttpClientInterface interceptRequest(callable(RequestInterface): (RequestInterface|PromiseInterface<RequestInterface>) $callback) Start building a request with a request interceptor.
+ * @method static HttpClientInterface interceptResponse(callable(ResponseInterface): (ResponseInterface|PromiseInterface<ResponseInterface>) $callback) Start building a request with a response interceptor.
  *
  * cURL escape-hatch methods (ConfiguresCurlInterface):
  * @method static HttpClientInterface withCurlOption(int $option, mixed $value) Start building a request with a raw cURL option.
@@ -329,7 +329,7 @@ class Http
      *
      * @param  string $url
      * @param  array<int|string, mixed>  $options
-     * @return PromiseInterface<EnhancedResponseInterface>
+     * @return PromiseInterface<ResponseInterface>
      */
     public static function fetch(string $url, array $options = []): PromiseInterface
     {

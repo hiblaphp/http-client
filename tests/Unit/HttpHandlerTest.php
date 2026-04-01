@@ -7,7 +7,7 @@ use Hibla\HttpClient\Handlers\Curl\RequestExecutorHandler;
 use Hibla\HttpClient\Handlers\Curl\RetryHandler;
 use Hibla\HttpClient\Handlers\Curl\StreamingHandler;
 use Hibla\HttpClient\Handlers\HttpHandler;
-use Hibla\HttpClient\RetryConfig;
+use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\Promise\Promise;
 
 afterEach(function () {

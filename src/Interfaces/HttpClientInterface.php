@@ -15,11 +15,11 @@ use Hibla\HttpClient\Interfaces\Execution\ExecutesStreamingInterface;
 use Hibla\HttpClient\Interfaces\Execution\HttpInterceptorInterface;
 
 /**
- * Marker interface declared by PendingRequest.
+ * Marker interface declared by Request.
  *
  * Exists as a named type distinct from EnhancedRequestInterface so
  * that internal code — handlers, factories, the Http facade — can
- * accept or return PendingRequest specifically without depending on
+ * accept or return Request specifically without depending on
  * the concrete class directly.
  *
  * Userland code should type-hint against EnhancedRequestInterface
@@ -34,7 +34,7 @@ use Hibla\HttpClient\Interfaces\Execution\HttpInterceptorInterface;
  *     be visible to userland callers.
  */
 interface HttpClientInterface extends
-    PendingRequestInterface,
+    RequestInterface,
     ConfiguresFilesInterface,
     ConfiguresUrlInterface,
     ConfiguresTransportInterface,

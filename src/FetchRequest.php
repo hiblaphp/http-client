@@ -6,7 +6,8 @@ namespace Hibla\HttpClient;
 
 use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
 use Hibla\HttpClient\Interfaces\HttpClientInterface;
-use Hibla\HttpClient\Interfaces\EnhancedResponseInterface;
+use Hibla\HttpClient\Interfaces\ResponseInterface;
+use Hibla\HttpClient\ValueObjects\ProxyConfig;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
 /**
@@ -51,7 +52,7 @@ final class FetchRequest
      * @param  HttpClientInterface        $client   A pre-configured builder instance.
      * @param  string                     $url
      * @param  array<int|string, mixed>   $options
-     * @return PromiseInterface<EnhancedResponseInterface>
+     * @return PromiseInterface<ResponseInterface>
      */
     public function send(
         HttpClientInterface $client,
@@ -302,11 +303,11 @@ final class FetchRequest
         }
 
         return new ProxyConfig(
-            host:     $parsed['host'],
-            port:     isset($parsed['port'])   && \is_int($parsed['port'])      ? $parsed['port']     : 8080,
+            host: $parsed['host'],
+            port: isset($parsed['port'])   && \is_int($parsed['port'])      ? $parsed['port']     : 8080,
             username: isset($parsed['user'])   && \is_string($parsed['user'])   ? $parsed['user']     : null,
             password: isset($parsed['pass'])   && \is_string($parsed['pass'])   ? $parsed['pass']     : null,
-            type:     isset($parsed['scheme']) && \is_string($parsed['scheme']) ? $parsed['scheme']   : 'http',
+            type: isset($parsed['scheme']) && \is_string($parsed['scheme']) ? $parsed['scheme']   : 'http',
         );
     }
 
@@ -320,11 +321,11 @@ final class FetchRequest
         }
 
         return new ProxyConfig(
-            host:     $host,
-            port:     (int) $port,
+            host: $host,
+            port: (int) $port,
             username: isset($proxy['username']) && \is_string($proxy['username']) ? $proxy['username'] : null,
             password: isset($proxy['password']) && \is_string($proxy['password']) ? $proxy['password'] : null,
-            type:     isset($proxy['type'])     && \is_string($proxy['type'])     ? $proxy['type']     : 'http',
+            type: isset($proxy['type'])     && \is_string($proxy['type'])     ? $proxy['type']     : 'http',
         );
     }
 }

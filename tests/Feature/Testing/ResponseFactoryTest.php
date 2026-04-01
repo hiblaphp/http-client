@@ -5,7 +5,7 @@ declare(strict_types=1);
 use Hibla\HttpClient\Exceptions\HttpException;
 use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Response;
-use Hibla\HttpClient\RetryConfig;
+use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\HttpClient\StreamingResponse;
 use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Testing\Utilities\Factories\DownloadResponseFactory;

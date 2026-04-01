@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Hibla\HttpClient\Testing\Utilities;
 
 use Hibla\HttpClient\Response;
-use Hibla\HttpClient\RetryConfig;
+use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
 use Hibla\HttpClient\SSE\SSEResponse;
 use Hibla\HttpClient\StreamingResponse;

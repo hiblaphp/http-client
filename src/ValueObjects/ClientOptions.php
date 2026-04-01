@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Hibla\HttpClient;
+namespace Hibla\HttpClient\ValueObjects;
 
 use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
 use Psr\Http\Message\StreamInterface;

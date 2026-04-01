@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Hibla\HttpClient\Interfaces\Handler;
 
 use Hibla\HttpClient\Response;
-use Hibla\HttpClient\RetryConfig;
+use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
 /**

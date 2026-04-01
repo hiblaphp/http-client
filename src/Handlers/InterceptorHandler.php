@@ -7,7 +7,7 @@ namespace Hibla\HttpClient\Handlers;
 use function Hibla\async;
 use function Hibla\await;
 
-use Hibla\HttpClient\Interfaces\PendingRequestInterface;
+use Hibla\HttpClient\Interfaces\RequestInterface;
 use Hibla\HttpClient\Response;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Hibla\Promise\Promise;
@@ -22,13 +22,13 @@ use Hibla\Promise\Promise;
 class InterceptorHandler
 {
     /**
-     * @param  PendingRequestInterface $request
-     * @param  array<callable(PendingRequestInterface, callable): mixed> $interceptors
-     * @param  callable(PendingRequestInterface): PromiseInterface<Response> $executor
+     * @param  RequestInterface $request
+     * @param  array<callable(RequestInterface, callable): mixed> $interceptors
+     * @param  callable(RequestInterface): PromiseInterface<Response> $executor
      * @return PromiseInterface<Response>
      */
     public function process(
-        PendingRequestInterface $request,
+        RequestInterface $request,
         array $interceptors,
         callable $executor,
     ): PromiseInterface {
@@ -39,7 +39,7 @@ class InterceptorHandler
         $pipeline = array_reduce(
             array_reverse($interceptors),
             static function (callable $next, callable $interceptor): callable {
-                return static function (PendingRequestInterface $request) use ($next, $interceptor): PromiseInterface {
+                return static function (RequestInterface $request) use ($next, $interceptor): PromiseInterface {
                     $result = $interceptor($request, $next);
 
                     if ($result === null) {

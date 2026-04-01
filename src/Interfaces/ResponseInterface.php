@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Interfaces;
 
-use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ResponseInterface as Psr7ResponseInterface;
 
 /**
  * Extends the PSR-7 ResponseInterface with convenience methods
@@ -14,7 +14,7 @@ use Psr\Http\Message\ResponseInterface;
  * All methods are read-only — this interface adds no mutation surface
  * beyond what PSR-7 already provides via withStatus() and withHeader().
  */
-interface EnhancedResponseInterface extends ResponseInterface
+interface ResponseInterface extends Psr7ResponseInterface
 {
     /**
      * Return the entire response body as a string.

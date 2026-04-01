@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Hibla\HttpClient;
+namespace Hibla\HttpClient\ValueObjects;
 
 /**
  * A configuration object for defining HTTP request retry behavior.

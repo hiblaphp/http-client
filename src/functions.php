@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Hibla\HttpClient;
 
 use Hibla\Promise\Interfaces\PromiseInterface;
-use Hibla\HttpClient\Interfaces\EnhancedResponseInterface;
+use Hibla\HttpClient\Interfaces\ResponseInterface;
 
 /**
  * Fetch data from URL (JavaScript-like fetch API).
@@ -15,7 +15,7 @@ use Hibla\HttpClient\Interfaces\EnhancedResponseInterface;
  *
  * @param  string  $url  The URL to fetch from
  * @param  array<int|string, mixed>  $options  Request options (method, headers, body, etc.)
- * @return PromiseInterface<EnhancedResponseInterface> Promise that resolves with the response
+ * @return PromiseInterface<ResponseInterface> Promise that resolves with the response
  *
  * @example
  * $response = await(fetch('https://api.example.com', [

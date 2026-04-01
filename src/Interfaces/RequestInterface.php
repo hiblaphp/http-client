@@ -8,7 +8,7 @@ use Hibla\HttpClient\Interfaces\Builder\ConfiguresAuthInterface;
 use Hibla\HttpClient\Interfaces\Builder\ConfiguresBodyInterface;
 use Hibla\HttpClient\Interfaces\Builder\ConfiguresCookiesInterface;
 use Hibla\HttpClient\Interfaces\Builder\ConfiguresHeadersInterface;
-use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\RequestInterface as Psr7RequestInterface;
 
 /**
  * Represents an in-flight request as seen by the interceptor pipeline.
@@ -24,7 +24,7 @@ use Psr\Http\Message\RequestInterface;
  *   - Read/rewrite the URI and method  (RequestInterface)
  *
  * Example:
- *   Http::intercept(function (PendingRequestInterface $request, callable $next) {
+ *   Http::intercept(function (RequestInterface $request, callable $next) {
  *       $token = await(TokenStore::get('api_token'));
  *       $request = $request->withToken($token)
  *                          ->withCookie('session', $sessionId)
@@ -32,8 +32,8 @@ use Psr\Http\Message\RequestInterface;
  *       return await($next($request));
  *   });
  */
-interface PendingRequestInterface extends
-    RequestInterface,
+interface RequestInterface extends
+    Psr7RequestInterface,
     ConfiguresHeadersInterface,
     ConfiguresAuthInterface,
     ConfiguresBodyInterface,

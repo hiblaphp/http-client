@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Interfaces\Handler;
 
-use Hibla\HttpClient\ClientOptions;
+use Hibla\HttpClient\ValueObjects\ClientOptions;
 
 /**
  * Contract for building transport-specific option arrays from a

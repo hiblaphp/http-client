@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Interfaces\Builder;
 
-use Hibla\HttpClient\ProxyConfig;
+use Hibla\HttpClient\ValueObjects\ProxyConfig;
 
 /**
  * Fluent interface for outbound proxy configuration.

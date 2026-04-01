@@ -7,14 +7,14 @@ namespace Hibla\HttpClient\Interfaces;
 use Psr\Http\Message\StreamInterface;
 
 /**
- * Extends EnhancedResponseInterface for responses whose body is consumed
+ * Extends ResponseInterface for responses whose body is consumed
  * incrementally rather than buffered in full.
  *
  * Implementations must not load the entire body into memory on construction.
  * The body is exposed as a live stream and optionally written to an output
  * destination chunk by chunk.
  */
-interface StreamingResponseInterface extends EnhancedResponseInterface
+interface StreamingResponseInterface extends ResponseInterface
 {
     /**
      * Return the underlying PSR-7 stream for direct consumption.
