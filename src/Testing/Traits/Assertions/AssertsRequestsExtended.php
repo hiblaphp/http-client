@@ -28,9 +28,12 @@ trait AssertsRequestsExtended
     {
         $this->registerAssertion();
         foreach ($this->getRequestHistory() as $request) {
+            $normalizedUrl = rtrim($request->getUrl(), '/');
+            $normalizedPattern = rtrim($pattern, '/');
+
             if (
                 strtoupper($request->getMethod()) === strtoupper($method) &&
-                fnmatch($pattern, $request->getUrl())
+                (fnmatch($pattern, $request->getUrl()) || fnmatch($normalizedPattern, $normalizedUrl))
             ) {
                 return;
             }
@@ -68,7 +71,7 @@ trait AssertsRequestsExtended
             $expected = $expectedSequence[$matchIndex];
             if (
                 strtoupper($request->getMethod()) === strtoupper($expected['method']) &&
-                $request->getUrl() === $expected['url']
+                rtrim($request->getUrl(), '/') === rtrim($expected['url'], '/')
             ) {
                 $matchIndex++;
             }
@@ -82,7 +85,7 @@ trait AssertsRequestsExtended
     }
 
     /**
-     * Assert that a request was made within a time range.
+     * Assert that a request was made at a specific index in history.
      *
      * @param string $method HTTP method
      * @param string $url Request URL
@@ -103,7 +106,7 @@ trait AssertsRequestsExtended
 
         if (
             strtoupper($request->getMethod()) !== strtoupper($method) ||
-            $request->getUrl() !== $url
+            rtrim($request->getUrl(), '/') !== rtrim($url, '/')
         ) {
             $this->failAssertion(
                 "Request at index {$index} does not match: {$method} {$url}"
@@ -122,7 +125,7 @@ trait AssertsRequestsExtended
         $count = 0;
 
         foreach ($this->getRequestHistory() as $request) {
-            if ($request->getUrl() === $url) {
+            if (rtrim($request->getUrl(), '/') === rtrim($url, '/')) {
                 $count++;
             }
         }
@@ -152,7 +155,7 @@ trait AssertsRequestsExtended
         foreach ($this->getRequestHistory() as $request) {
             if (
                 strtoupper($request->getMethod()) === strtoupper($method) &&
-                $request->getUrl() === $url
+                rtrim($request->getUrl(), '/') === rtrim($url, '/')
             ) {
                 $this->failAssertion(
                     "Unexpected request found: {$method} {$url}"
@@ -173,7 +176,7 @@ trait AssertsRequestsExtended
         $count = 0;
 
         foreach ($this->getRequestHistory() as $request) {
-            if ($request->getUrl() === $url) {
+            if (rtrim($request->getUrl(), '/') === rtrim($url, '/')) {
                 $count++;
             }
         }
@@ -196,7 +199,7 @@ trait AssertsRequestsExtended
         $requests = [];
 
         foreach ($this->getRequestHistory() as $request) {
-            if ($request->getUrl() === $url) {
+            if (rtrim($request->getUrl(), '/') === rtrim($url, '/')) {
                 $requests[] = $request;
             }
         }

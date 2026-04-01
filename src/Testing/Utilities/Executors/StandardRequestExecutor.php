@@ -12,6 +12,7 @@ use Hibla\HttpClient\Testing\Utilities\CookieManager;
 use Hibla\HttpClient\Testing\Utilities\RequestMatcher;
 use Hibla\HttpClient\Testing\Utilities\RequestRecorder;
 use Hibla\HttpClient\Testing\Utilities\ResponseFactory;
+use Hibla\HttpClient\Testing\Utilities\Handlers\ResponseTypeHandler;
 use Hibla\HttpClient\Testing\Utilities\Validators\RequestValidator;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
@@ -23,19 +24,22 @@ class StandardRequestExecutor
     private RequestRecorder $requestRecorder;
     private RequestValidator $validator;
     private RetryableRequestExecutor $retryExecutor;
+    private ResponseTypeHandler $responseTypeHandler;
 
     public function __construct(
         RequestMatcher $requestMatcher,
         ResponseFactory $responseFactory,
         CookieManager $cookieManager,
         RequestRecorder $requestRecorder,
-        RequestValidator $validator
+        RequestValidator $validator,
+        ResponseTypeHandler $responseTypeHandler
     ) {
         $this->requestMatcher = $requestMatcher;
         $this->responseFactory = $responseFactory;
         $this->cookieManager = $cookieManager;
         $this->requestRecorder = $requestRecorder;
         $this->validator = $validator;
+        $this->responseTypeHandler = $responseTypeHandler;
 
         $this->retryExecutor = new RetryableRequestExecutor(
             $requestMatcher,
@@ -74,6 +78,7 @@ class StandardRequestExecutor
         );
 
         if ($matchedMock === null) {
+            $this->requestRecorder->recordRequest($method, $url, $curlOptions);
             return $this->handleNoMatch(
                 $url,
                 $curlOptions,
@@ -86,14 +91,12 @@ class StandardRequestExecutor
             );
         }
 
-        /** @var PromiseInterface<Response> $promise */
         $promise = $this->executeMockedRequest(
             $url,
             $curlOptions,
+            $matchedMock,
             $mockedRequests,
-            $globalSettings,
-            $retryConfig,
-            $parentSendRequest
+            $retryConfig
         );
 
         return $this->applyPostProcessing($promise, $curlOptions, $url);
@@ -130,10 +133,7 @@ class StandardRequestExecutor
             if ($parentSendRequest === null) {
                 throw new \RuntimeException('No parent send request handler available');
             }
-            /** @var PromiseInterface<Response> $result */
-            $result = $parentSendRequest($url, $curlOptions, $retryConfig);
-
-            return $result;
+            return $parentSendRequest($url, $curlOptions, $retryConfig);
         }
 
         throw UnexpectedRequestException::noMatchFound(
@@ -154,9 +154,10 @@ class StandardRequestExecutor
         array $curlOptions,
         string $url
     ): PromiseInterface {
-        return $promise->then(function (Response $response) use ($curlOptions, $url) {
-            $this->processCookies($response, $curlOptions, $url);
-
+        return $promise->then(function ($response) use ($curlOptions, $url) {
+            if ($response instanceof Response) {
+                $this->processCookies($response, $curlOptions, $url);
+            }
             return $response;
         });
     }
@@ -187,14 +188,11 @@ class StandardRequestExecutor
     private function executeMockedRequest(
         string $url,
         array $curlOptions,
+        array $matchedMock,
         array &$mockedRequests,
-        array $globalSettings,
-        ?RetryConfig $retryConfig,
-        ?callable $parentSendRequest
+        ?RetryConfig $retryConfig
     ): PromiseInterface {
         $method = $this->extractMethod($curlOptions);
-        /** @var array<int, mixed> $curlOnlyOptions */
-        $curlOnlyOptions = array_filter($curlOptions, 'is_int', ARRAY_FILTER_USE_KEY);
 
         if ($retryConfig !== null) {
             return $this->retryExecutor->executeWithRetry(
@@ -205,46 +203,15 @@ class StandardRequestExecutor
                 $mockedRequests
             );
         }
+        
+        $this->requestRecorder->recordRequest($method, $url, $curlOptions);
 
-        $this->requestRecorder->recordRequest($method, $url, $curlOnlyOptions);
-
-        $match = $this->requestMatcher->findMatchingMock($mockedRequests, $method, $url, $curlOnlyOptions);
-
-        if ($match !== null) {
-            $mock = $match['mock'];
-            if (! $mock->isPersistent()) {
-                array_splice($mockedRequests, $match['index'], 1);
-            }
-
-            return $this->responseFactory->createMockedResponse($mock);
-        }
-
-        return $this->handleNoMockFound($method, $url, $globalSettings, $parentSendRequest, $curlOptions, $retryConfig);
-    }
-
-    /**
-     * @param array<string, mixed> $globalSettings
-     * @param array<int|string, mixed> $curlOptions
-     * @return PromiseInterface<Response>
-     */
-    private function handleNoMockFound(
-        string $method,
-        string $url,
-        array $globalSettings,
-        ?callable $parentSendRequest,
-        array $curlOptions,
-        ?RetryConfig $retryConfig
-    ): PromiseInterface {
-        if ((bool)($globalSettings['allow_passthrough'] ?? false)) {
-            if ($parentSendRequest === null) {
-                throw new \RuntimeException('No parent send request available');
-            }
-            /** @var PromiseInterface<Response> $result */
-            $result = $parentSendRequest($url, $curlOptions, null, $retryConfig);
-
-            return $result;
-        }
-
-        throw new \RuntimeException("No mock found for: {$method} {$url}");
+        return $this->responseTypeHandler->handleMockedResponse(
+            $matchedMock,
+            $curlOptions,
+            $mockedRequests,
+            $url,
+            $method
+        );
     }
 }

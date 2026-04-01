@@ -66,6 +66,10 @@ class RecordedRequest
                 }
             }
         }
+        
+        if (isset($this->options[CURLOPT_USERAGENT]) && is_string($this->options[CURLOPT_USERAGENT])) {
+            $this->parsedHeaders['user-agent'] = $this->options[CURLOPT_USERAGENT];
+        }
 
         if (isset($this->options['headers']) && is_array($this->options['headers'])) {
             foreach ($this->options['headers'] as $name => $value) {

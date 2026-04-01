@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Hibla\HttpClient\HttpClient;
 use Hibla\HttpClient\Testing\Utilities\RecordedRequest;
 use PHPUnit\Framework\AssertionFailedError;
 
@@ -10,32 +11,39 @@ describe('AssertsStreams', function () {
         $handler = testingHttpHandler();
         $handler->mock('GET')->url('https://example.com/stream')->respondWithStatus(200)->register();
 
-        $handler->stream('https://example.com/stream')->wait();
+        (new HttpClient())
+            ->setHandler($handler)
+            ->stream('https://example.com/stream')
+            ->wait();
 
         expect(fn () => $handler->assertStreamMade('https://example.com/stream'))
-            ->not->toThrow(AssertionFailedError::class)
-        ;
+            ->not->toThrow(AssertionFailedError::class);
     });
 
     test('assertStreamWithCallback validates stream with callback', function () {
         $handler = testingHttpHandler();
         $handler->mock('GET')->url('https://example.com/stream')->respondWithStatus(200)->register();
 
-        $handler->stream('https://example.com/stream', [], fn () => null)->wait();
+        (new HttpClient())
+            ->setHandler($handler)
+            ->stream('https://example.com/stream', fn () => null)
+            ->wait();
 
         expect(fn () => $handler->assertStreamWithCallback('https://example.com/stream'))
-            ->not->toThrow(AssertionFailedError::class)
-        ;
+            ->not->toThrow(AssertionFailedError::class);
     });
 
     test('assertNoStreamsMade passes when no streams made', function () {
         $handler = testingHttpHandler();
         $handler->mock('GET')->url('https://example.com')->respondWithStatus(200)->register();
-        $handler->fetch('https://example.com')->wait();
+        
+        (new HttpClient())
+            ->setHandler($handler)
+            ->get('https://example.com')
+            ->wait();
 
         expect(fn () => $handler->assertNoStreamsMade())
-            ->not->toThrow(AssertionFailedError::class)
-        ;
+            ->not->toThrow(AssertionFailedError::class);
     });
 
     test('assertStreamCount validates stream count', function () {
@@ -43,24 +51,27 @@ describe('AssertsStreams', function () {
         $handler->mock('GET')->url('https://example.com/stream1')->respondWithStatus(200)->register();
         $handler->mock('GET')->url('https://example.com/stream2')->respondWithStatus(200)->register();
 
-        $handler->stream('https://example.com/stream1')->wait();
-        $handler->stream('https://example.com/stream2')->wait();
+        $client = (new HttpClient())->setHandler($handler);
+        $client->stream('https://example.com/stream1')->wait();
+        $client->stream('https://example.com/stream2')->wait();
 
         expect(fn () => $handler->assertStreamCount(2))
-            ->not->toThrow(AssertionFailedError::class)
-        ;
+            ->not->toThrow(AssertionFailedError::class);
     });
 
     test('getStreamRequests returns all streams', function () {
         $handler = testingHttpHandler();
         $handler->mock('GET')->url('https://example.com/stream')->respondWithStatus(200)->register();
-        $handler->stream('https://example.com/stream')->wait();
+        
+        (new HttpClient())
+            ->setHandler($handler)
+            ->stream('https://example.com/stream')
+            ->wait();
 
         $streams = $handler->getStreamRequests();
 
         expect($streams)->toHaveCount(1)
-            ->and($streams[0])->toBeInstanceOf(RecordedRequest::class)
-        ;
+            ->and($streams[0])->toBeInstanceOf(RecordedRequest::class);
     });
 
     test('getLastStream returns last stream', function () {
@@ -68,13 +79,13 @@ describe('AssertsStreams', function () {
         $handler->mock('GET')->url('https://example.com/stream1')->respondWithStatus(200)->register();
         $handler->mock('GET')->url('https://example.com/stream2')->respondWithStatus(200)->register();
 
-        $handler->stream('https://example.com/stream1')->wait();
-        $handler->stream('https://example.com/stream2')->wait();
+        $client = (new HttpClient())->setHandler($handler);
+        $client->stream('https://example.com/stream1')->wait();
+        $client->stream('https://example.com/stream2')->wait();
 
         $lastStream = $handler->getLastStream();
 
         expect($lastStream)->toBeInstanceOf(RecordedRequest::class)
-            ->and($lastStream->getUrl())->toBe('https://example.com/stream2')
-        ;
+            ->and($lastStream->getUrl())->toBe('https://example.com/stream2');
     });
 });

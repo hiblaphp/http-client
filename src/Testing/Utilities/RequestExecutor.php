@@ -9,6 +9,7 @@ use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Testing\Utilities\Executors\SSERequestExecutor;
 use Hibla\HttpClient\Testing\Utilities\Executors\StandardRequestExecutor;
+use Hibla\HttpClient\Testing\Utilities\Handlers\ResponseTypeHandler;
 use Hibla\HttpClient\Testing\Utilities\Validators\RequestValidator;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
@@ -23,6 +24,7 @@ class RequestExecutor
     private StandardRequestExecutor $standardExecutor;
     private SSERequestExecutor $sseExecutor;
     private RequestValidator $validator;
+    private ResponseTypeHandler $responseTypeHandler;
 
     public function __construct(
         RequestMatcher $requestMatcher,
@@ -43,13 +45,15 @@ class RequestExecutor
     private function initializeExecutors(): void
     {
         $this->validator = new RequestValidator();
+        $this->responseTypeHandler = new ResponseTypeHandler($this->responseFactory, $this->fileManager);
 
         $this->standardExecutor = new StandardRequestExecutor(
             $this->requestMatcher,
             $this->responseFactory,
             $this->cookieManager,
             $this->requestRecorder,
-            $this->validator
+            $this->validator,
+            $this->responseTypeHandler
         );
 
         $this->sseExecutor = new SSERequestExecutor(

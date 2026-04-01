@@ -923,7 +923,7 @@ class HttpClient implements HttpClientInterface
     public function stream(string $url, ?callable $onChunk = null): PromiseInterface
     {
         $options = $this->resolveTransportOptionsBuilder()
-            ->buildForStreaming($this->buildClientOptions('GET', $url));
+            ->buildForStreaming($this->buildClientOptions($this->getMethod(), $url));
 
         return $this->resolveHandler()->stream($url, $options, $onChunk);
     }
@@ -953,11 +953,10 @@ class HttpClient implements HttpClientInterface
     public function download(string $url, string $destination): PromiseInterface
     {
         $options = $this->resolveTransportOptionsBuilder()
-            ->buildForDownload($this->buildClientOptions('GET', $url), $destination);
+            ->buildForDownload($this->buildClientOptions($this->getMethod(), $url), $destination);
 
         return $this->resolveHandler()->download($url, $destination, $options);
     }
-
     /**
      * @inheritDoc
      */
