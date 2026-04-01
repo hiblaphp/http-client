@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient;
 
+use Composer\InstalledVersions;
 use Hibla\HttpClient\Builders\CurlOptionsBuilder;
 use Hibla\HttpClient\Handlers\HttpHandler;
 use Hibla\HttpClient\Handlers\InterceptorHandler;
@@ -96,18 +97,16 @@ class HttpClient implements HttpClientInterface
     /**
      * Initialise a blank HTTP client.
      *
-     * A fresh PendingRequest is created and seeded with the globally
-     * configured User-Agent (if any). The HttpHandler is NOT instantiated
-     * here — it is created lazily on the first call to a terminal method.
+     * A fresh PendingRequest is seeded with the library's default User-Agent.
+     * Override it per-request with withUserAgent().
+     *
+     * The HttpHandler is NOT instantiated here — it is created lazily on the
+     * first call to a terminal method.
      */
     public function __construct()
     {
-        $pending = new PendingRequest();
-
-        $defaultAgent = GlobalConfig::getUserAgent();
-        $this->request = $defaultAgent !== ''
-            ? $pending->withUserAgent($defaultAgent)
-            : $pending;
+        $this->request = (new PendingRequest())
+            ->withUserAgent(self::defaultUserAgent());
 
         $this->interceptorHandler = new InterceptorHandler();
     }
@@ -747,7 +746,7 @@ class HttpClient implements HttpClientInterface
     {
         return $this->intercept(
             static function (PendingRequestInterface $request, callable $next) use ($callback): PromiseInterface {
-                /** @var callable(PendingRequestInterface): PromiseInterface<EnhancedResponseInterface> $next */ 
+                /** @var callable(PendingRequestInterface): PromiseInterface<EnhancedResponseInterface> $next */
                 $result = $callback($request);
 
                 if ($result instanceof PromiseInterface) {
@@ -775,7 +774,7 @@ class HttpClient implements HttpClientInterface
     {
         return $this->intercept(
             static function (PendingRequestInterface $request, callable $next) use ($callback): PromiseInterface {
-                /** @var callable(PendingRequestInterface): PromiseInterface<EnhancedResponseInterface> $next */ 
+                /** @var callable(PendingRequestInterface): PromiseInterface<EnhancedResponseInterface> $next */
                 /** @var PromiseInterface<EnhancedResponseInterface> $nextPromise */
                 $nextPromise = $next($request);
 
@@ -1198,6 +1197,13 @@ class HttpClient implements HttpClientInterface
         }
 
         return $value;
+    }
+
+    private static function defaultUserAgent(): string
+    {
+        $version = InstalledVersions::getPrettyVersion('hiblaphp/http-client') ?? '1.0';
+
+        return "hibla-http-client/{$version} PHP/" . PHP_VERSION;
     }
 
     /**

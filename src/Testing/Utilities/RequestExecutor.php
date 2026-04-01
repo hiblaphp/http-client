@@ -6,19 +6,14 @@ namespace Hibla\HttpClient\Testing\Utilities;
 
 use Hibla\HttpClient\Response;
 use Hibla\HttpClient\RetryConfig;
-use Hibla\HttpClient\StreamingResponse;
 use Hibla\HttpClient\Testing\MockedRequest;
-use Hibla\HttpClient\Testing\Utilities\Executors\FetchRequestExecutor;
 use Hibla\HttpClient\Testing\Utilities\Executors\SSERequestExecutor;
 use Hibla\HttpClient\Testing\Utilities\Executors\StandardRequestExecutor;
 use Hibla\HttpClient\Testing\Utilities\Validators\RequestValidator;
-use Hibla\HttpClient\Traits\FetchOptionTrait;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
 class RequestExecutor
 {
-    use FetchOptionTrait;
-
     private RequestMatcher $requestMatcher;
     private ResponseFactory $responseFactory;
     private FileManager $fileManager;
@@ -27,7 +22,6 @@ class RequestExecutor
 
     private StandardRequestExecutor $standardExecutor;
     private SSERequestExecutor $sseExecutor;
-    private FetchRequestExecutor $fetchExecutor;
     private RequestValidator $validator;
 
     public function __construct(
@@ -62,14 +56,6 @@ class RequestExecutor
             $this->requestMatcher,
             $this->responseFactory,
             $this->requestRecorder
-        );
-
-        $this->fetchExecutor = new FetchRequestExecutor(
-            $this->requestMatcher,
-            $this->responseFactory,
-            $this->fileManager,
-            $this->requestRecorder,
-            $this->validator
         );
     }
 
@@ -123,31 +109,6 @@ class RequestExecutor
             $onError,
             $parentSSE,
             $reconnectConfig
-        );
-    }
-
-    /**
-     * @param array<string, mixed> $options
-     * @param list<MockedRequest> $mockedRequests
-     * @param array<string, mixed> $globalSettings
-     * @return PromiseInterface<array<string, mixed>|StreamingResponse>|PromiseInterface<Response>
-     */
-    public function executeFetch(
-        string $url,
-        array $options,
-        array &$mockedRequests,
-        array $globalSettings,
-        ?callable $parentFetch = null,
-        ?callable $createStream = null
-    ): PromiseInterface {
-        /** @var PromiseInterface<array<string, mixed>|StreamingResponse>|PromiseInterface<Response> */
-        return $this->fetchExecutor->execute(
-            $url,
-            $options,
-            $mockedRequests,
-            $globalSettings,
-            $parentFetch,
-            $createStream
         );
     }
 }

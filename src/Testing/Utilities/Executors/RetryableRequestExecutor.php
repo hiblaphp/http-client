@@ -6,24 +6,15 @@ namespace Hibla\HttpClient\Testing\Utilities\Executors;
 
 use Hibla\HttpClient\Response;
 use Hibla\HttpClient\RetryConfig;
-use Hibla\HttpClient\StreamingResponse;
 use Hibla\HttpClient\Testing\Exceptions\MockAssertionException;
 use Hibla\HttpClient\Testing\MockedRequest;
-use Hibla\HttpClient\Testing\Utilities\FileManager;
 use Hibla\HttpClient\Testing\Utilities\RequestMatcher;
 use Hibla\HttpClient\Testing\Utilities\RequestRecorder;
 use Hibla\HttpClient\Testing\Utilities\ResponseFactory;
-use Hibla\HttpClient\Traits\FetchOptionTrait;
-use Hibla\HttpClient\Traits\StreamTrait;
 use Hibla\Promise\Interfaces\PromiseInterface;
-use Hibla\Promise\Promise;
-use Psr\Http\Message\StreamInterface;
 
 class RetryableRequestExecutor
 {
-    use FetchOptionTrait;
-    use StreamTrait;
-
     private RequestMatcher $requestMatcher;
     private ResponseFactory $responseFactory;
     private RequestRecorder $requestRecorder;
@@ -59,47 +50,6 @@ class RetryableRequestExecutor
     }
 
     /**
-     * @param array<int|string, mixed> $options
-     * @param list<MockedRequest> $mockedRequests
-     * @return PromiseInterface<Response|StreamingResponse|array<string, mixed>>
-     */
-    public function executeWithMockRetry(
-        string $url,
-        array $options,
-        RetryConfig $retryConfig,
-        string $method,
-        array &$mockedRequests,
-        ?callable $createStream = null,
-        ?FileManager $fileManager = null
-    ): PromiseInterface {
-        /** @var Promise<Response|StreamingResponse|array<string, mixed>> $finalPromise */
-        $finalPromise = new Promise();
-
-        $curlOptions = $this->normalizeFetchOptions($url, $options);
-        /** @var array<int, mixed> $curlOnlyOptions */
-        $curlOnlyOptions = array_filter($curlOptions, 'is_int', ARRAY_FILTER_USE_KEY);
-
-        $mockProvider = $this->createMockProvider($method, $url, $curlOnlyOptions, $mockedRequests);
-        $retryPromise = $this->responseFactory->createRetryableMockedResponse($retryConfig, $mockProvider);
-
-        /** @var array<string, mixed> $stringKeyedOptions */
-        $stringKeyedOptions = array_filter($options, fn ($key) => \is_string($key), ARRAY_FILTER_USE_KEY);
-
-        $retryPromise->then(
-            function (Response $successfulResponse) use ($stringKeyedOptions, $finalPromise, $createStream, $fileManager): void {
-                $this->resolveRetryResponse($successfulResponse, $stringKeyedOptions, $finalPromise, $createStream, $fileManager);
-            },
-            function ($reason) use ($finalPromise): void {
-                $finalPromise->reject($reason);
-            }
-        );
-
-        $finalPromise->onCancel(fn () => $retryPromise->cancel());
-
-        return $finalPromise;
-    }
-
-    /**
      * @param array<int, mixed> $curlOnlyOptions
      * @param list<MockedRequest> $mockedRequests
      */
@@ -125,77 +75,5 @@ class RetryableRequestExecutor
 
             return $mock;
         };
-    }
-
-    /**
-     * @param array<string, mixed> $options
-     * @param Promise<Response|StreamingResponse|array<string, mixed>> $finalPromise
-     */
-    private function resolveRetryResponse(
-        Response $successfulResponse,
-        array $options,
-        Promise $finalPromise,
-        ?callable $createStream,
-        ?FileManager $fileManager
-    ): void {
-        if (isset($options['download'])) {
-            $this->resolveDownload($successfulResponse, $options, $finalPromise, $fileManager);
-        } elseif (isset($options['stream']) && $options['stream'] === true) {
-            $this->resolveStream($successfulResponse, $options, $finalPromise, $createStream);
-        } else {
-            $finalPromise->resolve($successfulResponse);
-        }
-    }
-
-    /**
-     * @param array<string, mixed> $options
-     * @param Promise<Response|StreamingResponse|array<string, mixed>> $finalPromise
-     */
-    private function resolveDownload(
-        Response $successfulResponse,
-        array $options,
-        Promise $finalPromise,
-        ?FileManager $fileManager
-    ): void {
-        $destPath = \is_string($options['download'])
-            ? $options['download']
-            : ($fileManager !== null ? $fileManager->createTempFile() : sys_get_temp_dir() . '/download_' . uniqid());
-
-        file_put_contents($destPath, $successfulResponse->body());
-
-        $finalPromise->resolve([
-            'file' => $destPath,
-            'status' => $successfulResponse->status(),
-            'headers' => $successfulResponse->headers(),
-            'size' => \strlen($successfulResponse->body()),
-            'protocol_version' => '1.1',
-        ]);
-    }
-
-    /**
-     * @param array<string, mixed> $options
-     * @param Promise<Response|StreamingResponse|array<string, mixed>> $finalPromise
-     */
-    private function resolveStream(
-        Response $successfulResponse,
-        array $options,
-        Promise $finalPromise,
-        ?callable $createStream
-    ): void {
-        $onChunkRaw = $options['on_chunk'] ?? $options['onChunk'] ?? null;
-        $onChunk = is_callable($onChunkRaw) ? $onChunkRaw : null;
-        $body = $successfulResponse->body();
-
-        if ($onChunk !== null) {
-            $onChunk($body);
-        }
-
-        $createStreamFn = $createStream ?? fn (string $b): StreamInterface => $this->createStream($b);
-        /** @var StreamInterface $stream */
-        $stream = $createStreamFn($body);
-
-        $finalPromise->resolve(
-            new StreamingResponse(stream: $stream, status: $successfulResponse->status(), headers: $successfulResponse->headers())
-        );
     }
 }

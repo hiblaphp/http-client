@@ -10,8 +10,6 @@ declare(strict_types=1);
 use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Testing\TestingHttpHandler;
 use Hibla\HttpClient\Testing\Utilities\CookieManager;
-use Hibla\HttpClient\Testing\Utilities\Executors\FetchRequestExecutor;
-use Hibla\HttpClient\Testing\Utilities\Executors\RetryableRequestExecutor;
 use Hibla\HttpClient\Testing\Utilities\Executors\SSERequestExecutor;
 use Hibla\HttpClient\Testing\Utilities\Executors\StandardRequestExecutor;
 use Hibla\HttpClient\Testing\Utilities\Factories\SSE\ImmediateSSEEmitter;
@@ -196,34 +194,6 @@ function createRequestRecorder(): RequestRecorder
 function createRequestValidator(): RequestValidator
 {
     return mock(RequestValidator::class);
-}
-
-function createFetchRequestExecutor(
-    ?RequestMatcher $requestMatcher = null,
-    ?ResponseFactory $responseFactory = null,
-    ?FileManager $fileManager = null,
-    ?RequestRecorder $requestRecorder = null,
-    ?RequestValidator $validator = null
-): FetchRequestExecutor {
-    return new FetchRequestExecutor(
-        $requestMatcher ?? createRequestMatcher(),
-        $responseFactory ?? createResponseFactory(),
-        $fileManager ?? createFileManager(),
-        $requestRecorder ?? createRequestRecorder(),
-        $validator ?? createRequestValidator()
-    );
-}
-
-function createRetryableRequestExecutor(
-    ?RequestMatcher $requestMatcher = null,
-    ?ResponseFactory $responseFactory = null,
-    ?RequestRecorder $requestRecorder = null
-): RetryableRequestExecutor {
-    return new RetryableRequestExecutor(
-        $requestMatcher ?? createRequestMatcher(),
-        $responseFactory ?? createResponseFactory(),
-        $requestRecorder ?? createRequestRecorder()
-    );
 }
 
 function createSSERequestExecutor(

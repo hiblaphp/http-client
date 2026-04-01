@@ -9,8 +9,7 @@
             "Hibla\\HttpClient\\": "src/"
         },
         "files": [
-            "src/Helpers/global_functions.php",
-            "src/Helpers/namespace_functions.php"
+            "src/functions.php"
         ]
     },
     "autoload-dev": {
