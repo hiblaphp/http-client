@@ -5,16 +5,21 @@ declare(strict_types=1);
 namespace Hibla\HttpClient\Testing\Utilities\Executors;
 
 use Hibla\HttpClient\Response;
+use Hibla\HttpClient\StreamingResponse;
 use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\HttpClient\Testing\Exceptions\MockAssertionException;
 use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Testing\Utilities\RequestMatcher;
 use Hibla\HttpClient\Testing\Utilities\RequestRecorder;
 use Hibla\HttpClient\Testing\Utilities\ResponseFactory;
+use Hibla\HttpClient\Traits\StreamTrait;
 use Hibla\Promise\Interfaces\PromiseInterface;
+use Hibla\Promise\Promise;
 
 class RetryableRequestExecutor
 {
+    use StreamTrait;
+
     private RequestMatcher $requestMatcher;
     private ResponseFactory $responseFactory;
     private RequestRecorder $requestRecorder;
@@ -32,7 +37,7 @@ class RetryableRequestExecutor
     /**
      * @param array<int|string, mixed> $curlOptions
      * @param list<MockedRequest> $mockedRequests
-     * @return PromiseInterface<Response>
+     * @return PromiseInterface<Response|StreamingResponse|array<string, mixed>>
      */
     public function executeWithRetry(
         string $url,
@@ -41,25 +46,43 @@ class RetryableRequestExecutor
         string $method,
         array &$mockedRequests
     ): PromiseInterface {
-        /** @var array<int, mixed> $curlOnlyOptions */
-        $curlOnlyOptions = array_filter($curlOptions, 'is_int', ARRAY_FILTER_USE_KEY);
+        /** @var Promise<Response|StreamingResponse|array<string, mixed>> $finalPromise */
+        $finalPromise = new Promise();
 
-        $mockProvider = $this->createMockProvider($method, $url, $curlOnlyOptions, $mockedRequests);
+        /** @var array<string, mixed> $stringKeyedOptions */
+        $stringKeyedOptions = array_filter($curlOptions, 'is_string', ARRAY_FILTER_USE_KEY);
 
-        return $this->responseFactory->createRetryableMockedResponse($retryConfig, $mockProvider);
+        $mockProvider = $this->createMockProvider($method, $url, $curlOptions, $mockedRequests);
+
+        $retryPromise = $this->responseFactory->createRetryableMockedResponse($retryConfig, $mockProvider);
+
+        $retryPromise->then(
+            function (Response $successfulResponse) use ($stringKeyedOptions, $finalPromise): void {
+                $this->resolveRetryResponse($successfulResponse, $stringKeyedOptions, $finalPromise);
+            },
+            function ($reason) use ($finalPromise): void {
+                $finalPromise->reject($reason);
+            }
+        );
+
+        $finalPromise->onCancel(fn () => $retryPromise->cancel());
+
+        return $finalPromise;
     }
 
     /**
-     * @param array<int, mixed> $curlOnlyOptions
+     * @param array<int|string, mixed> $curlOptions
      * @param list<MockedRequest> $mockedRequests
      */
     private function createMockProvider(
         string $method,
         string $url,
-        array $curlOnlyOptions,
+        array $curlOptions,
         array &$mockedRequests
     ): callable {
-        return function (int $attemptNumber) use ($method, $url, $curlOnlyOptions, &$mockedRequests): MockedRequest {
+        $curlOnlyOptions = array_filter($curlOptions, 'is_int', ARRAY_FILTER_USE_KEY);
+
+        return function (int $attemptNumber) use ($method, $url, $curlOptions, $curlOnlyOptions, &$mockedRequests): MockedRequest {
             $match = $this->requestMatcher->findMatchingMock($mockedRequests, $method, $url, $curlOnlyOptions);
 
             if ($match === null) {
@@ -67,7 +90,8 @@ class RetryableRequestExecutor
             }
 
             $mock = $match['mock'];
-            $this->requestRecorder->recordRequest($method, $url, $curlOnlyOptions);
+            
+            $this->requestRecorder->recordRequest($method, $url, $curlOptions);
 
             if (! $mock->isPersistent()) {
                 array_splice($mockedRequests, $match['index'], 1);
@@ -75,5 +99,71 @@ class RetryableRequestExecutor
 
             return $mock;
         };
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     * @param Promise<Response|StreamingResponse|array<string, mixed>> $finalPromise
+     */
+    private function resolveRetryResponse(
+        Response $successfulResponse,
+        array $options,
+        Promise $finalPromise
+    ): void {
+        if (isset($options['download'])) {
+            $this->resolveDownload($successfulResponse, $options, $finalPromise);
+        } elseif (isset($options['stream']) && $options['stream'] === true) {
+            $this->resolveStream($successfulResponse, $options, $finalPromise);
+        } else {
+            $finalPromise->resolve($successfulResponse);
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     * @param Promise<Response|StreamingResponse|array<string, mixed>> $finalPromise
+     */
+    private function resolveDownload(
+        Response $successfulResponse,
+        array $options,
+        Promise $finalPromise
+    ): void {
+        $destPath = \is_string($options['download'])
+            ? $options['download']
+            : sys_get_temp_dir() . '/download_' . uniqid() . '.tmp';
+
+        file_put_contents($destPath, $successfulResponse->body());
+
+        $finalPromise->resolve([
+            'file' => $destPath,
+            'status' => $successfulResponse->status(),
+            'headers' => $successfulResponse->headers(),
+            'size' => \strlen($successfulResponse->body()),
+            'protocol_version' => $successfulResponse->getHttpVersion() ?? '1.1',
+        ]);
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     * @param Promise<Response|StreamingResponse|array<string, mixed>> $finalPromise
+     */
+    private function resolveStream(
+        Response $successfulResponse,
+        array $options,
+        Promise $finalPromise
+    ): void {
+        $onChunkRaw = $options['on_chunk'] ?? $options['onChunk'] ?? null;
+        $onChunk = is_callable($onChunkRaw) ? $onChunkRaw : null;
+        $body = $successfulResponse->body();
+
+        if ($onChunk !== null) {
+            $onChunk($body);
+        }
+
+        $stream = $this->createStream($body);
+
+        $finalPromise->resolve(
+            new StreamingResponse($stream, $successfulResponse->status(), $successfulResponse->headers())
+        );
     }
 }

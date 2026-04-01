@@ -5,24 +5,6 @@ declare(strict_types=1);
 use Hibla\EventLoop\Loop;
 use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\SSE\SSEResponse;
-use Hibla\HttpClient\Testing\Utilities\Factories\SSE\SSEResponseFactory;
-use Hibla\HttpClient\Testing\Utilities\NetworkSimulator;
-
-beforeEach(function () {
-    Loop::reset();
-});
-
-afterEach(function () {
-    Loop::reset();
-});
-
-function createSSEResponseFactory(?NetworkSimulator $simulator = null): SSEResponseFactory
-{
-    $simulator ??= new NetworkSimulator();
-    $handler = createNetworkHandler($simulator);
-
-    return new SSEResponseFactory($handler);
-}
 
 describe('SSEResponseFactory', function () {
 

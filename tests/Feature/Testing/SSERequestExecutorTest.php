@@ -9,21 +9,7 @@ use Hibla\HttpClient\Stream;
 use Hibla\HttpClient\Testing\Exceptions\MockException;
 use Hibla\HttpClient\Testing\Exceptions\UnexpectedRequestException;
 use Hibla\HttpClient\Testing\MockedRequest;
-use Hibla\HttpClient\Testing\Utilities\Executors\SSERequestExecutor;
-use Hibla\HttpClient\Testing\Utilities\NetworkSimulator;
-use Hibla\HttpClient\Testing\Utilities\RequestMatcher;
-use Hibla\HttpClient\Testing\Utilities\RequestRecorder;
-use Hibla\HttpClient\Testing\Utilities\ResponseFactory;
 use Hibla\Promise\Promise;
-
-function createSSEExecutor(): SSERequestExecutor
-{
-    return new SSERequestExecutor(
-        new RequestMatcher(),
-        new ResponseFactory(new NetworkSimulator()),
-        new RequestRecorder()
-    );
-}
 
 test('executes SSE request on first attempt success', function () {
     $executor = createSSEExecutor();

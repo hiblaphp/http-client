@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Hibla\HttpClient;
 
 use Psr\Http\Message\UriInterface;
+use SensitiveParameter;
 
 /**
  * A PSR-7 compliant implementation of a Uniform Resource Identifier (URI).
@@ -149,7 +150,7 @@ class Uri implements UriInterface
     /**
      * {@inheritdoc}
      */
-    public function withUserInfo(string $user, ?string $password = null): UriInterface
+    public function withUserInfo(string $user, #[SensitiveParameter] ?string $password = null): UriInterface
     {
         $userInfo = $user.($password !== null ? ':'.$password : '');
 

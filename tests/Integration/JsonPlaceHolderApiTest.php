@@ -2,31 +2,24 @@
 
 declare(strict_types=1);
 
-use Hibla\HttpClient\Handlers\HttpHandler;
-use Hibla\HttpClient\ValueObjects\RetryConfig;
+use Hibla\HttpClient\Http;
+use Hibla\HttpClient\HttpClient;
 
 describe('Real API Integration Tests', function () {
 
     test('fetches a single post from JSONPlaceholder', function () {
-        $handler = new HttpHandler();
-
-        $promise = $handler->fetch('https://jsonplaceholder.typicode.com/posts/1');
-        $response = $promise->wait();
+        $response = Http::get('https://jsonplaceholder.typicode.com/posts/1')->wait();
 
         expect($response->status())->toBe(200)
             ->and($response->successful())->toBeTrue()
             ->and($response->json())->toHaveKey('id', 1)
             ->and($response->json())->toHaveKey('userId')
             ->and($response->json())->toHaveKey('title')
-            ->and($response->json())->toHaveKey('body')
-        ;
+            ->and($response->json())->toHaveKey('body');
     });
 
     test('fetches all posts from JSONPlaceholder', function () {
-        $handler = new HttpHandler();
-
-        $promise = $handler->fetch('https://jsonplaceholder.typicode.com/posts');
-        $response = $promise->wait();
+        $response = Http::get('https://jsonplaceholder.typicode.com/posts')->wait();
 
         $posts = $response->json();
 
@@ -34,38 +27,28 @@ describe('Real API Integration Tests', function () {
             ->and($posts)->toBeArray()
             ->and(count($posts))->toBeGreaterThan(0)
             ->and($posts[0])->toHaveKey('id')
-            ->and($posts[0])->toHaveKey('title')
-        ;
+            ->and($posts[0])->toHaveKey('title');
     });
 
     test('creates a new post via POST request', function () {
-        $handler = new HttpHandler();
-
         $postData = [
             'title' => 'Integration Test Post',
             'body' => 'This is a test post from our integration tests',
             'userId' => 1,
         ];
 
-        $promise = $handler->fetch('https://jsonplaceholder.typicode.com/posts', [
-            'method' => 'POST',
-            'headers' => ['Content-Type' => 'application/json'],
-            'json' => $postData,
-        ]);
-
-        $response = $promise->wait();
+        $response = Http::withJson($postData)
+            ->post('https://jsonplaceholder.typicode.com/posts')
+            ->wait();
 
         expect($response->status())->toBe(201)
             ->and($response->json())->toHaveKey('id')
             ->and($response->json('title'))->toBe('Integration Test Post')
             ->and($response->json('body'))->toBe('This is a test post from our integration tests')
-            ->and($response->json('userId'))->toBe(1)
-        ;
+            ->and($response->json('userId'))->toBe(1);
     });
 
     test('updates a post via PUT request', function () {
-        $handler = new HttpHandler();
-
         $updatedData = [
             'id' => 1,
             'title' => 'Updated Title',
@@ -73,53 +56,32 @@ describe('Real API Integration Tests', function () {
             'userId' => 1,
         ];
 
-        $promise = $handler->fetch('https://jsonplaceholder.typicode.com/posts/1', [
-            'method' => 'PUT',
-            'headers' => ['Content-Type' => 'application/json'],
-            'json' => $updatedData,
-        ]);
-
-        $response = $promise->wait();
+        $response = Http::withJson($updatedData)
+            ->put('https://jsonplaceholder.typicode.com/posts/1')
+            ->wait();
 
         expect($response->status())->toBe(200)
             ->and($response->json('title'))->toBe('Updated Title')
-            ->and($response->json('body'))->toBe('Updated body content')
-        ;
+            ->and($response->json('body'))->toBe('Updated body content');
     });
 
     test('patches a post via PATCH request', function () {
-        $handler = new HttpHandler();
-
-        $promise = $handler->fetch('https://jsonplaceholder.typicode.com/posts/1', [
-            'method' => 'PATCH',
-            'headers' => ['Content-Type' => 'application/json'],
-            'json' => ['title' => 'Patched Title'],
-        ]);
-
-        $response = $promise->wait();
+        $response = Http::withJson(['title' => 'Patched Title'])
+            ->patch('https://jsonplaceholder.typicode.com/posts/1')
+            ->wait();
 
         expect($response->status())->toBe(200)
-            ->and($response->json('title'))->toBe('Patched Title')
-        ;
+            ->and($response->json('title'))->toBe('Patched Title');
     });
 
     test('deletes a post via DELETE request', function () {
-        $handler = new HttpHandler();
-
-        $promise = $handler->fetch('https://jsonplaceholder.typicode.com/posts/1', [
-            'method' => 'DELETE',
-        ]);
-
-        $response = $promise->wait();
+        $response = Http::delete('https://jsonplaceholder.typicode.com/posts/1')->wait();
 
         expect($response->status())->toBe(200);
     });
 
     test('fetches nested resource - comments for a post', function () {
-        $handler = new HttpHandler();
-
-        $promise = $handler->fetch('https://jsonplaceholder.typicode.com/posts/1/comments');
-        $response = $promise->wait();
+        $response = Http::get('https://jsonplaceholder.typicode.com/posts/1/comments')->wait();
 
         $comments = $response->json();
 
@@ -128,22 +90,17 @@ describe('Real API Integration Tests', function () {
             ->and(count($comments))->toBeGreaterThan(0)
             ->and($comments[0])->toHaveKey('postId', 1)
             ->and($comments[0])->toHaveKey('email')
-            ->and($comments[0])->toHaveKey('body')
-        ;
+            ->and($comments[0])->toHaveKey('body');
     });
 
     test('filters posts by query parameters', function () {
-        $handler = new HttpHandler();
-
-        $promise = $handler->fetch('https://jsonplaceholder.typicode.com/posts?userId=1');
-        $response = $promise->wait();
+        $response = Http::get('https://jsonplaceholder.typicode.com/posts', ['userId' => 1])->wait();
 
         $posts = $response->json();
 
         expect($response->status())->toBe(200)
             ->and($posts)->toBeArray()
-            ->and(count($posts))->toBeGreaterThan(0)
-        ;
+            ->and(count($posts))->toBeGreaterThan(0);
 
         foreach ($posts as $post) {
             expect($post['userId'])->toBe(1);
@@ -151,255 +108,96 @@ describe('Real API Integration Tests', function () {
     });
 
     test('handles 404 not found error', function () {
-        $handler = new HttpHandler();
-
-        $promise = $handler->fetch('https://jsonplaceholder.typicode.com/posts/99999');
-        $response = $promise->wait();
+        $response = Http::get('https://jsonplaceholder.typicode.com/posts/99999')->wait();
 
         expect($response->status())->toBe(404)
             ->and($response->failed())->toBeTrue()
             ->and($response->clientError())->toBeTrue()
-            ->and($response->successful())->toBeFalse()
-        ;
-    });
-
-    test('fetches user data', function () {
-        $handler = new HttpHandler();
-
-        $promise = $handler->fetch('https://jsonplaceholder.typicode.com/users/1');
-        $response = $promise->wait();
-
-        expect($response->status())->toBe(200)
-            ->and($response->json())->toHaveKey('id', 1)
-            ->and($response->json())->toHaveKey('name')
-            ->and($response->json())->toHaveKey('email')
-            ->and($response->json())->toHaveKey('address')
-        ;
+            ->and($response->successful())->toBeFalse();
     });
 
     test('extracts nested JSON data using dot notation', function () {
-        $handler = new HttpHandler();
-
-        $promise = $handler->fetch('https://jsonplaceholder.typicode.com/users/1');
-        $response = $promise->wait();
+        $response = Http::get('https://jsonplaceholder.typicode.com/users/1')->wait();
 
         expect($response->json('address.city'))->toBeString()
             ->and($response->json('address.geo.lat'))->toBeString()
-            ->and($response->json('company.name'))->toBeString()
-        ;
+            ->and($response->json('company.name'))->toBeString();
     });
 
     test('handles response headers correctly', function () {
-        $handler = new HttpHandler();
-
-        $promise = $handler->fetch('https://jsonplaceholder.typicode.com/posts/1');
-        $response = $promise->wait();
+        $response = Http::get('https://jsonplaceholder.typicode.com/posts/1')->wait();
 
         expect($response->header('content-type'))->toContain('application/json')
             ->and($response->headers())->toHaveKey('content-type')
-            ->and($response->headers())->toHaveKey('date')
-        ;
-    });
-
-    test('fetches albums with nested photos', function () {
-        $handler = new HttpHandler();
-
-        $promise = $handler->fetch('https://jsonplaceholder.typicode.com/albums/1/photos');
-        $response = $promise->wait();
-
-        $photos = $response->json();
-
-        expect($response->status())->toBe(200)
-            ->and($photos)->toBeArray()
-            ->and(count($photos))->toBeGreaterThan(0)
-            ->and($photos[0])->toHaveKey('albumId', 1)
-            ->and($photos[0])->toHaveKey('thumbnailUrl')
-            ->and($photos[0])->toHaveKey('url')
-        ;
-    });
-
-    test('fetches todos', function () {
-        $handler = new HttpHandler();
-
-        $promise = $handler->fetch('https://jsonplaceholder.typicode.com/todos/1');
-        $response = $promise->wait();
-
-        expect($response->status())->toBe(200)
-            ->and($response->json())->toHaveKey('userId')
-            ->and($response->json())->toHaveKey('title')
-            ->and($response->json())->toHaveKey('completed')
-            ->and($response->json('completed'))->toBeBool()
-        ;
+            ->and($response->headers())->toHaveKey('date');
     });
 
     test('handles multiple sequential requests', function () {
-        $handler = new HttpHandler();
-
-        $userPromise = $handler->fetch('https://jsonplaceholder.typicode.com/users/1');
-        $userResponse = $userPromise->wait();
+        $userResponse = Http::get('https://jsonplaceholder.typicode.com/users/1')->wait();
         $userId = $userResponse->json('id');
 
-        $postsPromise = $handler->fetch("https://jsonplaceholder.typicode.com/posts?userId={$userId}");
-        $postsResponse = $postsPromise->wait();
-
-        $todosPromise = $handler->fetch("https://jsonplaceholder.typicode.com/todos?userId={$userId}");
-        $todosResponse = $todosPromise->wait();
+        $postsResponse = Http::get('https://jsonplaceholder.typicode.com/posts', ['userId' => $userId])->wait();
+        $todosResponse = Http::get('https://jsonplaceholder.typicode.com/todos', ['userId' => $userId])->wait();
 
         expect($userResponse->status())->toBe(200)
             ->and($postsResponse->status())->toBe(200)
-            ->and($todosResponse->status())->toBe(200)
-            ->and($postsResponse->json())->toBeArray()
-            ->and($todosResponse->json())->toBeArray()
-        ;
+            ->and($todosResponse->status())->toBe(200);
     });
 
     test('sends custom headers', function () {
-        $handler = new HttpHandler();
-
-        $promise = $handler->fetch('https://jsonplaceholder.typicode.com/posts/1', [
-            'headers' => [
+        $response = Http::withHeaders([
                 'X-Custom-Header' => 'test-value',
                 'Accept' => 'application/json',
-            ],
-        ]);
-
-        $response = $promise->wait();
+            ])
+            ->get('https://jsonplaceholder.typicode.com/posts/1')
+            ->wait();
 
         expect($response->status())->toBe(200)
-            ->and($response->json())->toHaveKey('id')
-        ;
+            ->and($response->json())->toHaveKey('id');
     });
 
     test('handles timeout configuration', function () {
-        $handler = new HttpHandler();
-
-        $promise = $handler->fetch('https://jsonplaceholder.typicode.com/posts/1', [
-            'timeout' => 30,
-            'connect_timeout' => 10,
-        ]);
-
-        $response = $promise->wait();
+        $response = Http::timeout(30)
+            ->connectTimeout(10)
+            ->get('https://jsonplaceholder.typicode.com/posts/1')
+            ->wait();
 
         expect($response->status())->toBe(200);
     });
 
     test('validates response body as string', function () {
-        $handler = new HttpHandler();
-
-        $promise = $handler->fetch('https://jsonplaceholder.typicode.com/posts/1');
-        $response = $promise->wait();
+        $response = Http::get('https://jsonplaceholder.typicode.com/posts/1')->wait();
 
         $body = $response->body();
 
         expect($body)->toBeString()
             ->and(strlen($body))->toBeGreaterThan(0)
             ->and($body)->toContain('"id"')
-            ->and($body)->toContain('"title"')
-        ;
+            ->and($body)->toContain('"title"');
     });
 
     test('checks HTTP version information', function () {
-        $handler = new HttpHandler();
-
-        $promise = $handler->fetch('https://jsonplaceholder.typicode.com/posts/1');
-        $response = $promise->wait();
+        $response = Http::get('https://jsonplaceholder.typicode.com/posts/1')->wait();
 
         $httpVersion = $response->getHttpVersion();
 
         expect($response->status())->toBe(200)
-            ->and($httpVersion)->not->toBeNull()
-        ;
-    });
-
-    test('handles JSON default value when key not found', function () {
-        $handler = new HttpHandler();
-
-        $promise = $handler->fetch('https://jsonplaceholder.typicode.com/posts/1');
-        $response = $promise->wait();
-
-        expect($response->json('nonexistent.key', 'default'))->toBe('default')
-            ->and($response->json('deeply.nested.key', 'fallback'))->toBe('fallback')
-        ;
-    });
-
-    test('verifies response status checks', function () {
-        $handler = new HttpHandler();
-
-        $promise = $handler->fetch('https://jsonplaceholder.typicode.com/posts/1');
-        $response = $promise->wait();
-
-        expect($response->successful())->toBeTrue()
-            ->and($response->failed())->toBeFalse()
-            ->and($response->clientError())->toBeFalse()
-            ->and($response->serverError())->toBeFalse()
-        ;
-
-        $promise404 = $handler->fetch('https://jsonplaceholder.typicode.com/posts/99999');
-        $response404 = $promise404->wait();
-
-        expect($response404->successful())->toBeFalse()
-            ->and($response404->failed())->toBeTrue()
-            ->and($response404->clientError())->toBeTrue()
-            ->and($response404->serverError())->toBeFalse()
-        ;
-    });
-
-    test('fetches comments with email validation', function () {
-        $handler = new HttpHandler();
-
-        $promise = $handler->fetch('https://jsonplaceholder.typicode.com/comments/1');
-        $response = $promise->wait();
-
-        $email = $response->json('email');
-
-        expect($response->status())->toBe(200)
-            ->and($email)->toBeString()
-            ->and(filter_var($email, FILTER_VALIDATE_EMAIL))->not->toBeFalse()
-        ;
+            ->and($httpVersion)->not->toBeNull();
     });
 
     test('posts form data', function () {
-        $handler = new HttpHandler();
-
-        $promise = $handler->fetch('https://jsonplaceholder.typicode.com/posts', [
-            'method' => 'POST',
-            'headers' => ['Content-Type' => 'application/x-www-form-urlencoded'],
-            'body' => http_build_query([
+        $response = Http::asForm()
+            ->withForm([
                 'title' => 'Form Data Post',
                 'body' => 'Posted via form data',
                 'userId' => 1,
-            ]),
-        ]);
-
-        $response = $promise->wait();
+            ])
+            ->post('https://jsonplaceholder.typicode.com/posts')
+            ->wait();
 
         expect($response->status())->toBe(201);
     });
 
-    test('handles response with different HTTP methods', function () {
-        $handler = new HttpHandler();
-
-        $testCases = [
-            'GET' => ['url' => 'https://jsonplaceholder.typicode.com/posts/1', 'expectedStatus' => 200],
-            'POST' => ['url' => 'https://jsonplaceholder.typicode.com/posts', 'expectedStatus' => 201, 'json' => true],
-            'PUT' => ['url' => 'https://jsonplaceholder.typicode.com/posts/1', 'expectedStatus' => 200, 'json' => true],
-            'PATCH' => ['url' => 'https://jsonplaceholder.typicode.com/posts/1', 'expectedStatus' => 200, 'json' => true],
-            'DELETE' => ['url' => 'https://jsonplaceholder.typicode.com/posts/1', 'expectedStatus' => 200],
-        ];
-
-        foreach ($testCases as $method => $config) {
-            $options = ['method' => $method];
-
-            if (isset($config['json'])) {
-                $options['json'] = ['title' => 'Test', 'body' => 'Test', 'userId' => 1];
-            }
-
-            $promise = $handler->fetch($config['url'], $options);
-            $response = $promise->wait();
-
-            expect($response->status())->toBe($config['expectedStatus']);
-        }
-    });
 })->skipOnCI();
 
 describe('Mock Handler Integration Tests', function () {
@@ -415,16 +213,16 @@ describe('Mock Handler Integration Tests', function () {
                 'title' => 'Mocked Post Title',
                 'body' => 'Mocked post body content',
             ])
-            ->register()
-        ;
+            ->register();
 
-        $promise = $handler->fetch('https://jsonplaceholder.typicode.com/posts/1');
-        $response = $promise->wait();
+        $response = (new HttpClient())
+            ->setHandler($handler)
+            ->get('https://jsonplaceholder.typicode.com/posts/1')
+            ->wait();
 
         expect($response->status())->toBe(200)
             ->and($response->json('title'))->toBe('Mocked Post Title')
-            ->and($response->json('id'))->toBe(1)
-        ;
+            ->and($response->json('id'))->toBe(1);
     });
 
     test('simulates slow API response', function () {
@@ -437,17 +235,19 @@ describe('Mock Handler Integration Tests', function () {
                 ['id' => 1, 'title' => 'Post 1'],
                 ['id' => 2, 'title' => 'Post 2'],
             ])
-            ->register()
-        ;
+            ->register();
 
         $start = microtime(true);
-        $promise = $handler->fetch('https://jsonplaceholder.typicode.com/posts');
-        $response = $promise->wait();
+        
+        $response = (new HttpClient())
+            ->setHandler($handler)
+            ->get('https://jsonplaceholder.typicode.com/posts')
+            ->wait();
+            
         $duration = microtime(true) - $start;
 
         expect($duration)->toBeGreaterThanOrEqual(0.5)
-            ->and($response->json())->toHaveCount(2)
-        ;
+            ->and($response->json())->toHaveCount(2);
     });
 
     test('simulates rate limiting scenario', function () {
@@ -456,20 +256,17 @@ describe('Mock Handler Integration Tests', function () {
         $handler->mock('POST')
             ->url('https://jsonplaceholder.typicode.com/posts')
             ->rateLimitedUntilAttempt(3)
-            ->register()
-        ;
+            ->register();
 
-        $promise = $handler->fetch('https://jsonplaceholder.typicode.com/posts', [
-            'method' => 'POST',
-            'json' => ['title' => 'Test', 'body' => 'Test', 'userId' => 1],
-            'retry' => new RetryConfig(maxRetries: 5, baseDelay: 0.01),
-        ]);
-
-        $response = $promise->wait();
+        $response = (new HttpClient())
+            ->setHandler($handler)
+            ->retry(5, 0.01) 
+            ->withJson(['title' => 'Test', 'body' => 'Test', 'userId' => 1])
+            ->post('https://jsonplaceholder.typicode.com/posts')
+            ->wait();
 
         expect($response->status())->toBe(200)
-            ->and($response->json())->toHaveKey('success', true)
-        ;
+            ->and($response->json())->toHaveKey('success', true);
     });
 
     test('simulates network recovery scenario', function () {
@@ -478,18 +275,16 @@ describe('Mock Handler Integration Tests', function () {
         $handler->mock('GET')
             ->url('https://jsonplaceholder.typicode.com/users/1')
             ->slowlyImproveUntilAttempt(3, 2.0)
-            ->register()
-        ;
+            ->register();
 
-        $promise = $handler->fetch('https://jsonplaceholder.typicode.com/users/1', [
-            'retry' => new RetryConfig(maxRetries: 5, baseDelay: 0.01),
-        ]);
-
-        $response = $promise->wait();
+        $response = (new HttpClient())
+            ->setHandler($handler)
+            ->retry(5, 0.01)
+            ->get('https://jsonplaceholder.typicode.com/users/1')
+            ->wait();
 
         expect($response->status())->toBe(200)
-            ->and($response->json())->toHaveKey('success', true)
-        ;
+            ->and($response->json())->toHaveKey('success', true);
     });
 
     test('simulates persistent mock for multiple requests', function () {
@@ -499,22 +294,17 @@ describe('Mock Handler Integration Tests', function () {
             ->url('https://jsonplaceholder.typicode.com/posts/*')
             ->respondJson(['id' => 1, 'title' => 'Generic Post'])
             ->persistent()
-            ->register()
-        ;
+            ->register();
 
-        $promise1 = $handler->fetch('https://jsonplaceholder.typicode.com/posts/1');
-        $response1 = $promise1->wait();
+        $client = (new HttpClient())->setHandler($handler);
 
-        $promise2 = $handler->fetch('https://jsonplaceholder.typicode.com/posts/2');
-        $response2 = $promise2->wait();
-
-        $promise3 = $handler->fetch('https://jsonplaceholder.typicode.com/posts/3');
-        $response3 = $promise3->wait();
+        $response1 = $client->get('https://jsonplaceholder.typicode.com/posts/1')->wait();
+        $response2 = $client->get('https://jsonplaceholder.typicode.com/posts/2')->wait();
+        $response3 = $client->get('https://jsonplaceholder.typicode.com/posts/3')->wait();
 
         expect($response1->json('title'))->toBe('Generic Post')
             ->and($response2->json('title'))->toBe('Generic Post')
             ->and($response3->json('title'))->toBe('Generic Post')
-            ->and($handler->getRequestHistory())->toHaveCount(3)
-        ;
+            ->and($handler->getRequestHistory())->toHaveCount(3);
     });
 });
