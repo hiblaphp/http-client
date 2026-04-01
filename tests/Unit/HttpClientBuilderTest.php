@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Hibla\HttpClient\ValueObjects\CookieJar;
+use Hibla\HttpClient\CookieJar;
 use Hibla\HttpClient\HttpClient;
 use Hibla\HttpClient\ValueObjects\ProxyConfig;
 use Hibla\HttpClient\Interfaces\ResponseInterface as Response;

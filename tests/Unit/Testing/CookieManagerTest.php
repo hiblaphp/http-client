@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use Hibla\HttpClient\ValueObjects\Cookie;
-use Hibla\HttpClient\ValueObjects\CookieJar;
+use Hibla\HttpClient\CookieJar;
 use Hibla\HttpClient\Testing\Exceptions\MockAssertionException;
 use Hibla\HttpClient\Testing\MockedRequest;
 
