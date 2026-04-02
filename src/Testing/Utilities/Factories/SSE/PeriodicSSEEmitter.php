@@ -106,9 +106,20 @@ class PeriodicSSEEmitter
                 $jitter,
                 $interval,
                 &$periodicTimerId,
-                $sseResponse
+                $sseResponse,
             ) {
                 if (! $sseResponse->getStream()->isWritable()) {
+                    if ($periodicTimerId !== null) {
+                        Loop::cancelTimer($periodicTimerId);
+                        $periodicTimerId = null;
+                    }
+
+                    return;
+                }
+
+                try {
+                    $sseResponse->getStream()->tell();
+                } catch (\Throwable $e) {
                     if ($periodicTimerId !== null) {
                         Loop::cancelTimer($periodicTimerId);
                         $periodicTimerId = null;
@@ -205,6 +216,17 @@ class PeriodicSSEEmitter
                 $sseResponse
             ) {
                 if (! $sseResponse->getStream()->isWritable()) {
+                    if ($periodicTimerId !== null) {
+                        Loop::cancelTimer($periodicTimerId);
+                        $periodicTimerId = null;
+                    }
+
+                    return;
+                }
+
+                try {
+                    $sseResponse->getStream()->tell();
+                } catch (\Throwable $e) {
                     if ($periodicTimerId !== null) {
                         Loop::cancelTimer($periodicTimerId);
                         $periodicTimerId = null;

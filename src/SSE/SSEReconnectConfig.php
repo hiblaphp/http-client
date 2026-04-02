@@ -6,7 +6,6 @@ namespace Hibla\HttpClient\SSE;
 
 use Exception;
 use TypeError;
-use Hibla\HttpClient\Interfaces\Exception\RequestExceptionInterface;
 
 /**
  * Configuration for SSE reconnection behavior.

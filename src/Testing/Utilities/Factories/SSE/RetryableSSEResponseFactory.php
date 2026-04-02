@@ -6,7 +6,9 @@ namespace Hibla\HttpClient\Testing\Utilities\Factories\SSE;
 
 use Exception;
 use Hibla\EventLoop\Loop;
+use Hibla\HttpClient\Exceptions\ClientException;
 use Hibla\HttpClient\Exceptions\NetworkException;
+use Hibla\HttpClient\Exceptions\ServerException;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
 use Hibla\HttpClient\SSE\SSEResponse;
 use Hibla\HttpClient\Testing\Exceptions\MockException;
@@ -181,7 +183,7 @@ class RetryableSSEResponseFactory
 
     /**
      * @param array{should_fail: bool, error_message?: string} $networkConditions
-     * @return array{should_fail: bool, is_retryable: bool, error_message: string}
+     * @return array{should_fail: bool, is_retryable: bool, error_message: string, exception?: Exception}
      */
     private function evaluateAttempt(
         MockedRequest $mock,
@@ -191,22 +193,36 @@ class RetryableSSEResponseFactory
         $shouldFail = false;
         $isRetryable = false;
         $errorMessage = '';
+        $exception = null;
 
         if ($networkConditions['should_fail']) {
             $shouldFail = true;
             $errorMessage = $networkConditions['error_message'] ?? 'Network failure';
-            $isRetryable = $reconnectConfig->isRetryableError(new Exception($errorMessage));
+            $exception = new Exception($errorMessage);
+            $isRetryable = $reconnectConfig->isRetryableError($exception);
         } elseif ($mock->shouldFail()) {
             $shouldFail = true;
             $errorMessage = $mock->getError() ?? 'SSE connection failed';
-            $isRetryable = $reconnectConfig->isRetryableError(new Exception($errorMessage))
-                || $mock->isRetryableFailure();
+            $exception = new Exception($errorMessage);
+            $isRetryable = $reconnectConfig->isRetryableError($exception) || $mock->isRetryableFailure();
+        } elseif ($mock->getStatusCode() >= 400) {
+            $shouldFail = true;
+            $errorMessage = "HTTP {$mock->getStatusCode()} Failure";
+
+            if ($mock->getStatusCode() >= 500) {
+                $exception = new ServerException($errorMessage, 0, null, null, $mock->getStatusCode());
+            } else {
+                $exception = new ClientException($errorMessage, 0, null, null, $mock->getStatusCode());
+            }
+
+            $isRetryable = $reconnectConfig->isRetryableError($exception);
         }
 
         return [
             'should_fail' => $shouldFail,
             'is_retryable' => $isRetryable,
             'error_message' => $errorMessage,
+            'exception' => $exception,
         ];
     }
 }
