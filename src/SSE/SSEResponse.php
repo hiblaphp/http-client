@@ -16,7 +16,9 @@ use Psr\Http\Message\StreamInterface;
 class SSEResponse extends StreamingResponse implements SSEResponseInterface
 {
     private string $buffer = '';
+
     private ?string $lastEventId = null;
+    
     private ?string $requestId = null;
 
     /**
@@ -68,30 +70,6 @@ class SSEResponse extends StreamingResponse implements SSEResponseInterface
     public function getLastEventId(): ?string
     {
         return $this->lastEventId;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function getEvents(): \Generator
-    {
-        $stream = $this->getStream();
-
-        while (! $stream->eof()) {
-            $chunk = $stream->read(8192);
-            if ($chunk === '') {
-                break;
-            }
-
-            yield from $this->parseEvents($chunk);
-        }
-
-        if ($this->buffer !== '') {
-            $event = $this->parseEvent($this->buffer);
-            if ($event !== null) {
-                yield $event;
-            }
-        }
     }
 
     /**

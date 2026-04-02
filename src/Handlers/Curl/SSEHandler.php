@@ -192,6 +192,8 @@ class SSEHandler implements SSEHandlerInterface
         /** @var SSEResponse|null $sseResponse */
         $sseResponse = null;
         $headersProcessed = false;
+        $rawHeaders = [];
+        $requestId = null; 
 
         $curlOnlyOptions = array_filter($options, 'is_int', ARRAY_FILTER_USE_KEY);
 
@@ -220,7 +222,7 @@ class SSEHandler implements SSEHandlerInterface
 
                 return \strlen($data);
             },
-            CURLOPT_HEADERFUNCTION => function ($ch, string $header) use ($url, $promise, &$sseResponse, &$headersProcessed) {
+            CURLOPT_HEADERFUNCTION => function ($ch, string $header) use ($url, $promise, &$sseResponse, &$headersProcessed, &$rawHeaders, &$requestId) {
                 if ($promise->isSettled()) {
                     return \strlen($header);
                 }
@@ -229,29 +231,43 @@ class SSEHandler implements SSEHandlerInterface
                     return \strlen($header);
                 }
 
+                $trimmedHeader = trim($header);
+                if ($trimmedHeader !== '') {
+                    $rawHeaders[] = $header;
+                }
+
                 $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-                if (! $headersProcessed && $httpCode > 0) {
+
+                if (! $headersProcessed && $httpCode > 0 && $trimmedHeader === '') {
                     if ($httpCode >= 200 && $httpCode < 300) {
                         $tempStream = fopen('php://temp', 'r+');
                         if ($tempStream === false) {
-                            $exception = new HttpStreamException(
-                                'Failed to create temp stream',
-                                0,
-                                null,
-                                $url
-                            );
+                            $exception = new HttpStreamException('Failed to create temp stream', 0, null, $url);
                             $exception->setStreamState('stream_creation_failed');
                             $promise->reject($exception);
                         } else {
-                            $sseResponse = new SSEResponse(new Stream($tempStream), $httpCode, []);
+                            $parsedHeaders = [];
+                            foreach ($rawHeaders as $h) {
+                                if (str_contains($h, ':')) {
+                                    [$name, $value] = explode(':', $h, 2);
+                                    $name = trim($name);
+                                    if (!isset($parsedHeaders[$name])) {
+                                        $parsedHeaders[$name] = [];
+                                    }
+                                    $parsedHeaders[$name][] = trim($value);
+                                }
+                            }
+
+                            $sseResponse = new SSEResponse(new Stream($tempStream), $httpCode, $parsedHeaders);
+
+                            if ($requestId !== null) {
+                                $sseResponse->setRequestId($requestId);
+                            }
+
+                            $promise->resolve($sseResponse);
                         }
                     } else {
-                        $exception = new HttpStreamException(
-                            "SSE connection failed with status: {$httpCode}",
-                            0,
-                            null,
-                            $url
-                        );
+                        $exception = new HttpStreamException("SSE connection failed with status: {$httpCode}", 0, null, $url);
                         $exception->setStreamState('invalid_status_code');
                         $promise->reject($exception);
                     }
@@ -270,19 +286,18 @@ class SSEHandler implements SSEHandlerInterface
                     if ($onError !== null && $error !== null) {
                         $onError($error);
                     }
-
                     return;
                 }
 
                 if ($error !== null) {
-                     $exception = new NetworkException(
+                    $exception = new NetworkException(
                         "SSE connection failed: {$error}",
                         0,
                         null,
                         $url,
                         $error
                     );
-                    
+
                     if ($onError !== null) {
                         $onError($error);
                     }
@@ -290,31 +305,19 @@ class SSEHandler implements SSEHandlerInterface
                     $promise->reject($exception);
                 } else {
                     if ($sseResponse !== null) {
-                        /** @var array<string, string|string[]> $headers */
-                        $sseResponse->setHeaders($headers);
-                        if ($httpVersion !== null) {
-                            $sseResponse->setHttpVersion($httpVersion);
-                        }
                         $promise->resolve($sseResponse);
                     } else {
-                        $exception = new HttpStreamException(
-                            'SSE stream completed without response',
-                            0,
-                            null,
-                            $url
-                        );
+                        $exception = new HttpStreamException('SSE stream completed without response', 0, null, $url);
                         $promise->reject($exception);
                     }
                 }
             }
         );
 
-        if ($sseResponse !== null) {
-            $sseResponse->setRequestId($requestId);
-        }
-
-        $promise->onCancel(function () use ($requestId, &$sseResponse): void {
-            Loop::cancelCurlRequest($requestId);
+        $promise->onCancel(function () use (&$requestId, &$sseResponse): void {
+            if ($requestId !== null) {
+                Loop::cancelCurlRequest($requestId);
+            }
             $sseResponse?->getStream()->close();
         });
 
