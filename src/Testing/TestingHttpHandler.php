@@ -8,6 +8,9 @@ use Hibla\HttpClient\Handlers\HttpHandler;
 use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
 use Hibla\HttpClient\SSE\CancelableSSEPromise;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
+use Hibla\HttpClient\Interfaces\ResponseInterface;
+use Hibla\HttpClient\Interfaces\StreamingResponseInterface;
+use Hibla\HttpClient\Interfaces\SSEResponseInterface;
 use Hibla\HttpClient\Testing\Interfaces\AssertsCookiesInterface;
 use Hibla\HttpClient\Testing\Interfaces\AssertsDownloadsInterface;
 use Hibla\HttpClient\Testing\Interfaces\AssertsHeadersInterface;
@@ -392,6 +395,8 @@ class TestingHttpHandler extends HttpHandler implements
 
     /**
      * Send an HTTP request with mocking support.
+     * 
+     * @return PromiseInterface<ResponseInterface>
      */
     public function sendRequest(string $url, array $curlOptions, ?RetryConfig $retryConfig = null): PromiseInterface
     {
@@ -411,7 +416,7 @@ class TestingHttpHandler extends HttpHandler implements
      * Stream data from a URL with chunk callbacks.
      *
      * @param array<int|string, mixed> $options
-     * @return PromiseInterface<\Hibla\HttpClient\StreamingResponse>
+     * @return PromiseInterface<StreamingResponseInterface>
      */
     public function stream(string $url, array $options = [], ?callable $onChunk = null): PromiseInterface
     {
@@ -465,6 +470,7 @@ class TestingHttpHandler extends HttpHandler implements
      * Connect to a Server-Sent Events endpoint.
      *
      * @param array<int|string, mixed> $options
+     * @return PromiseInterface<SSEResponseInterface>
      */
     public function sse(
         string $url,

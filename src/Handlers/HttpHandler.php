@@ -13,12 +13,12 @@ use Hibla\HttpClient\Interfaces\Handler\RequestExecutorHandlerInterface;
 use Hibla\HttpClient\Interfaces\Handler\RetryHandlerInterface;
 use Hibla\HttpClient\Interfaces\Handler\SSEHandlerInterface;
 use Hibla\HttpClient\Interfaces\Handler\StreamingHandlerInterface;
-use Hibla\HttpClient\Response;
+use Hibla\HttpClient\Interfaces\ResponseInterface;
+use Hibla\HttpClient\Interfaces\SSEResponseInterface;
+use Hibla\HttpClient\Interfaces\StreamingResponseInterface;
 use Hibla\HttpClient\SSE\CancelableSSEPromise;
 use Hibla\HttpClient\SSE\SSEEvent;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
-use Hibla\HttpClient\SSE\SSEResponse;
-use Hibla\HttpClient\StreamingResponse;
 use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
@@ -62,7 +62,7 @@ class HttpHandler
      * @param  callable(SSEEvent): void|null  $onEvent  Optional callback for each SSE event
      * @param  callable(string): void|null  $onError  Optional callback for connection errors
      * @param  SSEReconnectConfig|null  $reconnectConfig  Optional reconnection configuration
-     * @return PromiseInterface<SSEResponse>
+     * @return PromiseInterface<SSEResponseInterface>
      *
      * @internal This method is designed for extension by TestingHttpHandler and internal use.
      */
@@ -84,15 +84,12 @@ class HttpHandler
     /**
      * Streams an HTTP response, processing it in chunks.
      *
-     * The $options parameter allows TestingHttpHandler to override this method
-     * and provide mocked streaming responses.
-     *
      * Ideal for large responses that should not be fully loaded into memory.
      *
      * @param  string  $url  The URL to stream from.
      * @param  array<int|string, mixed>  $options  Request options for internal use and testing extensions.
      * @param  callable(string): void|null  $onChunk  An optional callback to execute for each received data chunk.
-     * @return PromiseInterface<StreamingResponse> A promise that resolves with a StreamingResponse object.
+     * @return PromiseInterface<StreamingResponseInterface>
      *
      * @internal This method is designed for extension by TestingHttpHandler. The $options parameter
      *           allows testing implementations to intercept and mock requests. End users should use
@@ -112,7 +109,7 @@ class HttpHandler
      * @param  string  $url  The URL of the file to download.
      * @param  string  $destination  The local path to save the file.
      * @param  array<int|string, mixed>  $options  Request options for internal use and testing extensions.
-     * @return PromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}> A promise that resolves with download metadata.
+     * @return PromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}>
      *
      * @internal This method is designed for extension by TestingHttpHandler.
      */
@@ -133,7 +130,7 @@ class HttpHandler
      * @param  string  $url  The target URL.
      * @param  array<int|string, mixed>  $curlOptions  cURL options for the request.
      * @param  RetryConfig|null  $retryConfig  Optional retry configuration.
-     * @return PromiseInterface<Response> A promise that resolves with a Response object.
+     * @return PromiseInterface<ResponseInterface>
      *
      * @internal This method is the primary extension point for TestingHttpHandler. It is called by
      *           the Request builder and can be overridden to intercept all requests made through
