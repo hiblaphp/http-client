@@ -84,20 +84,20 @@ class SSEResponse extends StreamingResponse implements SSEResponseInterface
     {
         $this->buffer .= $chunk;
 
-        $parts = preg_split('/\r?\n\r?\n/', $this->buffer, -1, PREG_SPLIT_NO_EMPTY);
-        if ($parts === false) {
-            $this->buffer = '';
+        $normalized = str_replace("\r\n", "\n", $this->buffer);
+        $parts = explode("\n\n", $normalized);
 
-            return;
-        }
-
-        if (! str_ends_with($this->buffer, "\n\n") && ! str_ends_with($this->buffer, "\r\n\r\n")) {
+        if (! str_ends_with($normalized, "\n\n")) {
             $this->buffer = array_pop($parts) ?? '';
         } else {
             $this->buffer = '';
         }
 
         foreach ($parts as $eventData) {
+            if ($eventData === '') {
+                continue;
+            }
+
             $event = $this->parseEvent($eventData);
             if ($event !== null) {
                 if ($event->id !== null) {
@@ -113,10 +113,7 @@ class SSEResponse extends StreamingResponse implements SSEResponseInterface
      */
     private function parseEvent(string $eventData): ?SSEEvent
     {
-        $lines = preg_split('/\r?\n/', $eventData);
-        if ($lines === false) {
-            return null;
-        }
+        $lines = explode("\n", str_replace("\r\n", "\n", $eventData));
 
         /** @var array<string, list<string>> $fields */
         $fields = [];
@@ -126,12 +123,13 @@ class SSEResponse extends StreamingResponse implements SSEResponseInterface
                 continue;
             }
 
-            if (str_contains($line, ':')) {
-                [$field, $value] = explode(':', $line, 2);
+            $colonPos = strpos($line, ':');
+            if ($colonPos !== false) {
+                $field = substr($line, 0, $colonPos);
+                $value = substr($line, $colonPos + 1);
                 if (str_starts_with($value, ' ')) {
                     $value = substr($value, 1);
                 }
-                $value = ltrim($value, ' ');
             } else {
                 $field = $line;
                 $value = '';
@@ -149,11 +147,11 @@ class SSEResponse extends StreamingResponse implements SSEResponseInterface
             return null;
         }
 
-        $idValues = $fields['id'] ?? [];
+        $idValues = $fields['id']    ?? [];
         $eventValues = $fields['event'] ?? [];
         $retryValues = $fields['retry'] ?? [];
 
-        $id = end($idValues) !== false ? end($idValues) : null;
+        $id = end($idValues)    !== false ? end($idValues)    : null;
         $event = end($eventValues) !== false ? end($eventValues) : null;
         $retryValue = end($retryValues) !== false ? end($retryValues) : null;
 
