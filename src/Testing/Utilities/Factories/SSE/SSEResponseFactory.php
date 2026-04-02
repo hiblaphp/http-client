@@ -101,7 +101,7 @@ class SSEResponseFactory
             $promise,
             $mock,
             $onEvent,
-            $onError
+            $onError,
         ) {
             if ($promise->isCancelled()) {
                 return;
@@ -194,7 +194,7 @@ class SSEResponseFactory
             $initialTimerId = Loop::addTimer($initialDelay, function () use (
                 $promise,
                 $networkConditions,
-                $onError
+                $onError,
             ) {
                 if ($promise->isCancelled()) {
                     return;
@@ -216,7 +216,7 @@ class SSEResponseFactory
             $initialTimerId = Loop::addTimer($initialDelay, function () use (
                 $promise,
                 $mock,
-                $onError
+                $onError,
             ) {
                 if ($promise->isCancelled()) {
                     return;
@@ -237,7 +237,7 @@ class SSEResponseFactory
             $mock,
             $onEvent,
             $onError,
-            &$periodicTimerId
+            &$periodicTimerId,
         ) {
             if ($promise->isCancelled()) {
                 return;

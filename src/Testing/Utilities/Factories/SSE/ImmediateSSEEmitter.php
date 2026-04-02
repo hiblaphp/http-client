@@ -34,27 +34,24 @@ class ImmediateSSEEmitter
         ?string &$lastEventId,
         ?int &$retryInterval
     ): void {
-        $sseContent = $this->formatter->formatEvents($mock->getSSEEvents());
-
         $resource = fopen('php://temp', 'w+b');
         if ($resource === false) {
             throw new HttpStreamException('Failed to create temporary stream');
         }
 
-        fwrite($resource, $sseContent);
-        rewind($resource);
         $stream = new Stream($resource);
-
         $sseResponse = new SSEResponse(
             $stream,
             $mock->getStatusCode(),
             $mock->getHeaders()
         );
 
-        // Process events and update lastEventId/retryInterval regardless of onEvent callback
-        foreach ($mock->getSSEEvents() as $eventData) {
-            $event = $this->formatter->createSSEEvent($eventData);
+        $sseContent = $this->formatter->formatEvents($mock->getSSEEvents());
+        $sseResponse->getStream()->write($sseContent);
+        
+        $events = $sseResponse->parseEvents($sseContent);
 
+        foreach ($events as $event) {
             if ($event->id !== null) {
                 $lastEventId = $event->id;
             }
@@ -63,7 +60,6 @@ class ImmediateSSEEmitter
                 $retryInterval = $event->retry;
             }
 
-            // Call the event callback if provided
             if ($onEvent !== null) {
                 $onEvent($event);
             }
