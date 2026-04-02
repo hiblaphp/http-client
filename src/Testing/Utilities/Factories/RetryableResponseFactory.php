@@ -10,7 +10,7 @@ use function Hibla\delay;
 
 use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Response;
-use Hibla\HttpClient\RetryConfig;
+use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\HttpClient\Testing\Exceptions\MockException;
 use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Testing\Utilities\Handlers\DelayCalculator;

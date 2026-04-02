@@ -2,12 +2,11 @@
 
 declare(strict_types=1);
 
-use Hibla\HttpClient\Handlers\Curl\FetchHandler;
-use Hibla\HttpClient\Handlers\Curl\RequestExecutorHandler;
-use Hibla\HttpClient\Handlers\Curl\RetryHandler;
-use Hibla\HttpClient\Handlers\Curl\StreamingHandler;
 use Hibla\HttpClient\Handlers\HttpHandler;
-use Hibla\HttpClient\RetryConfig;
+use Hibla\HttpClient\Interfaces\Handler\RequestExecutorHandlerInterface;
+use Hibla\HttpClient\Interfaces\Handler\RetryHandlerInterface;
+use Hibla\HttpClient\Interfaces\Handler\StreamingHandlerInterface;
+use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\Promise\Promise;
 
 afterEach(function () {
@@ -15,7 +14,7 @@ afterEach(function () {
 });
 
 it('delegates stream calls to the StreamingHandler', function () {
-    $streamingHandlerMock = Mockery::mock(StreamingHandler::class);
+    $streamingHandlerMock = Mockery::mock(StreamingHandlerInterface::class);
 
     $streamingHandlerMock
         ->shouldReceive('streamRequest')
@@ -32,7 +31,7 @@ it('delegates stream calls to the StreamingHandler', function () {
 });
 
 it('delegates download calls to the StreamingHandler', function () {
-    $streamingHandlerMock = Mockery::mock(StreamingHandler::class);
+    $streamingHandlerMock = Mockery::mock(StreamingHandlerInterface::class);
 
     $streamingHandlerMock
         ->shouldReceive('downloadFile')
@@ -48,24 +47,25 @@ it('delegates download calls to the StreamingHandler', function () {
     expect(true)->toBeTrue();
 });
 
-it('delegates fetch calls to the FetchHandler', function () {
-    $fetchHandlerMock = Mockery::mock(FetchHandler::class);
+it('delegates execution to the RequestExecutorHandler', function () {
+    $requestExecutorMock = Mockery::mock(RequestExecutorHandlerInterface::class);
 
-    $fetchHandlerMock
-        ->shouldReceive('fetch')
+    $requestExecutorMock
+        ->shouldReceive('execute')
         ->once()
-        ->with('https://example.com/fetch', ['method' => 'GET'])
+        ->with('https://example.com/exec', Mockery::type('array'))
         ->andReturn(new Promise())
     ;
 
-    $handler = new HttpHandler(null, $fetchHandlerMock);
-    $handler->fetch('https://example.com/fetch', ['method' => 'GET']);
+    $handler = new HttpHandler(null, $requestExecutorMock);
+    
+    $handler->sendRequest('https://example.com/exec', [CURLOPT_CUSTOMREQUEST => 'GET'], null);
 
     expect(true)->toBeTrue();
 });
 
 it('sends request without retry when no retry is configured', function () {
-    $requestExecutorMock = Mockery::mock(RequestExecutorHandler::class);
+    $requestExecutorMock = Mockery::mock(RequestExecutorHandlerInterface::class);
 
     $requestExecutorMock
         ->shouldReceive('execute')
@@ -74,14 +74,14 @@ it('sends request without retry when no retry is configured', function () {
         ->andReturn(new Promise())
     ;
 
-    $handler = new HttpHandler(null, null, $requestExecutorMock);
+    $handler = new HttpHandler(null, $requestExecutorMock);
     $handler->sendRequest('https://example.com', [CURLOPT_CUSTOMREQUEST => 'POST'], null);
 
     expect(true)->toBeTrue();
 });
 
 it('sends request with retry when retry is configured', function () {
-    $retryHandlerMock = Mockery::mock(RetryHandler::class);
+    $retryHandlerMock = Mockery::mock(RetryHandlerInterface::class);
     $retryConfig = new RetryConfig();
 
     $retryHandlerMock
@@ -91,14 +91,14 @@ it('sends request with retry when retry is configured', function () {
         ->andReturn(new Promise())
     ;
 
-    $handler = new HttpHandler(null, null, null, $retryHandlerMock);
+    $handler = new HttpHandler(null, null, $retryHandlerMock);
     $handler->sendRequest('https://example.com', [CURLOPT_CUSTOMREQUEST => 'POST'], $retryConfig);
 
     expect(true)->toBeTrue();
 });
 
 it('filters integer-only options for streaming handler', function () {
-    $streamingHandlerMock = Mockery::mock(StreamingHandler::class);
+    $streamingHandlerMock = Mockery::mock(StreamingHandlerInterface::class);
 
     $options = [
         CURLOPT_TIMEOUT => 30,
@@ -113,7 +113,6 @@ it('filters integer-only options for streaming handler', function () {
         ->with(
             'https://example.com/stream',
             Mockery::on(function ($arg) {
-                // Verify only integer keys are passed
                 foreach (array_keys($arg) as $key) {
                     if (! is_int($key)) {
                         return false;
@@ -134,7 +133,7 @@ it('filters integer-only options for streaming handler', function () {
 });
 
 it('filters integer-only options for download handler', function () {
-    $streamingHandlerMock = Mockery::mock(StreamingHandler::class);
+    $streamingHandlerMock = Mockery::mock(StreamingHandlerInterface::class);
 
     $options = [
         CURLOPT_TIMEOUT => 30,

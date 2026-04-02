@@ -16,11 +16,8 @@ trait AssertsStreams
      */
     abstract public function getRequestHistory(): array;
 
-    /**
-     * Assert that a streaming request was made.
-     *
-     * @param string $url The URL that was streamed
-     */
+    abstract protected function getRequestMatcher();
+
     public function assertStreamMade(string $url): void
     {
         $this->registerAssertion();
@@ -28,7 +25,7 @@ trait AssertsStreams
         foreach ($this->getRequestHistory() as $request) {
             $options = $request->getOptions();
 
-            if ($request->getUrl() === $url && isset($options['stream']) && $options['stream'] === true) {
+            if ($this->getRequestMatcher()->matchesRequest($request, '*', $url) && isset($options['stream']) && $options['stream'] === true) {
                 return;
             }
         }
@@ -51,7 +48,7 @@ trait AssertsStreams
             $options = $request->getOptions();
 
             if (
-                $request->getUrl() === $url &&
+                $this->getRequestMatcher()->matchesRequest($request, '*', $url) &&
                 isset($options['stream']) &&
                 $options['stream'] === true &&
                 isset($options['on_chunk'])
@@ -78,7 +75,7 @@ trait AssertsStreams
         foreach ($this->getRequestHistory() as $request) {
             $options = $request->getOptions();
 
-            if ($request->getUrl() === $url && isset($options['stream']) && $options['stream'] === true) {
+            if ($this->getRequestMatcher()->matchesRequest($request, '*', $url) && isset($options['stream']) && $options['stream'] === true) {
                 $matches = true;
 
                 foreach ($expectedHeaders as $name => $value) {
@@ -86,7 +83,6 @@ trait AssertsStreams
 
                     if ($headerValue === null || $headerValue !== $value) {
                         $matches = false;
-
                         break;
                     }
                 }
@@ -116,10 +112,9 @@ trait AssertsStreams
             $options = $request->getOptions();
 
             if (
-                $request->getUrl() === $url &&
+                $this->getRequestMatcher()->matchesRequest($request, $method, $url) &&
                 isset($options['stream']) &&
-                $options['stream'] === true &&
-                strtoupper($request->getMethod()) === strtoupper($method)
+                $options['stream'] === true
             ) {
                 return;
             }

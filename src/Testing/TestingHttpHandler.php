@@ -6,7 +6,7 @@ namespace Hibla\HttpClient\Testing;
 
 use Hibla\HttpClient\Handlers\HttpHandler;
 use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
-use Hibla\HttpClient\RetryConfig;
+use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\HttpClient\SSE\CancelableSSEPromise;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
 use Hibla\HttpClient\Testing\Interfaces\AssertsCookiesInterface;
@@ -408,29 +408,6 @@ class TestingHttpHandler extends HttpHandler implements
     }
 
     /**
-     * Fetch a URL with mocking support.
-     *
-     * @param array<int|string, mixed> $options
-     * @return PromiseInterface<\Hibla\HttpClient\Response>|PromiseInterface<\Hibla\HttpClient\StreamingResponse>|PromiseInterface<\Hibla\HttpClient\SSE\SSEResponse>|PromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}>
-     */
-    public function fetch(string $url, array $options = []): PromiseInterface
-    {
-        $mockedRequests = array_values($this->mockedRequests);
-        /** @var array<string, mixed> $normalizedOptions */
-        $normalizedOptions = $options;
-
-        // @phpstan-ignore-next-line return.type
-        return $this->requestExecutor->executeFetch(
-            $url,
-            $normalizedOptions,
-            $mockedRequests,
-            $this->globalSettings,
-            fn (string $url, array $options) => parent::fetch($url, $options),
-            [$this, 'createStream']
-        );
-    }
-
-    /**
      * Stream data from a URL with chunk callbacks.
      *
      * @param array<int|string, mixed> $options
@@ -438,13 +415,21 @@ class TestingHttpHandler extends HttpHandler implements
      */
     public function stream(string $url, array $options = [], ?callable $onChunk = null): PromiseInterface
     {
+        $mockedRequests = array_values($this->mockedRequests);
+        
         $options['stream'] = true;
         if ($onChunk !== null) {
             $options['on_chunk'] = $onChunk;
         }
 
-        /** @var PromiseInterface<\Hibla\HttpClient\StreamingResponse> */
-        return $this->fetch($url, $options);
+        return $this->requestExecutor->executeSendRequest(
+            $url,
+            $options,
+            $mockedRequests,
+            $this->globalSettings,
+            null,
+            fn (string $u, array $o, ?RetryConfig $r) => parent::stream($u, $o, $onChunk)
+        );
     }
 
     /**
@@ -456,17 +441,24 @@ class TestingHttpHandler extends HttpHandler implements
     public function download(string $url, ?string $destination = null, array $options = []): PromiseInterface
     {
         if ($destination === null) {
-            $destination = $this->fileManager->createTempFile(
-                'download_' . uniqid() . '.tmp'
-            );
+            $destination = $this->fileManager->createTempFile('download_' . uniqid() . '.tmp');
         } else {
             $this->fileManager->trackFile($destination);
         }
 
+        $mockedRequests = array_values($this->mockedRequests);
+        
+        // Inject download flag for the mock handler to intercept
         $options['download'] = $destination;
 
-        /** @var PromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}> */
-        return $this->fetch($url, $options);
+        return $this->requestExecutor->executeSendRequest(
+            $url,
+            $options,
+            $mockedRequests,
+            $this->globalSettings,
+            null,
+            fn (string $u, array $o, ?RetryConfig $r) => parent::download($u, $destination, $o)
+        );
     }
 
     /**
@@ -481,20 +473,16 @@ class TestingHttpHandler extends HttpHandler implements
         ?callable $onError = null,
         ?SSEReconnectConfig $reconnectConfig = null
     ): PromiseInterface {
-        $curlOptions = $this->fetchHandler->normalizeFetchOptions($url, $options, true);
         $mockedRequests = array_values($this->mockedRequests);
-
-        /** @var array<int, mixed> $normalizedCurlOptions */
-        $normalizedCurlOptions = $curlOptions;
 
         $innerPromise = $this->requestExecutor->executeSSE(
             $url,
-            $normalizedCurlOptions,
+            $options,
             $mockedRequests,
             $this->globalSettings,
             $onEvent,
             $onError,
-            fn (string $url, array $options, ?callable $onEvent, ?callable $onError, ?SSEReconnectConfig $reconnectConfig) => parent::sse($url, $options, $onEvent, $onError, $reconnectConfig),
+            fn (string $u, array $o, ?callable $onEv, ?callable $onErr, ?SSEReconnectConfig $rec) => parent::sse($u, $o, $onEv, $onErr, $rec),
             $reconnectConfig
         );
 

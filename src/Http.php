@@ -6,10 +6,11 @@ namespace Hibla\HttpClient;
 
 use Hibla\HttpClient\Handlers\HttpHandler;
 use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
-use Hibla\HttpClient\Interfaces\EnhancedResponseInterface;
+use Hibla\HttpClient\Interfaces\ResponseInterface;
 use Hibla\HttpClient\Interfaces\HttpClientInterface;
 use Hibla\HttpClient\Interfaces\StreamingResponseInterface;
 use Hibla\HttpClient\Interfaces\SSE\SSEBuilderInterface;
+use Hibla\HttpClient\Interfaces\SSEResponseInterface;
 use Hibla\HttpClient\Testing\MockRequestBuilder;
 use Hibla\HttpClient\Testing\TestingHttpHandler;
 use Hibla\HttpClient\Testing\Utilities\RecordedRequest;
@@ -23,20 +24,65 @@ use Psr\Http\Message\UploadedFileInterface;
  * including GET, POST, streaming, and file downloads. It abstracts away the
  * underlying handler and event loop management for a more convenient API.
  *
+ * All requests — whether made through the fluent builder, direct HTTP methods,
+ * or fetch() — share the same execution path through HttpClient and its
+ * interceptor pipeline. There is no global configuration or global interceptor
+ * registry; all configuration is per-request via the fluent builder, or
+ * shared by extracting a pre-configured HttpClientInterface instance.
+ *
+ * ## Basic usage
+ *
+ * ```php
+ * // Direct methods
+ * $response = await Http::get('https://api.example.com/users');
+ * $response = await Http::post('https://api.example.com/users', ['name' => 'Alice']);
+ *
+ * // Fluent builder
+ * $response = await Http::request()
+ *     ->withToken($token)
+ *     ->withUserAgent('MyApp/1.0')
+ *     ->timeout(15)
+ *     ->get('https://api.example.com/users');
+ *
+ * // Fetch-style
+ * $response = await Http::fetch('https://api.example.com/users', [
+ *     'method'  => 'POST',
+ *     'json'    => ['name' => 'Alice'],
+ *     'timeout' => 15,
+ * ]);
+ * ```
+ *
+ * ## Sharing configuration across requests
+ *
+ * Rather than using global interceptors or global configuration, extract a
+ * pre-configured client instance and reuse it. Because HttpClient is immutable,
+ * the base instance is never mutated by individual requests:
+ *
+ * ```php
+ * $client = Http::request()
+ *     ->withToken($token)
+ *     ->withUserAgent('MyApp/1.0')
+ *     ->intercept($loggingMiddleware)
+ *     ->timeout(30);
+ *
+ * // Each call returns a new clone — $client stays clean
+ * $client->get('https://api.example.com/users');
+ * $client->post('https://api.example.com/orders', $data);
+ * ```
+ *
  * Direct HTTP methods:
  *
- * @method static PromiseInterface<EnhancedResponseInterface> get(string $url, array<string, mixed> $query = []) Performs a GET request.
- * @method static PromiseInterface<EnhancedResponseInterface> post(string $url, array<string, mixed> $data = []) Performs a POST request.
- * @method static PromiseInterface<EnhancedResponseInterface> put(string $url, array<string, mixed> $data = []) Performs a PUT request.
- * @method static PromiseInterface<EnhancedResponseInterface> delete(string $url) Performs a DELETE request.
- * @method static PromiseInterface<EnhancedResponseInterface> patch(string $url, array<string, mixed> $data = []) Performs a PATCH request.
- * @method static PromiseInterface<EnhancedResponseInterface> options(string $url) Performs an OPTIONS request.
- * @method static PromiseInterface<EnhancedResponseInterface> head(string $url) Performs a HEAD request.
- * @method static PromiseInterface<EnhancedResponseInterface> fetch(string $url, array<int|string, mixed> $options = []) A flexible, fetch-like request method.
+ * @method static PromiseInterface<ResponseInterface> get(string $url, array<string, mixed> $query = []) Performs a GET request.
+ * @method static PromiseInterface<ResponseInterface> post(string $url, array<string, mixed> $data = []) Performs a POST request.
+ * @method static PromiseInterface<ResponseInterface> put(string $url, array<string, mixed> $data = []) Performs a PUT request.
+ * @method static PromiseInterface<ResponseInterface> delete(string $url) Performs a DELETE request.
+ * @method static PromiseInterface<ResponseInterface> patch(string $url, array<string, mixed> $data = []) Performs a PATCH request.
+ * @method static PromiseInterface<ResponseInterface> options(string $url) Performs an OPTIONS request.
+ * @method static PromiseInterface<ResponseInterface> head(string $url) Performs a HEAD request.
  * @method static PromiseInterface<StreamingResponseInterface> stream(string $url, ?callable $onChunk = null) Streams a response body.
  * @method static PromiseInterface<StreamingResponseInterface> streamPost(string $url, mixed $body = null, ?callable $onChunk = null) Streams the response body of a POST request.
  * @method static PromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}> download(string $url, string $destination) Downloads a file to the given destination path.
- * @method static PromiseInterface<EnhancedResponseInterface> send(string $method, string $url) Dispatches the configured request.
+ * @method static PromiseInterface<ResponseInterface> send(string $method, string $url) Dispatches the configured request.
  * @method static SSEBuilderInterface sse(string $url) Create a fluent SSE connection builder.
  *
  * Header configuration methods (ConfiguresHeadersInterface):
@@ -102,9 +148,9 @@ use Psr\Http\Message\UploadedFileInterface;
  * @method static HttpClientInterface withUrlParameters(array<string, mixed> $parameters) Set multiple URL parameters for URI template substitution.
  *
  * Interceptor methods (HttpInterceptorInterface):
- * @method static HttpClientInterface intercept(callable(PendingRequestInterface, callable): PromiseInterface<EnhancedResponseInterface> $middleware) Add a full pipeline interceptor.
- * @method static HttpClientInterface interceptRequest(callable(PendingRequestInterface): (PendingRequestInterface|PromiseInterface<PendingRequestInterface>) $callback) Start building a request with a request interceptor.
- * @method static HttpClientInterface interceptResponse(callable(EnhancedResponseInterface): (EnhancedResponseInterface|PromiseInterface<EnhancedResponseInterface>) $callback) Start building a request with a response interceptor.
+ * @method static HttpClientInterface intercept(callable(RequestInterface, callable): PromiseInterface<ResponseInterface> $middleware) Add a full pipeline interceptor.
+ * @method static HttpClientInterface interceptRequest(callable(RequestInterface): (RequestInterface|PromiseInterface<RequestInterface>) $callback) Start building a request with a request interceptor.
+ * @method static HttpClientInterface interceptResponse(callable(ResponseInterface): (ResponseInterface|PromiseInterface<ResponseInterface>) $callback) Start building a request with a response interceptor.
  *
  * cURL escape-hatch methods (ConfiguresCurlInterface):
  * @method static HttpClientInterface withCurlOption(int $option, mixed $value) Start building a request with a raw cURL option.
@@ -232,169 +278,162 @@ use Psr\Http\Message\UploadedFileInterface;
 class Http
 {
     /**
-     * @var HttpHandler|null Singleton instance of the core HTTP handler.
-     */
-    private static ?HttpHandler $instance = null;
-
-    /**
-     * @var TestingHttpHandler|null Testing handler instance when in testing mode.
+     * Testing handler instance injected into every HttpClient when in testing mode.
+     *
+     * Null means production mode — each HttpClient creates its own handler lazily.
+     * Non-null means testing mode — requests are intercepted and recorded.
+     *
+     * This is the single source of truth for whether testing mode is active.
+     * A separate boolean flag is intentionally absent: the nullable instance
+     * already expresses "active or not" without the risk of the two values
+     * diverging.
      */
     private static ?TestingHttpHandler $testingInstance = null;
 
     /**
-     * @var bool Flag to track if we're in testing mode.
-     */
-    private static bool $isTesting = false;
-
-    /**
-     * Lazily initializes and returns the singleton HttpHandler instance.
-     */
-    private static function getInstance(): HttpHandler
-    {
-        if (self::$isTesting && self::$testingInstance !== null) {
-            return self::$testingInstance;
-        }
-
-        if (self::$instance === null) {
-            self::$instance = new HttpHandler();
-        }
-
-        return self::$instance;
-    }
-
-    /**
      * Creates a new fluent HTTP client builder.
+     *
+     * In production mode: returns a fresh HttpClient with no shared state.
+     * Each client lazily creates its own HttpHandler on first dispatch.
+     *
+     * In testing mode: injects the TestingHttpHandler so all requests made
+     * through this client are intercepted, recorded, and matchable against
+     * mocked responses. Application code requires no changes between modes.
      */
     public static function request(): HttpClientInterface
     {
         $client = new HttpClient();
 
-        if (self::$isTesting && self::$testingInstance !== null) {
+        if (self::$testingInstance !== null) {
             $client = $client->setHandler(self::$testingInstance);
-        } elseif (self::$instance !== null) {
-            $client = $client->setHandler(self::$instance);
         }
 
         return $client;
     }
 
     /**
-     * Enable testing mode with a clean TestingHttpHandler instance.
+     * Fetch-style entry point — translates a flat options array into fluent
+     * builder calls then dispatches through the interceptor pipeline.
      *
-     * This method switches the Http client to use a TestingHttpHandler instead
-     * of the regular HttpHandler, allowing you to mock requests and responses
-     * for testing purposes.
+     * All option mapping is handled by {@see FetchRequest}, keeping this
+     * facade method as a thin delegation point. Because this calls
+     * self::request() internally, testing mode is honoured automatically —
+     * no special casing required.
      *
-     * @return TestingHttpHandler The testing handler for configuration
+     * Supported options: method, headers, json, form, body, auth, timeout,
+     * connect_timeout, follow_redirects, max_redirects, verify_ssl,
+     * user_agent, http_version / protocol, retry, proxy, cookies,
+     * cookie_jar, stream, on_chunk / onChunk, download / save_to,
+     * sse, on_event / onEvent, on_error / onError, reconnect.
+     * Integer keys are forwarded as raw cURL options.
+     *
+     * @param  string $url
+     * @param  array<int|string, mixed>  $options
+     * @return PromiseInterface<ResponseInterface>
+     */
+    public static function fetch(string $url, array $options = []): PromiseInterface
+    {
+        return (new FetchRequest())->send(self::request(), $url, $options);
+    }
+
+    /**
+     * Enable testing mode.
+     *
+     * Switches the facade to use a TestingHttpHandler instead of the real
+     * cURL-backed handler. All subsequent calls to request() and fetch()
+     * will route through the testing handler until stopTesting() is called.
+     *
+     * Application code requires zero changes between production and testing —
+     * the handler swap is invisible to callers.
+     *
+     * ```php
+     * Http::startTesting();
+     * Http::mock('GET')->url('https://api.example.com/*')->respondWith(200, [...]);
+     *
+     * $response = await Http::get('https://api.example.com/users'); // intercepted
+     *
+     * Http::assertRequestMade('GET', 'https://api.example.com/users');
+     * Http::stopTesting();
+     * ```
+     *
+     * @return TestingHttpHandler The testing handler for mock configuration.
      */
     public static function startTesting(): TestingHttpHandler
     {
-        self::$isTesting = true;
-
-        if (self::$testingInstance === null) {
-            self::$testingInstance = new TestingHttpHandler();
-        }
+        self::$testingInstance ??= new TestingHttpHandler();
 
         return self::$testingInstance;
     }
 
     /**
-     * Get the current testing handler instance.
+     * Return the active testing handler for advanced mock configuration.
      *
-     * @return TestingHttpHandler The testing handler
+     * @return TestingHttpHandler
      *
-     * @throws \RuntimeException If not in testing mode
+     * @throws \RuntimeException If not in testing mode.
      */
     public static function getTestingHandler(): TestingHttpHandler
     {
-        if (! self::$isTesting || self::$testingInstance === null) {
-            throw new \RuntimeException('Not in testing mode. Call Http::startTesting() first.');
-        }
-
-        return self::$testingInstance;
+        return self::$testingInstance
+            ?? throw new \RuntimeException(
+                'Not in testing mode. Call Http::startTesting() first.'
+            );
     }
 
     /**
-     * Convenience method to quickly mock a request in testing mode.
-     * Follows Laravel's Http::fake() pattern.
+     * Convenience method to configure a mock in testing mode.
      *
-     * @param  string  $method  HTTP method to mock (default: '*' for any)
+     * Follows the same pattern as Laravel's Http::fake(). Delegates directly
+     * to TestingHttpHandler::mock() for fluent mock configuration.
      *
-     * @throws \RuntimeException If not in testing mode
+     * @param  string  $method  HTTP method to mock, or '*' to match any method.
+     *
+     * @throws \RuntimeException If not in testing mode.
      */
     public static function mock(string $method = '*'): MockRequestBuilder
     {
-        if (! self::$isTesting || self::$testingInstance === null) {
-            throw new \RuntimeException('Not in testing mode. Call Http::startTesting() first.');
-        }
-
-        return self::$testingInstance->mock($method);
+        return self::getTestingHandler()->mock($method);
     }
 
     /**
      * Disable testing mode and return to normal HTTP operations.
      *
-     * This restores the Http client to use the regular HttpHandler,
-     * clearing all mocked requests and testing state.
+     * Clears the testing handler and all recorded requests and mocked
+     * responses. Subsequent calls to request() and fetch() will use real
+     * HTTP execution again.
+     *
+     * Should be called in tearDown() after each test to prevent state
+     * leaking between tests.
      */
     public static function stopTesting(): void
     {
-        self::$isTesting = false;
         self::$testingInstance = null;
-    }
-
-    /**
-     * Resets the singleton instance. Useful for testing environments.
-     */
-    public static function reset(): void
-    {
-        self::$instance = null;
-        self::$testingInstance = null;
-        self::$isTesting = false;
-    }
-
-    /**
-     * Allows setting a custom HttpHandler instance, primarily for mocking during tests.
-     *
-     * @param  HttpHandler  $handler  The custom handler instance.
-     */
-    public static function setInstance(HttpHandler $handler): void
-    {
-        if ($handler instanceof TestingHttpHandler) {
-            self::$isTesting = true;
-            self::$testingInstance = $handler;
-        } else {
-            self::$isTesting = false;
-            self::$instance = $handler;
-        }
-    }
-
-    /**
-     * Configure global settings for the HTTP client.
-     *
-     * @param array{user_agent?: string} $settings
-     */
-    public static function configure(array $settings): void
-    {
-        if (isset($settings['user_agent'])) {
-            GlobalConfig::setUserAgent($settings['user_agent']);
-        }
     }
 
     /**
      * Magic method to handle dynamic static calls.
      *
-     * Assertion and testing-helper calls are routed to TestingHttpHandler.
-     * The fetch() method is dispatched directly on the handler singleton.
-     * All other calls are delegated to a fresh HttpClient builder instance.
+     * Routes calls in this order:
      *
-     * @param  string $method The method name.
-     * @param  array<mixed> $arguments  The arguments to pass to the method.
+     * 1. Assertion and testing-helper methods → TestingHttpHandler.
+     *    Throws if called outside testing mode.
+     *
+     * 2. Everything else → a fresh HttpClient builder instance via request().
+     *    This covers all fluent builder methods (withToken, timeout, etc.)
+     *    as well as terminal methods (get, post, stream, download, sse, send).
+     *
+     * Note: fetch() is a real static method above and never reaches here.
+     *
+     * @param  string        $method     The method name.
+     * @param  array<mixed>  $arguments  The arguments to pass to the method.
      * @return mixed The result of the proxied method call.
+     *
+     * @throws \RuntimeException      If an assertion method is called outside testing mode.
+     * @throws \BadMethodCallException If the method does not exist on HttpClient.
      */
     public static function __callStatic(string $method, array $arguments): mixed
     {
-        /** @var list<string> */
+        /** @var list<string> $assertionMethods */
         $assertionMethods = [
             // Header assertions
             'assertHeaderSent',
@@ -497,7 +536,7 @@ class Http
         ];
 
         if (\in_array($method, $assertionMethods, true)) {
-            if (! self::$isTesting || self::$testingInstance === null) {
+            if (self::$testingInstance === null) {
                 throw new \RuntimeException(
                     "Cannot call assertion method '{$method}' outside of testing mode. " .
                         'Call Http::startTesting() first.'
@@ -508,14 +547,8 @@ class Http
             return self::$testingInstance->{$method}(...$arguments);
         }
 
-        /** @var list<string> */
-        $directMethods = ['fetch'];
-
-        if (\in_array($method, $directMethods, true)) {
-            /** @phpstan-ignore-next-line */
-            return self::getInstance()->{$method}(...$arguments);
-        }
-
+        // Delegate all fluent builder and terminal methods to a fresh
+        // HttpClient instance. request() handles testing mode injection.
         $client = self::request();
 
         if (method_exists($client, $method)) {
@@ -523,6 +556,8 @@ class Http
             return $client->{$method}(...$arguments);
         }
 
-        throw new \BadMethodCallException("Method {$method} does not exist on " . static::class);
+        throw new \BadMethodCallException(
+            "Method {$method} does not exist on " . static::class
+        );
     }
 }

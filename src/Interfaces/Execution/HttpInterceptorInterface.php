@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Interfaces\Execution;
 
-use Hibla\HttpClient\Interfaces\EnhancedResponseInterface;
-use Hibla\HttpClient\Interfaces\PendingRequestInterface;
+use Hibla\HttpClient\Interfaces\ResponseInterface;
+use Hibla\HttpClient\Interfaces\RequestInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
 /**
@@ -14,11 +14,11 @@ use Hibla\Promise\Interfaces\PromiseInterface;
  * Three tiers of interception are available, in order of complexity:
  *
  *   Tier 1 — simple transforms with no async knowledge needed:
- *     interceptRequest(fn(PendingRequestInterface $r): PendingRequestInterface => ...)
- *     interceptResponse(fn(EnhancedResponseInterface $r): EnhancedResponseInterface => ...)
+ *     interceptRequest(fn(RequestInterface $r): RequestInterface => ...)
+ *     interceptResponse(fn(ResponseInterface $r): ResponseInterface => ...)
  *
  *   Tier 2 — full pipeline control where await() works freely:
- *     intercept(fn(PendingRequestInterface $r, callable $next): PromiseInterface => ...)
+ *     intercept(fn(RequestInterface $r, callable $next): PromiseInterface => ...)
  *
  * Interceptors are executed in registration order. Each interceptor
  * wraps the next, forming a pipeline where the innermost layer is
@@ -29,7 +29,7 @@ use Hibla\Promise\Interfaces\PromiseInterface;
  * additional fiber overhead.
  *
  * Example:
- *   Http::intercept(function (PendingRequestInterface $request, callable $next) {
+ *   Http::intercept(function (RequestInterface $request, callable $next) {
  *       $token = await(TokenStore::get('api_token'));
  *       $request = $request->withToken($token);
  *       $response = await($next($request));
@@ -41,34 +41,34 @@ interface HttpInterceptorInterface
     /**
      * Register a request interceptor.
      *
-     * The callback may return a plain PendingRequestInterface or a
+     * The callback may return a plain RequestInterface or a
      * PromiseInterface that resolves to one, allowing async work
      * (e.g. token refresh) before the request is dispatched.
      *
      * await() is safe to use inside the callback.
      *
-     * @param  callable(PendingRequestInterface): (PendingRequestInterface|PromiseInterface<PendingRequestInterface>) $callback
+     * @param  callable(RequestInterface): (RequestInterface|PromiseInterface<RequestInterface>) $callback
      */
     public function interceptRequest(callable $callback): static;
 
     /**
      * Register a response interceptor.
      *
-     * The callback may return a plain EnhancedResponseInterface or a
+     * The callback may return a plain ResponseInterface or a
      * PromiseInterface that resolves to one, allowing async post-processing.
      *
      * await() is safe to use inside the callback.
      *
-     * @param  callable(EnhancedResponseInterface): (EnhancedResponseInterface|PromiseInterface<EnhancedResponseInterface>) $callback
+     * @param  callable(ResponseInterface): (ResponseInterface|PromiseInterface<ResponseInterface>) $callback
      */
     public function interceptResponse(callable $callback): static;
     
     /**
      * Register a full pipeline interceptor.
      *
-     * The callback receives the PendingRequestInterface and a $next callable.
+     * The callback receives the RequestInterface and a $next callable.
      * Calling $next($request) executes the remainder of the pipeline and
-     * returns a PromiseInterface<EnhancedResponseInterface>.
+     * returns a PromiseInterface<ResponseInterface>.
      *
      * This tier gives full control: the interceptor can short-circuit the
      * pipeline by not calling $next, fork it by calling $next multiple times,
@@ -76,7 +76,7 @@ interface HttpInterceptorInterface
      *
      * await() is safe to use inside the callback.
      *
-     * @param  callable(PendingRequestInterface, callable): PromiseInterface<EnhancedResponseInterface> $middleware
+     * @param  callable(RequestInterface, callable): PromiseInterface<ResponseInterface> $middleware
      */
     public function intercept(callable $middleware): static;
 }

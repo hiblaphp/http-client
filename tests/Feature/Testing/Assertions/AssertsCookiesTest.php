@@ -2,7 +2,8 @@
 
 declare(strict_types=1);
 
-use Hibla\HttpClient\Cookie;
+use Hibla\HttpClient\HttpClient;
+use Hibla\HttpClient\ValueObjects\Cookie;
 use PHPUnit\Framework\AssertionFailedError;
 
 describe('AssertsCookies', function () {
@@ -14,11 +15,15 @@ describe('AssertsCookies', function () {
         $jar->setCookie($cookie);
 
         $handler->mock('GET')->url('https://example.com')->respondWithStatus(200)->register();
-        $handler->fetch('https://example.com', ['cookie_jar' => $jar])->wait();
+
+        (new HttpClient())
+            ->setHandler($handler)
+            ->useCookieJar($jar)
+            ->get('https://example.com')
+            ->wait();
 
         expect(fn () => $handler->assertCookieSent('session'))
-            ->not->toThrow(AssertionFailedError::class)
-        ;
+            ->not->toThrow(AssertionFailedError::class);
     });
 
     test('assertCookieExists validates cookie exists in jar', function () {
@@ -31,8 +36,7 @@ describe('AssertsCookies', function () {
         $handler->withGlobalCookieJar($jar);
 
         expect(fn () => $handler->assertCookieExists('session'))
-            ->not->toThrow(AssertionFailedError::class)
-        ;
+            ->not->toThrow(AssertionFailedError::class);
     });
 
     test('assertCookieValue validates cookie value', function () {
@@ -45,7 +49,6 @@ describe('AssertsCookies', function () {
         $handler->withGlobalCookieJar($jar);
 
         expect(fn () => $handler->assertCookieValue('session', 'abc123'))
-            ->not->toThrow(AssertionFailedError::class)
-        ;
+            ->not->toThrow(AssertionFailedError::class);
     });
 });

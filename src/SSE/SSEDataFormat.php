@@ -24,7 +24,7 @@ enum SSEDataFormat: string
      * Falls back to a raw string if the data is not valid JSON.
      * Use when you only care about the event payload.
      */
-    case Json = 'json';
+    case DecodedJson = 'json';
 
     /**
      * Only the data field, as a raw unprocessed string.

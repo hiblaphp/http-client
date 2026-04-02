@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Testing\Utilities;
 
-use Hibla\HttpClient\Cookie;
+use Hibla\HttpClient\ValueObjects\Cookie;
 use Hibla\HttpClient\CookieJar;
 use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
 use Hibla\HttpClient\Testing\Exceptions\MockAssertionException;

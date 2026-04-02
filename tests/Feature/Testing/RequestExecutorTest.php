@@ -3,30 +3,12 @@
 declare(strict_types=1);
 
 use Hibla\HttpClient\Response;
-use Hibla\HttpClient\RetryConfig;
+use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
 use Hibla\HttpClient\SSE\SSEResponse;
 use Hibla\HttpClient\Stream;
 use Hibla\HttpClient\Testing\MockedRequest;
-use Hibla\HttpClient\Testing\Utilities\CookieManager;
-use Hibla\HttpClient\Testing\Utilities\FileManager;
-use Hibla\HttpClient\Testing\Utilities\NetworkSimulator;
-use Hibla\HttpClient\Testing\Utilities\RequestExecutor;
-use Hibla\HttpClient\Testing\Utilities\RequestMatcher;
-use Hibla\HttpClient\Testing\Utilities\RequestRecorder;
-use Hibla\HttpClient\Testing\Utilities\ResponseFactory;
 use Hibla\Promise\Promise;
-
-function createRequestExecutor(): RequestExecutor
-{
-    return new RequestExecutor(
-        new RequestMatcher(),
-        new ResponseFactory(new NetworkSimulator()),
-        new FileManager(),
-        new CookieManager(),
-        new RequestRecorder()
-    );
-}
 
 test('executes standard send request', function () {
     $executor = createRequestExecutor();
@@ -67,25 +49,6 @@ test('executes SSE request', function () {
     )->wait();
 
     expect($result)->toBeInstanceOf(SSEResponse::class);
-});
-
-test('executes fetch request', function () {
-    $executor = createRequestExecutor();
-    $mocks = [];
-
-    $mock = new MockedRequest('GET');
-    $mock->setUrlPattern('https://api.example.com/data');
-    $mock->setBody('{"result": "success"}');
-    $mocks[] = $mock;
-
-    $result = $executor->executeFetch(
-        'https://api.example.com/data',
-        ['method' => 'GET'],
-        $mocks,
-        []
-    )->wait();
-
-    expect($result)->toBeInstanceOf(Response::class);
 });
 
 test('executes send request with retry config', function () {

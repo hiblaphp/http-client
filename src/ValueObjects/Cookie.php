@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Hibla\HttpClient;
+namespace Hibla\HttpClient\ValueObjects;
 
 class Cookie
 {

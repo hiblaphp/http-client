@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\SSE;
 
+use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Handlers\HttpHandler;
 use Hibla\HttpClient\Interfaces\SSE\SSEBuilderInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
@@ -52,8 +53,7 @@ class SSEBuilder implements SSEBuilderInterface
         private readonly string $url,
         private readonly HttpHandler $handler,
         private readonly array $curlOptions,
-    ) {
-    }
+    ) {}
 
     /**
      *  @inheritDoc
@@ -180,7 +180,7 @@ class SSEBuilder implements SSEBuilderInterface
             }
 
             $data = match ($dataFormat) {
-                SSEDataFormat::Json => $this->parseAsJson($event),
+                SSEDataFormat::DecodedJson => $this->parseAsJson($event),
                 SSEDataFormat::Array => $this->toArrayWithParsedData($event),
                 SSEDataFormat::Raw => $event->data,
                 SSEDataFormat::Event, null => $event,
@@ -201,9 +201,16 @@ class SSEBuilder implements SSEBuilderInterface
         }
 
         $onError = $this->onError;
+        $url = $this->url;
 
-        return function (string $error) use ($onError): void {
-            $onError(new \RuntimeException($error));
+        return function (string $error) use ($onError, $url): void {
+            $onError(new NetworkException(
+                "SSE connection failed: {$error}",
+                0,
+                null,
+                $url,
+                $error
+            ));
         };
     }
 

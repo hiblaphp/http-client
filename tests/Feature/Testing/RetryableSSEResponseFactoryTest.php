@@ -10,32 +10,6 @@ use Hibla\HttpClient\Testing\Exceptions\MockException;
 use Hibla\HttpClient\Testing\Utilities\Factories\SSE\RetryableSSEResponseFactory;
 use Hibla\HttpClient\Testing\Utilities\NetworkSimulator;
 
-beforeEach(function () {
-    Loop::reset();
-});
-
-afterEach(function () {
-    Loop::reset();
-});
-
-function createRetryableSSEResponseFactory(?NetworkSimulator $simulator = null): RetryableSSEResponseFactory
-{
-    $simulator ??= new NetworkSimulator();
-    $handler = createNetworkHandler($simulator);
-
-    return new RetryableSSEResponseFactory($handler);
-}
-
-function createReconnectConfig(int $maxAttempts = 3, float $initialDelay = 0.05): SSEReconnectConfig
-{
-    return new SSEReconnectConfig(
-        maxAttempts: $maxAttempts,
-        initialDelay: $initialDelay,
-        maxDelay: 1.0,
-        backoffMultiplier: 2.0
-    );
-}
-
 describe('RetryableSSEResponseFactory', function () {
 
     it('creates successful SSE response on first attempt', function () {

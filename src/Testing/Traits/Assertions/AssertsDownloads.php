@@ -14,20 +14,16 @@ trait AssertsDownloads
      * @return array<int, RecordedRequest>
      */
     abstract public function getRequestHistory(): array;
+    
+    abstract protected function getRequestMatcher();
 
-    /**
-     * Assert that a download was made to a specific destination.
-     *
-     * @param string $url The URL that was downloaded
-     * @param string $destination The expected destination path
-     */
     public function assertDownloadMade(string $url, string $destination): void
     {
         $this->registerAssertion();
         foreach ($this->getRequestHistory() as $request) {
             $options = $request->getOptions();
 
-            if ($request->getUrl() === $url && isset($options['download'])) {
+            if ($this->getRequestMatcher()->matchesRequest($request, '*', $url) && isset($options['download'])) {
                 $downloadDest = $options['download'];
 
                 if (is_string($downloadDest) && $downloadDest === $destination) {
@@ -52,7 +48,7 @@ trait AssertsDownloads
         foreach ($this->getRequestHistory() as $request) {
             $options = $request->getOptions();
 
-            if ($request->getUrl() === $url && isset($options['download'])) {
+            if ($this->getRequestMatcher()->matchesRequest($request, '*', $url) && isset($options['download'])) {
                 return;
             }
         }
@@ -97,7 +93,7 @@ trait AssertsDownloads
         foreach ($this->getRequestHistory() as $request) {
             $options = $request->getOptions();
 
-            if ($request->getUrl() === $url && isset($options['download'])) {
+            if ($this->getRequestMatcher()->matchesRequest($request, '*', $url) && isset($options['download'])) {
                 $matches = true;
 
                 foreach ($expectedHeaders as $name => $value) {
@@ -105,7 +101,6 @@ trait AssertsDownloads
 
                     if ($headerValue === null || $headerValue !== $value) {
                         $matches = false;
-
                         break;
                     }
                 }
@@ -301,9 +296,8 @@ trait AssertsDownloads
             $options = $request->getOptions();
 
             if (
-                $request->getUrl() === $url &&
-                isset($options['download']) &&
-                strtoupper($request->getMethod()) === strtoupper($method)
+                $this->getRequestMatcher()->matchesRequest($request, $method, $url) &&
+                isset($options['download'])
             ) {
                 return;
             }
@@ -377,7 +371,7 @@ trait AssertsDownloads
         foreach ($this->getRequestHistory() as $request) {
             $options = $request->getOptions();
 
-            if ($request->getUrl() === $url && isset($options['download'])) {
+            if ($this->getRequestMatcher()->matchesRequest($request, '*', $url) && isset($options['download'])) {
                 /** @var mixed $destination */
                 $destination = $options['download'];
 
@@ -436,11 +430,6 @@ trait AssertsDownloads
         echo "===================\n";
     }
 
-    /**
-     * Dump detailed information about the last download.
-     *
-     * @return void
-     */
     public function dumpLastDownload(): void
     {
         $download = $this->getLastDownload();

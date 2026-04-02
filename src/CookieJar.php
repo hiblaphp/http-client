@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Hibla\HttpClient;
 
 use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
+use Hibla\HttpClient\ValueObjects\Cookie;
 
 /**
  * In-memory cookie jar implementation.

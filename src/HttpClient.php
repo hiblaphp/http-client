@@ -4,17 +4,21 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient;
 
+use Composer\InstalledVersions;
 use Hibla\HttpClient\Builders\CurlOptionsBuilder;
 use Hibla\HttpClient\Handlers\HttpHandler;
 use Hibla\HttpClient\Handlers\InterceptorHandler;
 use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
-use Hibla\HttpClient\Interfaces\EnhancedResponseInterface;
+use Hibla\HttpClient\Interfaces\ResponseInterface;
 use Hibla\HttpClient\Interfaces\Handler\TransportOptionsBuilderInterface;
 use Hibla\HttpClient\Interfaces\HttpClientInterface;
-use Hibla\HttpClient\Interfaces\PendingRequestInterface;
+use Hibla\HttpClient\Interfaces\RequestInterface;
 use Hibla\HttpClient\Interfaces\SSE\SSEBuilderInterface;
 use Hibla\HttpClient\SSE\SSEBuilder;
 use Hibla\HttpClient\Traits\StreamTrait;
+use Hibla\HttpClient\ValueObjects\ClientOptions;
+use Hibla\HttpClient\ValueObjects\ProxyConfig;
+use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use InvalidArgumentException;
 use Psr\Http\Message\StreamInterface;
@@ -27,14 +31,14 @@ use Psr\Http\Message\UriInterface;
  * Owns all transport-level configuration — timeouts, redirects, SSL
  * verification, proxy routing, retry policy, HTTP version negotiation,
  * and raw cURL options. Request-level state (method, URI, headers, body,
- * authentication, cookies) is held by the embedded PendingRequest value
+ * authentication, cookies) is held by the embedded Request value
  * object, which is what actually flows through the interceptor pipeline.
  *
  * Each builder method returns a cloned instance so chains can branch
  * freely without side effects. Terminal methods (get, post, send, stream,
  * download, sse) dispatch the configured request and return a promise.
  *
- * The interceptor pipeline receives a pure PendingRequest — a narrow
+ * The interceptor pipeline receives a pure Request — a narrow
  * contract covering headers, auth, body, cookies, URI, and method — so
  * interceptors cannot reach or modify transport-level configuration.
  */
@@ -49,7 +53,7 @@ class HttpClient implements HttpClientInterface
      * Transport config never travels through the pipeline — it stays
      * on $this, captured as closure context in executeRequest().
      */
-    private PendingRequest $request;
+    private Request $request;
 
     /**
      * @var array<int, mixed>
@@ -62,7 +66,7 @@ class HttpClient implements HttpClientInterface
     private array $urlParameters = [];
 
     /**
-     * @var array<int, callable(PendingRequestInterface, callable): PromiseInterface<EnhancedResponseInterface>>
+     * @var array<int, callable(RequestInterface, callable): PromiseInterface<ResponseInterface>>
      */
     private array $interceptors = [];
 
@@ -96,18 +100,16 @@ class HttpClient implements HttpClientInterface
     /**
      * Initialise a blank HTTP client.
      *
-     * A fresh PendingRequest is created and seeded with the globally
-     * configured User-Agent (if any). The HttpHandler is NOT instantiated
-     * here — it is created lazily on the first call to a terminal method.
+     * A fresh Request is seeded with the library's default User-Agent.
+     * Override it per-request with withUserAgent().
+     *
+     * The HttpHandler is NOT instantiated here — it is created lazily on the
+     * first call to a terminal method.
      */
     public function __construct()
     {
-        $pending = new PendingRequest();
-
-        $defaultAgent = GlobalConfig::getUserAgent();
-        $this->request = $defaultAgent !== ''
-            ? $pending->withUserAgent($defaultAgent)
-            : $pending;
+        $this->request = (new Request())
+            ->withUserAgent(self::defaultUserAgent());
 
         $this->interceptorHandler = new InterceptorHandler();
     }
@@ -152,7 +154,7 @@ class HttpClient implements HttpClientInterface
 
     /**
      * Sets the HTTP protocol version on both the transport layer and the
-     * underlying PendingRequest so the two remain in sync.
+     * underlying Request so the two remain in sync.
      *
      * @inheritDoc
      */
@@ -746,22 +748,22 @@ class HttpClient implements HttpClientInterface
     public function interceptRequest(callable $callback): static
     {
         return $this->intercept(
-            static function (PendingRequestInterface $request, callable $next) use ($callback): PromiseInterface {
-                /** @var callable(PendingRequestInterface): PromiseInterface<EnhancedResponseInterface> $next */ 
+            static function (RequestInterface $request, callable $next) use ($callback): PromiseInterface {
+                /** @var callable(RequestInterface): PromiseInterface<ResponseInterface> $next */
                 $result = $callback($request);
 
                 if ($result instanceof PromiseInterface) {
-                    /** @var PromiseInterface<PendingRequestInterface> $result */
-                    /** @var PromiseInterface<EnhancedResponseInterface> $chained */
+                    /** @var PromiseInterface<RequestInterface> $result */
+                    /** @var PromiseInterface<ResponseInterface> $chained */
                     $chained = $result->then(
-                        static fn(mixed $resolved): PromiseInterface => $next(self::resolvePendingRequest($resolved, true))
+                        static fn(mixed $resolved): PromiseInterface => $next(self::resolveRequest($resolved, true))
                     );
 
                     return $chained;
                 }
 
-                /** @var PromiseInterface<EnhancedResponseInterface> $resolved */
-                $resolved = $next(self::resolvePendingRequest($result, false));
+                /** @var PromiseInterface<ResponseInterface> $resolved */
+                $resolved = $next(self::resolveRequest($result, false));
 
                 return $resolved;
             }
@@ -774,20 +776,20 @@ class HttpClient implements HttpClientInterface
     public function interceptResponse(callable $callback): static
     {
         return $this->intercept(
-            static function (PendingRequestInterface $request, callable $next) use ($callback): PromiseInterface {
-                /** @var callable(PendingRequestInterface): PromiseInterface<EnhancedResponseInterface> $next */ 
-                /** @var PromiseInterface<EnhancedResponseInterface> $nextPromise */
+            static function (RequestInterface $request, callable $next) use ($callback): PromiseInterface {
+                /** @var callable(RequestInterface): PromiseInterface<ResponseInterface> $next */
+                /** @var PromiseInterface<ResponseInterface> $nextPromise */
                 $nextPromise = $next($request);
 
-                /** @var PromiseInterface<EnhancedResponseInterface> $result */
+                /** @var PromiseInterface<ResponseInterface> $result */
                 $result = $nextPromise->then(
-                    static function (EnhancedResponseInterface $response) use ($callback): EnhancedResponseInterface|PromiseInterface {
+                    static function (ResponseInterface $response) use ($callback): ResponseInterface|PromiseInterface {
                         $result = $callback($response);
 
                         if ($result instanceof PromiseInterface) {
-                            /** @var PromiseInterface<EnhancedResponseInterface> $result */
+                            /** @var PromiseInterface<ResponseInterface> $result */
                             return $result->then(
-                                static fn(mixed $resolved): EnhancedResponseInterface => self::resolveResponse($resolved, true)
+                                static fn(mixed $resolved): ResponseInterface => self::resolveResponse($resolved, true)
                             );
                         }
 
@@ -921,7 +923,7 @@ class HttpClient implements HttpClientInterface
     public function stream(string $url, ?callable $onChunk = null): PromiseInterface
     {
         $options = $this->resolveTransportOptionsBuilder()
-            ->buildForStreaming($this->buildClientOptions('GET', $url));
+            ->buildForStreaming($this->buildClientOptions($this->getMethod(), $url));
 
         return $this->resolveHandler()->stream($url, $options, $onChunk);
     }
@@ -951,11 +953,10 @@ class HttpClient implements HttpClientInterface
     public function download(string $url, string $destination): PromiseInterface
     {
         $options = $this->resolveTransportOptionsBuilder()
-            ->buildForDownload($this->buildClientOptions('GET', $url), $destination);
+            ->buildForDownload($this->buildClientOptions($this->getMethod(), $url), $destination);
 
         return $this->resolveHandler()->download($url, $destination, $options);
     }
-
     /**
      * @inheritDoc
      */
@@ -977,22 +978,22 @@ class HttpClient implements HttpClientInterface
      * Execute the request after the interceptor pipeline has settled.
      *
      * Request content (method, URI, headers, body, auth, cookies, user-agent)
-     * is read from the processed PendingRequest — interceptors may have
+     * is read from the processed Request — interceptors may have
      * modified any of these. Transport config (timeout, proxy, retry, cURL
      * options) is always taken from $this, captured via closure at send() time,
      * because the pipeline has no access to those concerns.
      *
-     * The instanceof guard future-proofs against third-party PendingRequestInterface
+     * The instanceof guard future-proofs against third-party RequestInterface
      * implementations being passed in; in practice $processed is always a
-     * PendingRequest produced by send().
+     * Request produced by send().
      *
      * @return PromiseInterface<Response>
      */
-    private function executeRequest(PendingRequestInterface $processed): PromiseInterface
+    private function executeRequest(RequestInterface $processed): PromiseInterface
     {
-        $auth = $processed instanceof PendingRequest ? $processed->getAuth() : null;
-        $bodyOptions = $processed instanceof PendingRequest ? $processed->getOptions() : [];
-        $userAgent = $processed instanceof PendingRequest ? $processed->getUserAgent() : null;
+        $auth = $processed instanceof Request ? $processed->getAuth() : null;
+        $bodyOptions = $processed instanceof Request ? $processed->getOptions() : [];
+        $userAgent = $processed instanceof Request ? $processed->getUserAgent() : null;
 
         /** @var array<string, array<string>> $headers */
         $headers = $processed->getHeaders();
@@ -1063,19 +1064,19 @@ class HttpClient implements HttpClientInterface
     }
 
     /**
-     * Return a clone of this client with the embedded PendingRequest replaced
+     * Return a clone of this client with the embedded Request replaced
      * by the result of $fn.
      *
      * All delegating builder methods funnel through here to guarantee
      * immutability is preserved on every step of the chain without
      * repeating the clone-and-assign boilerplate in every method.
      *
-     * @param  callable(PendingRequest): PendingRequest  $fn
+     * @param  callable(Request): Request  $fn
      */
     private function withUpdatedRequest(callable $fn): static
     {
         $new = clone $this;
-        /** @var PendingRequest $updated */
+        /** @var Request $updated */
         $updated = $fn($this->request);
         $new->request = $updated;
 
@@ -1143,27 +1144,27 @@ class HttpClient implements HttpClientInterface
     }
 
     /**
-     * Assert that an interceptRequest callback returned a PendingRequestInterface.
+     * Assert that an interceptRequest callback returned a RequestInterface.
      *
      * @throws \LogicException
      */
-    private static function resolvePendingRequest(mixed $value, bool $fromPromise): PendingRequestInterface
+    private static function resolveRequest(mixed $value, bool $fromPromise): RequestInterface
     {
         if ($value === null) {
             throw new \LogicException(sprintf(
                 '%s passed to interceptRequest() must %s a %s instance, got null/void.',
                 $fromPromise ? 'The ' . PromiseInterface::class : 'Callback',
                 $fromPromise ? 'resolve to' : 'return',
-                PendingRequestInterface::class,
+                RequestInterface::class,
             ));
         }
 
-        if (! $value instanceof PendingRequestInterface) {
+        if (! $value instanceof RequestInterface) {
             throw new \LogicException(\sprintf(
                 '%s passed to interceptRequest() must %s a %s instance, got %s.',
                 $fromPromise ? 'The ' . PromiseInterface::class : 'Callback',
                 $fromPromise ? 'resolve to' : 'return',
-                PendingRequestInterface::class,
+                RequestInterface::class,
                 get_debug_type($value),
             ));
         }
@@ -1172,32 +1173,39 @@ class HttpClient implements HttpClientInterface
     }
 
     /**
-     * Assert that an interceptResponse callback returned an EnhancedResponseInterface.
+     * Assert that an interceptResponse callback returned an ResponseInterface.
      *
      * @throws \LogicException
      */
-    private static function resolveResponse(mixed $value, bool $fromPromise): EnhancedResponseInterface
+    private static function resolveResponse(mixed $value, bool $fromPromise): ResponseInterface
     {
         if ($value === null) {
             throw new \LogicException(\sprintf(
                 '%s passed to interceptResponse() must %s a %s instance, got null/void.',
                 $fromPromise ? 'The ' . PromiseInterface::class : 'Callback',
                 $fromPromise ? 'resolve to' : 'return',
-                EnhancedResponseInterface::class,
+                ResponseInterface::class,
             ));
         }
 
-        if (! $value instanceof EnhancedResponseInterface) {
+        if (! $value instanceof ResponseInterface) {
             throw new \LogicException(\sprintf(
                 '%s passed to interceptResponse() must %s a %s instance, got %s.',
                 $fromPromise ? 'The ' . PromiseInterface::class : 'Callback',
                 $fromPromise ? 'resolve to' : 'return',
-                EnhancedResponseInterface::class,
+                ResponseInterface::class,
                 get_debug_type($value),
             ));
         }
 
         return $value;
+    }
+
+    private static function defaultUserAgent(): string
+    {
+        $version = InstalledVersions::getPrettyVersion('hiblaphp/http-client') ?? '1.0';
+
+        return "hibla-http-client/{$version} PHP/" . PHP_VERSION;
     }
 
     /**

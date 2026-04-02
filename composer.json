@@ -9,8 +9,7 @@
             "Hibla\\HttpClient\\": "src/"
         },
         "files": [
-            "src/Helpers/global_functions.php",
-            "src/Helpers/namespace_functions.php"
+            "src/functions.php"
         ]
     },
     "autoload-dev": {
@@ -25,10 +24,11 @@
         }
     ],
     "require": {
+        "php": "^8.3",
         "hiblaphp/event-loop": "dev-main",
         "hiblaphp/promise": "dev-main",
-        "psr/http-message": "^2.0",
-        "hiblaphp/async": "dev-main"
+        "hiblaphp/async": "dev-main",
+        "psr/http-message": "^2.0"
     },
     "require-dev": {
         "pestphp/pest": "^4.0",

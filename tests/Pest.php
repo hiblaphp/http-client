@@ -7,18 +7,22 @@ declare(strict_types=1);
 | Test Case
 |--------------------------------------------------------------------------
 */
+
+use Hibla\HttpClient\SSE\SSEReconnectConfig;
 use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Testing\TestingHttpHandler;
 use Hibla\HttpClient\Testing\Utilities\CookieManager;
-use Hibla\HttpClient\Testing\Utilities\Executors\FetchRequestExecutor;
-use Hibla\HttpClient\Testing\Utilities\Executors\RetryableRequestExecutor;
 use Hibla\HttpClient\Testing\Utilities\Executors\SSERequestExecutor;
 use Hibla\HttpClient\Testing\Utilities\Executors\StandardRequestExecutor;
 use Hibla\HttpClient\Testing\Utilities\Factories\SSE\ImmediateSSEEmitter;
 use Hibla\HttpClient\Testing\Utilities\Factories\SSE\PeriodicSSEEmitter;
+use Hibla\HttpClient\Testing\Utilities\Factories\SSE\RetryableSSEResponseFactory;
+use Hibla\HttpClient\Testing\Utilities\Factories\SSE\SSEResponseFactory;
 use Hibla\HttpClient\Testing\Utilities\FileManager;
 use Hibla\HttpClient\Testing\Utilities\Handlers\NetworkSimulationHandler;
+use Hibla\HttpClient\Testing\Utilities\Handlers\ResponseTypeHandler;
 use Hibla\HttpClient\Testing\Utilities\NetworkSimulator;
+use Hibla\HttpClient\Testing\Utilities\RequestExecutor;
 use Hibla\HttpClient\Testing\Utilities\RequestMatcher;
 use Hibla\HttpClient\Testing\Utilities\RequestRecorder;
 use Hibla\HttpClient\Testing\Utilities\ResponseFactory;
@@ -198,34 +202,6 @@ function createRequestValidator(): RequestValidator
     return mock(RequestValidator::class);
 }
 
-function createFetchRequestExecutor(
-    ?RequestMatcher $requestMatcher = null,
-    ?ResponseFactory $responseFactory = null,
-    ?FileManager $fileManager = null,
-    ?RequestRecorder $requestRecorder = null,
-    ?RequestValidator $validator = null
-): FetchRequestExecutor {
-    return new FetchRequestExecutor(
-        $requestMatcher ?? createRequestMatcher(),
-        $responseFactory ?? createResponseFactory(),
-        $fileManager ?? createFileManager(),
-        $requestRecorder ?? createRequestRecorder(),
-        $validator ?? createRequestValidator()
-    );
-}
-
-function createRetryableRequestExecutor(
-    ?RequestMatcher $requestMatcher = null,
-    ?ResponseFactory $responseFactory = null,
-    ?RequestRecorder $requestRecorder = null
-): RetryableRequestExecutor {
-    return new RetryableRequestExecutor(
-        $requestMatcher ?? createRequestMatcher(),
-        $responseFactory ?? createResponseFactory(),
-        $requestRecorder ?? createRequestRecorder()
-    );
-}
-
 function createSSERequestExecutor(
     ?RequestMatcher $requestMatcher = null,
     ?ResponseFactory $responseFactory = null,
@@ -238,18 +214,65 @@ function createSSERequestExecutor(
     );
 }
 
-function createStandardRequestExecutor(
-    ?RequestMatcher $requestMatcher = null,
-    ?ResponseFactory $responseFactory = null,
-    ?CookieManager $cookieManager = null,
-    ?RequestRecorder $requestRecorder = null,
-    ?RequestValidator $validator = null
-): StandardRequestExecutor {
+function createRequestExecutor(): RequestExecutor
+{
+    return new RequestExecutor(
+        new RequestMatcher(),
+        new ResponseFactory(new NetworkSimulator()),
+        new FileManager(),
+        new CookieManager(),
+        new RequestRecorder()
+    );
+}
+
+
+function createStandardRequestExecutor(?FileManager $fileManager = null): StandardRequestExecutor
+{
+    $fileManager ??= new FileManager();
+    $responseFactory = new ResponseFactory(new NetworkSimulator());
+
     return new StandardRequestExecutor(
-        $requestMatcher ?? createRequestMatcher(),
-        $responseFactory ?? createResponseFactory(),
-        $cookieManager ?? createCookieManager(),
-        $requestRecorder ?? createRequestRecorder(),
-        $validator ?? createRequestValidator()
+        new RequestMatcher(),
+        $responseFactory,
+        new CookieManager(),
+        new RequestRecorder(),
+        new RequestValidator(),
+        new ResponseTypeHandler($responseFactory, $fileManager)
+    );
+}
+
+
+function createSSEResponseFactory(?NetworkSimulator $simulator = null): SSEResponseFactory
+{
+    $simulator ??= new NetworkSimulator();
+    $handler = createNetworkHandler($simulator);
+
+    return new SSEResponseFactory($handler);
+}
+
+function createSSEExecutor(): SSERequestExecutor
+{
+    return new SSERequestExecutor(
+        new RequestMatcher(),
+        new ResponseFactory(new NetworkSimulator()),
+        new RequestRecorder()
+    );
+}
+
+function createRetryableSSEResponseFactory(?NetworkSimulator $simulator = null): RetryableSSEResponseFactory
+{
+    $simulator ??= new NetworkSimulator();
+    $handler = createNetworkHandler($simulator);
+
+    return new RetryableSSEResponseFactory($handler);
+}
+
+function createReconnectConfig(int $maxAttempts = 3, float $initialDelay = 0.05): SSEReconnectConfig
+{
+    return new SSEReconnectConfig(
+        maxAttempts: $maxAttempts,
+        initialDelay: $initialDelay,
+        maxDelay: 1.0,
+        backoffMultiplier: 2.0
     );
 }

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Interfaces\Cookie;
 
-use Hibla\HttpClient\Cookie;
+use Hibla\HttpClient\ValueObjects\Cookie;
 
 /**
  * Contract for cookie storage and retrieval.

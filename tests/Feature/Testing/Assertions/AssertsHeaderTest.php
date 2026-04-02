@@ -2,87 +2,91 @@
 
 declare(strict_types=1);
 
+use Hibla\HttpClient\HttpClient;
 use PHPUnit\Framework\AssertionFailedError;
 
 describe('AssertsHeaders', function () {
     test('assertHeaderSent passes when header exists', function () {
         $handler = testingHttpHandler();
-
         $handler->mock('GET')->url('https://example.com')->respondWithStatus(200)->register();
 
-        $handler->fetch('https://example.com', [
-            'headers' => ['X-Custom' => 'value'],
-        ])->wait();
+        (new HttpClient())
+            ->setHandler($handler)
+            ->withHeader('X-Custom', 'value')
+            ->get('https://example.com')
+            ->wait();
 
         expect(fn () => $handler->assertHeaderSent('X-Custom'))
-            ->not->toThrow(AssertionFailedError::class)
-        ;
+            ->not->toThrow(AssertionFailedError::class);
     });
 
     test('assertHeaderSent validates header value', function () {
         $handler = testingHttpHandler();
-
         $handler->mock('GET')->url('https://example.com')->respondWithStatus(200)->register();
 
-        $handler->fetch('https://example.com', [
-            'headers' => ['X-Custom' => 'expected-value'],
-        ])->wait();
+        (new HttpClient())
+            ->setHandler($handler)
+            ->withHeader('X-Custom', 'expected-value')
+            ->get('https://example.com')
+            ->wait();
 
         expect(fn () => $handler->assertHeaderSent('X-Custom', 'expected-value'))
-            ->not->toThrow(AssertionFailedError::class)
-        ;
+            ->not->toThrow(AssertionFailedError::class);
     });
 
     test('assertHeaderSent fails when header value mismatches', function () {
         $handler = testingHttpHandler();
-
         $handler->mock('GET')->url('https://example.com')->respondWithStatus(200)->register();
 
-        $handler->fetch('https://example.com', [
-            'headers' => ['X-Custom' => 'actual-value'],
-        ])->wait();
+        (new HttpClient())
+            ->setHandler($handler)
+            ->withHeader('X-Custom', 'actual-value')
+            ->get('https://example.com')
+            ->wait();
 
         expect(fn () => $handler->assertHeaderSent('X-Custom', 'expected-value'))
-            ->toThrow(AssertionFailedError::class)
-        ;
+            ->toThrow(AssertionFailedError::class);
     });
 
     test('assertHeaderNotSent passes when header does not exist', function () {
         $handler = testingHttpHandler();
-
         $handler->mock('GET')->url('https://example.com')->respondWithStatus(200)->register();
-        $handler->fetch('https://example.com')->wait();
+        
+        (new HttpClient())
+            ->setHandler($handler)
+            ->get('https://example.com')
+            ->wait();
 
         expect(fn () => $handler->assertHeaderNotSent('X-Missing'))
-            ->not->toThrow(AssertionFailedError::class)
-        ;
+            ->not->toThrow(AssertionFailedError::class);
     });
 
     test('assertHeaderNotSent fails when header exists', function () {
         $handler = testingHttpHandler();
-
         $handler->mock('GET')->url('https://example.com')->respondWithStatus(200)->register();
 
-        $handler->fetch('https://example.com', [
-            'headers' => ['X-Custom' => 'value'],
-        ])->wait();
+        (new HttpClient())
+            ->setHandler($handler)
+            ->withHeader('X-Custom', 'value')
+            ->get('https://example.com')
+            ->wait();
 
         expect(fn () => $handler->assertHeaderNotSent('X-Custom'))
-            ->toThrow(AssertionFailedError::class)
-        ;
+            ->toThrow(AssertionFailedError::class);
     });
 
     test('assertHeadersSent validates multiple headers', function () {
         $handler = testingHttpHandler();
-
         $handler->mock('GET')->url('https://example.com')->respondWithStatus(200)->register();
 
-        $handler->fetch('https://example.com', [
-            'headers' => [
+        (new HttpClient())
+            ->setHandler($handler)
+            ->withHeaders([
                 'X-Custom-1' => 'value1',
                 'X-Custom-2' => 'value2',
-            ],
-        ])->wait();
+            ])
+            ->get('https://example.com')
+            ->wait();
 
         expect(fn () => $handler->assertHeadersSent([
             'X-Custom-1' => 'value1',
@@ -92,72 +96,71 @@ describe('AssertsHeaders', function () {
 
     test('assertHeaderMatches validates header pattern', function () {
         $handler = testingHttpHandler();
-
         $handler->mock('GET')->url('https://example.com')->respondWithStatus(200)->register();
 
-        $handler->fetch('https://example.com', [
-            'headers' => ['X-Request-Id' => 'req-12345'],
-        ])->wait();
+        (new HttpClient())
+            ->setHandler($handler)
+            ->withHeader('X-Request-Id', 'req-12345')
+            ->get('https://example.com')
+            ->wait();
 
         expect(fn () => $handler->assertHeaderMatches('X-Request-Id', '/^req-\d+$/'))
-            ->not->toThrow(AssertionFailedError::class)
-        ;
+            ->not->toThrow(AssertionFailedError::class);
     });
 
     test('assertBearerTokenSent validates authorization header', function () {
         $handler = testingHttpHandler();
-
         $handler->mock('GET')->url('https://example.com')->respondWithStatus(200)->register();
 
-        $handler->fetch('https://example.com', [
-            'headers' => ['Authorization' => 'Bearer secret-token'],
-        ])->wait();
+        (new HttpClient())
+            ->setHandler($handler)
+            ->withToken('secret-token') // Built-in method to set "Authorization: Bearer ..."
+            ->get('https://example.com')
+            ->wait();
 
         expect(fn () => $handler->assertBearerTokenSent('secret-token'))
-            ->not->toThrow(AssertionFailedError::class)
-        ;
+            ->not->toThrow(AssertionFailedError::class);
     });
 
     test('assertContentType validates content type header', function () {
         $handler = testingHttpHandler();
-
         $handler->mock('POST')->url('https://example.com')->respondWithStatus(200)->register();
 
-        $handler->fetch('https://example.com', [
-            'method' => 'POST',
-            'headers' => ['Content-Type' => 'application/json'],
-        ])->wait();
+        (new HttpClient())
+            ->setHandler($handler)
+            ->contentType('application/json')
+            ->post('https://example.com')
+            ->wait();
 
         expect(fn () => $handler->assertContentType('application/json'))
-            ->not->toThrow(AssertionFailedError::class)
-        ;
+            ->not->toThrow(AssertionFailedError::class);
     });
 
     test('assertAcceptHeader validates accept header', function () {
         $handler = testingHttpHandler();
-
         $handler->mock('GET')->url('https://example.com')->respondWithStatus(200)->register();
 
-        $handler->fetch('https://example.com', [
-            'headers' => ['Accept' => 'application/json'],
-        ])->wait();
+        (new HttpClient())
+            ->setHandler($handler)
+            ->accept('application/json')
+            ->get('https://example.com')
+            ->wait();
 
         expect(fn () => $handler->assertAcceptHeader('application/json'))
-            ->not->toThrow(AssertionFailedError::class)
-        ;
+            ->not->toThrow(AssertionFailedError::class);
     });
 
     test('assertUserAgent validates user agent header', function () {
         $handler = testingHttpHandler();
-
         $handler->mock('GET')->url('https://example.com')->respondWithStatus(200)->register();
 
-        $handler->fetch('https://example.com', [
-            'headers' => ['User-Agent' => 'CustomAgent/1.0'],
-        ])->wait();
+        (new HttpClient())
+            ->setHandler($handler)
+            ->withUserAgent('CustomAgent/1.0')
+            ->get('https://example.com')
+            ->wait();
 
         expect(fn () => $handler->assertUserAgent('CustomAgent/1.0'))
-            ->not->toThrow(AssertionFailedError::class)
-        ;
+            ->not->toThrow(AssertionFailedError::class);
     });
 });

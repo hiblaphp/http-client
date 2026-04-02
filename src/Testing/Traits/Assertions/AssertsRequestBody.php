@@ -13,20 +13,14 @@ trait AssertsRequestBody
      */
     abstract public function getRequestHistory(): array;
 
-    /**
-     * Assert that a request was made with specific body content.
-     *
-     * @param string $method HTTP method
-     * @param string $url Request URL
-     * @param string $expectedBody Expected body content
-     */
+    abstract protected function getRequestMatcher();
+
     public function assertRequestWithBody(string $method, string $url, string $expectedBody): void
     {
         $this->registerAssertion();
         foreach ($this->getRequestHistory() as $request) {
             if (
-                strtoupper($request->getMethod()) === strtoupper($method) &&
-                $request->getUrl() === $url &&
+                $this->getRequestMatcher()->matchesRequest($request, $method, $url) &&
                 $request->getBody() === $expectedBody
             ) {
                 return;
@@ -49,10 +43,7 @@ trait AssertsRequestBody
     {
         $this->registerAssertion();
         foreach ($this->getRequestHistory() as $request) {
-            if (
-                strtoupper($request->getMethod()) === strtoupper($method) &&
-                $request->getUrl() === $url
-            ) {
+            if ($this->getRequestMatcher()->matchesRequest($request, $method, $url)) {
                 $body = $request->getBody();
 
                 if ($body !== null && str_contains($body, $needle)) {
@@ -77,10 +68,7 @@ trait AssertsRequestBody
     {
         $this->registerAssertion();
         foreach ($this->getRequestHistory() as $request) {
-            if (
-                strtoupper($request->getMethod()) === strtoupper($method) &&
-                $request->getUrl() === $url
-            ) {
+            if ($this->getRequestMatcher()->matchesRequest($request, $method, $url)) {
                 $json = $request->getJson();
 
                 if ($json === $expectedJson) {
@@ -105,10 +93,7 @@ trait AssertsRequestBody
     {
         $this->registerAssertion();
         foreach ($this->getRequestHistory() as $request) {
-            if (
-                strtoupper($request->getMethod()) === strtoupper($method) &&
-                $request->getUrl() === $url
-            ) {
+            if ($this->getRequestMatcher()->matchesRequest($request, $method, $url)) {
                 $json = $request->getJson();
 
                 if ($json !== null && $this->arrayContains($json, $expectedKeys)) {
@@ -134,10 +119,7 @@ trait AssertsRequestBody
     {
         $this->registerAssertion();
         foreach ($this->getRequestHistory() as $request) {
-            if (
-                strtoupper($request->getMethod()) === strtoupper($method) &&
-                $request->getUrl() === $url
-            ) {
+            if ($this->getRequestMatcher()->matchesRequest($request, $method, $url)) {
                 $json = $request->getJson();
 
                 if ($json !== null) {
@@ -165,10 +147,7 @@ trait AssertsRequestBody
     {
         $this->registerAssertion();
         foreach ($this->getRequestHistory() as $request) {
-            if (
-                strtoupper($request->getMethod()) === strtoupper($method) &&
-                $request->getUrl() === $url
-            ) {
+            if ($this->getRequestMatcher()->matchesRequest($request, $method, $url)) {
                 $body = $request->getBody();
 
                 if ($body === null || $body === '') {
@@ -192,10 +171,7 @@ trait AssertsRequestBody
     {
         $this->registerAssertion();
         foreach ($this->getRequestHistory() as $request) {
-            if (
-                strtoupper($request->getMethod()) === strtoupper($method) &&
-                $request->getUrl() === $url
-            ) {
+            if ($this->getRequestMatcher()->matchesRequest($request, $method, $url)) {
                 $body = $request->getBody();
 
                 if ($body !== null && $body !== '') {
@@ -220,8 +196,7 @@ trait AssertsRequestBody
         $this->registerAssertion();
         foreach ($this->getRequestHistory() as $request) {
             if (
-                strtoupper($request->getMethod()) === strtoupper($method) &&
-                $request->getUrl() === $url &&
+                $this->getRequestMatcher()->matchesRequest($request, $method, $url) &&
                 $request->isJson()
             ) {
                 return;
@@ -244,10 +219,7 @@ trait AssertsRequestBody
     {
         $this->registerAssertion();
         foreach ($this->getRequestHistory() as $request) {
-            if (
-                strtoupper($request->getMethod()) === strtoupper($method) &&
-                $request->getUrl() === $url
-            ) {
+            if ($this->getRequestMatcher()->matchesRequest($request, $method, $url)) {
                 $body = $request->getBody();
 
                 if ($body !== null && preg_match($pattern, $body) === 1) {

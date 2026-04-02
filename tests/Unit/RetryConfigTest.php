@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Hibla\HttpClient\RetryConfig;
+use Hibla\HttpClient\ValueObjects\RetryConfig;
 
 test('it calculates exponential backoff delay correctly', function () {
     $config = new RetryConfig(

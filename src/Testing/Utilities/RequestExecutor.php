@@ -5,20 +5,16 @@ declare(strict_types=1);
 namespace Hibla\HttpClient\Testing\Utilities;
 
 use Hibla\HttpClient\Response;
-use Hibla\HttpClient\RetryConfig;
-use Hibla\HttpClient\StreamingResponse;
+use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\HttpClient\Testing\MockedRequest;
-use Hibla\HttpClient\Testing\Utilities\Executors\FetchRequestExecutor;
 use Hibla\HttpClient\Testing\Utilities\Executors\SSERequestExecutor;
 use Hibla\HttpClient\Testing\Utilities\Executors\StandardRequestExecutor;
+use Hibla\HttpClient\Testing\Utilities\Handlers\ResponseTypeHandler;
 use Hibla\HttpClient\Testing\Utilities\Validators\RequestValidator;
-use Hibla\HttpClient\Traits\FetchOptionTrait;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
 class RequestExecutor
 {
-    use FetchOptionTrait;
-
     private RequestMatcher $requestMatcher;
     private ResponseFactory $responseFactory;
     private FileManager $fileManager;
@@ -27,8 +23,8 @@ class RequestExecutor
 
     private StandardRequestExecutor $standardExecutor;
     private SSERequestExecutor $sseExecutor;
-    private FetchRequestExecutor $fetchExecutor;
     private RequestValidator $validator;
+    private ResponseTypeHandler $responseTypeHandler;
 
     public function __construct(
         RequestMatcher $requestMatcher,
@@ -49,27 +45,21 @@ class RequestExecutor
     private function initializeExecutors(): void
     {
         $this->validator = new RequestValidator();
+        $this->responseTypeHandler = new ResponseTypeHandler($this->responseFactory, $this->fileManager);
 
         $this->standardExecutor = new StandardRequestExecutor(
             $this->requestMatcher,
             $this->responseFactory,
             $this->cookieManager,
             $this->requestRecorder,
-            $this->validator
+            $this->validator,
+            $this->responseTypeHandler
         );
 
         $this->sseExecutor = new SSERequestExecutor(
             $this->requestMatcher,
             $this->responseFactory,
             $this->requestRecorder
-        );
-
-        $this->fetchExecutor = new FetchRequestExecutor(
-            $this->requestMatcher,
-            $this->responseFactory,
-            $this->fileManager,
-            $this->requestRecorder,
-            $this->validator
         );
     }
 
@@ -123,31 +113,6 @@ class RequestExecutor
             $onError,
             $parentSSE,
             $reconnectConfig
-        );
-    }
-
-    /**
-     * @param array<string, mixed> $options
-     * @param list<MockedRequest> $mockedRequests
-     * @param array<string, mixed> $globalSettings
-     * @return PromiseInterface<array<string, mixed>|StreamingResponse>|PromiseInterface<Response>
-     */
-    public function executeFetch(
-        string $url,
-        array $options,
-        array &$mockedRequests,
-        array $globalSettings,
-        ?callable $parentFetch = null,
-        ?callable $createStream = null
-    ): PromiseInterface {
-        /** @var PromiseInterface<array<string, mixed>|StreamingResponse>|PromiseInterface<Response> */
-        return $this->fetchExecutor->execute(
-            $url,
-            $options,
-            $mockedRequests,
-            $globalSettings,
-            $parentFetch,
-            $createStream
         );
     }
 }

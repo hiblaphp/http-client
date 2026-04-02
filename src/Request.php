@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Hibla\HttpClient;
 
 use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
-use Hibla\HttpClient\Interfaces\PendingRequestInterface;
+use Hibla\HttpClient\Interfaces\RequestInterface;
 use Hibla\HttpClient\Traits\StreamTrait;
+use Hibla\HttpClient\ValueObjects\Cookie;
 use InvalidArgumentException;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UriInterface;
@@ -23,10 +24,10 @@ use Psr\Http\Message\UriInterface;
  * Each builder method returns a cloned instance so chains can branch freely
  * without side effects.
  *
- * @see PendingRequestInterface  The narrow contract exposed to interceptors.
+ * @see RequestInterface  The narrow contract exposed to interceptors.
  * @see HttpClient               Owns transport config and dispatches requests.
  */
-class PendingRequest extends Message implements PendingRequestInterface
+class Request extends Message implements RequestInterface
 {
     use StreamTrait;
 
@@ -76,7 +77,7 @@ class PendingRequest extends Message implements PendingRequestInterface
     /**
      * Initialise a blank pending request.
      *
-     * Prefer the HttpClient fluent API over constructing PendingRequest
+     * Prefer the HttpClient fluent API over constructing Request
      * directly. HttpClient seeds the initial User-Agent from GlobalConfig
      * before handing the instance to the interceptor pipeline.
      */

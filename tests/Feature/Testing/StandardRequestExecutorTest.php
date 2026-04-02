@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Response;
-use Hibla\HttpClient\RetryConfig;
+use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\HttpClient\Testing\Exceptions\UnexpectedRequestException;
 use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Testing\Utilities\CookieManager;
 use Hibla\HttpClient\Testing\Utilities\Executors\StandardRequestExecutor;
+use Hibla\HttpClient\Testing\Utilities\FileManager;
+use Hibla\HttpClient\Testing\Utilities\Handlers\ResponseTypeHandler;
 use Hibla\HttpClient\Testing\Utilities\NetworkSimulator;
 use Hibla\HttpClient\Testing\Utilities\RequestMatcher;
 use Hibla\HttpClient\Testing\Utilities\RequestRecorder;
@@ -18,19 +20,23 @@ use Hibla\Promise\Promise;
 
 uses()->group('sequential');
 
-function createStandardExecutor(): StandardRequestExecutor
+function createStandardTestExecutor(): StandardRequestExecutor
 {
+    $responseFactory = new ResponseFactory(new NetworkSimulator());
+    $fileManager = new FileManager();
+    
     return new StandardRequestExecutor(
         new RequestMatcher(),
-        new ResponseFactory(new NetworkSimulator()),
+        $responseFactory,
         new CookieManager(),
         new RequestRecorder(),
-        new RequestValidator()
+        new RequestValidator(),
+        new ResponseTypeHandler($responseFactory, $fileManager)
     );
 }
 
 test('executes basic get request', function () {
-    $executor = createStandardExecutor();
+    $executor = createStandardTestExecutor();
     $mocks = [];
 
     $mock = new MockedRequest('GET');
@@ -52,7 +58,7 @@ test('executes basic get request', function () {
 });
 
 test('executes post request with json body', function () {
-    $executor = createStandardExecutor();
+    $executor = createStandardTestExecutor();
     $mocks = [];
 
     $mock = new MockedRequest('POST');
@@ -79,7 +85,7 @@ test('executes post request with json body', function () {
 });
 
 test('persistent mock remains available', function () {
-    $executor = createStandardExecutor();
+    $executor = createStandardTestExecutor();
     $mocks = [];
 
     $mock = new MockedRequest('GET');
@@ -106,7 +112,7 @@ test('persistent mock remains available', function () {
 });
 
 test('non persistent mock is removed', function () {
-    $executor = createStandardExecutor();
+    $executor = createStandardTestExecutor();
     $mocks = [];
 
     $mock = new MockedRequest('GET');
@@ -124,7 +130,7 @@ test('non persistent mock is removed', function () {
 });
 
 test('executes with custom headers', function () {
-    $executor = createStandardExecutor();
+    $executor = createStandardTestExecutor();
     $mocks = [];
 
     $mock = new MockedRequest('GET');
@@ -146,7 +152,7 @@ test('executes with custom headers', function () {
 });
 
 test('throws exception when no mock matches and passthrough disabled', function () {
-    $executor = createStandardExecutor();
+    $executor = createStandardTestExecutor();
     $mocks = [];
 
     $executor->execute(
@@ -158,7 +164,7 @@ test('throws exception when no mock matches and passthrough disabled', function 
 })->throws(UnexpectedRequestException::class);
 
 test('allows passthrough when enabled', function () {
-    $executor = createStandardExecutor();
+    $executor = createStandardTestExecutor();
     $mocks = [];
 
     $parentSendCalled = false;
@@ -183,7 +189,7 @@ test('allows passthrough when enabled', function () {
 });
 
 test('executes request with delay', function () {
-    $executor = createStandardExecutor();
+    $executor = createStandardTestExecutor();
     $mocks = [];
 
     $mock = new MockedRequest('GET');
@@ -207,7 +213,7 @@ test('executes request with delay', function () {
 });
 
 test('handles error mock', function () {
-    $executor = createStandardExecutor();
+    $executor = createStandardTestExecutor();
     $mocks = [];
 
     $mock = new MockedRequest('GET');
@@ -224,7 +230,7 @@ test('handles error mock', function () {
 })->throws(NetworkException::class, 'Connection failed');
 
 test('matches wildcard method', function () {
-    $executor = createStandardExecutor();
+    $executor = createStandardTestExecutor();
     $mocks = [];
 
     $mock = new MockedRequest('*');
@@ -243,7 +249,7 @@ test('matches wildcard method', function () {
 });
 
 test('handles multiple mocks with first match priority', function () {
-    $executor = createStandardExecutor();
+    $executor = createStandardTestExecutor();
     $mocks = [];
 
     $mock1 = new MockedRequest('GET');
@@ -269,7 +275,7 @@ test('handles multiple mocks with first match priority', function () {
 });
 
 test('defaults to GET method when not specified', function () {
-    $executor = createStandardExecutor();
+    $executor = createStandardTestExecutor();
     $mocks = [];
 
     $mock = new MockedRequest('GET');
@@ -288,7 +294,7 @@ test('defaults to GET method when not specified', function () {
 });
 
 test('executes with retry config', function () {
-    $executor = createStandardExecutor();
+    $executor = createStandardTestExecutor();
     $mocks = [];
 
     $mock = new MockedRequest('GET');
@@ -310,7 +316,7 @@ test('executes with retry config', function () {
 });
 
 test('processes cookies from response', function () {
-    $executor = createStandardExecutor();
+    $executor = createStandardTestExecutor();
     $mocks = [];
 
     $mock = new MockedRequest('GET');

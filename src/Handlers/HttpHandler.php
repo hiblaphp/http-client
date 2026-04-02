@@ -4,19 +4,17 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Handlers;
 
-use Hibla\HttpClient\Handlers\Curl\FetchHandler;
 use Hibla\HttpClient\Handlers\Curl\RequestExecutorHandler;
 use Hibla\HttpClient\Handlers\Curl\RetryHandler;
 use Hibla\HttpClient\Handlers\Curl\SSEHandler;
 use Hibla\HttpClient\Handlers\Curl\StreamingHandler;
 use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
-use Hibla\HttpClient\Interfaces\Handler\FetchHandlerInterface;
 use Hibla\HttpClient\Interfaces\Handler\RequestExecutorHandlerInterface;
 use Hibla\HttpClient\Interfaces\Handler\RetryHandlerInterface;
 use Hibla\HttpClient\Interfaces\Handler\SSEHandlerInterface;
 use Hibla\HttpClient\Interfaces\Handler\StreamingHandlerInterface;
 use Hibla\HttpClient\Response;
-use Hibla\HttpClient\RetryConfig;
+use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\HttpClient\SSE\CancelableSSEPromise;
 use Hibla\HttpClient\SSE\SSEEvent;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
@@ -36,7 +34,6 @@ use Hibla\Promise\Interfaces\PromiseInterface;
 class HttpHandler
 {
     protected StreamingHandlerInterface $streamingHandler;
-    protected FetchHandlerInterface $fetchHandler;
     protected RequestExecutorHandlerInterface $requestExecutorHandler;
     protected RetryHandlerInterface $retryHandler;
     protected SSEHandlerInterface $sseHandler;
@@ -47,7 +44,6 @@ class HttpHandler
      */
     public function __construct(
         ?StreamingHandlerInterface $streamingHandler = null,
-        ?FetchHandlerInterface $fetchHandler = null,
         ?RequestExecutorHandlerInterface $requestExecutor = null,
         ?RetryHandlerInterface $retryHandler = null,
         ?SSEHandlerInterface $sseHandler = null
@@ -55,9 +51,6 @@ class HttpHandler
         $this->streamingHandler = $streamingHandler ?? new StreamingHandler();
         $this->requestExecutorHandler = $requestExecutor ?? new RequestExecutorHandler();
         $this->retryHandler = $retryHandler ?? new RetryHandler();
-        $this->fetchHandler = $fetchHandler ?? new FetchHandler(
-            $this->streamingHandler
-        );
         $this->sseHandler = $sseHandler ?? new SSEHandler();
     }
 
@@ -153,23 +146,5 @@ class HttpHandler
         }
 
         return $this->requestExecutorHandler->execute($url, $curlOptions);
-    }
-
-    /**
-     * A flexible, fetch-like method for making HTTP requests with streaming support.
-     * This method delegates to the FetchHandler for implementation.
-     *
-     * TestingHttpHandler overrides this to provide comprehensive request mocking.
-     *
-     * @param  string  $url  The target URL.
-     * @param  array<int|string, mixed>  $options  An associative array of request options.
-     * @return PromiseInterface<Response>|PromiseInterface<StreamingResponse>|PromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}>|PromiseInterface<SSEResponse> A promise that resolves with a Response, StreamingResponse, download metadata, or SSEResponse.
-     *
-     * @internal This method is a key extension point for TestingHttpHandler. It handles fetch-style
-     *           requests and can return different response types based on options (streaming, downloads, etc.).
-     */
-    public function fetch(string $url, array $options = []): PromiseInterface
-    {
-        return $this->fetchHandler->fetch($url, $options);
     }
 }

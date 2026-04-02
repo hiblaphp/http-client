@@ -275,13 +275,18 @@ class SSEHandler implements SSEHandlerInterface
                 }
 
                 if ($error !== null) {
-                    $exception = new NetworkException(
+                     $exception = new NetworkException(
                         "SSE connection failed: {$error}",
                         0,
                         null,
                         $url,
                         $error
                     );
+                    
+                    if ($onError !== null) {
+                        $onError($error);
+                    }
+
                     $promise->reject($exception);
                 } else {
                     if ($sseResponse !== null) {

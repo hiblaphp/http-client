@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Hibla\HttpClient\ProxyConfig;
+use Hibla\HttpClient\ValueObjects\ProxyConfig;
 
 describe('ProxyConfig Value Object', function () {
 

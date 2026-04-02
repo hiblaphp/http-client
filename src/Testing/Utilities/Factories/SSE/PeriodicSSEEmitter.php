@@ -106,7 +106,7 @@ class PeriodicSSEEmitter
                 $jitter,
                 $interval,
                 &$periodicTimerId,
-                $resource
+                $resource,
             ) {
                 if (! \is_resource($resource)) {
                     if ($periodicTimerId !== null) {
@@ -195,7 +195,7 @@ class PeriodicSSEEmitter
                 $jitter,
                 $interval,
                 &$periodicTimerId,
-                $resource
+                $resource,
             ) {
                 if (! \is_resource($resource)) {
                     if ($periodicTimerId !== null) {
