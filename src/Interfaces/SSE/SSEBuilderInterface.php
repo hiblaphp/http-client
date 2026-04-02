@@ -20,7 +20,7 @@ use Hibla\Promise\Interfaces\PromiseInterface;
  *   $base = Http::request()
  *       ->withToken($token)
  *       ->sse('https://api.example.com/stream')
- *       ->dataFormat(SSEDataFormat::Json)
+ *       ->dataFormat(SSEDataFormat::DecodedJson)
  *       ->reconnect(maxAttempts: 5);
  *
  *   // Safe — each derives from $base without mutating it
@@ -34,7 +34,7 @@ interface SSEBuilderInterface
      *
      * The value passed to the callback depends on the configured dataFormat:
      *   - SSEDataFormat::Event  (default): SSEEvent object
-     *   - SSEDataFormat::Json:  decoded array/scalar, or raw string if not valid JSON
+     *   - SSEDataFormat::DecodedJson:  decoded array/scalar of event data, or raw string if not valid JSON
      *   - SSEDataFormat::Array: event as array with data key auto-decoded from JSON
      *   - SSEDataFormat::Raw:   raw data string
      *

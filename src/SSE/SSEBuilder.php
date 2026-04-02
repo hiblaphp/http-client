@@ -180,7 +180,7 @@ class SSEBuilder implements SSEBuilderInterface
             }
 
             $data = match ($dataFormat) {
-                SSEDataFormat::Json => $this->parseAsJson($event),
+                SSEDataFormat::DecodedJson => $this->parseAsJson($event),
                 SSEDataFormat::Array => $this->toArrayWithParsedData($event),
                 SSEDataFormat::Raw => $event->data,
                 SSEDataFormat::Event, null => $event,
