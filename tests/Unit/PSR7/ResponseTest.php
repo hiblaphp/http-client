@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use Hibla\HttpClient\ValueObjects\Cookie;
 use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
 use Hibla\HttpClient\Response;
 use Hibla\HttpClient\Stream;
+use Hibla\HttpClient\ValueObjects\Cookie;
 
 afterEach(function () {
     Mockery::close();

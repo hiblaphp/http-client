@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use Hibla\HttpClient\Builders\CurlOptionsBuilder;
+use Hibla\HttpClient\Stream;
 use Hibla\HttpClient\ValueObjects\ClientOptions;
 use Hibla\HttpClient\ValueObjects\ProxyConfig;
-use Hibla\HttpClient\Stream;
 
 test('it builds basic GET request options correctly', function () {
     $builder = new CurlOptionsBuilder();

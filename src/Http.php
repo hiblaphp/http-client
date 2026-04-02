@@ -6,11 +6,10 @@ namespace Hibla\HttpClient;
 
 use Hibla\HttpClient\Handlers\HttpHandler;
 use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
-use Hibla\HttpClient\Interfaces\ResponseInterface;
 use Hibla\HttpClient\Interfaces\HttpClientInterface;
-use Hibla\HttpClient\Interfaces\StreamingResponseInterface;
+use Hibla\HttpClient\Interfaces\ResponseInterface;
 use Hibla\HttpClient\Interfaces\SSE\SSEBuilderInterface;
-use Hibla\HttpClient\Interfaces\SSEResponseInterface;
+use Hibla\HttpClient\Interfaces\StreamingResponseInterface;
 use Hibla\HttpClient\Testing\MockRequestBuilder;
 use Hibla\HttpClient\Testing\TestingHttpHandler;
 use Hibla\HttpClient\Testing\Utilities\RecordedRequest;

@@ -3,11 +3,10 @@
 declare(strict_types=1);
 
 use Hibla\HttpClient\Response;
-use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\HttpClient\StreamingResponse;
 use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Testing\Utilities\FileManager;
-
+use Hibla\HttpClient\ValueObjects\RetryConfig;
 
 test('executes request with retry on first attempt success', function () {
     $fileManager = new FileManager();
@@ -25,13 +24,14 @@ test('executes request with retry on first attempt success', function () {
         'https://api.example.com/data',
         [CURLOPT_CUSTOMREQUEST => 'GET'],
         $mocks,
-        [], 
+        [],
         $retryConfig
     )->wait();
 
     expect($result)->toBeInstanceOf(Response::class)
         ->and($result->body())->toBe('{"success": true}')
-        ->and($mocks)->toBeEmpty();
+        ->and($mocks)->toBeEmpty()
+    ;
 });
 
 test('retries failed request until success', function () {
@@ -61,7 +61,8 @@ test('retries failed request until success', function () {
     )->wait();
 
     expect($result->body())->toBe('{"retried": true}')
-        ->and($mocks)->toBeEmpty();
+        ->and($mocks)->toBeEmpty()
+    ;
 });
 
 test('exhausts all retry attempts and fails', function () {
@@ -88,7 +89,7 @@ test('exhausts all retry attempts and fails', function () {
         [],
         $retryConfig
     )->wait();
-})->throws(\Hibla\HttpClient\Exceptions\NetworkException::class);
+})->throws(Hibla\HttpClient\Exceptions\NetworkException::class);
 
 test('persistent mock is not removed during retries', function () {
     $fileManager = new FileManager();
@@ -112,7 +113,8 @@ test('persistent mock is not removed during retries', function () {
     )->wait();
 
     expect($result->body())->toBe('{"persistent": true}')
-        ->and($mocks)->toHaveCount(1);
+        ->and($mocks)->toHaveCount(1)
+    ;
 });
 
 test('retries download on failure', function () {
@@ -151,7 +153,8 @@ test('retries download on failure', function () {
         ->and($result)->toHaveKey('status')
         ->and($result['status'])->toBe(200)
         ->and(file_exists($result['file']))->toBeTrue()
-        ->and(file_get_contents($result['file']))->toBe('PDF content');
+        ->and(file_get_contents($result['file']))->toBe('PDF content')
+    ;
 });
 
 test('retries streaming on failure', function () {
@@ -188,7 +191,8 @@ test('retries streaming on failure', function () {
     )->wait();
 
     expect($result)->toBeInstanceOf(StreamingResponse::class)
-        ->and($chunkReceived)->toBe('streaming content');
+        ->and($chunkReceived)->toBe('streaming content')
+    ;
 });
 
 test('records requests during retry attempts', function () {
@@ -222,5 +226,6 @@ test('records requests during retry attempts', function () {
 
     expect($result->status())->toBe(201)
         ->and($result->body())->toBe('{"created": true}')
-        ->and($mocks)->toBeEmpty();
+        ->and($mocks)->toBeEmpty()
+    ;
 });

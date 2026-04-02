@@ -14,7 +14,7 @@ trait AssertsDownloads
      * @return array<int, RecordedRequest>
      */
     abstract public function getRequestHistory(): array;
-    
+
     abstract protected function getRequestMatcher();
 
     public function assertDownloadMade(string $url, string $destination): void
@@ -101,6 +101,7 @@ trait AssertsDownloads
 
                     if ($headerValue === null || $headerValue !== $value) {
                         $matches = false;
+
                         break;
                     }
                 }

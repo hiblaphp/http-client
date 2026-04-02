@@ -204,7 +204,8 @@ class SSERequestExecutor
         $method = 'GET';
 
         $mockProvider = $this->createMockProvider($method, $url, $curlOptions, $mockedRequests);
-        $onReconnectCallback = is_callable([$reconnectConfig, 'onReconnect']) ? $reconnectConfig->onReconnect : null;
+
+        $onReconnectCallback = $reconnectConfig->onReconnect;
 
         return $this->responseFactory->createRetryableMockedSSE(
             $reconnectConfig,

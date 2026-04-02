@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Hibla\HttpClient\Testing\Utilities;
 
 use Hibla\HttpClient\Response;
-use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Testing\Utilities\Executors\SSERequestExecutor;
 use Hibla\HttpClient\Testing\Utilities\Executors\StandardRequestExecutor;
 use Hibla\HttpClient\Testing\Utilities\Handlers\ResponseTypeHandler;
 use Hibla\HttpClient\Testing\Utilities\Validators\RequestValidator;
+use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
 class RequestExecutor

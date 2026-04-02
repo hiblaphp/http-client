@@ -53,7 +53,8 @@ class SSEBuilder implements SSEBuilderInterface
         private readonly string $url,
         private readonly HttpHandler $handler,
         private readonly array $curlOptions,
-    ) {}
+    ) {
+    }
 
     /**
      *  @inheritDoc

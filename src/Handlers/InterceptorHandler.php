@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Handlers;
 
-use function Hibla\async;
-use function Hibla\await;
-
 use Hibla\HttpClient\Interfaces\RequestInterface;
 use Hibla\HttpClient\Response;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Hibla\Promise\Promise;
+
+use function Hibla\async;
+use function Hibla\await;
 
 /**
  * Handles the unified interceptor pipeline.

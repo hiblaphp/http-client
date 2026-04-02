@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use Hibla\HttpClient\ValueObjects\Cookie;
 use Hibla\HttpClient\CookieJar;
 use Hibla\HttpClient\Testing\Exceptions\MockAssertionException;
 use Hibla\HttpClient\Testing\MockedRequest;
+use Hibla\HttpClient\ValueObjects\Cookie;
 
 describe('CookieManager', function () {
     test('can create in-memory cookie jar', function () {

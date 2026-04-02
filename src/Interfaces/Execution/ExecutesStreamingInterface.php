@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Hibla\HttpClient\Interfaces\Execution;
 
 use Hibla\HttpClient\Interfaces\SSE\SSEBuilderInterface;
-use Hibla\HttpClient\Interfaces\StreamingResponseInterface; 
+use Hibla\HttpClient\Interfaces\StreamingResponseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
 interface ExecutesStreamingInterface

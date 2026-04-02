@@ -5,9 +5,6 @@ declare(strict_types=1);
 namespace Hibla\HttpClient\Testing\Utilities\Factories\SSE;
 
 use Exception;
-
-use function Hibla\delay;
-
 use Hibla\EventLoop\Loop;
 use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
@@ -18,8 +15,9 @@ use Hibla\HttpClient\Testing\Utilities\Handlers\DelayCalculator;
 use Hibla\HttpClient\Testing\Utilities\Handlers\NetworkSimulationHandler;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Hibla\Promise\Promise;
-
 use Throwable;
+
+use function Hibla\delay;
 
 class RetryableSSEResponseFactory
 {

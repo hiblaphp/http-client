@@ -83,6 +83,7 @@ trait AssertsStreams
 
                     if ($headerValue === null || $headerValue !== $value) {
                         $matches = false;
+
                         break;
                     }
                 }

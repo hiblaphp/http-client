@@ -26,7 +26,7 @@ class Uri implements UriInterface
     protected string $query = '';
 
     protected string $fragment = '';
-    
+
     protected string $userInfo = '';
 
     /**

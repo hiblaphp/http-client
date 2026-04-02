@@ -14,10 +14,12 @@ describe('AssertsHeaders', function () {
             ->setHandler($handler)
             ->withHeader('X-Custom', 'value')
             ->get('https://example.com')
-            ->wait();
+            ->wait()
+        ;
 
         expect(fn () => $handler->assertHeaderSent('X-Custom'))
-            ->not->toThrow(AssertionFailedError::class);
+            ->not->toThrow(AssertionFailedError::class)
+        ;
     });
 
     test('assertHeaderSent validates header value', function () {
@@ -28,10 +30,12 @@ describe('AssertsHeaders', function () {
             ->setHandler($handler)
             ->withHeader('X-Custom', 'expected-value')
             ->get('https://example.com')
-            ->wait();
+            ->wait()
+        ;
 
         expect(fn () => $handler->assertHeaderSent('X-Custom', 'expected-value'))
-            ->not->toThrow(AssertionFailedError::class);
+            ->not->toThrow(AssertionFailedError::class)
+        ;
     });
 
     test('assertHeaderSent fails when header value mismatches', function () {
@@ -42,23 +46,27 @@ describe('AssertsHeaders', function () {
             ->setHandler($handler)
             ->withHeader('X-Custom', 'actual-value')
             ->get('https://example.com')
-            ->wait();
+            ->wait()
+        ;
 
         expect(fn () => $handler->assertHeaderSent('X-Custom', 'expected-value'))
-            ->toThrow(AssertionFailedError::class);
+            ->toThrow(AssertionFailedError::class)
+        ;
     });
 
     test('assertHeaderNotSent passes when header does not exist', function () {
         $handler = testingHttpHandler();
         $handler->mock('GET')->url('https://example.com')->respondWithStatus(200)->register();
-        
+
         (new HttpClient())
             ->setHandler($handler)
             ->get('https://example.com')
-            ->wait();
+            ->wait()
+        ;
 
         expect(fn () => $handler->assertHeaderNotSent('X-Missing'))
-            ->not->toThrow(AssertionFailedError::class);
+            ->not->toThrow(AssertionFailedError::class)
+        ;
     });
 
     test('assertHeaderNotSent fails when header exists', function () {
@@ -69,10 +77,12 @@ describe('AssertsHeaders', function () {
             ->setHandler($handler)
             ->withHeader('X-Custom', 'value')
             ->get('https://example.com')
-            ->wait();
+            ->wait()
+        ;
 
         expect(fn () => $handler->assertHeaderNotSent('X-Custom'))
-            ->toThrow(AssertionFailedError::class);
+            ->toThrow(AssertionFailedError::class)
+        ;
     });
 
     test('assertHeadersSent validates multiple headers', function () {
@@ -86,7 +96,8 @@ describe('AssertsHeaders', function () {
                 'X-Custom-2' => 'value2',
             ])
             ->get('https://example.com')
-            ->wait();
+            ->wait()
+        ;
 
         expect(fn () => $handler->assertHeadersSent([
             'X-Custom-1' => 'value1',
@@ -102,10 +113,12 @@ describe('AssertsHeaders', function () {
             ->setHandler($handler)
             ->withHeader('X-Request-Id', 'req-12345')
             ->get('https://example.com')
-            ->wait();
+            ->wait()
+        ;
 
         expect(fn () => $handler->assertHeaderMatches('X-Request-Id', '/^req-\d+$/'))
-            ->not->toThrow(AssertionFailedError::class);
+            ->not->toThrow(AssertionFailedError::class)
+        ;
     });
 
     test('assertBearerTokenSent validates authorization header', function () {
@@ -116,10 +129,12 @@ describe('AssertsHeaders', function () {
             ->setHandler($handler)
             ->withToken('secret-token') // Built-in method to set "Authorization: Bearer ..."
             ->get('https://example.com')
-            ->wait();
+            ->wait()
+        ;
 
         expect(fn () => $handler->assertBearerTokenSent('secret-token'))
-            ->not->toThrow(AssertionFailedError::class);
+            ->not->toThrow(AssertionFailedError::class)
+        ;
     });
 
     test('assertContentType validates content type header', function () {
@@ -130,10 +145,12 @@ describe('AssertsHeaders', function () {
             ->setHandler($handler)
             ->contentType('application/json')
             ->post('https://example.com')
-            ->wait();
+            ->wait()
+        ;
 
         expect(fn () => $handler->assertContentType('application/json'))
-            ->not->toThrow(AssertionFailedError::class);
+            ->not->toThrow(AssertionFailedError::class)
+        ;
     });
 
     test('assertAcceptHeader validates accept header', function () {
@@ -144,10 +161,12 @@ describe('AssertsHeaders', function () {
             ->setHandler($handler)
             ->accept('application/json')
             ->get('https://example.com')
-            ->wait();
+            ->wait()
+        ;
 
         expect(fn () => $handler->assertAcceptHeader('application/json'))
-            ->not->toThrow(AssertionFailedError::class);
+            ->not->toThrow(AssertionFailedError::class)
+        ;
     });
 
     test('assertUserAgent validates user agent header', function () {
@@ -158,9 +177,11 @@ describe('AssertsHeaders', function () {
             ->setHandler($handler)
             ->withUserAgent('CustomAgent/1.0')
             ->get('https://example.com')
-            ->wait();
+            ->wait()
+        ;
 
         expect(fn () => $handler->assertUserAgent('CustomAgent/1.0'))
-            ->not->toThrow(AssertionFailedError::class);
+            ->not->toThrow(AssertionFailedError::class)
+        ;
     });
 });

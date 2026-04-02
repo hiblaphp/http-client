@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 use Hibla\HttpClient\CookieJar;
 use Hibla\HttpClient\HttpClient;
-use Hibla\HttpClient\ValueObjects\ProxyConfig;
-use Hibla\HttpClient\Interfaces\ResponseInterface as Response;
 use Hibla\HttpClient\Interfaces\RequestInterface as Request;
+use Hibla\HttpClient\Interfaces\ResponseInterface as Response;
+use Hibla\HttpClient\ValueObjects\ProxyConfig;
 use Hibla\HttpClient\ValueObjects\RetryConfig;
 
 describe('Request Builder: Core Configuration', function () {
@@ -14,7 +14,7 @@ describe('Request Builder: Core Configuration', function () {
         $r1 = new HttpClient();
         $r2 = $r1->timeout(15)->connectTimeout(5);
 
-        expect(getPrivateProperty($r1, 'timeout'))->toBe(30); 
+        expect(getPrivateProperty($r1, 'timeout'))->toBe(30);
         expect(getPrivateProperty($r2, 'timeout'))->toBe(15);
         expect(getPrivateProperty($r2, 'connectTimeout'))->toBe(5);
     });
@@ -23,7 +23,7 @@ describe('Request Builder: Core Configuration', function () {
         $r1 = new HttpClient();
         $r2 = $r1->redirects(false, 10);
 
-        expect(getPrivateProperty($r1, 'followRedirects'))->toBeTrue(); 
+        expect(getPrivateProperty($r1, 'followRedirects'))->toBeTrue();
         expect(getPrivateProperty($r2, 'followRedirects'))->toBeFalse();
         expect(getPrivateProperty($r2, 'maxRedirects'))->toBe(10);
     });
@@ -118,7 +118,7 @@ describe('Request Builder: Body', function () {
 
         $Request = getPrivateProperty($request, 'request');
         $options = $Request->getOptions();
-        
+
         expect($request->hasHeader('Content-Type'))->toBeFalse();
         expect($options['multipart'])->toBe(['field' => 'value']);
     });
@@ -160,7 +160,7 @@ describe('Request Builder: Advanced Features', function () {
     it('configures a custom cookie jar', function () {
         $jar = new CookieJar();
         $request = (new HttpClient())->useCookieJar($jar);
-        
+
         // Cookie jar is exposed via a public getter
         expect($request->getCookieJar())->toBe($jar);
     });

@@ -51,18 +51,19 @@ describe('Advanced SSE Mocking', function () {
             ->sseWithKeepalive([
                 ['id' => '1', 'data' => 'first'],
                 ['id' => '2', 'data' => 'second'],
-            ], 1) 
+            ], 1)
             ->register()
         ;
 
         $events = [];
-        
+
         Http::sse('/sse-keepalive')
             ->onEvent(function (SSEEvent $event) use (&$events) {
                 $events[] = $event;
             })
             ->connect()
-            ->wait();
+            ->wait()
+        ;
 
         expect($events)->toHaveCount(3);
         expect($events[0]->data)->toBe('first');
@@ -78,13 +79,14 @@ describe('Advanced SSE Mocking', function () {
         ;
 
         $events = [];
-        
+
         Http::sse('/sse-retry-directive')
             ->onEvent(function (SSEEvent $event) use (&$events) {
                 $events[] = $event;
             })
             ->connect()
-            ->wait();
+            ->wait()
+        ;
 
         expect($events)->toHaveCount(2);
         expect($events[0]->retry)->toBe(5000);

@@ -29,7 +29,7 @@ class UploadedFile implements UploadedFileInterface
     private ?string $clientMediaType;
 
     private bool $moved = false;
-    
+
     private ?string $file = null;
 
     /**

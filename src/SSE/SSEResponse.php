@@ -18,7 +18,7 @@ class SSEResponse extends StreamingResponse implements SSEResponseInterface
     private string $buffer = '';
 
     private ?string $lastEventId = null;
-    
+
     private ?string $requestId = null;
 
     /**

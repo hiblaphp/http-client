@@ -22,7 +22,7 @@ class Stream implements StreamInterface
     private bool $readable;
 
     private bool $writable;
-    
+
     private ?int $size = null;
 
     private const array READ_WRITE_HASH = [

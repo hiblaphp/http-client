@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Hibla\HttpClient\SSE;
 
 use Hibla\HttpClient\Interfaces\SSE\SSEControlInterface;
-use Hibla\Promise\Interfaces\PromiseInterface;
 use Hibla\HttpClient\Interfaces\SSEResponseInterface;
+use Hibla\Promise\Interfaces\PromiseInterface;
 
 class SSEControl implements SSEControlInterface
 {

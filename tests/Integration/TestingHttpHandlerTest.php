@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use Hibla\HttpClient\HttpClient;
 use Hibla\HttpClient\Exceptions\NetworkException;
+use Hibla\HttpClient\HttpClient;
 
 afterEach(function () {
     testingHttpHandler()->reset();
@@ -17,15 +17,18 @@ describe('Basic Mock Response Tests', function () {
             ->url('https://api.example.com/users')
             ->respondWithStatus(201)
             ->respondJson(['id' => 1, 'name' => 'John'])
-            ->register();
+            ->register()
+        ;
 
         $response = (new HttpClient())
             ->setHandler($handler)
             ->get('https://api.example.com/users')
-            ->wait();
+            ->wait()
+        ;
 
         expect($response->status())->toBe(201)
-            ->and($response->json())->toBe(['id' => 1, 'name' => 'John']);
+            ->and($response->json())->toBe(['id' => 1, 'name' => 'John'])
+        ;
     });
 
     test('mock responds with json data', function () {
@@ -34,16 +37,19 @@ describe('Basic Mock Response Tests', function () {
         $handler->mock('POST')
             ->url('https://api.example.com/posts')
             ->respondJson(['success' => true, 'post_id' => 123])
-            ->register();
+            ->register()
+        ;
 
         $response = (new HttpClient())
             ->setHandler($handler)
             ->withJson(['title' => 'Test Post'])
             ->post('https://api.example.com/posts')
-            ->wait();
+            ->wait()
+        ;
 
         expect($response->json())->toBe(['success' => true, 'post_id' => 123])
-            ->and($response->header('content-type'))->toContain('application/json');
+            ->and($response->header('content-type'))->toContain('application/json')
+        ;
     });
 
     test('mock responds with plain text', function () {
@@ -52,12 +58,14 @@ describe('Basic Mock Response Tests', function () {
         $handler->mock('GET')
             ->url('https://example.com/text')
             ->respondWith('Hello World')
-            ->register();
+            ->register()
+        ;
 
         $response = (new HttpClient())
             ->setHandler($handler)
             ->get('https://example.com/text')
-            ->wait();
+            ->wait()
+        ;
 
         expect($response->body())->toBe('Hello World');
     });
@@ -71,17 +79,20 @@ describe('Delay Simulation Tests', function () {
             ->url('https://api.example.com/slow')
             ->delay(0.5)
             ->respondJson(['data' => 'slow response'])
-            ->register();
+            ->register()
+        ;
 
         $start = microtime(true);
         $response = (new HttpClient())
             ->setHandler($handler)
             ->get('https://api.example.com/slow')
-            ->wait();
+            ->wait()
+        ;
         $duration = microtime(true) - $start;
 
         expect($duration)->toBeGreaterThanOrEqual(0.5)
-            ->and($response->json())->toBe(['data' => 'slow response']);
+            ->and($response->json())->toBe(['data' => 'slow response'])
+        ;
     });
 
     test('mock applies random delay within range', function () {
@@ -91,17 +102,20 @@ describe('Delay Simulation Tests', function () {
             ->url('https://api.example.com/random-slow')
             ->randomDelay(0.2, 0.4)
             ->respondJson(['data' => 'random delay response'])
-            ->register();
+            ->register()
+        ;
 
         $start = microtime(true);
         $response = (new HttpClient())
             ->setHandler($handler)
             ->get('https://api.example.com/random-slow')
-            ->wait();
+            ->wait()
+        ;
         $duration = microtime(true) - $start;
 
         expect($duration)->toBeGreaterThanOrEqual(0.2)
-            ->and($duration)->toBeLessThanOrEqual(0.6); // Margin for event loop ticks
+            ->and($duration)->toBeLessThanOrEqual(0.6) // Margin for event loop ticks
+        ;
     });
 
     test('global random delay affects all requests', function () {
@@ -111,13 +125,15 @@ describe('Delay Simulation Tests', function () {
         $handler->mock('GET')
             ->url('https://api.example.com/test')
             ->respondJson(['result' => 'ok'])
-            ->register();
+            ->register()
+        ;
 
         $start = microtime(true);
         $response = (new HttpClient())
             ->setHandler($handler)
             ->get('https://api.example.com/test')
-            ->wait();
+            ->wait()
+        ;
         $duration = microtime(true) - $start;
 
         expect($duration)->toBeGreaterThanOrEqual(0.1);
@@ -131,10 +147,12 @@ describe('Error Simulation Tests', function () {
         $handler->mock('GET')
             ->url('https://api.example.com/fail')
             ->fail('Connection refused')
-            ->register();
+            ->register()
+        ;
 
         expect(fn () => (new HttpClient())->setHandler($handler)->get('https://api.example.com/fail')->wait())
-            ->toThrow(NetworkException::class);
+            ->toThrow(NetworkException::class)
+        ;
     });
 
     test('mock simulates timeout', function () {
@@ -143,10 +161,12 @@ describe('Error Simulation Tests', function () {
         $handler->mock('GET')
             ->url('https://api.example.com/timeout')
             ->timeout(0.1)
-            ->register();
+            ->register()
+        ;
 
         expect(fn () => (new HttpClient())->setHandler($handler)->get('https://api.example.com/timeout')->wait())
-            ->toThrow(NetworkException::class);
+            ->toThrow(NetworkException::class)
+        ;
     });
 
     test('mock simulates network error', function () {
@@ -155,10 +175,12 @@ describe('Error Simulation Tests', function () {
         $handler->mock('GET')
             ->url('https://api.example.com/network-error')
             ->networkError('connection')
-            ->register();
+            ->register()
+        ;
 
         expect(fn () => (new HttpClient())->setHandler($handler)->get('https://api.example.com/network-error')->wait())
-            ->toThrow(NetworkException::class);
+            ->toThrow(NetworkException::class)
+        ;
     });
 });
 
@@ -169,16 +191,19 @@ describe('Retry Sequence Tests', function () {
         $handler->mock('GET')
             ->url('https://api.example.com/retry')
             ->failUntilAttempt(3, 'Temporary failure')
-            ->register();
+            ->register()
+        ;
 
         $response = (new HttpClient())
             ->setHandler($handler)
             ->retry(5, 0.01)
             ->get('https://api.example.com/retry')
-            ->wait();
+            ->wait()
+        ;
 
         expect($response->json())->toHaveKey('success', true)
-            ->and($response->json())->toHaveKey('attempt', 3);
+            ->and($response->json())->toHaveKey('attempt', 3)
+        ;
     });
 
     test('timeout until specified attempt', function () {
@@ -187,13 +212,15 @@ describe('Retry Sequence Tests', function () {
         $handler->mock('GET')
             ->url('https://api.example.com/timeout-retry')
             ->timeoutUntilAttempt(2, 0.1)
-            ->register();
+            ->register()
+        ;
 
         $response = (new HttpClient())
             ->setHandler($handler)
             ->retry(5, 0.01)
             ->get('https://api.example.com/timeout-retry')
-            ->wait();
+            ->wait()
+        ;
 
         expect($response->json())->toHaveKey('success', true);
     });
@@ -208,13 +235,15 @@ describe('Retry Sequence Tests', function () {
                 ['error' => 'Second error', 'delay' => 0.05],
                 ['error' => 'Third error', 'retryable' => true],
             ], ['final' => 'success'])
-            ->register();
+            ->register()
+        ;
 
         $response = (new HttpClient())
             ->setHandler($handler)
             ->retry(5, 0.01)
             ->get('https://api.example.com/sequence')
-            ->wait();
+            ->wait()
+        ;
 
         expect($response->json())->toBe(['final' => 'success']);
     });
@@ -227,16 +256,19 @@ describe('Advanced Scenario Tests', function () {
         $handler->mock('GET')
             ->url('https://api.example.com/rate-limited')
             ->rateLimitedUntilAttempt(2)
-            ->register();
+            ->register()
+        ;
 
         $response = (new HttpClient())
             ->setHandler($handler)
             ->retry(5, 0.01)
             ->get('https://api.example.com/rate-limited')
-            ->wait();
+            ->wait()
+        ;
 
         expect($response->status())->toBe(200)
-            ->and($response->json())->toHaveKey('success', true);
+            ->and($response->json())->toHaveKey('success', true)
+        ;
     });
 
     test('simulates gradually improving network', function () {
@@ -247,13 +279,15 @@ describe('Advanced Scenario Tests', function () {
             ->failUntilAttempt(2)
             ->respondJson(['success' => true])
             ->persistent()
-            ->register();
+            ->register()
+        ;
 
         $response = (new HttpClient())
             ->setHandler($handler)
             ->retry(5, 0.01)
             ->get('https://api.example.com/improving')
-            ->wait();
+            ->wait()
+        ;
 
         expect($response->json())->toHaveKey('success', true);
     });
@@ -267,7 +301,8 @@ describe('Network Simulation Tests', function () {
         $handler->mock('GET')
             ->url('https://api.example.com/test')
             ->respondJson(['data' => 'test'])
-            ->register();
+            ->register()
+        ;
 
         $start = microtime(true);
 
@@ -276,7 +311,7 @@ describe('Network Simulation Tests', function () {
         } catch (Exception $e) {
             // expected
         }
-        
+
         $duration = microtime(true) - $start;
         expect($duration)->toBeGreaterThan(0.05);
     });
@@ -288,7 +323,8 @@ describe('Network Simulation Tests', function () {
         $handler->mock('GET')
             ->url('https://api.example.com/test')
             ->respondJson(['data' => 'test'])
-            ->register();
+            ->register()
+        ;
 
         $start = microtime(true);
         (new HttpClient())->setHandler($handler)->get('https://api.example.com/test')->wait();
@@ -308,15 +344,18 @@ describe('Header Tests', function () {
                 'X-Custom-Header' => 'custom-value',
                 'X-Rate-Limit' => '100',
             ])
-            ->register();
+            ->register()
+        ;
 
         $response = (new HttpClient())
             ->setHandler($handler)
             ->get('https://api.example.com/headers')
-            ->wait();
+            ->wait()
+        ;
 
         expect($response->header('x-custom-header'))->toBe('custom-value')
-            ->and($response->header('x-rate-limit'))->toBe('100');
+            ->and($response->header('x-rate-limit'))->toBe('100')
+        ;
     });
 
     test('expects specific request headers', function () {
@@ -326,13 +365,15 @@ describe('Header Tests', function () {
             ->url('https://api.example.com/auth')
             ->expectHeader('Authorization', 'Bearer token123')
             ->respondJson(['authenticated' => true])
-            ->register();
+            ->register()
+        ;
 
         $response = (new HttpClient())
             ->setHandler($handler)
             ->withToken('token123')
             ->get('https://api.example.com/auth')
-            ->wait();
+            ->wait()
+        ;
 
         expect($response->json())->toBe(['authenticated' => true]);
     });
@@ -353,7 +394,8 @@ describe('Request Recording Tests', function () {
 
         expect($history)->toHaveCount(2)
             ->and($history[0]->url)->toContain('test1')
-            ->and($history[1]->url)->toContain('test2');
+            ->and($history[1]->url)->toContain('test2')
+        ;
     });
 
     test('disables request recording', function () {
@@ -376,7 +418,8 @@ describe('Persistent Mock Tests', function () {
             ->url('https://api.example.com/persistent')
             ->respondJson(['counter' => 1])
             ->persistent()
-            ->register();
+            ->register()
+        ;
 
         $client = (new HttpClient())->setHandler($handler);
 
@@ -385,7 +428,8 @@ describe('Persistent Mock Tests', function () {
         $response = $client->get('https://api.example.com/persistent')->wait();
 
         expect($response->json())->toBe(['counter' => 1])
-            ->and($handler->getRequestHistory())->toHaveCount(3);
+            ->and($handler->getRequestHistory())->toHaveCount(3)
+        ;
     });
 });
 
@@ -396,15 +440,18 @@ describe('Download Tests', function () {
         $handler->mock('GET')
             ->url('https://example.com/file.pdf')
             ->downloadFile('PDF content here', 'document.pdf', 'application/pdf')
-            ->register();
+            ->register()
+        ;
 
         $response = (new HttpClient())
             ->setHandler($handler)
             ->get('https://example.com/file.pdf')
-            ->wait();
+            ->wait()
+        ;
 
         expect($response->body())->toBe('PDF content here')
-            ->and($response->header('content-type'))->toBe('application/pdf');
+            ->and($response->header('content-type'))->toBe('application/pdf')
+        ;
     });
 });
 
@@ -416,15 +463,17 @@ describe('URL Pattern Matching Tests', function () {
             ->url('https://api.example.com/users/*')
             ->respondJson(['user' => 'data'])
             ->persistent()
-            ->register();
+            ->register()
+        ;
 
         $client = (new HttpClient())->setHandler($handler);
-        
+
         $res1 = $client->get('https://api.example.com/users/123')->wait();
         $res2 = $client->get('https://api.example.com/users/456')->wait();
 
         expect($res1->json())->toBe(['user' => 'data'])
-            ->and($res2->json())->toBe(['user' => 'data']);
+            ->and($res2->json())->toBe(['user' => 'data'])
+        ;
     });
 });
 
@@ -436,12 +485,14 @@ describe('Cookie Tests', function () {
             ->url('https://example.com/login')
             ->setCookie('session_id', 'abc123')
             ->respondJson(['logged_in' => true])
-            ->register();
+            ->register()
+        ;
 
         $response = (new HttpClient())
             ->setHandler($handler)
             ->get('https://example.com/login')
-            ->wait();
+            ->wait()
+        ;
 
         expect($response->header('set-cookie'))->toContain('session_id=abc123');
     });
@@ -455,13 +506,15 @@ describe('Body Expectation Tests', function () {
             ->url('https://api.example.com/data')
             ->expectBody('test data')
             ->respondJson(['received' => true])
-            ->register();
+            ->register()
+        ;
 
         $response = (new HttpClient())
             ->setHandler($handler)
             ->body('test data')
             ->post('https://api.example.com/data')
-            ->wait();
+            ->wait()
+        ;
 
         expect($response->json())->toBe(['received' => true]);
     });
@@ -473,13 +526,15 @@ describe('Body Expectation Tests', function () {
             ->url('https://api.example.com/json')
             ->expectJson(['key' => 'value'])
             ->respondJson(['success' => true])
-            ->register();
+            ->register()
+        ;
 
         $response = (new HttpClient())
             ->setHandler($handler)
             ->withJson(['key' => 'value'])
             ->post('https://api.example.com/json')
-            ->wait();
+            ->wait()
+        ;
 
         expect($response->json())->toBe(['success' => true]);
     });

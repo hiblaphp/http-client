@@ -4,11 +4,8 @@ declare(strict_types=1);
 
 use Hibla\EventLoop\Loop;
 use Hibla\HttpClient\Exceptions\NetworkException;
-use Hibla\HttpClient\SSE\SSEReconnectConfig;
 use Hibla\HttpClient\SSE\SSEResponse;
 use Hibla\HttpClient\Testing\Exceptions\MockException;
-use Hibla\HttpClient\Testing\Utilities\Factories\SSE\RetryableSSEResponseFactory;
-use Hibla\HttpClient\Testing\Utilities\NetworkSimulator;
 
 describe('RetryableSSEResponseFactory', function () {
 

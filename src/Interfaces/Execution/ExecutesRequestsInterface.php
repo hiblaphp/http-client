@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Interfaces\Execution;
 
-use Hibla\HttpClient\Interfaces\ResponseInterface; 
+use Hibla\HttpClient\Interfaces\ResponseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
 interface ExecutesRequestsInterface

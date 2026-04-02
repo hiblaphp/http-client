@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient;
 
-use Hibla\Promise\Interfaces\PromiseInterface;
 use Hibla\HttpClient\Interfaces\ResponseInterface;
+use Hibla\Promise\Interfaces\PromiseInterface;
 
 /**
  * Fetch data from URL (JavaScript-like fetch API).

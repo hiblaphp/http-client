@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Builders;
 
-use Hibla\HttpClient\ValueObjects\ClientOptions;
 use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
 use Hibla\HttpClient\Interfaces\Handler\TransportOptionsBuilderInterface;
-use Hibla\HttpClient\ValueObjects\ProxyConfig;
 use Hibla\HttpClient\Uri;
+use Hibla\HttpClient\ValueObjects\ClientOptions;
+use Hibla\HttpClient\ValueObjects\ProxyConfig;
 use Psr\Http\Message\StreamInterface;
 
 /**

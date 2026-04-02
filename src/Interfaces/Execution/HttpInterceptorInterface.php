@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Interfaces\Execution;
 
-use Hibla\HttpClient\Interfaces\ResponseInterface;
 use Hibla\HttpClient\Interfaces\RequestInterface;
+use Hibla\HttpClient\Interfaces\ResponseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
 /**
@@ -62,7 +62,7 @@ interface HttpInterceptorInterface
      * @param  callable(ResponseInterface): (ResponseInterface|PromiseInterface<ResponseInterface>) $callback
      */
     public function interceptResponse(callable $callback): static;
-    
+
     /**
      * Register a full pipeline interceptor.
      *

@@ -6,7 +6,6 @@ namespace Hibla\HttpClient\Testing;
 
 use Hibla\HttpClient\Handlers\HttpHandler;
 use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
-use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\HttpClient\SSE\CancelableSSEPromise;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
 use Hibla\HttpClient\Testing\Interfaces\AssertsCookiesInterface;
@@ -33,6 +32,7 @@ use Hibla\HttpClient\Testing\Utilities\RequestMatcher;
 use Hibla\HttpClient\Testing\Utilities\RequestRecorder;
 use Hibla\HttpClient\Testing\Utilities\ResponseFactory;
 use Hibla\HttpClient\Traits\StreamTrait;
+use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
 /**
@@ -416,7 +416,7 @@ class TestingHttpHandler extends HttpHandler implements
     public function stream(string $url, array $options = [], ?callable $onChunk = null): PromiseInterface
     {
         $mockedRequests = array_values($this->mockedRequests);
-        
+
         $options['stream'] = true;
         if ($onChunk !== null) {
             $options['on_chunk'] = $onChunk;
@@ -447,7 +447,7 @@ class TestingHttpHandler extends HttpHandler implements
         }
 
         $mockedRequests = array_values($this->mockedRequests);
-        
+
         // Inject download flag for the mock handler to intercept
         $options['download'] = $destination;
 

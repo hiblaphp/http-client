@@ -122,6 +122,7 @@ class PeriodicSSEEmitter
                         Loop::cancelTimer($periodicTimerId);
                         $periodicTimerId = null;
                     }
+
                     return;
                 }
 
@@ -130,7 +131,7 @@ class PeriodicSSEEmitter
                 if (\is_array($eventData)) {
                     $formattedEvent = $this->formatter->formatEvents([$eventData]);
                     $sseResponse->getStream()->write($formattedEvent);
-                    
+
                     $parsedEvents = $sseResponse->parseEvents($formattedEvent);
                     foreach ($parsedEvents as $event) {
                         if ($onEvent !== null) {
@@ -231,7 +232,7 @@ class PeriodicSSEEmitter
                 $eventData = $events[$eventIndex];
                 $formattedEvent = $this->formatter->formatEvents([$eventData]);
                 $sseResponse->getStream()->write($formattedEvent);
-                
+
                 $parsedEvents = $sseResponse->parseEvents($formattedEvent);
                 foreach ($parsedEvents as $event) {
                     if ($onEvent !== null) {

@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Testing\Utilities\Factories;
 
-use function Hibla\delay;
-
 use Hibla\HttpClient\Exceptions\HttpStreamException;
 use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Testing\MockedRequest;
@@ -13,8 +11,9 @@ use Hibla\HttpClient\Testing\Utilities\FileManager;
 use Hibla\HttpClient\Testing\Utilities\Handlers\DelayCalculator;
 use Hibla\HttpClient\Testing\Utilities\Handlers\NetworkSimulationHandler;
 use Hibla\Promise\Interfaces\PromiseInterface;
-
 use Hibla\Promise\Promise;
+
+use function Hibla\delay;
 
 class DownloadResponseFactory
 {

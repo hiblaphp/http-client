@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Testing\Utilities;
 
-use Hibla\HttpClient\ValueObjects\Cookie;
 use Hibla\HttpClient\CookieJar;
 use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
 use Hibla\HttpClient\Testing\Exceptions\MockAssertionException;
 use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Uri;
+use Hibla\HttpClient\ValueObjects\Cookie;
 
 /**
  * Comprehensive cookie testing service for HTTP testing scenarios.

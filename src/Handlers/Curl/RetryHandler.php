@@ -9,8 +9,8 @@ use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
 use Hibla\HttpClient\Interfaces\Handler\RetryHandlerInterface;
 use Hibla\HttpClient\Response;
-use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\HttpClient\Traits\NormalizeHeaderTrait;
+use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Hibla\Promise\Promise;
 

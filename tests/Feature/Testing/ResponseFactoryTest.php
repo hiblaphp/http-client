@@ -5,7 +5,6 @@ declare(strict_types=1);
 use Hibla\HttpClient\Exceptions\HttpException;
 use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Response;
-use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\HttpClient\StreamingResponse;
 use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Testing\Utilities\Factories\DownloadResponseFactory;
@@ -15,6 +14,7 @@ use Hibla\HttpClient\Testing\Utilities\Factories\StreamingResponseFactory;
 use Hibla\HttpClient\Testing\Utilities\Handlers\DelayCalculator;
 use Hibla\HttpClient\Testing\Utilities\Handlers\NetworkSimulationHandler;
 use Hibla\HttpClient\Testing\Utilities\NetworkSimulator;
+use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Psr\Http\Message\StreamInterface;
 
 afterEach(function () {

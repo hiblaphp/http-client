@@ -193,7 +193,7 @@ class SSEHandler implements SSEHandlerInterface
         $sseResponse = null;
         $headersProcessed = false;
         $rawHeaders = [];
-        $requestId = null; 
+        $requestId = null;
 
         $curlOnlyOptions = array_filter($options, 'is_int', ARRAY_FILTER_USE_KEY);
 
@@ -251,7 +251,7 @@ class SSEHandler implements SSEHandlerInterface
                                 if (str_contains($h, ':')) {
                                     [$name, $value] = explode(':', $h, 2);
                                     $name = trim($name);
-                                    if (!isset($parsedHeaders[$name])) {
+                                    if (! isset($parsedHeaders[$name])) {
                                         $parsedHeaders[$name] = [];
                                     }
                                     $parsedHeaders[$name][] = trim($value);
@@ -286,6 +286,7 @@ class SSEHandler implements SSEHandlerInterface
                     if ($onError !== null && $error !== null) {
                         $onError($error);
                     }
+
                     return;
                 }
 

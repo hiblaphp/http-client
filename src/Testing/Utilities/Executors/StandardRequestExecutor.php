@@ -5,15 +5,15 @@ declare(strict_types=1);
 namespace Hibla\HttpClient\Testing\Utilities\Executors;
 
 use Hibla\HttpClient\Response;
-use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\HttpClient\Testing\Exceptions\UnexpectedRequestException;
 use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Testing\Utilities\CookieManager;
+use Hibla\HttpClient\Testing\Utilities\Handlers\ResponseTypeHandler;
 use Hibla\HttpClient\Testing\Utilities\RequestMatcher;
 use Hibla\HttpClient\Testing\Utilities\RequestRecorder;
 use Hibla\HttpClient\Testing\Utilities\ResponseFactory;
-use Hibla\HttpClient\Testing\Utilities\Handlers\ResponseTypeHandler;
 use Hibla\HttpClient\Testing\Utilities\Validators\RequestValidator;
+use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
 class StandardRequestExecutor
@@ -79,6 +79,7 @@ class StandardRequestExecutor
 
         if ($matchedMock === null) {
             $this->requestRecorder->recordRequest($method, $url, $curlOptions);
+
             return $this->handleNoMatch(
                 $url,
                 $curlOptions,
@@ -133,6 +134,7 @@ class StandardRequestExecutor
             if ($parentSendRequest === null) {
                 throw new \RuntimeException('No parent send request handler available');
             }
+
             return $parentSendRequest($url, $curlOptions, $retryConfig);
         }
 
@@ -158,6 +160,7 @@ class StandardRequestExecutor
             if ($response instanceof Response) {
                 $this->processCookies($response, $curlOptions, $url);
             }
+
             return $response;
         });
     }
@@ -203,7 +206,7 @@ class StandardRequestExecutor
                 $mockedRequests
             );
         }
-        
+
         $this->requestRecorder->recordRequest($method, $url, $curlOptions);
 
         return $this->responseTypeHandler->handleMockedResponse(

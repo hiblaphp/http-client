@@ -91,7 +91,7 @@ final class FetchRequest
         if (isset($options['headers']) && \is_array($options['headers'])) {
             /** @var array<string, string|string[]> $headers */
             $headers = $options['headers'];
-            $client  = $client->withHeaders($headers);
+            $client = $client->withHeaders($headers);
         }
 
         return $client;
@@ -124,7 +124,7 @@ final class FetchRequest
         HttpClientInterface $client,
         array $options
     ): HttpClientInterface {
-        if (!isset($options['auth']) || !\is_array($options['auth'])) {
+        if (! isset($options['auth']) || ! \is_array($options['auth'])) {
             return $client;
         }
 
@@ -190,7 +190,7 @@ final class FetchRequest
         HttpClientInterface $client,
         array $options
     ): HttpClientInterface {
-        if (!isset($options['retry'])) {
+        if (! isset($options['retry'])) {
             return $client;
         }
 
@@ -206,8 +206,8 @@ final class FetchRequest
 
         if (\is_array($retry)) {
             return $client->retry(
-                maxRetries:        isset($retry['max_retries'])        ? (int)   $retry['max_retries']        : 3,
-                baseDelay:         isset($retry['base_delay'])         ? (float) $retry['base_delay']         : 1.0,
+                maxRetries:        isset($retry['max_retries']) ? (int)   $retry['max_retries'] : 3,
+                baseDelay:         isset($retry['base_delay']) ? (float) $retry['base_delay'] : 1.0,
                 backoffMultiplier: isset($retry['backoff_multiplier']) ? (float) $retry['backoff_multiplier'] : 2.0,
             );
         }
@@ -219,7 +219,7 @@ final class FetchRequest
         HttpClientInterface $client,
         array $options
     ): HttpClientInterface {
-        if (!isset($options['proxy'])) {
+        if (! isset($options['proxy'])) {
             return $client;
         }
 
@@ -231,11 +231,13 @@ final class FetchRequest
 
         if (\is_string($proxy)) {
             $config = $this->parseProxyUrl($proxy);
+
             return $config !== null ? $client->proxyWith($config) : $client;
         }
 
         if (\is_array($proxy)) {
             $config = $this->parseProxyArray($proxy);
+
             return $config !== null ? $client->proxyWith($config) : $client;
         }
 
@@ -249,7 +251,7 @@ final class FetchRequest
         if (isset($options['cookies']) && \is_array($options['cookies'])) {
             /** @var array<string, string> $cookies */
             $cookies = $options['cookies'];
-            $client  = $client->withCookies($cookies);
+            $client = $client->withCookies($cookies);
         }
 
         if (isset($options['cookie_jar']) && $options['cookie_jar'] instanceof CookieJarInterface) {
@@ -265,17 +267,29 @@ final class FetchRequest
     ): HttpClientInterface {
         if (isset($options['intercept'])) {
             $interceptors = \is_array($options['intercept']) ? $options['intercept'] : [$options['intercept']];
-            foreach ($interceptors as $i) if (\is_callable($i)) $client = $client->intercept($i);
+            foreach ($interceptors as $i) {
+                if (\is_callable($i)) {
+                    $client = $client->intercept($i);
+                }
+            }
         }
 
         if (isset($options['interceptRequest'])) {
             $interceptors = \is_array($options['interceptRequest']) ? $options['interceptRequest'] : [$options['interceptRequest']];
-            foreach ($interceptors as $i) if (\is_callable($i)) $client = $client->interceptRequest($i);
+            foreach ($interceptors as $i) {
+                if (\is_callable($i)) {
+                    $client = $client->interceptRequest($i);
+                }
+            }
         }
 
         if (isset($options['interceptResponse'])) {
             $interceptors = \is_array($options['interceptResponse']) ? $options['interceptResponse'] : [$options['interceptResponse']];
-            foreach ($interceptors as $i) if (\is_callable($i)) $client = $client->interceptResponse($i);
+            foreach ($interceptors as $i) {
+                if (\is_callable($i)) {
+                    $client = $client->interceptResponse($i);
+                }
+            }
         }
 
         return $client;
@@ -298,16 +312,16 @@ final class FetchRequest
     {
         $parsed = parse_url($url);
 
-        if (!\is_array($parsed) || !isset($parsed['host']) || !\is_string($parsed['host'])) {
+        if (! \is_array($parsed) || ! isset($parsed['host']) || ! \is_string($parsed['host'])) {
             return null;
         }
 
         return new ProxyConfig(
             host: $parsed['host'],
-            port: isset($parsed['port'])   && \is_int($parsed['port'])      ? $parsed['port']     : 8080,
-            username: isset($parsed['user'])   && \is_string($parsed['user'])   ? $parsed['user']     : null,
-            password: isset($parsed['pass'])   && \is_string($parsed['pass'])   ? $parsed['pass']     : null,
-            type: isset($parsed['scheme']) && \is_string($parsed['scheme']) ? $parsed['scheme']   : 'http',
+            port: isset($parsed['port']) && \is_int($parsed['port']) ? $parsed['port'] : 8080,
+            username: isset($parsed['user']) && \is_string($parsed['user']) ? $parsed['user'] : null,
+            password: isset($parsed['pass']) && \is_string($parsed['pass']) ? $parsed['pass'] : null,
+            type: isset($parsed['scheme']) && \is_string($parsed['scheme']) ? $parsed['scheme'] : 'http',
         );
     }
 
@@ -316,7 +330,7 @@ final class FetchRequest
         $host = $proxy['host'] ?? $proxy['server'] ?? '';
         $port = $proxy['port'] ?? 8080;
 
-        if (!\is_string($host) || $host === '' || !\is_numeric($port)) {
+        if (! \is_string($host) || $host === '' || ! \is_numeric($port)) {
             return null;
         }
 
@@ -325,7 +339,7 @@ final class FetchRequest
             port: (int) $port,
             username: isset($proxy['username']) && \is_string($proxy['username']) ? $proxy['username'] : null,
             password: isset($proxy['password']) && \is_string($proxy['password']) ? $proxy['password'] : null,
-            type: isset($proxy['type'])     && \is_string($proxy['type'])     ? $proxy['type']     : 'http',
+            type: isset($proxy['type']) && \is_string($proxy['type']) ? $proxy['type'] : 'http',
         );
     }
 }

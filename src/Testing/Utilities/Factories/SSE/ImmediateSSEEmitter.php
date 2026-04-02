@@ -48,7 +48,7 @@ class ImmediateSSEEmitter
 
         $sseContent = $this->formatter->formatEvents($mock->getSSEEvents());
         $sseResponse->getStream()->write($sseContent);
-        
+
         $events = $sseResponse->parseEvents($sseContent);
 
         foreach ($events as $event) {

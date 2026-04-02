@@ -225,7 +225,6 @@ function createRequestExecutor(): RequestExecutor
     );
 }
 
-
 function createStandardRequestExecutor(?FileManager $fileManager = null): StandardRequestExecutor
 {
     $fileManager ??= new FileManager();
@@ -240,7 +239,6 @@ function createStandardRequestExecutor(?FileManager $fileManager = null): Standa
         new ResponseTypeHandler($responseFactory, $fileManager)
     );
 }
-
 
 function createSSEResponseFactory(?NetworkSimulator $simulator = null): SSEResponseFactory
 {

@@ -138,13 +138,14 @@ describe('Server-Sent Events (SSE)', function () {
         ;
 
         $receivedEvents = [];
-        
+
         Http::sse('https://api.example.com/stream')
             ->onEvent(function (SSEEvent $event) use (&$receivedEvents) {
                 $receivedEvents[] = $event;
             })
             ->connect()
-            ->wait();
+            ->wait()
+        ;
 
         Http::assertSSEConnectionMade('https://api.example.com/stream');
         expect($receivedEvents)->toHaveCount(2);

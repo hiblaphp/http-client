@@ -101,6 +101,7 @@ class Response extends Message implements ResponseInterface
                 $writeResult = fwrite($resource, $body);
                 if ($writeResult === false) {
                     fclose($resource);
+
                     throw new \RuntimeException('Unable to write to temporary stream');
                 }
                 rewind($resource);
@@ -351,7 +352,7 @@ class Response extends Message implements ResponseInterface
         return match ($version) {
             '2', '2.0' => '2',
             '3', '3.0' => '3',
-            default    => $version,
+            default => $version,
         };
     }
 }

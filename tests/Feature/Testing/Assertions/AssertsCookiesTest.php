@@ -20,10 +20,12 @@ describe('AssertsCookies', function () {
             ->setHandler($handler)
             ->useCookieJar($jar)
             ->get('https://example.com')
-            ->wait();
+            ->wait()
+        ;
 
         expect(fn () => $handler->assertCookieSent('session'))
-            ->not->toThrow(AssertionFailedError::class);
+            ->not->toThrow(AssertionFailedError::class)
+        ;
     });
 
     test('assertCookieExists validates cookie exists in jar', function () {
@@ -36,7 +38,8 @@ describe('AssertsCookies', function () {
         $handler->withGlobalCookieJar($jar);
 
         expect(fn () => $handler->assertCookieExists('session'))
-            ->not->toThrow(AssertionFailedError::class);
+            ->not->toThrow(AssertionFailedError::class)
+        ;
     });
 
     test('assertCookieValue validates cookie value', function () {
@@ -49,6 +52,7 @@ describe('AssertsCookies', function () {
         $handler->withGlobalCookieJar($jar);
 
         expect(fn () => $handler->assertCookieValue('session', 'abc123'))
-            ->not->toThrow(AssertionFailedError::class);
+            ->not->toThrow(AssertionFailedError::class)
+        ;
     });
 });

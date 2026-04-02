@@ -3,11 +3,11 @@
 declare(strict_types=1);
 
 use Hibla\HttpClient\Response;
-use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
 use Hibla\HttpClient\SSE\SSEResponse;
 use Hibla\HttpClient\Stream;
 use Hibla\HttpClient\Testing\MockedRequest;
+use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\Promise\Promise;
 
 test('executes standard send request', function () {

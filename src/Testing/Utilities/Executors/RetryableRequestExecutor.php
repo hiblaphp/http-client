@@ -6,13 +6,13 @@ namespace Hibla\HttpClient\Testing\Utilities\Executors;
 
 use Hibla\HttpClient\Response;
 use Hibla\HttpClient\StreamingResponse;
-use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\HttpClient\Testing\Exceptions\MockAssertionException;
 use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Testing\Utilities\RequestMatcher;
 use Hibla\HttpClient\Testing\Utilities\RequestRecorder;
 use Hibla\HttpClient\Testing\Utilities\ResponseFactory;
 use Hibla\HttpClient\Traits\StreamTrait;
+use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Hibla\Promise\Promise;
 
@@ -90,7 +90,7 @@ class RetryableRequestExecutor
             }
 
             $mock = $match['mock'];
-            
+
             $this->requestRecorder->recordRequest($method, $url, $curlOptions);
 
             if (! $mock->isPersistent()) {

@@ -5,12 +5,50 @@ declare(strict_types=1);
 namespace Hibla\HttpClient\SSE;
 
 use Exception;
+use TypeError;
+use Hibla\HttpClient\Interfaces\Exception\RequestExceptionInterface;
 
 /**
  * Configuration for SSE reconnection behavior.
  */
 class SSEReconnectConfig
 {
+    /**
+     * The system-default list of error substrings that trigger a reconnection attempt.
+     */
+    private const array DEFAULT_RETRYABLE_ERRORS = [
+        'Connection refused',
+        'Connection reset',
+        'Connection timed out',
+        'Could not resolve host',
+        'Resolving timed out',
+        'SSL connection timeout',
+        'Operation timed out',
+        'Network is unreachable',
+    ];
+
+    /**
+     * Default HTTP status codes that should trigger a reconnection.
+     */
+    private const array DEFAULT_STATUS_CODES = [
+        408, // Request Timeout
+        429, // Too Many Requests
+        500, // Internal Server Error
+        502, // Bad Gateway
+        503, // Service Unavailable
+        504, // Gateway Timeout
+    ];
+
+    /**
+     * @var array<string> A merged list of retryable error strings.
+     */
+    public readonly array $retryableErrors;
+
+    /**
+     * @var array<int> A merged list of retryable HTTP status codes.
+     */
+    public readonly array $retryableStatusCodes;
+
     /**
      * Constructs the reconnection configuration.
      *
@@ -20,9 +58,12 @@ class SSEReconnectConfig
      * @param float $maxDelay The maximum delay in seconds between reconnection attempts.
      * @param float $backoffMultiplier The multiplier for exponential backoff.
      * @param bool $jitter Toggles random jitter to prevent stampeding herd issues.
-     * @param list<string> $retryableErrors A list of error message substrings that are considered retryable.
-     * @param callable|null $onReconnect A callback to execute when a reconnection attempt is about to be made.
-     * @param callable(Exception):bool|null $shouldReconnect A custom callback to decide if a reconnection should be attempted for a given error.
+     * @param array<string> $retryableErrors Additional error message substrings to be considered retryable.
+     * @param array<int> $retryableStatusCodes Additional HTTP status codes to be considered retryable.
+     * @param callable|null $onReconnect Signature: function(int $attempt, float $delay, string|Exception $error): void
+     * @param callable|null $shouldReconnect Signature: function(Exception $error): bool
+     *
+     * @throws TypeError if callbacks are provided but not callable.
      */
     public function __construct(
         public readonly bool $enabled = true,
@@ -31,19 +72,36 @@ class SSEReconnectConfig
         public readonly float $maxDelay = 30.0,
         public readonly float $backoffMultiplier = 2.0,
         public readonly bool $jitter = true,
-        public readonly array $retryableErrors = [
-            'Connection refused',
-            'Connection reset',
-            'Connection timed out',
-            'Could not resolve host',
-            'Resolving timed out',
-            'SSL connection timeout',
-            'Operation timed out',
-            'Network is unreachable',
-        ],
+        array $retryableErrors = [],
+        array $retryableStatusCodes = [],
         public readonly mixed $onReconnect = null,
         public readonly mixed $shouldReconnect = null,
     ) {
+        $this->retryableErrors = \array_values(\array_unique([
+            ...self::DEFAULT_RETRYABLE_ERRORS,
+            ...$retryableErrors,
+        ]));
+
+        $this->retryableStatusCodes = \array_values(\array_unique([
+            ...self::DEFAULT_STATUS_CODES,
+            ...$retryableStatusCodes,
+        ]));
+
+        if ($this->onReconnect !== null && ! \is_callable($this->onReconnect)) {
+            throw new TypeError(\sprintf(
+                '%s::__construct(): Argument #9 ($onReconnect) must be of type ?callable, %s given',
+                self::class,
+                \get_debug_type($this->onReconnect)
+            ));
+        }
+
+        if ($this->shouldReconnect !== null && ! \is_callable($this->shouldReconnect)) {
+            throw new TypeError(\sprintf(
+                '%s::__construct(): Argument #10 ($shouldReconnect) must be of type ?callable, %s given',
+                self::class,
+                \get_debug_type($this->shouldReconnect)
+            ));
+        }
     }
 
     /**
@@ -51,16 +109,24 @@ class SSEReconnectConfig
      */
     public function calculateDelay(int $attempt): float
     {
-        $delay = min(
-            $this->initialDelay * pow($this->backoffMultiplier, $attempt - 1),
+        $delay = \min(
+            $this->initialDelay * \pow($this->backoffMultiplier, $attempt - 1),
             $this->maxDelay
         );
 
         if ($this->jitter) {
-            $delay *= 1.0 - mt_rand() / mt_getrandmax() * 0.5;
+            $delay *= 1.0 - \mt_rand() / \mt_getrandmax() * 0.5;
         }
 
         return $delay;
+    }
+
+    /**
+     * Determines if a status code should trigger a retry.
+     */
+    public function isRetryableStatus(int $statusCode): bool
+    {
+        return \in_array($statusCode, $this->retryableStatusCodes, true);
     }
 
     /**
@@ -68,13 +134,20 @@ class SSEReconnectConfig
      */
     public function isRetryableError(Exception $error): bool
     {
-        if (is_callable($this->shouldReconnect)) {
+        if (\is_callable($this->shouldReconnect)) {
             return (bool) \call_user_func($this->shouldReconnect, $error);
+        }
+
+        if (method_exists($error, 'getStatusCode')) {
+            $code = $error->getStatusCode();
+            if ($code !== null && $this->isRetryableStatus((int)$code)) {
+                return true;
+            }
         }
 
         $message = $error->getMessage();
         foreach ($this->retryableErrors as $retryableError) {
-            if (str_contains($message, $retryableError)) {
+            if (\str_contains($message, $retryableError)) {
                 return true;
             }
         }

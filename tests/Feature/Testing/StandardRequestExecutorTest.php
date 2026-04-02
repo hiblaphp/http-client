@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Response;
-use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\HttpClient\Testing\Exceptions\UnexpectedRequestException;
 use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Testing\Utilities\CookieManager;
@@ -16,6 +15,7 @@ use Hibla\HttpClient\Testing\Utilities\RequestMatcher;
 use Hibla\HttpClient\Testing\Utilities\RequestRecorder;
 use Hibla\HttpClient\Testing\Utilities\ResponseFactory;
 use Hibla\HttpClient\Testing\Utilities\Validators\RequestValidator;
+use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\Promise\Promise;
 
 uses()->group('sequential');
@@ -24,7 +24,7 @@ function createStandardTestExecutor(): StandardRequestExecutor
 {
     $responseFactory = new ResponseFactory(new NetworkSimulator());
     $fileManager = new FileManager();
-    
+
     return new StandardRequestExecutor(
         new RequestMatcher(),
         $responseFactory,

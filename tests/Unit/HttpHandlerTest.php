@@ -58,7 +58,7 @@ it('delegates execution to the RequestExecutorHandler', function () {
     ;
 
     $handler = new HttpHandler(null, $requestExecutorMock);
-    
+
     $handler->sendRequest('https://example.com/exec', [CURLOPT_CUSTOMREQUEST => 'GET'], null);
 
     expect(true)->toBeTrue();

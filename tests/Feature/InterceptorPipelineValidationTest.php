@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
+use Hibla\HttpClient\Http;
+use Hibla\HttpClient\Interfaces\RequestInterface as Request;
+use Hibla\HttpClient\Interfaces\ResponseInterface;
+
 use function Hibla\asyncFn;
 use function Hibla\await;
 
-use Hibla\HttpClient\Http;
-use Hibla\HttpClient\Interfaces\ResponseInterface;
-use Hibla\HttpClient\Interfaces\RequestInterface as Request;
-
 describe('Interceptor Pipeline Validation', function () {
-    
+
     beforeEach(function () {
         Http::startTesting();
         Http::mock('GET')->url('*')->respondWithStatus(200)->register();

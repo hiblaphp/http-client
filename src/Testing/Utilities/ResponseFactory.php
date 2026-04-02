@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Hibla\HttpClient\Testing\Utilities;
 
 use Hibla\HttpClient\Response;
-use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
 use Hibla\HttpClient\SSE\SSEResponse;
 use Hibla\HttpClient\StreamingResponse;
@@ -18,6 +17,7 @@ use Hibla\HttpClient\Testing\Utilities\Factories\SSE\SSEResponseFactory;
 use Hibla\HttpClient\Testing\Utilities\Factories\StandardResponseFactory;
 use Hibla\HttpClient\Testing\Utilities\Factories\StreamingResponseFactory;
 use Hibla\HttpClient\Testing\Utilities\Handlers\NetworkSimulationHandler;
+use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
 class ResponseFactory

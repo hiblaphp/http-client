@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use Hibla\HttpClient\ValueObjects\Cookie;
 use Hibla\HttpClient\CookieJar;
+use Hibla\HttpClient\ValueObjects\Cookie;
 
 describe('Cookie Class Logic', function () {
 
