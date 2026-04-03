@@ -10,6 +10,7 @@ use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Testing\Utilities\FileManager;
 use Hibla\HttpClient\Testing\Utilities\Handlers\DelayCalculator;
 use Hibla\HttpClient\Testing\Utilities\Handlers\NetworkSimulationHandler;
+use Hibla\HttpClient\ValueObjects\DownloadProgress;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Hibla\Promise\Promise;
 
@@ -34,7 +35,8 @@ class DownloadResponseFactory
     public function create(
         MockedRequest $mock,
         string $destination,
-        FileManager $fileManager
+        FileManager $fileManager,
+        ?callable $onProgress = null
     ): PromiseInterface {
         /** @var Promise<array{file: string, status: int, headers: array<string, string>, size: int, protocol_version: string}> $promise */
         $promise = new Promise();
@@ -52,7 +54,7 @@ class DownloadResponseFactory
         $promise->onCancel(function () use ($delayPromise, $destination) {
             $delayPromise->cancel();
 
-               if (file_exists($destination)) {
+            if (file_exists($destination)) {
                 @unlink($destination);
             }
         });
@@ -69,20 +71,16 @@ class DownloadResponseFactory
             return $promise;
         }
 
-        $delayPromise->then(function () use ($promise, $mock, $destination, $fileManager) {
-            if ($promise->isCancelled()) {
-                return;
-            }
-
+        $delayPromise->then(function () use ($promise, $mock, $destination, $fileManager, $onProgress) {
+            if ($promise->isCancelled()) return;
             try {
                 if ($mock->shouldFail()) {
                     $error = $mock->getError() ?? 'Mocked failure';
-
                     throw new NetworkException($error, 0, null, null, $error);
                 }
 
                 $this->ensureDirectoryExists($destination, $fileManager);
-                $this->writeFile($destination, $mock->getBody(), $fileManager);
+                $this->writeFileWithProgress($destination, $mock->getBody(), $fileManager, $onProgress);
 
                 $promise->resolve([
                     'file' => $destination,
@@ -97,6 +95,51 @@ class DownloadResponseFactory
         });
 
         return $promise;
+    }
+
+    private function writeFileWithProgress(string $destination, string $content, FileManager $fileManager, ?callable $onProgress): void
+    {
+        $total = \strlen($content);
+        if ($total === 0) {
+            if ($onProgress !== null) {
+                $onProgress(new DownloadProgress(0, 0));
+            }
+            if (file_put_contents($destination, '') === false) {
+                $exception = new HttpStreamException("Cannot write to file: {$destination}");
+                $exception->setStreamState('file_write_failed');
+                throw $exception;
+            }
+            $fileManager->trackFile($destination);
+            return;
+        }
+
+        $file = @fopen($destination, 'wb');
+        if ($file === false) {
+            $exception = new HttpStreamException("Cannot write to file: {$destination}");
+            $exception->setStreamState('file_write_failed');
+            throw $exception;
+        }
+
+        $chunkSize = 8192;
+        $downloaded = 0;
+
+        for ($i = 0; $i < $total; $i += $chunkSize) {
+            $chunk = substr($content, $i, $chunkSize);
+            if (fwrite($file, $chunk) === false) {
+                fclose($file);
+                $exception = new HttpStreamException("Cannot write to file: {$destination}");
+                $exception->setStreamState('file_write_failed');
+                throw $exception;
+            }
+            $downloaded += \strlen($chunk);
+
+            if ($onProgress !== null) {
+                $onProgress(new DownloadProgress($total, $downloaded));
+            }
+        }
+
+        fclose($file);
+        $fileManager->trackFile($destination);
     }
 
     private function ensureDirectoryExists(string $destination, FileManager $fileManager): void

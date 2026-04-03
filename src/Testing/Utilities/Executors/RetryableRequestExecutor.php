@@ -12,7 +12,9 @@ use Hibla\HttpClient\Testing\Utilities\RequestMatcher;
 use Hibla\HttpClient\Testing\Utilities\RequestRecorder;
 use Hibla\HttpClient\Testing\Utilities\ResponseFactory;
 use Hibla\HttpClient\Traits\StreamTrait;
+use Hibla\HttpClient\ValueObjects\DownloadProgress;
 use Hibla\HttpClient\ValueObjects\RetryConfig;
+use Hibla\HttpClient\ValueObjects\UploadProgress;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Hibla\Promise\Promise;
 
@@ -57,15 +59,15 @@ class RetryableRequestExecutor
         $retryPromise = $this->responseFactory->createRetryableMockedResponse($retryConfig, $mockProvider);
 
         $retryPromise->then(
-            function (Response $successfulResponse) use ($stringKeyedOptions, $finalPromise): void {
-                $this->resolveRetryResponse($successfulResponse, $stringKeyedOptions, $finalPromise);
+            function (Response $successfulResponse) use ($stringKeyedOptions, $finalPromise, $url): void {
+                $this->resolveRetryResponse($successfulResponse, $stringKeyedOptions, $finalPromise, $url);
             },
             function ($reason) use ($finalPromise): void {
                 $finalPromise->reject($reason);
             }
         );
 
-        $finalPromise->onCancel(fn () => $retryPromise->cancel());
+        $finalPromise->onCancel(fn() => $retryPromise->cancel());
 
         return $finalPromise;
     }
@@ -108,15 +110,49 @@ class RetryableRequestExecutor
     private function resolveRetryResponse(
         Response $successfulResponse,
         array $options,
-        Promise $finalPromise
+        Promise $finalPromise,
+        string $url
     ): void {
         if (isset($options['download'])) {
             $this->resolveDownload($successfulResponse, $options, $finalPromise);
+        } elseif (isset($options['upload'])) {
+            $this->resolveUpload($successfulResponse, $options, $finalPromise, $url);
         } elseif (isset($options['stream']) && $options['stream'] === true) {
             $this->resolveStream($successfulResponse, $options, $finalPromise);
         } else {
             $finalPromise->resolve($successfulResponse);
         }
+    }
+
+    private function resolveUpload(
+        Response $successfulResponse,
+        array $options,
+        Promise $finalPromise,
+        string $url
+    ): void {
+        $source = \is_string($options['upload']) ? $options['upload'] : '';
+        $onProgress = $options['on_progress'] ?? null;
+
+        if ($source !== '' && file_exists($source) && is_callable($onProgress)) {
+            $total = filesize($source);
+            if ($total === false) $total = 0;
+
+            if ($total === 0) {
+                $onProgress(new UploadProgress(0, 0));
+            } else {
+                for ($i = 0; $i < $total; $i += 8192) {
+                    $uploaded = min($total, $i + 8192);
+                    $onProgress(new UploadProgress($total, $uploaded));
+                }
+            }
+        }
+
+        $finalPromise->resolve([
+            'url' => $url,
+            'status' => $successfulResponse->status(),
+            'headers' => $successfulResponse->headers(),
+            'protocol_version' => $successfulResponse->getHttpVersion() ?? '1.1',
+        ]);
     }
 
     /**
@@ -128,11 +164,24 @@ class RetryableRequestExecutor
         array $options,
         Promise $finalPromise
     ): void {
-        $destPath = \is_string($options['download'])
-            ? $options['download']
-            : sys_get_temp_dir() . '/download_' . uniqid() . '.tmp';
+        $destPath = \is_string($options['download']) ? $options['download'] : sys_get_temp_dir() . '/dl_' . uniqid() . '.tmp';
 
-        file_put_contents($destPath, $successfulResponse->body());
+        $body = $successfulResponse->body();
+        $total = \strlen($body);
+        $onProgress = $options['on_progress'] ?? null;
+
+        if ($onProgress !== null && is_callable($onProgress)) {
+            if ($total === 0) {
+                $onProgress(new DownloadProgress(0, 0));
+            } else {
+                for ($i = 0; $i < $total; $i += 8192) {
+                    $downloaded = min($total, $i + 8192);
+                    $onProgress(new DownloadProgress($total, $downloaded));
+                }
+            }
+        }
+
+        file_put_contents($destPath, $body);
 
         $finalPromise->resolve([
             'file' => $destPath,

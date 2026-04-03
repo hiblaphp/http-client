@@ -19,6 +19,7 @@ use Hibla\HttpClient\Testing\Interfaces\AssertsRequestsExtendedInterface;
 use Hibla\HttpClient\Testing\Interfaces\AssertsRequestsInterface;
 use Hibla\HttpClient\Testing\Interfaces\AssertsSSEInterface;
 use Hibla\HttpClient\Testing\Interfaces\AssertsStreamsInterface;
+use Hibla\HttpClient\Testing\Interfaces\AssertsUploadsInterface;
 use Hibla\HttpClient\Testing\Traits\Assertions\AssertsCookies;
 use Hibla\HttpClient\Testing\Traits\Assertions\AssertsDownloads;
 use Hibla\HttpClient\Testing\Traits\Assertions\AssertsHeaders;
@@ -27,6 +28,7 @@ use Hibla\HttpClient\Testing\Traits\Assertions\AssertsRequests;
 use Hibla\HttpClient\Testing\Traits\Assertions\AssertsRequestsExtended;
 use Hibla\HttpClient\Testing\Traits\Assertions\AssertsSSE;
 use Hibla\HttpClient\Testing\Traits\Assertions\AssertsStreams;
+use Hibla\HttpClient\Testing\Traits\Assertions\AssertsUploads;
 use Hibla\HttpClient\Testing\Utilities\CookieManager;
 use Hibla\HttpClient\Testing\Utilities\FileManager;
 use Hibla\HttpClient\Testing\Utilities\NetworkSimulator;
@@ -49,7 +51,8 @@ class TestingHttpHandler extends HttpHandler implements
     AssertsDownloadsInterface,
     AssertsStreamsInterface,
     AssertsRequestBodyInterface,
-    AssertsRequestsExtendedInterface
+    AssertsRequestsExtendedInterface,
+    AssertsUploadsInterface
 {
     use StreamTrait;
     use AssertsRequests;
@@ -60,6 +63,7 @@ class TestingHttpHandler extends HttpHandler implements
     use AssertsStreams;
     use AssertsRequestBody;
     use AssertsRequestsExtended;
+    use AssertsUploads;
 
     /**
      * List of mocked HTTP requests.
@@ -408,7 +412,7 @@ class TestingHttpHandler extends HttpHandler implements
             $mockedRequests,
             $this->globalSettings,
             $retryConfig,
-            fn (string $url, array $curlOptions, ?RetryConfig $retryConfig) => parent::sendRequest($url, $curlOptions, $retryConfig)
+            fn(string $url, array $curlOptions, ?RetryConfig $retryConfig) => parent::sendRequest($url, $curlOptions, $retryConfig)
         );
     }
 
@@ -433,17 +437,42 @@ class TestingHttpHandler extends HttpHandler implements
             $mockedRequests,
             $this->globalSettings,
             null,
-            fn (string $u, array $o, ?RetryConfig $r) => parent::stream($u, $o, $onChunk)
+            fn(string $u, array $o, ?RetryConfig $r) => parent::stream($u, $o, $onChunk)
+        );
+    }
+
+    /**
+     * Intercept and Mock file uploads.
+     */
+    public function upload(string $url, string $source, array $options = [], ?callable $onProgress = null): PromiseInterface
+    {
+        $mockedRequests = array_values($this->mockedRequests);
+
+        $options['upload'] = $source;
+        if ($onProgress !== null) {
+            $options['on_progress'] = $onProgress;
+        }
+
+        return $this->requestExecutor->executeSendRequest(
+            $url,
+            $options,
+            $mockedRequests,
+            $this->globalSettings,
+            null,
+            fn(string $u, array $o, ?RetryConfig $r) => parent::upload($u, $source, $o, $onProgress)
         );
     }
 
     /**
      * Download a file to a destination path.
      *
+     * @param string $url The URL to download from.
+     * @param string|null $destination The destination path (auto-generated if null).
      * @param array<int|string, mixed> $options
+     * @param (callable(\Hibla\HttpClient\ValueObjects\DownloadProgress): void)|null $onProgress
      * @return PromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}>
      */
-    public function download(string $url, ?string $destination = null, array $options = []): PromiseInterface
+    public function download(string $url, ?string $destination = null, array $options = [], ?callable $onProgress = null): PromiseInterface
     {
         if ($destination === null) {
             $destination = $this->fileManager->createTempFile('download_' . uniqid() . '.tmp');
@@ -453,8 +482,11 @@ class TestingHttpHandler extends HttpHandler implements
 
         $mockedRequests = array_values($this->mockedRequests);
 
-        // Inject download flag for the mock handler to intercept
         $options['download'] = $destination;
+
+        if ($onProgress !== null) {
+            $options['on_progress'] = $onProgress;
+        }
 
         return $this->requestExecutor->executeSendRequest(
             $url,
@@ -462,7 +494,7 @@ class TestingHttpHandler extends HttpHandler implements
             $mockedRequests,
             $this->globalSettings,
             null,
-            fn (string $u, array $o, ?RetryConfig $r) => parent::download($u, $destination, $o)
+            fn(string $u, array $o, ?RetryConfig $r) => parent::download($u, $destination, $o, $onProgress)
         );
     }
 
@@ -488,7 +520,7 @@ class TestingHttpHandler extends HttpHandler implements
             $this->globalSettings,
             $onEvent,
             $onError,
-            fn (string $u, array $o, ?callable $onEv, ?callable $onErr, ?SSEReconnectConfig $rec) => parent::sse($u, $o, $onEv, $onErr, $rec),
+            fn(string $u, array $o, ?callable $onEv, ?callable $onErr, ?SSEReconnectConfig $rec) => parent::sse($u, $o, $onEv, $onErr, $rec),
             $reconnectConfig
         );
 

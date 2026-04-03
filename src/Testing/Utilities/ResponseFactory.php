@@ -16,6 +16,7 @@ use Hibla\HttpClient\Testing\Utilities\Factories\SSE\RetryableSSEResponseFactory
 use Hibla\HttpClient\Testing\Utilities\Factories\SSE\SSEResponseFactory;
 use Hibla\HttpClient\Testing\Utilities\Factories\StandardResponseFactory;
 use Hibla\HttpClient\Testing\Utilities\Factories\StreamingResponseFactory;
+use Hibla\HttpClient\Testing\Utilities\Factories\UploadResponseFactory;
 use Hibla\HttpClient\Testing\Utilities\Handlers\NetworkSimulationHandler;
 use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\Promise\Interfaces\PromiseInterface;
@@ -29,19 +30,20 @@ class ResponseFactory
     private DownloadResponseFactory $downloadFactory;
     private SSEResponseFactory $sseFactory;
     private RetryableSSEResponseFactory $retryableSSEFactory;
+    private UploadResponseFactory $uploadFactory;
 
     public function __construct(
         NetworkSimulator $networkSimulator,
         ?TestingHttpHandler $handler = null
     ) {
         $this->networkHandler = new NetworkSimulationHandler($networkSimulator, $handler);
-
         $this->standardFactory = new StandardResponseFactory($this->networkHandler);
         $this->retryableFactory = new RetryableResponseFactory($this->networkHandler);
         $this->streamingFactory = new StreamingResponseFactory($this->networkHandler);
         $this->downloadFactory = new DownloadResponseFactory($this->networkHandler);
         $this->sseFactory = new SSEResponseFactory($this->networkHandler);
         $this->retryableSSEFactory = new RetryableSSEResponseFactory($this->networkHandler);
+        $this->uploadFactory = new UploadResponseFactory($this->networkHandler);
     }
 
     /**
@@ -79,9 +81,19 @@ class ResponseFactory
     public function createMockedDownload(
         MockedRequest $mock,
         string $destination,
-        FileManager $fileManager
+        FileManager $fileManager,
+        ?callable $onProgress = null
     ): PromiseInterface {
-        return $this->downloadFactory->create($mock, $destination, $fileManager);
+        return $this->downloadFactory->create($mock, $destination, $fileManager, $onProgress);
+    }
+
+    public function createMockedUpload(
+        MockedRequest $mock,
+        string $source,
+        string $url,
+        ?callable $onProgress = null
+    ): PromiseInterface {
+        return $this->uploadFactory->create($mock, $source, $url, $onProgress);
     }
 
     /**

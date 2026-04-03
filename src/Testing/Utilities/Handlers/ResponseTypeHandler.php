@@ -48,6 +48,10 @@ class ResponseTypeHandler
             array_splice($mockedRequests, $match['index'], 1);
         }
 
+        if (isset($options['upload'])) {
+            return $this->handleUpload($mock, $options, $url);
+        }
+
         if (isset($options['download'])) {
             return $this->handleDownload($mock, $options);
         }
@@ -59,6 +63,18 @@ class ResponseTypeHandler
         return $this->handleStandardResponse($mock);
     }
 
+    private function handleUpload(MockedRequest $mock, array $options, string $url): PromiseInterface
+    {
+        $source = \is_string($options['upload']) ? $options['upload'] : '';
+        $onProgress = isset($options['on_progress']) && is_callable($options['on_progress']) ? $options['on_progress'] : null;
+
+        if ($source === '') {
+            throw new \InvalidArgumentException('Upload source must be a non-empty string');
+        }
+
+        return $this->responseFactory->createMockedUpload($mock, $source, $url, $onProgress);
+    }
+
     /**
      * @param array<string, mixed> $options
      * @return PromiseInterface<array<string, mixed>>
@@ -66,12 +82,13 @@ class ResponseTypeHandler
     private function handleDownload(MockedRequest $mock, array $options): PromiseInterface
     {
         $destination = \is_string($options['download']) ? $options['download'] : '';
+        $onProgress = isset($options['on_progress']) && is_callable($options['on_progress']) ? $options['on_progress'] : null;
 
         if ($destination === '') {
             throw new \InvalidArgumentException('Download destination must be a non-empty string');
         }
 
-        return $this->responseFactory->createMockedDownload($mock, $destination, $this->fileManager);
+        return $this->responseFactory->createMockedDownload($mock, $destination, $this->fileManager, $onProgress);
     }
 
     /**
@@ -83,7 +100,7 @@ class ResponseTypeHandler
         $onChunkRaw = $options['on_chunk'] ?? $options['onChunk'] ?? null;
         $onChunk = is_callable($onChunkRaw) ? $onChunkRaw : null;
 
-        $createStreamFn = $createStream ?? fn (string $body): StreamInterface => $this->createStream($body);
+        $createStreamFn = $createStream ?? fn(string $body): StreamInterface => $this->createStream($body);
 
         return $this->responseFactory->createMockedStream($mock, $onChunk, $createStreamFn);
     }
@@ -91,13 +108,13 @@ class ResponseTypeHandler
     /**
      * @return PromiseInterface<Response>
      */
-   private function handleStandardResponse(
+    private function handleStandardResponse(
         MockedRequest $mock,
     ): PromiseInterface {
         $responsePromise = $this->responseFactory->createMockedResponse($mock);
 
-        $mappedPromise = $responsePromise->then(fn (Response $response): Response => $response);
-        
+        $mappedPromise = $responsePromise->then(fn(Response $response): Response => $response);
+
         $mappedPromise->onCancel($responsePromise->cancel(...));
 
         return $mappedPromise;

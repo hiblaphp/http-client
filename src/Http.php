@@ -233,6 +233,12 @@ use Psr\Http\Message\UploadedFileInterface;
  * @method static void assertDownloadedFileSizeBetween(string $destination, int $minSize, int $maxSize) Assert that a downloaded file size is within a range.
  * @method static void assertDownloadWithMethod(string $url, string $method) Assert that a download was made using a specific HTTP method.
  *
+ * Upload assertions:
+ * @method static void assertUploadMade(string $url, string $source) Assert that an upload was made to a specific destination.
+ * @method static void assertUploadMadeToUrl(string $url) Assert that an upload was made to any destination.
+ * @method static void assertNoUploadsMade() Assert that no uploads were made.
+ * @method static void assertUploadCount(int $expected) Assert a specific number of uploads were made.
+ *
  * Stream assertions:
  * @method static void assertStreamMade(string $url) Assert that a streaming request was made.
  * @method static void assertStreamWithCallback(string $url) Assert that a streaming request was made with a chunk callback.
@@ -270,6 +276,8 @@ use Psr\Http\Message\UploadedFileInterface;
  * @method static RecordedRequest|null getLastDownload() Get the last download request.
  * @method static RecordedRequest|null getFirstDownload() Get the first download request.
  * @method static string|null getDownloadDestination(string $url) Get download destination for a specific URL.
+ * @method static array<int, RecordedRequest> getUploadRequests() Get all upload requests from history.
+ * @method static RecordedRequest|null getLastUpload() Get the last upload request.
  * @method static array<int, RecordedRequest> getStreamRequests() Get all streaming requests from history.
  * @method static RecordedRequest|null getLastStream() Get the last streaming request.
  * @method static RecordedRequest|null getFirstStream() Get the first streaming request.
@@ -507,6 +515,12 @@ class Http
             'assertDownloadedFileSize',
             'assertDownloadedFileSizeBetween',
             'assertDownloadWithMethod',
+            
+            // Upload assertions
+            'assertUploadMade',
+            'assertUploadMadeToUrl',
+            'assertNoUploadsMade',
+            'assertUploadCount',
 
             // Stream assertions
             'assertStreamMade',
@@ -545,6 +559,8 @@ class Http
             'getLastDownload',
             'getFirstDownload',
             'getDownloadDestination',
+            'getUploadRequests',
+            'getLastUpload',
             'getStreamRequests',
             'getLastStream',
             'getFirstStream',
