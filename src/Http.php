@@ -396,6 +396,22 @@ class Http
     }
 
     /**
+     * Reset the current testing state without disabling testing mode.
+     *
+     * Clears all recorded requests, mocked responses, and resets any
+     * network simulations, temporary files, or cookie state. 
+     * 
+     * Use this between test cases in a single test file to ensure each 
+     * test starts with a clean slate without having to call startTesting() again.
+     */
+    public static function resetTesting(): void
+    {
+        if (self::$testingInstance !== null) {
+            self::$testingInstance->reset();
+        }
+    }
+
+    /**
      * Disable testing mode and return to normal HTTP operations.
      *
      * Clears the testing handler and all recorded requests and mocked
