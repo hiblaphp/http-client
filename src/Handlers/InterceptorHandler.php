@@ -14,23 +14,21 @@ use function Hibla\await;
 
 /**
  * Handles the unified interceptor pipeline.
- *
- * All interceptors run inside a single master fiber per request,
- * meaning await() works freely inside any interceptor without
- * creating additional fiber overhead.
  */
 class InterceptorHandler
 {
     /**
      * @param  RequestInterface $request
      * @param  array<callable(RequestInterface, callable): mixed> $interceptors
-     * @param  callable(RequestInterface): PromiseInterface<Response> $executor
-     * @return PromiseInterface<Response>
+     * @param  callable(RequestInterface): PromiseInterface $executor
+     * @param  bool $requireResponse Whether to strictly enforce the result is a Response object.
+     * @return PromiseInterface
      */
     public function process(
         RequestInterface $request,
         array $interceptors,
         callable $executor,
+        bool $requireResponse = true
     ): PromiseInterface {
         if ($interceptors === []) {
             return $executor($request);
@@ -38,14 +36,14 @@ class InterceptorHandler
 
         $pipeline = array_reduce(
             array_reverse($interceptors),
-            static function (callable $next, callable $interceptor): callable {
-                return static function (RequestInterface $request) use ($next, $interceptor): PromiseInterface {
+            static function (callable $next, callable $interceptor) use ($requireResponse): callable {
+                return static function (RequestInterface $request) use ($next, $interceptor, $requireResponse): PromiseInterface {
                     $result = $interceptor($request, $next);
 
                     if ($result === null) {
                         throw new \LogicException(
                             'Callback passed to intercept() must return a ' . PromiseInterface::class . ' or ' . Response::class . ', ' .
-                            'got null/void. Did you forget to return $next($request) or the response?'
+                                'got null/void. Did you forget to return $next($request) or the response?'
                         );
                     }
 
@@ -56,7 +54,7 @@ class InterceptorHandler
                     if (! $result instanceof PromiseInterface) {
                         throw new \LogicException(\sprintf(
                             'Callback passed to intercept() must return a %s or %s, got %s. ' .
-                            'Did you forget to return $next($request) or the response?',
+                                'Did you forget to return $next($request) or the response?',
                             PromiseInterface::class,
                             Response::class,
                             get_debug_type($result),
@@ -64,36 +62,64 @@ class InterceptorHandler
                     }
 
                     return $result->then(
-                        static fn (mixed $resolved): Response => self::resolveResponse($resolved)
+                        static fn(mixed $resolved): mixed => self::resolveResult($resolved, $requireResponse)
                     );
                 };
             },
             $executor,
         );
 
-        return async(static function () use ($pipeline, $request): mixed {
-            return await($pipeline($request));
+        $state = new \stdClass();
+        $state->innerPromise = null;
+
+        $outerPromise = async(static function () use ($pipeline, $request, $state): mixed {
+            $state->innerPromise = $pipeline($request);
+
+            return await($state->innerPromise);
         });
+
+        if ($outerPromise instanceof PromiseInterface) {
+            $outerPromise->onCancel(function () use ($state) {
+                if ($state->innerPromise instanceof PromiseInterface && !$state->innerPromise->isSettled()) {
+                    $state->innerPromise->cancelChain();
+                }
+            });
+        }
+
+        return $outerPromise;
     }
 
     /**
-     * Assert the resolved pipeline value is a Response.
+     * Assert the resolved pipeline value matches the expected type.
      */
-    private static function resolveResponse(mixed $value): Response
+    private static function resolveResult(mixed $value, bool $requireResponse): mixed
     {
-        if ($value === null) {
-            throw new \LogicException(
-                'The ' . PromiseInterface::class . ' returned by the callback passed to intercept() ' .
-                'must resolve to a ' . Response::class . ' instance, got null/void.'
-            );
+        if ($requireResponse) {
+            if ($value === null) {
+                throw new \LogicException(
+                    'The ' . PromiseInterface::class . ' returned by the callback passed to intercept() ' .
+                        'must resolve to a ' . Response::class . ' instance, got null/void.'
+                );
+            }
+
+            if (! $value instanceof Response) {
+                throw new \LogicException(sprintf(
+                    'The %s returned by the callback passed to intercept() ' .
+                        'must resolve to a %s instance, got %s.',
+                    PromiseInterface::class,
+                    Response::class,
+                    get_debug_type($value),
+                ));
+            }
+
+            return $value;
         }
 
-        if (! $value instanceof Response) {
+        if (! is_array($value)) {
             throw new \LogicException(sprintf(
-                'The %s returned by the callback passed to intercept() ' .
-                'must resolve to a %s instance, got %s.',
+                'The %s returned by the callback passed to intercept() for a download request ' .
+                    'must resolve to an array, got %s.',
                 PromiseInterface::class,
-                Response::class,
                 get_debug_type($value),
             ));
         }

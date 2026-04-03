@@ -778,13 +778,15 @@ class HttpClient implements HttpClientInterface
     {
         return $this->intercept(
             static function (RequestInterface $request, callable $next) use ($callback): PromiseInterface {
-                /** @var callable(RequestInterface): PromiseInterface<ResponseInterface> $next */
-                /** @var PromiseInterface<ResponseInterface> $nextPromise */
+                /** @var PromiseInterface $nextPromise */
                 $nextPromise = $next($request);
 
-                /** @var PromiseInterface<ResponseInterface> $result */
-                $result = $nextPromise->then(
-                    static function (ResponseInterface $response) use ($callback): ResponseInterface|PromiseInterface {
+                return $nextPromise->then(
+                    static function (mixed $response) use ($callback): mixed {
+                        if (!$response instanceof ResponseInterface) {
+                            return $response;
+                        }
+
                         $result = $callback($response);
 
                         if ($result instanceof PromiseInterface) {
@@ -797,8 +799,6 @@ class HttpClient implements HttpClientInterface
                         return self::resolveResponse($result, false);
                     }
                 );
-
-                return $result;
             }
         );
     }
@@ -912,9 +912,9 @@ class HttpClient implements HttpClientInterface
             ->withUri(new Uri($expandedUrl));
 
         return $this->interceptorHandler->process(
-            $initialRequest,
-            $this->interceptors,
-            $this->executeRequest(...),
+            request: $initialRequest,
+            interceptors: $this->interceptors,
+            executor: $this->executeRequest(...),
         );
     }
 
@@ -923,10 +923,21 @@ class HttpClient implements HttpClientInterface
      */
     public function stream(string $url, ?callable $onChunk = null): PromiseInterface
     {
-        $options = $this->resolveTransportOptionsBuilder()
-            ->buildForStreaming($this->buildClientOptions($this->getMethod(), $url));
+        $expandedUrl = $this->expandUriTemplate($url);
+        $initialRequest = $this->request
+            ->withMethod($this->getMethod())
+            ->withUri(new Uri($expandedUrl));
 
-        return $this->resolveHandler()->stream($url, $options, $onChunk);
+        return $this->interceptorHandler->process(
+            request: $initialRequest,
+            interceptors: $this->interceptors,
+            executor: function (RequestInterface $processed) use ($onChunk) {
+                $clientOptions = $this->buildClientOptionsFromProcessed($processed);
+                $options = $this->resolveTransportOptionsBuilder()->buildForStreaming($clientOptions);
+
+                return $this->resolveHandler()->stream((string) $processed->getUri(), $options, $onChunk);
+            }
+        );
     }
 
     /**
@@ -934,6 +945,7 @@ class HttpClient implements HttpClientInterface
      */
     public function streamPost(string $url, mixed $body = null, ?callable $onChunk = null): PromiseInterface
     {
+        $expandedUrl = $this->expandUriTemplate($url);
         $postBody = $this->request->getBody();
 
         if ($body !== null) {
@@ -942,21 +954,47 @@ class HttpClient implements HttpClientInterface
             $postBody->rewind();
         }
 
-        $options = $this->resolveTransportOptionsBuilder()
-            ->buildForStreaming($this->buildClientOptions('POST', $url, $postBody));
+        $initialRequest = $this->request
+            ->withMethod('POST')
+            ->withUri(new Uri($expandedUrl))
+            ->withBody($postBody);
 
-        return $this->resolveHandler()->stream($url, $options, $onChunk);
+        return $this->interceptorHandler->process(
+            request: $initialRequest,
+            interceptors: $this->interceptors,
+            executor: function (RequestInterface $processed) use ($onChunk) {
+                $clientOptions = $this->buildClientOptionsFromProcessed($processed);
+                $options = $this->resolveTransportOptionsBuilder()->buildForStreaming($clientOptions);
+
+                return $this->resolveHandler()->stream((string) $processed->getUri(), $options, $onChunk);
+            }
+        );
     }
 
     /**
      * @inheritDoc
      */
+    /**
+     * @inheritDoc
+     */
     public function download(string $url, string $destination): PromiseInterface
     {
-        $options = $this->resolveTransportOptionsBuilder()
-            ->buildForDownload($this->buildClientOptions($this->getMethod(), $url), $destination);
+        $expandedUrl = $this->expandUriTemplate($url);
+        $initialRequest = $this->request
+            ->withMethod($this->getMethod())
+            ->withUri(new Uri($expandedUrl));
 
-        return $this->resolveHandler()->download($url, $destination, $options);
+        return $this->interceptorHandler->process(
+            request: $initialRequest,
+            interceptors: $this->interceptors,
+            executor: function (RequestInterface $processed) use ($destination) {
+                $clientOptions = $this->buildClientOptionsFromProcessed($processed);
+                $options = $this->resolveTransportOptionsBuilder()->buildForDownload($clientOptions, $destination);
+
+                return $this->resolveHandler()->download((string) $processed->getUri(), $destination, $options);
+            },
+            requireResponse: false
+        );
     }
 
     /**
@@ -986,10 +1024,10 @@ class HttpClient implements HttpClientInterface
         $curlOptions = $this->resolveTransportOptionsBuilder()->buildForSSE($clientOptions);
 
         $connector = new SSEConnector(
-            $this->interceptorHandler,
-            $this->resolveHandler(),
-            $this->interceptors,
-            $initialRequest
+            interceptorHandler: $this->interceptorHandler,
+            httpHandler: $this->resolveHandler(),
+            interceptors: $this->interceptors,
+            request: $initialRequest
         );
 
         return new SSEBuilder($expandedUrl, $curlOptions, $connector);
@@ -1008,9 +1046,24 @@ class HttpClient implements HttpClientInterface
      * implementations being passed in; in practice $processed is always a
      * Request produced by send().
      *
-     * @return PromiseInterface<Response>
+     * @return PromiseInterface<ResponseInterface>
      */
     private function executeRequest(RequestInterface $processed): PromiseInterface
+    {
+        $clientOptions = $this->buildClientOptionsFromProcessed($processed);
+        $transportOptions = $this->resolveTransportOptionsBuilder()->build($clientOptions);
+
+        return $this->resolveHandler()->sendRequest(
+            (string) $processed->getUri(),
+            $transportOptions,
+            $this->retryConfig,
+        );
+    }
+
+    /**
+     * Builds ClientOptions from a processed RequestInterface (post-interceptors).
+     */
+    private function buildClientOptionsFromProcessed(RequestInterface $processed): ClientOptions
     {
         $auth = $processed instanceof Request ? $processed->getAuth() : null;
         $bodyOptions = $processed instanceof Request ? $processed->getOptions() : [];
@@ -1019,7 +1072,7 @@ class HttpClient implements HttpClientInterface
         /** @var array<string, array<string>> $headers */
         $headers = $processed->getHeaders();
 
-        $clientOptions = new ClientOptions(
+        return new ClientOptions(
             method: $processed->getMethod(),
             url: (string) $processed->getUri(),
             headers: $headers,
@@ -1036,14 +1089,6 @@ class HttpClient implements HttpClientInterface
             auth: $auth,
             additionalOptions: array_merge($bodyOptions, $this->curlOptions),
             retryConfig: $this->retryConfig,
-        );
-
-        $transportOptions = $this->resolveTransportOptionsBuilder()->build($clientOptions);
-
-        return $this->resolveHandler()->sendRequest(
-            (string) $processed->getUri(),
-            $transportOptions,
-            $this->retryConfig,
         );
     }
 

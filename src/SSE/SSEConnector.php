@@ -10,6 +10,7 @@ use Hibla\HttpClient\Interfaces\RequestInterface;
 use Hibla\HttpClient\Interfaces\SSEResponseInterface;
 use Hibla\HttpClient\Request;
 use Hibla\Promise\Interfaces\PromiseInterface;
+use Hibla\HttpClient\Interfaces\Execution\HttpInterceptorInterface;
 
 /**
  * Bridges an SSE connection attempt through the request interceptor pipeline.
@@ -18,6 +19,12 @@ use Hibla\Promise\Interfaces\PromiseInterface;
  */
 final class SSEConnector
 {
+    /**
+     * @param InterceptorHandler $interceptorHandler The interceptor handler to use for the request pipeline
+     * @param HttpHandler $httpHandler The HTTP handler to use for the request
+     * @param array<HttpInterceptorInterface> $interceptors The interceptors to use for the request pipeline
+     * @param Request $request The initial request to use for the connection attempt
+     */
     public function __construct(
         private readonly InterceptorHandler $interceptorHandler,
         private readonly HttpHandler $httpHandler,
