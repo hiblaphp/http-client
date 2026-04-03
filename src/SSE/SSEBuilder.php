@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Hibla\HttpClient\SSE;
 
 use Hibla\HttpClient\Exceptions\NetworkException;
-use Hibla\HttpClient\Handlers\HttpHandler;
 use Hibla\HttpClient\Interfaces\SSE\SSEBuilderInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
@@ -47,14 +46,16 @@ class SSEBuilder implements SSEBuilderInterface
     private ?SSEDataFormat $dataFormat = null;
 
     /**
-     * @param array<int|string, mixed> $curlOptions Pre-built transport options from the Request.
+     * @param string $url The target SSE endpoint.
+     * @param array<int|string, mixed> $curlOptions Pre-built transport options.
+     * @param (callable(string, array, ?callable, ?callable, ?SSEReconnectConfig): PromiseInterface) $connector
+     *        A closure provided by the client to execute the connection attempt.
      */
     public function __construct(
         private readonly string $url,
-        private readonly HttpHandler $handler,
         private readonly array $curlOptions,
-    ) {
-    }
+        private readonly mixed $connector,
+    ) {}
 
     /**
      *  @inheritDoc
@@ -152,7 +153,7 @@ class SSEBuilder implements SSEBuilderInterface
     {
         $control = new SSEControl();
 
-        $promise = $this->handler->sse(
+        $promise = ($this->connector)(
             $this->url,
             $this->curlOptions,
             $this->buildEventCallback($control),

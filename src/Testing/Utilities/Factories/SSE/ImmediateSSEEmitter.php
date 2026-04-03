@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Testing\Utilities\Factories\SSE;
 
+use Hibla\EventLoop\Loop;
 use Hibla\HttpClient\Exceptions\HttpStreamException;
 use Hibla\HttpClient\SSE\SSEResponse;
 use Hibla\HttpClient\Stream;
@@ -49,22 +50,24 @@ class ImmediateSSEEmitter
         $sseContent = $this->formatter->formatEvents($mock->getSSEEvents());
         $sseResponse->getStream()->write($sseContent);
 
-        $events = $sseResponse->parseEvents($sseContent);
-
-        foreach ($events as $event) {
-            if ($event->id !== null) {
-                $lastEventId = $event->id;
-            }
-
-            if ($event->retry !== null) {
-                $retryInterval = $event->retry;
-            }
-
-            if ($onEvent !== null) {
-                $onEvent($event);
-            }
-        }
-
         $promise->resolve($sseResponse);
+
+        Loop::addTimer(0, function () use ($sseResponse, $sseContent, $onEvent, &$lastEventId, &$retryInterval) {
+            $events = $sseResponse->parseEvents($sseContent);
+
+            foreach ($events as $event) {
+                if ($event->id !== null) {
+                    $lastEventId = $event->id;
+                }
+
+                if ($event->retry !== null) {
+                    $retryInterval = $event->retry;
+                }
+
+                if ($onEvent !== null) {
+                    $onEvent($event);
+                }
+            }
+        });
     }
 }

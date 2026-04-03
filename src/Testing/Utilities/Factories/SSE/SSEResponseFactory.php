@@ -97,12 +97,7 @@ class SSEResponseFactory
             return $promise;
         }
 
-        $timerId = Loop::addTimer($totalDelay, function () use (
-            $promise,
-            $mock,
-            $onEvent,
-            $onError,
-        ) {
+        $timerId = Loop::addTimer($totalDelay, function () use ($promise, $mock, $onEvent, $onError) {
             if ($promise->isCancelled()) {
                 return;
             }
@@ -113,12 +108,10 @@ class SSEResponseFactory
                     if ($onError !== null) {
                         $onError($error);
                     }
-
                     throw new NetworkException($error);
                 }
 
                 $sseContent = $this->formatter->formatEvents($mock->getSSEEvents());
-
                 $resource = fopen('php://temp', 'w+b');
                 if ($resource === false) {
                     throw new HttpStreamException('Failed to create temporary stream');
@@ -128,20 +121,18 @@ class SSEResponseFactory
                 rewind($resource);
                 $stream = new Stream($resource);
 
-                $sseResponse = new SSEResponse(
-                    $stream,
-                    $mock->getStatusCode(),
-                    $mock->getHeaders()
-                );
-
-                if ($onEvent !== null) {
-                    foreach ($mock->getSSEEvents() as $eventData) {
-                        $event = $this->formatter->createSSEEvent($eventData);
-                        $onEvent($event);
-                    }
-                }
+                $sseResponse = new SSEResponse($stream, $mock->getStatusCode(), $mock->getHeaders());
 
                 $promise->resolve($sseResponse);
+
+                Loop::addTimer(0, function () use ($mock, $onEvent) {
+                    if ($onEvent !== null) {
+                        foreach ($mock->getSSEEvents() as $eventData) {
+                            $event = $this->formatter->createSSEEvent($eventData);
+                            $onEvent($event);
+                        }
+                    }
+                });
             } catch (Throwable $e) {
                 $promise->reject($e);
             }
