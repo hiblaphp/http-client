@@ -12,6 +12,7 @@ use Hibla\HttpClient\Stream;
 use Hibla\HttpClient\StreamingResponse;
 use Hibla\HttpClient\ValueObjects\DownloadProgress;
 use Hibla\HttpClient\ValueObjects\TransferProgress;
+use Hibla\HttpClient\ValueObjects\UploadProgress;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Hibla\Promise\Promise;
 
@@ -194,6 +195,111 @@ class StreamingHandler implements StreamingHandlerInterface
             }
             if (file_exists($destination)) {
                 unlink($destination);
+            }
+        });
+
+        return $promise;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function uploadFile(
+        string $url,
+        string $source,
+        array $options = [],
+        ?callable $onProgress = null,
+    ): PromiseInterface {
+        /** @var Promise<array{url: string, status: int, headers: array<mixed>, protocol_version: string|null}> $promise */
+        $promise = new Promise();
+
+        if (! file_exists($source)) {
+            $exception = new HttpStreamException("Cannot open file for reading: {$source}", 0, null, $url);
+            $exception->setStreamState('file_open_failed');
+            $promise->reject($exception);
+
+            return $promise;
+        }
+
+        $fileSize = filesize($source);
+        if ($fileSize === false) {
+            $exception = new HttpStreamException("Cannot determine file size: {$source}", 0, null, $url);
+            $exception->setStreamState('file_size_failed');
+            $promise->reject($exception);
+
+            return $promise;
+        }
+
+        $file = fopen($source, 'rb');
+        if ($file === false) {
+            $exception = new HttpStreamException("Cannot open file for reading: {$source}", 0, null, $url);
+            $exception->setStreamState('file_open_failed');
+            $promise->reject($exception);
+
+            return $promise;
+        }
+
+        $curlOnlyOptions = array_filter($options, 'is_int', ARRAY_FILTER_USE_KEY);
+
+        $uploadOptions = array_replace($curlOnlyOptions, [
+            CURLOPT_UPLOAD        => true,
+            CURLOPT_INFILESIZE    => $fileSize,
+            CURLOPT_READFUNCTION  => function ($ch, $fd, int $length) use ($file): string {
+                return (string) fread($file, $length);
+            },
+            CURLOPT_NOPROGRESS => false,
+            CURLOPT_PROGRESSFUNCTION => function (
+                $ch,
+                int $downloadTotal,
+                int $downloaded,
+                int $uploadTotal,
+                int $uploaded,
+            ) use ($promise, $onProgress): int {
+                if ($promise->isCancelled()) {
+                    return 1;
+                }
+
+                if ($onProgress !== null && $uploadTotal > 0) {
+                    $onProgress(new UploadProgress($uploadTotal, $uploaded));
+                }
+
+                return 0;
+            },
+        ]);
+
+        $requestId = Loop::addCurlRequest(
+            $url,
+            $uploadOptions,
+            function (?string $error, $response, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $promise, $file): void {
+                fclose($file);
+
+                if ($promise->isCancelled()) {
+                    return;
+                }
+
+                if ($error !== null) {
+                    $promise->reject(new NetworkException(
+                        "Upload failed: {$error}",
+                        0,
+                        null,
+                        $url,
+                        $error
+                    ));
+                } else {
+                    $promise->resolve([
+                        'url'              => $url,
+                        'status'           => $httpCode ?? 0,
+                        'headers'          => $headers,
+                        'protocol_version' => $httpVersion,
+                    ]);
+                }
+            }
+        );
+
+        $promise->onCancel(function () use ($requestId, $file): void {
+            Loop::cancelCurlRequest($requestId);
+            if (\is_resource($file)) {
+                fclose($file);
             }
         });
 

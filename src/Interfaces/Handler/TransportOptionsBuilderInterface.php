@@ -49,6 +49,18 @@ interface TransportOptionsBuilderInterface
     public function buildForDownload(ClientOptions $options, string $destination): mixed;
 
     /**
+     * Build options for a non-buffered file upload request.
+     *
+     * The $source path is included so the transport layer can open
+     * the file handle and determine its size before the transfer begins.
+     *
+     * @param ClientOptions $options
+     * @param string $source Absolute path of the file to upload.
+     * @return TOptions
+     */
+    public function buildForUpload(ClientOptions $options, string $source): mixed;
+
+    /**
      * Build options for a Server-Sent Events connection.
      *
      * SSE connections require specific headers (Accept: text/event-stream,

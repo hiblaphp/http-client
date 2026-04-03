@@ -7,6 +7,8 @@ namespace Hibla\HttpClient\Interfaces\Handler;
 use Hibla\HttpClient\StreamingResponse;
 use Hibla\HttpClient\ValueObjects\DownloadProgress;
 use Hibla\Promise\Interfaces\PromiseInterface;
+use Hibla\HttpClient\ValueObjects\UploadProgress;
+
 
 /**
  * Contract for non-blocking HTTP streaming and file download operations.
@@ -58,6 +60,30 @@ interface StreamingHandlerInterface
         string $url,
         string $destination,
         array $options = [],
-        ?callable $onProgress = null,  
+        ?callable $onProgress = null,
+    ): PromiseInterface;
+
+    /**
+     * Upload a local file to a remote URL using a non-buffered chunked read.
+     *
+     * Returns a promise that resolves to a metadata array once the
+     * transfer is complete.
+     *
+     * @param  string $url The fully resolved target URL.
+     * @param  string $source Absolute path of the file to upload.
+     * @param  array<int|string, mixed> $options Transport-specific options produced by TransportOptionsBuilderInterface.
+     * @param  (callable(UploadProgress): void)|null $onProgress
+     * @return PromiseInterface<array{
+     *     url: string,
+     *     status: int,
+     *     headers: array<mixed>,
+     *     protocol_version: string|null
+     * }>
+     */
+    public function uploadFile(
+        string $url,
+        string $source,
+        array $options = [],
+        ?callable $onProgress = null,
     ): PromiseInterface;
 }

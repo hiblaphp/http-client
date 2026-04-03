@@ -107,7 +107,7 @@ class InterceptorHandler
             }
 
             if (! $value instanceof Response) {
-                throw new \LogicException(sprintf(
+                throw new \LogicException(\sprintf(
                     'The %s returned by the callback passed to intercept() ' .
                         'must resolve to a %s instance, got %s.',
                     PromiseInterface::class,
@@ -120,7 +120,7 @@ class InterceptorHandler
         }
 
         if (! is_array($value)) {
-            throw new \LogicException(sprintf(
+            throw new \LogicException(\sprintf(
                 'The %s returned by the callback passed to intercept() for a download request ' .
                     'must resolve to an array, got %s.',
                 PromiseInterface::class,

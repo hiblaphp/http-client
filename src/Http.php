@@ -84,6 +84,7 @@ use Psr\Http\Message\UploadedFileInterface;
  * @method static PromiseInterface<StreamingResponseInterface> streamPost(string $url, mixed $body = null, ?callable $onChunk = null) Streams the response body of a POST request.
  * @method static PromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}> download(string $url, string $destination, ?callable $onProgress = null) Downloads a file to the given destination path, with an optional progress callback.
  * @method static PromiseInterface<ResponseInterface> send(string $method, string $url) Dispatches the configured request.
+ * @method static PromiseInterface<array{url: string, status: int, headers: array<mixed>, protocol_version: string|null}> upload(string $url, string $source, ?callable $onProgress = null) Uploads a local file to the given URL using a non-buffered chunked read, with an optional progress callback.
  * @method static SSEBuilderInterface sse(string $url) Create a fluent SSE connection builder.
  *
  * Header configuration methods (ConfiguresHeadersInterface):

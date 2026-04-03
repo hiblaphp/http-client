@@ -22,6 +22,7 @@ use Hibla\HttpClient\SSE\SSEReconnectConfig;
 use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Hibla\HttpClient\ValueObjects\DownloadProgress;
+use Hibla\HttpClient\ValueObjects\UploadProgress;
 
 /**
  * Core handler for creating and dispatching asynchronous HTTP requests.
@@ -112,6 +113,22 @@ class HttpHandler
     public function download(string $url, string $destination, array $options = [], ?callable $onProgress = null): PromiseInterface
     {
         return $this->streamingHandler->downloadFile($url, $destination, $options, $onProgress);
+    }
+
+    /**
+     * Asynchronously uploads a file from a local path to a URL.
+     *
+     * @param  string  $url  The URL to upload the file to.
+     * @param  string  $source  The local path of the file to upload.
+     * @param  array<int|string, mixed>  $options  Request options for internal use and testing extensions.
+     * @param  (callable(UploadProgress): void)|null  $onProgress
+     * @return PromiseInterface<array{url: string, status: int, headers: array<mixed>, protocol_version: string|null}>
+     *
+     * @internal This method is designed for extension by TestingHttpHandler.
+     */
+    public function upload(string $url, string $source, array $options = [], ?callable $onProgress = null): PromiseInterface
+    {
+        return $this->streamingHandler->uploadFile($url, $source, $options, $onProgress);
     }
 
     /**

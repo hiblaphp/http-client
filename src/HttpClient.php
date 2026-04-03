@@ -88,6 +88,8 @@ class HttpClient implements HttpClientInterface
 
     private bool $verifySSL = true;
 
+    private bool $methodExplicitlySet = false;
+
     private string $protocol = '2.0';
 
     private ?HttpHandler $handler = null;
@@ -269,7 +271,10 @@ class HttpClient implements HttpClientInterface
      */
     public function withMethod(string $method): static
     {
-        return $this->withUpdatedRequest(fn($r) => $r->withMethod($method));
+        $new = $this->withUpdatedRequest(fn($r) => $r->withMethod($method));
+        $new->methodExplicitlySet = true;
+
+        return $new;
     }
 
     /**
@@ -990,6 +995,36 @@ class HttpClient implements HttpClientInterface
     /**
      * @inheritDoc
      */
+    public function upload(string $url, string $source, ?callable $onProgress = null): PromiseInterface
+    {
+        $expandedUrl = $this->expandUriTemplate($url);
+        $method = $this->methodExplicitlySet ? $this->getMethod() : 'PUT';
+        $initialRequest = $this->request
+            ->withMethod($method)
+            ->withUri(new Uri($expandedUrl));
+
+        return $this->interceptorHandler->process(
+            request: $initialRequest,
+            interceptors: $this->interceptors,
+            executor: function (RequestInterface $processed) use ($source, $onProgress) {
+                $effectiveTimeout = $this->timeoutExplicitlySet ? $this->timeout : 0;
+                $clientOptions = $this->buildClientOptionsFromProcessed($processed, timeout: $effectiveTimeout);
+                $options = $this->resolveTransportOptionsBuilder()->buildForUpload($clientOptions, $source);
+
+                return $this->resolveHandler()->upload(
+                    (string) $processed->getUri(),
+                    $source,
+                    $options,
+                    $onProgress,
+                );
+            },
+            requireResponse: false
+        );
+    }
+
+    /**
+     * @inheritDoc
+     */
     public function download(string $url, string $destination, ?callable $onProgress = null): PromiseInterface
     {
         $expandedUrl = $this->expandUriTemplate($url);
@@ -1001,7 +1036,8 @@ class HttpClient implements HttpClientInterface
             request: $initialRequest,
             interceptors: $this->interceptors,
             executor: function (RequestInterface $processed) use ($destination, $onProgress) {
-                $clientOptions = $this->buildClientOptionsFromProcessed($processed);
+                $effectiveTimeout = $this->timeoutExplicitlySet ? $this->timeout : 0;
+                $clientOptions = $this->buildClientOptionsFromProcessed($processed, timeout: $effectiveTimeout);
                 $options = $this->resolveTransportOptionsBuilder()->buildForDownload($clientOptions, $destination);
 
                 return $this->resolveHandler()->download(
@@ -1022,8 +1058,12 @@ class HttpClient implements HttpClientInterface
     {
         $expandedUrl = $this->expandUriTemplate($url);
 
+        $method = $this->methodExplicitlySet
+            ? $this->getMethod()
+            : ($this->request->getBody()->getSize() > 0 ? 'POST' : 'GET');
+
         $initialRequest = $this->request
-            ->withMethod($this->request->getBody()->getSize() > 0 ? 'POST' : 'GET')
+            ->withMethod($method)
             ->withUri(new Uri($expandedUrl));
 
         $effectiveTimeout = $this->timeoutExplicitlySet ? $this->timeout : 0;
@@ -1075,8 +1115,10 @@ class HttpClient implements HttpClientInterface
     /**
      * Builds ClientOptions from a processed RequestInterface (post-interceptors).
      */
-    private function buildClientOptionsFromProcessed(RequestInterface $processed): ClientOptions
-    {
+    private function buildClientOptionsFromProcessed(
+        RequestInterface $processed,
+        ?int $timeout = null,
+    ): ClientOptions {
         $auth = $processed instanceof Request ? $processed->getAuth() : null;
         $bodyOptions = $processed instanceof Request ? $processed->getOptions() : [];
         $userAgent = $processed instanceof Request ? $processed->getUserAgent() : null;
@@ -1089,7 +1131,7 @@ class HttpClient implements HttpClientInterface
             url: (string) $processed->getUri(),
             headers: $headers,
             body: $processed->getBody(),
-            timeout: $this->timeout,
+            timeout: $timeout ?? $this->timeout,
             connectTimeout: $this->connectTimeout,
             followRedirects: $this->followRedirects,
             maxRedirects: $this->maxRedirects,

@@ -58,7 +58,7 @@ class CurlOptionsBuilder implements TransportOptionsBuilderInterface
 
         $stringKeyOptions = array_filter(
             $options->additionalOptions,
-            fn ($key) => \is_string($key),
+            fn($key) => \is_string($key),
             ARRAY_FILTER_USE_KEY
         );
 
@@ -86,6 +86,20 @@ class CurlOptionsBuilder implements TransportOptionsBuilderInterface
         $curlOptions = $this->build($options);
 
         unset($curlOptions[CURLOPT_HEADER]);
+
+        return $curlOptions;
+    }
+
+    /**
+     * @return array<int|string, mixed>
+     */
+    public function buildForUpload(ClientOptions $options, string $source): array
+    {
+        $curlOptions = $this->build($options);
+
+        unset($curlOptions[CURLOPT_HEADER]);
+
+        $curlOptions['_source'] = $source;
 
         return $curlOptions;
     }
