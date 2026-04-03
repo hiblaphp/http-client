@@ -14,7 +14,7 @@ use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
  * the underlying CookieJar is a **shared mutable object**.
  *
  * If multiple client instances share the same CookieJar instance, modifications
- * to that jar (via clearCookies, cookieWithAttributes, or receiving a 
+ * to that jar (via clearCookies, cookieWithAttributes, or receiving a
  * Set-Cookie response) will affect all client instances sharing that jar.
  */
 interface ConfiguresCookiesInterface
@@ -24,8 +24,8 @@ interface ConfiguresCookiesInterface
      *
      * The value is percent-encoded before being written to the header.
      * Calling this method multiple times appends each cookie with '; '.
-     * 
-     * Note: This modifies the request-level state of the returned instance 
+     *
+     * Note: This modifies the request-level state of the returned instance
      * only and does not affect the active CookieJar.
      */
     public function withCookie(string $name, string $value): static;
@@ -50,8 +50,8 @@ interface ConfiguresCookiesInterface
      *
      * Useful for sharing a jar across multiple requests or providing
      * a custom implementation (e.g. persistent, encrypted).
-     * 
-     * Once set, this specific jar instance is shared across all clones 
+     *
+     * Once set, this specific jar instance is shared across all clones
      * of this client until replaced.
      */
     public function useCookieJar(CookieJarInterface $cookieJar): static;
@@ -61,7 +61,7 @@ interface ConfiguresCookiesInterface
      *
      * This is a **mutable operation** on the underlying jar object.
      * All client instances sharing this jar will see their cookies removed.
-     * 
+     *
      * No-op when no jar is configured. Does not remove one-shot cookies
      * set via withCookie() / withCookies().
      */
@@ -71,9 +71,9 @@ interface ConfiguresCookiesInterface
      * Add a cookie with full attribute control to the active jar.
      *
      * Initialises an in-memory jar if one is not already configured.
-     * 
+     *
      * This is a **mutable operation** on the underlying jar object.
-     * All client instances sharing this jar will immediately have access 
+     * All client instances sharing this jar will immediately have access
      * to this cookie.
      *
      * Recognised $attributes keys: domain, path, expires, maxAge,
@@ -85,8 +85,8 @@ interface ConfiguresCookiesInterface
 
     /**
      * Return the currently active cookie jar, or null if none is configured.
-     * 
-     * Since the jar is mutable, you can retrieve it and manipulate it 
+     *
+     * Since the jar is mutable, you can retrieve it and manipulate it
      * directly outside of the fluent builder if needed.
      */
     public function getCookieJar(): ?CookieJarInterface;

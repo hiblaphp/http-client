@@ -41,7 +41,7 @@ interface ResponseInterface extends Psr7ResponseInterface
 
     /**
      * Decode the response body as a SimpleXMLElement.
-     * 
+     *
      * Returns null if the body is empty or not valid XML.
      */
     public function xml(): ?\SimpleXMLElement;

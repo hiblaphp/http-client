@@ -44,6 +44,7 @@ class UploadResponseFactory
             $exception = new HttpStreamException("Cannot open file for reading: {$source}", 0, null, $url);
             $exception->setStreamState('file_open_failed');
             $promise->reject($exception);
+
             return $promise;
         }
 
@@ -56,31 +57,38 @@ class UploadResponseFactory
 
         if ($networkConditions['should_fail']) {
             $delayPromise->then(function () use ($promise, $networkConditions, $url) {
-                if ($promise->isCancelled()) return;
+                if ($promise->isCancelled()) {
+                    return;
+                }
                 $error = $networkConditions['error_message'] ?? 'Network failure';
                 $promise->reject(new NetworkException($error, 0, null, $url, $error));
             });
+
             return $promise;
         }
 
         $delayPromise->then(function () use ($promise, $mock, $source, $url, $onProgress) {
-            if ($promise->isCancelled()) return;
+            if ($promise->isCancelled()) {
+                return;
+            }
 
             try {
                 if ($mock->shouldFail()) {
                     $error = $mock->getError() ?? 'Mocked failure';
+
                     throw new NetworkException($error, 0, null, $url, $error);
                 }
 
-
                 if ($onProgress !== null) {
                     $total = filesize($source);
-                    if ($total === false) $total = 0;
+                    if ($total === false) {
+                        $total = 0;
+                    }
 
                     if ($total === 0) {
                         $onProgress(new UploadProgress(0, 0));
                     } else {
-                        $chunkSize = 8192; 
+                        $chunkSize = 8192;
                         for ($i = 0; $i < $total; $i += $chunkSize) {
                             $uploaded = min($total, $i + $chunkSize);
                             $onProgress(new UploadProgress($total, $uploaded));
@@ -108,6 +116,7 @@ class UploadResponseFactory
         foreach ($headers as $name => $value) {
             $normalized[$name] = \is_array($value) ? implode(', ', $value) : $value;
         }
+
         return $normalized;
     }
 }

@@ -11,6 +11,7 @@ trait AssertsUploads
     use AssertionHandler;
 
     abstract public function getRequestHistory(): array;
+
     abstract protected function getRequestMatcher();
 
     public function assertUploadMade(string $url, string $source): void
@@ -68,12 +69,14 @@ trait AssertsUploads
                 $uploads[] = $request;
             }
         }
+
         return $uploads;
     }
 
     public function getLastUpload(): ?RecordedRequest
     {
         $uploads = $this->getUploadRequests();
+
         return $uploads === [] ? null : end($uploads);
     }
 }

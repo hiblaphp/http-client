@@ -11,7 +11,6 @@ use Hibla\HttpClient\Interfaces\Handler\StreamingHandlerInterface;
 use Hibla\HttpClient\Stream;
 use Hibla\HttpClient\StreamingResponse;
 use Hibla\HttpClient\ValueObjects\DownloadProgress;
-use Hibla\HttpClient\ValueObjects\TransferProgress;
 use Hibla\HttpClient\ValueObjects\UploadProgress;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Hibla\Promise\Promise;
@@ -242,9 +241,9 @@ class StreamingHandler implements StreamingHandlerInterface
         $curlOnlyOptions = array_filter($options, 'is_int', ARRAY_FILTER_USE_KEY);
 
         $uploadOptions = array_replace($curlOnlyOptions, [
-            CURLOPT_UPLOAD        => true,
-            CURLOPT_INFILESIZE    => $fileSize,
-            CURLOPT_READFUNCTION  => function ($ch, $fd, int $length) use ($file): string {
+            CURLOPT_UPLOAD => true,
+            CURLOPT_INFILESIZE => $fileSize,
+            CURLOPT_READFUNCTION => function ($ch, $fd, int $length) use ($file): string {
                 return (string) fread($file, $length);
             },
             CURLOPT_NOPROGRESS => false,
@@ -287,9 +286,9 @@ class StreamingHandler implements StreamingHandlerInterface
                     ));
                 } else {
                     $promise->resolve([
-                        'url'              => $url,
-                        'status'           => $httpCode ?? 0,
-                        'headers'          => $headers,
+                        'url' => $url,
+                        'status' => $httpCode ?? 0,
+                        'headers' => $headers,
                         'protocol_version' => $httpVersion,
                     ]);
                 }

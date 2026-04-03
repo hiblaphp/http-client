@@ -19,10 +19,10 @@ use Hibla\HttpClient\Interfaces\StreamingResponseInterface;
 use Hibla\HttpClient\SSE\CancelableSSEPromise;
 use Hibla\HttpClient\SSE\SSEEvent;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
-use Hibla\HttpClient\ValueObjects\RetryConfig;
-use Hibla\Promise\Interfaces\PromiseInterface;
 use Hibla\HttpClient\ValueObjects\DownloadProgress;
+use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\HttpClient\ValueObjects\UploadProgress;
+use Hibla\Promise\Interfaces\PromiseInterface;
 
 /**
  * Core handler for creating and dispatching asynchronous HTTP requests.

@@ -6,11 +6,11 @@ namespace Hibla\HttpClient\SSE;
 
 use Hibla\HttpClient\Handlers\HttpHandler;
 use Hibla\HttpClient\Handlers\InterceptorHandler;
+use Hibla\HttpClient\Interfaces\Execution\HttpInterceptorInterface;
 use Hibla\HttpClient\Interfaces\RequestInterface;
 use Hibla\HttpClient\Interfaces\SSEResponseInterface;
 use Hibla\HttpClient\Request;
 use Hibla\Promise\Interfaces\PromiseInterface;
-use Hibla\HttpClient\Interfaces\Execution\HttpInterceptorInterface;
 
 /**
  * Bridges an SSE connection attempt through the request interceptor pipeline.

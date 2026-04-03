@@ -202,6 +202,7 @@ class Response extends Message implements ResponseInterface
 
             if ($xml === false) {
                 libxml_clear_errors();
+
                 return null;
             }
 

@@ -108,6 +108,7 @@ class SSEResponseFactory
                     if ($onError !== null) {
                         $onError($error);
                     }
+
                     throw new NetworkException($error);
                 }
 

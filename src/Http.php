@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient;
 
-use Hibla\HttpClient\ValueObjects\RetryConfig;
-use Hibla\HttpClient\ValueObjects\DownloadProgress;
 use Hibla\HttpClient\Handlers\HttpHandler;
 use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
 use Hibla\HttpClient\Interfaces\HttpClientInterface;
@@ -15,6 +13,7 @@ use Hibla\HttpClient\Interfaces\StreamingResponseInterface;
 use Hibla\HttpClient\Testing\MockRequestBuilder;
 use Hibla\HttpClient\Testing\TestingHttpHandler;
 use Hibla\HttpClient\Testing\Utilities\RecordedRequest;
+use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Psr\Http\Message\UploadedFileInterface;
 
@@ -175,7 +174,7 @@ use Psr\Http\Message\UploadedFileInterface;
  * @method static HttpClientInterface withMethod(string $method) Return an instance with the provided HTTP method.
  * @method static Uri getUri() Retrieves the URI instance.
  * @method static HttpClientInterface withUri(Uri $uri, bool $preserveHost = false) Returns an instance with the provided URI.
- * 
+ *
  * Xml methods:
  * @method static HttpClientInterface asXml() Start building a request with Content-Type: application/xml.
  * @method static HttpClientInterface withXml(string|\SimpleXMLElement $xml) Start building a request with XML body.
@@ -413,9 +412,9 @@ class Http
      * Reset the current testing state without disabling testing mode.
      *
      * Clears all recorded requests, mocked responses, and resets any
-     * network simulations, temporary files, or cookie state. 
-     * 
-     * Use this between test cases in a single test file to ensure each 
+     * network simulations, temporary files, or cookie state.
+     *
+     * Use this between test cases in a single test file to ensure each
      * test starts with a clean slate without having to call startTesting() again.
      */
     public static function resetTesting(): void
@@ -515,7 +514,7 @@ class Http
             'assertDownloadedFileSize',
             'assertDownloadedFileSizeBetween',
             'assertDownloadWithMethod',
-            
+
             // Upload assertions
             'assertUploadMade',
             'assertUploadMadeToUrl',

@@ -162,7 +162,7 @@ class StandardRequestExecutor
             }
 
             return $response;
-        }); 
+        });
 
         $mappedPromise->onCancel($promise->cancel(...));
 

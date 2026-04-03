@@ -6,11 +6,11 @@ namespace Hibla\HttpClient\Testing;
 
 use Hibla\HttpClient\Handlers\HttpHandler;
 use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
+use Hibla\HttpClient\Interfaces\ResponseInterface;
+use Hibla\HttpClient\Interfaces\SSEResponseInterface;
+use Hibla\HttpClient\Interfaces\StreamingResponseInterface;
 use Hibla\HttpClient\SSE\CancelableSSEPromise;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
-use Hibla\HttpClient\Interfaces\ResponseInterface;
-use Hibla\HttpClient\Interfaces\StreamingResponseInterface;
-use Hibla\HttpClient\Interfaces\SSEResponseInterface;
 use Hibla\HttpClient\Testing\Interfaces\AssertsCookiesInterface;
 use Hibla\HttpClient\Testing\Interfaces\AssertsDownloadsInterface;
 use Hibla\HttpClient\Testing\Interfaces\AssertsHeadersInterface;
@@ -399,7 +399,7 @@ class TestingHttpHandler extends HttpHandler implements
 
     /**
      * Send an HTTP request with mocking support.
-     * 
+     *
      * @return PromiseInterface<ResponseInterface>
      */
     public function sendRequest(string $url, array $curlOptions, ?RetryConfig $retryConfig = null): PromiseInterface
@@ -412,7 +412,7 @@ class TestingHttpHandler extends HttpHandler implements
             $mockedRequests,
             $this->globalSettings,
             $retryConfig,
-            fn(string $url, array $curlOptions, ?RetryConfig $retryConfig) => parent::sendRequest($url, $curlOptions, $retryConfig)
+            fn (string $url, array $curlOptions, ?RetryConfig $retryConfig) => parent::sendRequest($url, $curlOptions, $retryConfig)
         );
     }
 
@@ -437,7 +437,7 @@ class TestingHttpHandler extends HttpHandler implements
             $mockedRequests,
             $this->globalSettings,
             null,
-            fn(string $u, array $o, ?RetryConfig $r) => parent::stream($u, $o, $onChunk)
+            fn (string $u, array $o, ?RetryConfig $r) => parent::stream($u, $o, $onChunk)
         );
     }
 
@@ -459,7 +459,7 @@ class TestingHttpHandler extends HttpHandler implements
             $mockedRequests,
             $this->globalSettings,
             null,
-            fn(string $u, array $o, ?RetryConfig $r) => parent::upload($u, $source, $o, $onProgress)
+            fn (string $u, array $o, ?RetryConfig $r) => parent::upload($u, $source, $o, $onProgress)
         );
     }
 
@@ -494,7 +494,7 @@ class TestingHttpHandler extends HttpHandler implements
             $mockedRequests,
             $this->globalSettings,
             null,
-            fn(string $u, array $o, ?RetryConfig $r) => parent::download($u, $destination, $o, $onProgress)
+            fn (string $u, array $o, ?RetryConfig $r) => parent::download($u, $destination, $o, $onProgress)
         );
     }
 
@@ -520,7 +520,7 @@ class TestingHttpHandler extends HttpHandler implements
             $this->globalSettings,
             $onEvent,
             $onError,
-            fn(string $u, array $o, ?callable $onEv, ?callable $onErr, ?SSEReconnectConfig $rec) => parent::sse($u, $o, $onEv, $onErr, $rec),
+            fn (string $u, array $o, ?callable $onEv, ?callable $onErr, ?SSEReconnectConfig $rec) => parent::sse($u, $o, $onEv, $onErr, $rec),
             $reconnectConfig
         );
 

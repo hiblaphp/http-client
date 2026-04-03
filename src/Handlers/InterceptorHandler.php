@@ -62,7 +62,7 @@ class InterceptorHandler
                     }
 
                     $mapped = $result->then(
-                        static fn(mixed $resolved): mixed => self::resolveResult($resolved, $requireResponse)
+                        static fn (mixed $resolved): mixed => self::resolveResult($resolved, $requireResponse)
                     );
 
                     $mapped->onCancel($result->cancelChain(...));
@@ -84,7 +84,7 @@ class InterceptorHandler
 
         if ($outerPromise instanceof PromiseInterface) {
             $outerPromise->onCancel(function () use ($state) {
-                if ($state->innerPromise instanceof PromiseInterface && !$state->innerPromise->isSettled()) {
+                if ($state->innerPromise instanceof PromiseInterface && ! $state->innerPromise->isSettled()) {
                     $state->innerPromise->cancelChain();
                 }
             });

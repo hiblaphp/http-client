@@ -67,7 +67,7 @@ class RetryableRequestExecutor
             }
         );
 
-        $finalPromise->onCancel(fn() => $retryPromise->cancel());
+        $finalPromise->onCancel(fn () => $retryPromise->cancel());
 
         return $finalPromise;
     }
@@ -135,7 +135,9 @@ class RetryableRequestExecutor
 
         if ($source !== '' && file_exists($source) && is_callable($onProgress)) {
             $total = filesize($source);
-            if ($total === false) $total = 0;
+            if ($total === false) {
+                $total = 0;
+            }
 
             if ($total === 0) {
                 $onProgress(new UploadProgress(0, 0));

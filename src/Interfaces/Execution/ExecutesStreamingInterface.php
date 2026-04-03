@@ -46,7 +46,7 @@ interface ExecutesStreamingInterface
 
     /**
      * Upload a local file to the given URL using a non-buffered chunked read, with an optional progress callback.
-     * 
+     *
      * @param  string  $url  The URL to upload to.
      * @param  string  $source  The local path to the file to upload.
      * @param  (callable(UploadProgress): void)|null $onProgress

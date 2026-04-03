@@ -58,7 +58,7 @@ class CurlOptionsBuilder implements TransportOptionsBuilderInterface
 
         $stringKeyOptions = array_filter(
             $options->additionalOptions,
-            fn($key) => \is_string($key),
+            fn ($key) => \is_string($key),
             ARRAY_FILTER_USE_KEY
         );
 

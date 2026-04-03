@@ -72,10 +72,14 @@ class DownloadResponseFactory
         }
 
         $delayPromise->then(function () use ($promise, $mock, $destination, $fileManager, $onProgress) {
-            if ($promise->isCancelled()) return;
+            if ($promise->isCancelled()) {
+                return;
+            }
+
             try {
                 if ($mock->shouldFail()) {
                     $error = $mock->getError() ?? 'Mocked failure';
+
                     throw new NetworkException($error, 0, null, null, $error);
                 }
 
@@ -107,9 +111,11 @@ class DownloadResponseFactory
             if (file_put_contents($destination, '') === false) {
                 $exception = new HttpStreamException("Cannot write to file: {$destination}");
                 $exception->setStreamState('file_write_failed');
+
                 throw $exception;
             }
             $fileManager->trackFile($destination);
+
             return;
         }
 
@@ -117,6 +123,7 @@ class DownloadResponseFactory
         if ($file === false) {
             $exception = new HttpStreamException("Cannot write to file: {$destination}");
             $exception->setStreamState('file_write_failed');
+
             throw $exception;
         }
 
@@ -129,6 +136,7 @@ class DownloadResponseFactory
                 fclose($file);
                 $exception = new HttpStreamException("Cannot write to file: {$destination}");
                 $exception->setStreamState('file_write_failed');
+
                 throw $exception;
             }
             $downloaded += \strlen($chunk);

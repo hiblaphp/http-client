@@ -39,7 +39,7 @@ interface ConfiguresHeadersInterface
 
     /**
      * Set Content-Type to application/xml.
-     * 
+     *
      * Shorthand for contentType('application/xml').
      */
     public function asXml(): static;

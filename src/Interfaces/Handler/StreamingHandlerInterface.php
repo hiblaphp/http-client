@@ -6,9 +6,8 @@ namespace Hibla\HttpClient\Interfaces\Handler;
 
 use Hibla\HttpClient\StreamingResponse;
 use Hibla\HttpClient\ValueObjects\DownloadProgress;
-use Hibla\Promise\Interfaces\PromiseInterface;
 use Hibla\HttpClient\ValueObjects\UploadProgress;
-
+use Hibla\Promise\Interfaces\PromiseInterface;
 
 /**
  * Contract for non-blocking HTTP streaming and file download operations.

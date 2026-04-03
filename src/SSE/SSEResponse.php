@@ -147,11 +147,11 @@ class SSEResponse extends StreamingResponse implements SSEResponseInterface
             return null;
         }
 
-        $idValues = $fields['id']    ?? [];
+        $idValues = $fields['id'] ?? [];
         $eventValues = $fields['event'] ?? [];
         $retryValues = $fields['retry'] ?? [];
 
-        $id = end($idValues)    !== false ? end($idValues)    : null;
+        $id = end($idValues) !== false ? end($idValues) : null;
         $event = end($eventValues) !== false ? end($eventValues) : null;
         $retryValue = end($retryValues) !== false ? end($retryValues) : null;
 
