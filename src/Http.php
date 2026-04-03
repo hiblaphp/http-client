@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient;
 
+use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\HttpClient\Handlers\HttpHandler;
 use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
 use Hibla\HttpClient\Interfaces\HttpClientInterface;
