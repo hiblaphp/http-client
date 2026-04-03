@@ -379,6 +379,22 @@ class HttpClient implements HttpClientInterface
     /**
      * @inheritDoc
      */
+    public function asXml(): static
+    {
+        return $this->withUpdatedRequest(fn($r) => $r->asXml());
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function withXml(string|\SimpleXMLElement $xml): static
+    {
+        return $this->withUpdatedRequest(fn($r) => $r->withXml($xml));
+    }
+
+    /**
+     * @inheritDoc
+     */
     public function withForm(array $data): static
     {
         return $this->withUpdatedRequest(fn($r) => $r->withForm($data));

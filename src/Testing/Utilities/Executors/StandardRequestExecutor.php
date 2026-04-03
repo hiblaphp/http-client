@@ -156,13 +156,17 @@ class StandardRequestExecutor
         array $curlOptions,
         string $url
     ): PromiseInterface {
-        return $promise->then(function ($response) use ($curlOptions, $url) {
+        $mappedPromise = $promise->then(function ($response) use ($curlOptions, $url) {
             if ($response instanceof Response) {
                 $this->processCookies($response, $curlOptions, $url);
             }
 
             return $response;
-        });
+        }); 
+
+        $mappedPromise->onCancel($promise->cancel(...));
+
+        return $mappedPromise;
     }
 
     /**

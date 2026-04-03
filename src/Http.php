@@ -173,6 +173,10 @@ use Psr\Http\Message\UploadedFileInterface;
  * @method static HttpClientInterface withMethod(string $method) Return an instance with the provided HTTP method.
  * @method static Uri getUri() Retrieves the URI instance.
  * @method static HttpClientInterface withUri(Uri $uri, bool $preserveHost = false) Returns an instance with the provided URI.
+ * 
+ * Xml methods:
+ * @method static HttpClientInterface asXml() Start building a request with Content-Type: application/xml.
+ * @method static HttpClientInterface withXml(string|\SimpleXMLElement $xml) Start building a request with XML body.
  *
  * Testing assertion methods (only available in testing mode):
  *

@@ -40,6 +40,13 @@ interface ResponseInterface extends Psr7ResponseInterface
     public function json(?string $key = null, mixed $default = null): mixed;
 
     /**
+     * Decode the response body as a SimpleXMLElement.
+     * 
+     * Returns null if the body is empty or not valid XML.
+     */
+    public function xml(): ?\SimpleXMLElement;
+
+    /**
      * Return the HTTP status code.
      *
      * Convenience alias for PSR-7's getStatusCode() that fits

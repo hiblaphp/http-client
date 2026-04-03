@@ -70,9 +70,7 @@ class StandardResponseFactory
 
         $delayPromise = delay($totalDelay);
 
-        $promise->onCancel(function () use ($delayPromise) {
-            $delayPromise->cancel();
-        });
+        $promise->onCancel($delayPromise->cancel(...));
 
         if ($networkConditions['should_fail']) {
             $delayPromise->then(function () use ($promise, $networkConditions) {

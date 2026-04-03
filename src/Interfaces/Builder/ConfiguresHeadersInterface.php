@@ -38,6 +38,13 @@ interface ConfiguresHeadersInterface
     public function asJson(): static;
 
     /**
+     * Set Content-Type to application/xml.
+     * 
+     * Shorthand for contentType('application/xml').
+     */
+    public function asXml(): static;
+
+    /**
      * Set Content-Type to application/x-www-form-urlencoded.
      *
      * Shorthand for contentType('application/x-www-form-urlencoded').

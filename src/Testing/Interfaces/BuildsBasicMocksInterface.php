@@ -34,6 +34,13 @@ interface BuildsBasicMocksInterface
     public function respondJson(array $data): static;
 
     /**
+     * Set the response body as XML.
+     *
+     * @param string|\SimpleXMLElement $xml
+     */
+    public function respondXml(string|\SimpleXMLElement $xml): static;
+
+    /**
      * Add a delay before responding.
      */
     public function delay(float $seconds): static;

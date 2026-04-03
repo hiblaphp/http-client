@@ -61,9 +61,13 @@ class InterceptorHandler
                         ));
                     }
 
-                    return $result->then(
+                    $mapped = $result->then(
                         static fn(mixed $resolved): mixed => self::resolveResult($resolved, $requireResponse)
                     );
+
+                    $mapped->onCancel($result->cancelChain(...));
+
+                    return $mapped;
                 };
             },
             $executor,

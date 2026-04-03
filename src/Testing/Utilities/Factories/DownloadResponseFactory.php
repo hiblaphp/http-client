@@ -49,8 +49,12 @@ class DownloadResponseFactory
 
         $delayPromise = delay($totalDelay);
 
-        $promise->onCancel(function () use ($delayPromise) {
+        $promise->onCancel(function () use ($delayPromise, $destination) {
             $delayPromise->cancel();
+
+               if (file_exists($destination)) {
+                @unlink($destination);
+            }
         });
 
         if ($networkConditions['should_fail']) {

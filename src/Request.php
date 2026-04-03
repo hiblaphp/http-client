@@ -145,6 +145,26 @@ class Request extends Message implements RequestInterface
     /**
      * @inheritDoc
      */
+    public function asXml(): static
+    {
+        return $this->contentType('application/xml');
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function withXml(string|\SimpleXMLElement $xml): static
+    {
+        if ($xml instanceof \SimpleXMLElement) {
+            $xml = $xml->asXML();
+        }
+
+        return $this->body($xml)->contentType('application/xml');
+    }
+
+    /**
+     * @inheritDoc
+     */
     public function getRequestTarget(): string
     {
         if ($this->requestTarget !== null) {

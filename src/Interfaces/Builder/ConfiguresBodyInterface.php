@@ -23,6 +23,16 @@ interface ConfiguresBodyInterface
     public function body(string $content): static;
 
     /**
+     * Set the request body as XML.
+     *
+     * Accepts a raw XML string or a SimpleXMLElement object.
+     * Automatically sets Content-Type: application/xml.
+     *
+     * @param string|\SimpleXMLElement $xml
+     */
+    public function withXml(string|\SimpleXMLElement $xml): static;
+
+    /**
      * JSON-encode $data and set it as the request body.
      *
      * Automatically sets Content-Type: application/json.

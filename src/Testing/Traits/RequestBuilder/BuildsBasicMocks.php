@@ -65,6 +65,21 @@ trait BuildsBasicMocks
     }
 
     /**
+     * Set the response body as XML.
+     */
+    public function respondXml(string|\SimpleXMLElement $xml): static
+    {
+        if ($xml instanceof \SimpleXMLElement) {
+            $xml = $xml->asXML();
+        }
+
+        $this->getRequest()->setBody($xml);
+        $this->getRequest()->addResponseHeader('Content-Type', 'application/xml');
+
+        return $this;
+    }
+
+    /**
      * Add a delay before responding.
      */
     public function delay(float $seconds): static

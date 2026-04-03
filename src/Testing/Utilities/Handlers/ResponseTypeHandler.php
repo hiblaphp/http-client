@@ -91,11 +91,15 @@ class ResponseTypeHandler
     /**
      * @return PromiseInterface<Response>
      */
-    private function handleStandardResponse(
+   private function handleStandardResponse(
         MockedRequest $mock,
     ): PromiseInterface {
         $responsePromise = $this->responseFactory->createMockedResponse($mock);
 
-        return $responsePromise->then(fn (Response $response): Response => $response);
+        $mappedPromise = $responsePromise->then(fn (Response $response): Response => $response);
+        
+        $mappedPromise->onCancel($responsePromise->cancel(...));
+
+        return $mappedPromise;
     }
 }

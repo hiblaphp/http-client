@@ -187,6 +187,33 @@ class Response extends Message implements ResponseInterface
     /**
      * @inheritDoc
      */
+    public function xml(): ?\SimpleXMLElement
+    {
+        $body = $this->body();
+
+        if ($body === '') {
+            return null;
+        }
+
+        $previousEntityLoader = libxml_use_internal_errors(true);
+
+        try {
+            $xml = simplexml_load_string($body);
+
+            if ($xml === false) {
+                libxml_clear_errors();
+                return null;
+            }
+
+            return $xml;
+        } finally {
+            libxml_use_internal_errors($previousEntityLoader);
+        }
+    }
+
+    /**
+     * @inheritDoc
+     */
     public function status(): int
     {
         return $this->statusCode;
