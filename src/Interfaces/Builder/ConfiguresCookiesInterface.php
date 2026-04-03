@@ -9,18 +9,13 @@ use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
 /**
  * Fluent interface for cookie management.
  *
- * Two strategies are available and can be combined:
+ * ## State Management Note
+ * While the HttpClient itself is immutable (every method returns a new clone),
+ * the underlying CookieJar is a **shared mutable object**.
  *
- *   1. Manual cookies — added directly to the Cookie request header
- *      via withCookie() / withCookies(). These are one-shot values
- *      with no domain or expiry awareness.
- *
- *   2. Cookie jar — an active jar instance that automatically stores
- *      Set-Cookie response headers and forwards matching cookies on
- *      subsequent requests within the same session.
- *
- * When both are configured the jar takes precedence for overlapping
- * cookie names on a given domain.
+ * If multiple client instances share the same CookieJar instance, modifications
+ * to that jar (via clearCookies, cookieWithAttributes, or receiving a 
+ * Set-Cookie response) will affect all client instances sharing that jar.
  */
 interface ConfiguresCookiesInterface
 {
@@ -29,6 +24,9 @@ interface ConfiguresCookiesInterface
      *
      * The value is percent-encoded before being written to the header.
      * Calling this method multiple times appends each cookie with '; '.
+     * 
+     * Note: This modifies the request-level state of the returned instance 
+     * only and does not affect the active CookieJar.
      */
     public function withCookie(string $name, string $value): static;
 
@@ -36,8 +34,6 @@ interface ConfiguresCookiesInterface
      * Add multiple cookies to the Cookie request header.
      *
      * Equivalent to calling withCookie() for each entry.
-     *
-     * @param  array<string, string>  $cookies
      */
     public function withCookies(array $cookies): static;
 
@@ -54,13 +50,19 @@ interface ConfiguresCookiesInterface
      *
      * Useful for sharing a jar across multiple requests or providing
      * a custom implementation (e.g. persistent, encrypted).
+     * 
+     * Once set, this specific jar instance is shared across all clones 
+     * of this client until replaced.
      */
     public function useCookieJar(CookieJarInterface $cookieJar): static;
 
     /**
      * Clear all cookies from the currently active jar.
      *
-     * No-op when no jar is configured. Does not remove cookies
+     * This is a **mutable operation** on the underlying jar object.
+     * All client instances sharing this jar will see their cookies removed.
+     * 
+     * No-op when no jar is configured. Does not remove one-shot cookies
      * set via withCookie() / withCookies().
      */
     public function clearCookies(): static;
@@ -69,6 +71,11 @@ interface ConfiguresCookiesInterface
      * Add a cookie with full attribute control to the active jar.
      *
      * Initialises an in-memory jar if one is not already configured.
+     * 
+     * This is a **mutable operation** on the underlying jar object.
+     * All client instances sharing this jar will immediately have access 
+     * to this cookie.
+     *
      * Recognised $attributes keys: domain, path, expires, maxAge,
      * secure, httpOnly, sameSite.
      *
@@ -78,6 +85,9 @@ interface ConfiguresCookiesInterface
 
     /**
      * Return the currently active cookie jar, or null if none is configured.
+     * 
+     * Since the jar is mutable, you can retrieve it and manipulate it 
+     * directly outside of the fluent builder if needed.
      */
     public function getCookieJar(): ?CookieJarInterface;
 }
