@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Hibla\HttpClient;
 
 use Hibla\HttpClient\ValueObjects\RetryConfig;
+use Hibla\HttpClient\ValueObjects\DownloadProgress;
 use Hibla\HttpClient\Handlers\HttpHandler;
 use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
 use Hibla\HttpClient\Interfaces\HttpClientInterface;
@@ -81,7 +82,7 @@ use Psr\Http\Message\UploadedFileInterface;
  * @method static PromiseInterface<ResponseInterface> head(string $url) Performs a HEAD request.
  * @method static PromiseInterface<StreamingResponseInterface> stream(string $url, ?callable $onChunk = null) Streams a response body.
  * @method static PromiseInterface<StreamingResponseInterface> streamPost(string $url, mixed $body = null, ?callable $onChunk = null) Streams the response body of a POST request.
- * @method static PromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}> download(string $url, string $destination) Downloads a file to the given destination path.
+ * @method static PromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}> download(string $url, string $destination, ?callable $onProgress = null) Downloads a file to the given destination path, with an optional progress callback.
  * @method static PromiseInterface<ResponseInterface> send(string $method, string $url) Dispatches the configured request.
  * @method static SSEBuilderInterface sse(string $url) Create a fluent SSE connection builder.
  *

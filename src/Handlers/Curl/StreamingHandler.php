@@ -10,6 +10,8 @@ use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Interfaces\Handler\StreamingHandlerInterface;
 use Hibla\HttpClient\Stream;
 use Hibla\HttpClient\StreamingResponse;
+use Hibla\HttpClient\ValueObjects\DownloadProgress;
+use Hibla\HttpClient\ValueObjects\TransferProgress;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Hibla\Promise\Promise;
 
@@ -18,8 +20,11 @@ class StreamingHandler implements StreamingHandlerInterface
     /**
      * @inheritDoc
      */
-    public function streamRequest(string $url, array $options, ?callable $onChunk = null): PromiseInterface
-    {
+    public function streamRequest(
+        string $url,
+        array $options,
+        ?callable $onChunk = null
+    ): PromiseInterface {
         /** @var Promise<StreamingResponse> $promise */
         $promise = new Promise();
 
@@ -96,8 +101,12 @@ class StreamingHandler implements StreamingHandlerInterface
     /**
      * @inheritDoc
      */
-    public function downloadFile(string $url, string $destination, array $options = []): PromiseInterface
-    {
+    public function downloadFile(
+        string $url,
+        string $destination,
+        array $options = [],
+        ?callable $onProgress = null,
+    ): PromiseInterface {
         /** @var Promise<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}> $promise */
         $promise = new Promise();
 
@@ -118,9 +127,19 @@ class StreamingHandler implements StreamingHandlerInterface
                 return fwrite($file, $data);
             },
             CURLOPT_NOPROGRESS => false,
-            CURLOPT_PROGRESSFUNCTION => function ($ch, $downloadSize, $downloaded, $uploadSize, $uploaded) use ($promise): int {
+            CURLOPT_PROGRESSFUNCTION => function (
+                $ch,
+                int $downloadTotal,
+                int $downloaded,
+                int $uploadTotal,
+                int $uploaded,
+            ) use ($promise, $onProgress): int {
                 if ($promise->isCancelled()) {
-                    return 1; // Abort download
+                    return 1;
+                }
+
+                if ($onProgress !== null && $downloadTotal > 0) {
+                    $onProgress(new DownloadProgress($downloadTotal, $downloaded));
                 }
 
                 return 0;

@@ -990,10 +990,7 @@ class HttpClient implements HttpClientInterface
     /**
      * @inheritDoc
      */
-    /**
-     * @inheritDoc
-     */
-    public function download(string $url, string $destination): PromiseInterface
+    public function download(string $url, string $destination, ?callable $onProgress = null): PromiseInterface
     {
         $expandedUrl = $this->expandUriTemplate($url);
         $initialRequest = $this->request
@@ -1003,22 +1000,21 @@ class HttpClient implements HttpClientInterface
         return $this->interceptorHandler->process(
             request: $initialRequest,
             interceptors: $this->interceptors,
-            executor: function (RequestInterface $processed) use ($destination) {
+            executor: function (RequestInterface $processed) use ($destination, $onProgress) {
                 $clientOptions = $this->buildClientOptionsFromProcessed($processed);
                 $options = $this->resolveTransportOptionsBuilder()->buildForDownload($clientOptions, $destination);
 
-                return $this->resolveHandler()->download((string) $processed->getUri(), $destination, $options);
+                return $this->resolveHandler()->download(
+                    (string) $processed->getUri(),
+                    $destination,
+                    $options,
+                    $onProgress,
+                );
             },
             requireResponse: false
         );
     }
 
-    /**
-     * @inheritDoc
-     */
-    /**
-     * @inheritDoc
-     */
     /**
      * @inheritDoc
      */

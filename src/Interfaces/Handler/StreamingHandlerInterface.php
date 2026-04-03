@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Hibla\HttpClient\Interfaces\Handler;
 
 use Hibla\HttpClient\StreamingResponse;
+use Hibla\HttpClient\ValueObjects\DownloadProgress;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
 /**
@@ -25,12 +26,15 @@ interface StreamingHandlerInterface
      * invoked synchronously for each chunk of data as it arrives.
      *
      * @param  string $url The fully resolved target URL.
-     * @param  array<int|string, mixed> $options Transport-specific options produced
-     * by TransportOptionsBuilderInterface::buildForStreaming().
+     * @param  array<int|string, mixed> $options Transport-specific options produced by TransportOptionsBuilderInterface::buildForStreaming().
      * @param  (callable(string): void)|null $onChunk Optional callback invoked per data chunk.
      * @return PromiseInterface<StreamingResponse>
      */
-    public function streamRequest(string $url, array $options, ?callable $onChunk = null): PromiseInterface;
+    public function streamRequest(
+        string $url,
+        array $options,
+        ?callable $onChunk = null,
+    ): PromiseInterface;
 
     /**
      * Download a remote resource and write it to $destination.
@@ -40,8 +44,8 @@ interface StreamingHandlerInterface
      *
      * @param  string $url The fully resolved target URL.
      * @param  string $destination Absolute path for the downloaded file.
-     * @param  array<int|string, mixed> $options Transport-specific options produced
-     * by TransportOptionsBuilderInterface::buildForDownload().
+     * @param  array<int|string, mixed> $options Transport-specific options produced by TransportOptionsBuilderInterface::buildForDownload().
+     * @param  (callable(DownloadProgress): void)|null $onProgress
      * @return PromiseInterface<array{
      *     file: string,
      *     status: int,
@@ -50,5 +54,10 @@ interface StreamingHandlerInterface
      *     size: int|false
      * }>
      */
-    public function downloadFile(string $url, string $destination, array $options = []): PromiseInterface;
+    public function downloadFile(
+        string $url,
+        string $destination,
+        array $options = [],
+        ?callable $onProgress = null,  
+    ): PromiseInterface;
 }

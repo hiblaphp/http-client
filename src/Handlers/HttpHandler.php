@@ -21,6 +21,7 @@ use Hibla\HttpClient\SSE\SSEEvent;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
 use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\Promise\Interfaces\PromiseInterface;
+use Hibla\HttpClient\ValueObjects\DownloadProgress;
 
 /**
  * Core handler for creating and dispatching asynchronous HTTP requests.
@@ -73,10 +74,7 @@ class HttpHandler
         ?callable $onError = null,
         ?SSEReconnectConfig $reconnectConfig = null
     ): PromiseInterface {
-        /** @var array<int, mixed> $curlOnlyOptions */
-        $curlOnlyOptions = array_filter($options, 'is_int', ARRAY_FILTER_USE_KEY);
-
-        $innerPromise = $this->sseHandler->connect($url, $curlOnlyOptions, $onEvent, $onError, $reconnectConfig);
+        $innerPromise = $this->sseHandler->connect($url, $options, $onEvent, $onError, $reconnectConfig);
 
         return new CancelableSSEPromise($innerPromise);
     }
@@ -97,10 +95,7 @@ class HttpHandler
      */
     public function stream(string $url, array $options = [], ?callable $onChunk = null): PromiseInterface
     {
-        /** @var array<int, mixed> $curlOnlyOptions */
-        $curlOnlyOptions = array_filter($options, 'is_int', ARRAY_FILTER_USE_KEY);
-
-        return $this->streamingHandler->streamRequest($url, $curlOnlyOptions, $onChunk);
+        return $this->streamingHandler->streamRequest($url, $options, $onChunk);
     }
 
     /**
@@ -109,16 +104,14 @@ class HttpHandler
      * @param  string  $url  The URL of the file to download.
      * @param  string  $destination  The local path to save the file.
      * @param  array<int|string, mixed>  $options  Request options for internal use and testing extensions.
+     * @param  (callable(DownloadProgress): void)|null $onProgress
      * @return PromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}>
      *
      * @internal This method is designed for extension by TestingHttpHandler.
      */
-    public function download(string $url, string $destination, array $options = []): PromiseInterface
+    public function download(string $url, string $destination, array $options = [], ?callable $onProgress = null): PromiseInterface
     {
-        /** @var array<int, mixed> $curlOnlyOptions */
-        $curlOnlyOptions = array_filter($options, 'is_int', ARRAY_FILTER_USE_KEY);
-
-        return $this->streamingHandler->downloadFile($url, $destination, $curlOnlyOptions);
+        return $this->streamingHandler->downloadFile($url, $destination, $options, $onProgress);
     }
 
     /**
