@@ -31,7 +31,7 @@ class RetryConfig
     private const array DEFAULT_EXCEPTIONS = [
         'Simulated timeout',
         'cURL error',
-        'timeout',
+        'Operation timed out',
         'connection failed',
         'Could not resolve host',
         'Resolving timed out',
