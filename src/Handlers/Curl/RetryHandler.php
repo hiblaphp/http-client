@@ -35,6 +35,10 @@ class RetryHandler implements RetryHandlerInterface
         $cookieJar = $curlOptions['_cookie_jar'] ?? null;
         unset($curlOptions['_cookie_jar']);
 
+        /** @var array<string> $tmpFiles */
+        $tmpFiles = $curlOptions['_tmp_files'] ?? [];
+        unset($curlOptions['_tmp_files']);
+
         /** @var array<int, mixed> $curlOnlyOptions */
         $curlOnlyOptions = array_filter($curlOptions, 'is_int', ARRAY_FILTER_USE_KEY);
 
@@ -49,14 +53,21 @@ class RetryHandler implements RetryHandlerInterface
             &$executeRequest,
             $cookieJar,
             &$timerId,
+            $tmpFiles
         ) {
             $totalAttempts++;
 
             $requestId = Loop::addCurlRequest(
                 $url,
                 $curlOnlyOptions,
-                function (?string $error, ?string $responseBody, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $retryConfig, $promise, &$attempt, &$totalAttempts, &$executeRequest, $cookieJar, &$timerId) {
+                function (?string $error, ?string $responseBody, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $retryConfig, $promise, &$attempt, &$totalAttempts, &$executeRequest, $cookieJar, &$timerId, $tmpFiles) {
                     if ($promise->isCancelled()) {
+                        // Clean up temporary multipart files if cancelled mid-flight
+                        foreach ($tmpFiles as $file) {
+                            if (file_exists($file)) {
+                                @unlink($file);
+                            }
+                        }
                         return;
                     }
 
@@ -79,6 +90,13 @@ class RetryHandler implements RetryHandlerInterface
                         });
 
                         return;
+                    }
+
+                    // We reached the final resolution (success or final failure). Clean up tmp files.
+                    foreach ($tmpFiles as $file) {
+                        if (file_exists($file)) {
+                            @unlink($file);
+                        }
                     }
 
                     if ($error !== null) {
@@ -112,13 +130,20 @@ class RetryHandler implements RetryHandlerInterface
 
         $executeRequest();
 
-        $promise->onCancel(function () use (&$requestId, &$timerId) {
+        $promise->onCancel(function () use (&$requestId, &$timerId, $tmpFiles) {
             if ($requestId !== null) {
                 Loop::cancelCurlRequest($requestId);
             }
 
             if ($timerId !== null) {
                 Loop::cancelTimer($timerId);
+            }
+
+            // Clean up temporary multipart files on cancellation
+            foreach ($tmpFiles as $file) {
+                if (file_exists($file)) {
+                    @unlink($file);
+                }
             }
         });
 

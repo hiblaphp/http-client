@@ -38,6 +38,10 @@ class RequestExecutorHandler implements RequestExecutorHandlerInterface
         $cookieJar = $curlOptions['_cookie_jar'] ?? null;
         unset($curlOptions['_cookie_jar']);
 
+        /** @var array<string> $tmpFiles */
+        $tmpFiles = $curlOptions['_tmp_files'] ?? [];
+        unset($curlOptions['_tmp_files']);
+
         /** @var array<int, mixed> $curlOnlyOptions */
         $curlOnlyOptions = array_filter($curlOptions, 'is_int', ARRAY_FILTER_USE_KEY);
 
@@ -47,7 +51,15 @@ class RequestExecutorHandler implements RequestExecutorHandlerInterface
         $requestId = Loop::addCurlRequest(
             $url,
             $curlOnlyOptions,
-            function (?string $error, ?string $response, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $promise, $cookieJar, $timeout, $connectTimeout) {
+            function (?string $error, ?string $response, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $promise, $cookieJar, $timeout, $connectTimeout, $tmpFiles) {
+                
+                // Clean up temporary multipart files
+                foreach ($tmpFiles as $file) {
+                    if (file_exists($file)) {
+                        @unlink($file);
+                    }
+                }
+
                 if ($promise->isCancelled()) {
                     return;
                 }
@@ -73,8 +85,15 @@ class RequestExecutorHandler implements RequestExecutorHandlerInterface
             }
         );
 
-        $promise->onCancel(function () use ($requestId) {
+        $promise->onCancel(function () use ($requestId, $tmpFiles) {
             Loop::cancelCurlRequest($requestId);
+
+            // Clean up temporary multipart files on cancellation
+            foreach ($tmpFiles as $file) {
+                if (file_exists($file)) {
+                    @unlink($file);
+                }
+            }
         });
 
         return $promise;

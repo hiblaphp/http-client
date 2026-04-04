@@ -5,87 +5,38 @@ declare(strict_types=1);
 namespace Hibla\HttpClient;
 
 use Hibla\HttpClient\Exceptions\HttpStreamException;
-use Psr\Http\Message\StreamInterface;
+use Hibla\HttpClient\Interfaces\StreamInterface;
+use Hibla\HttpClient\Handlers\HttpStreamStateHandler;
+use Hibla\Promise\Interfaces\PromiseInterface;
+use Hibla\Stream\Interfaces\WritableStreamInterface;
 
 /**
- * A PSR-7 compliant stream representation of a PHP resource.
+ * A perfectly clean, PSR-7 compliant HTTP stream with modern Promise-based 
+ * asynchronous iteration capabilities.
  */
 class Stream implements StreamInterface
 {
-    /** @var resource|null The underlying PHP stream resource. */
-    private $resource = null;
+    /** @var resource|null The underlying temporary stream resource. */
+    private $resource;
 
-    private ?string $uri;
-
-    private bool $seekable;
-
-    private bool $readable;
-
-    private bool $writable;
-
-    private ?int $size = null;
-
-    private const array READ_WRITE_HASH = [
-        'read' => [
-            'r' => true,
-            'w+' => true,
-            'r+' => true,
-            'x+' => true,
-            'c+' => true,
-            'rb' => true,
-            'w+b' => true,
-            'r+b' => true,
-            'x+b' => true,
-            'c+b' => true,
-            'rt' => true,
-            'w+t' => true,
-            'r+t' => true,
-            'x+t' => true,
-            'c+t' => true,
-            'a+' => true,
-        ],
-        'write' => [
-            'w' => true,
-            'w+' => true,
-            'rw' => true,
-            'r+' => true,
-            'x+' => true,
-            'c+' => true,
-            'wb' => true,
-            'w+b' => true,
-            'r+b' => true,
-            'x+b' => true,
-            'c+b' => true,
-            'w+t' => true,
-            'r+t' => true,
-            'x+t' => true,
-            'c+t' => true,
-            'a' => true,
-            'a+' => true,
-        ],
-    ];
+    private HttpStreamStateHandler $handler;
 
     /**
      * Initializes a new Stream instance.
      *
-     * @param  resource  $resource  The PHP stream resource.
-     * @param  string|null  $uri  The URI associated with the stream, if any.
+     * @param  resource|null  $resource  Optional pre-existing PHP stream resource.
      *
      * @throws HttpStreamException if the provided argument is not a resource.
      */
-    public function __construct($resource, ?string $uri = null)
+    public function __construct($resource = null)
     {
-        if (! \is_resource($resource)) {
-            throw new HttpStreamException('Stream must be a resource');
+        $this->resource = $resource ?? fopen('php://temp', 'w+b');
+        
+        if ($this->resource === false || ! \is_resource($this->resource)) {
+            throw new HttpStreamException('Unable to create or use temporary stream');
         }
 
-        $this->resource = $resource;
-        $this->uri = $uri;
-
-        $meta = stream_get_meta_data($this->resource);
-        $this->seekable = $meta['seekable'];
-        $this->readable = isset(self::READ_WRITE_HASH['read'][$meta['mode']]);
-        $this->writable = isset(self::READ_WRITE_HASH['write'][$meta['mode']]);
+        $this->handler = new HttpStreamStateHandler($this->resource);
     }
 
     /**
@@ -97,95 +48,55 @@ class Stream implements StreamInterface
      */
     public static function fromString(string $content): self
     {
-        $resource = fopen('php://temp', 'r+');
-        if ($resource === false) {
-            throw new HttpStreamException('Unable to create temporary stream');
-        }
-
+        $stream = new self();
         if ($content !== '') {
-            fwrite($resource, $content);
-            rewind($resource);
+            $stream->write($content); 
         }
+        $stream->getHandler()->markEof();
+        
+        return $stream;
+    }
 
-        return new self($resource);
+    /**
+     * Retrieve the internal state machine handler.
+     * 
+     * @internal Used by StreamingHandler to interact natively.
+     */
+    public function getHandler(): HttpStreamStateHandler
+    {
+        return $this->handler;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function __toString(): string
+    public function readAsync(?int $length = null): PromiseInterface
     {
-        if (! $this->isReadable()) {
-            return '';
-        }
-
-        try {
-            if ($this->isSeekable()) {
-                $this->rewind();
-            }
-
-            return $this->getContents();
-        } catch (\Throwable $e) {
-            return '';
-        }
+        return $this->handler->readAsync($length);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function close(): void
+    public function readLineAsync(?int $maxLength = null): PromiseInterface
     {
-        if (\is_resource($this->resource)) {
-            fclose($this->resource);
-        }
-        $this->detach();
+        return $this->handler->readLineAsync($maxLength);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function detach()
+    public function readAllAsync(int $maxLength = 1048576): PromiseInterface
     {
-        if (! \is_resource($this->resource)) {
-            return null;
-        }
-
-        $result = $this->resource;
-        $this->resource = null;
-        $this->size = null;
-        $this->uri = null;
-        $this->readable = false;
-        $this->writable = false;
-        $this->seekable = false;
-
-        return $result;
+        return $this->handler->readAllAsync($maxLength);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function getSize(): ?int
+    public function pipeAsync(WritableStreamInterface $destination, array $options = []): PromiseInterface
     {
-        if ($this->size !== null) {
-            return $this->size;
-        }
-
-        if (! \is_resource($this->resource)) {
-            return null;
-        }
-
-        if ($this->uri !== null) {
-            clearstatcache(true, $this->uri);
-        }
-
-        $stats = fstat($this->resource);
-        if (\is_array($stats) && isset($stats['size'])) {
-            $this->size = $stats['size'];
-
-            return $this->size;
-        }
-
-        return null;
+        return $this->handler->pipeAsync($destination, $options);
     }
 
     /**
@@ -193,11 +104,12 @@ class Stream implements StreamInterface
      */
     public function tell(): int
     {
-        if (! \is_resource($this->resource)) {
+        if ($this->resource === null) {
             throw new HttpStreamException('Stream is detached');
         }
 
-        $result = ftell($this->resource);
+        $result = @ftell($this->resource);
+
         if ($result === false) {
             throw new HttpStreamException('Unable to determine stream position');
         }
@@ -208,29 +120,9 @@ class Stream implements StreamInterface
     /**
      * {@inheritdoc}
      */
-    public function eof(): bool
-    {
-        if (! \is_resource($this->resource)) {
-            return true;
-        }
-
-        return feof($this->resource);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function isSeekable(): bool
-    {
-        return $this->seekable;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     public function seek(int $offset, int $whence = SEEK_SET): void
     {
-        if (! \is_resource($this->resource)) {
+        if ($this->resource === null) {
             throw new HttpStreamException('Stream is detached');
         }
 
@@ -239,32 +131,91 @@ class Stream implements StreamInterface
         }
 
         if (fseek($this->resource, $offset, $whence) === -1) {
-            throw new HttpStreamException('Unable to seek to stream position ' . $offset . ' with whence ' . var_export($whence, true));
+            throw new HttpStreamException("Unable to seek to position {$offset} with whence {$whence}");
         }
+
+        $this->handler->clearBuffer();
     }
 
     /**
      * {@inheritdoc}
      */
-    public function rewind(): void
+    public function detach()
     {
-        $this->seek(0);
+        $res = $this->resource;
+        $this->resource = null;
+        $this->close();
+        
+        return $res;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function isWritable(): bool
+    public function getSize(): ?int
     {
-        return $this->writable;
+        if ($this->resource === null) {
+            return null;
+        }
+
+        $stats = fstat($this->resource);
+        return $stats['size'] ?? null;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function write(string $string): int
+    public function eof(): bool
     {
-        if (! \is_resource($this->resource)) {
+        if ($this->resource === null) {
+            return true;
+        }
+
+        return $this->handler->isEof() || feof($this->resource);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function isSeekable(): bool
+    {
+        if ($this->resource === null) {
+            return false;
+        }
+
+        $meta = stream_get_meta_data($this->resource);
+        return $meta['seekable'];
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function rewind(): void 
+    { 
+        $this->seek(0); 
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function isWritable(): bool 
+    { 
+        if ($this->resource === null) {
+            return false;
+        }
+
+        $meta = stream_get_meta_data($this->resource);
+        $mode = $meta['mode'];
+
+        return str_contains($mode, 'w') || str_contains($mode, 'a') || str_contains($mode, 'x') || str_contains($mode, 'c') || str_contains($mode, '+');
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function write(string $string): int 
+    { 
+        if ($this->resource === null) {
             throw new HttpStreamException('Stream is detached');
         }
 
@@ -272,14 +223,9 @@ class Stream implements StreamInterface
             throw new HttpStreamException('Cannot write to a non-writable stream');
         }
 
-        $this->size = null; // Invalidate cached size
-
-        $result = fwrite($this->resource, $string);
-        if ($result === false) {
-            throw new HttpStreamException('Unable to write to stream');
-        }
-
-        return $result;
+        $this->handler->writeToBuffer($string);
+        
+        return \strlen($string);
     }
 
     /**
@@ -287,15 +233,24 @@ class Stream implements StreamInterface
      */
     public function isReadable(): bool
     {
-        return $this->readable;
+        if ($this->resource === null) {
+            return false;
+        }
+
+        $meta = stream_get_meta_data($this->resource);
+        $mode = $meta['mode'];
+
+        return str_contains($mode, 'r') || str_contains($mode, '+');
     }
 
     /**
      * {@inheritdoc}
+     * 
+     * Note: This is a blocking operation. Use readAsync() instead.
      */
     public function read(int $length): string
     {
-        if (! \is_resource($this->resource)) {
+        if ($this->resource === null) {
             throw new HttpStreamException('Stream is detached');
         }
 
@@ -311,20 +266,23 @@ class Stream implements StreamInterface
             return '';
         }
 
-        $result = fread($this->resource, $length);
-        if ($result === false) {
+        $data = fread($this->resource, $length);
+        
+        if ($data === false) {
             throw new HttpStreamException('Unable to read from stream');
         }
 
-        return $result;
+        return $data;
     }
 
     /**
      * {@inheritdoc}
+     * 
+     * Note: This is a blocking operation. Use readAllAsync() instead.
      */
     public function getContents(): string
     {
-        if (! \is_resource($this->resource)) {
+        if ($this->resource === null) {
             throw new HttpStreamException('Stream is detached');
         }
 
@@ -332,12 +290,13 @@ class Stream implements StreamInterface
             throw new HttpStreamException('Cannot read from non-readable stream');
         }
 
-        $contents = stream_get_contents($this->resource);
-        if ($contents === false) {
+        $data = stream_get_contents($this->resource);
+        
+        if ($data === false) {
             throw new HttpStreamException('Unable to read stream contents');
         }
 
-        return $contents;
+        return $data;
     }
 
     /**
@@ -345,15 +304,42 @@ class Stream implements StreamInterface
      */
     public function getMetadata(?string $key = null)
     {
-        if (! \is_resource($this->resource)) {
-            return $key !== null ? null : [];
+        if ($this->resource === null) {
+            return $key ? null : [];
         }
 
         $meta = stream_get_meta_data($this->resource);
-        if ($key === null) {
-            return $meta;
+        return $key ? ($meta[$key] ?? null) : $meta;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function close(): void
+    {
+        $this->handler->close();
+        if ($this->resource !== null) {
+            @fclose($this->resource);
+            $this->resource = null;
+        }
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function __toString(): string
+    {
+        if (! $this->isReadable()) {
+            return '';
         }
 
-        return $meta[$key] ?? null;
+        try {
+            if ($this->isSeekable()) {
+                $this->rewind();
+            }
+            return $this->getContents();
+        } catch (\Throwable) {
+            return '';
+        }
     }
 }

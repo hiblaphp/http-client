@@ -112,8 +112,7 @@ class HttpClient implements HttpClientInterface
     public function __construct()
     {
         $this->request = (new Request())
-            ->withUserAgent(self::defaultUserAgent())
-        ;
+            ->withUserAgent(self::defaultUserAgent());
 
         $this->interceptorHandler = new InterceptorHandler();
     }
@@ -208,7 +207,7 @@ class HttpClient implements HttpClientInterface
      */
     public function withHeader(string $name, $value): static
     {
-        return $this->withUpdatedRequest(fn ($r) => $r->withHeader($name, $value));
+        return $this->withUpdatedRequest(fn($r) => $r->withHeader($name, $value));
     }
 
     /**
@@ -216,7 +215,7 @@ class HttpClient implements HttpClientInterface
      */
     public function withAddedHeader(string $name, $value): static
     {
-        return $this->withUpdatedRequest(fn ($r) => $r->withAddedHeader($name, $value));
+        return $this->withUpdatedRequest(fn($r) => $r->withAddedHeader($name, $value));
     }
 
     /**
@@ -224,7 +223,7 @@ class HttpClient implements HttpClientInterface
      */
     public function withoutHeader(string $name): static
     {
-        return $this->withUpdatedRequest(fn ($r) => $r->withoutHeader($name));
+        return $this->withUpdatedRequest(fn($r) => $r->withoutHeader($name));
     }
 
     /**
@@ -240,7 +239,7 @@ class HttpClient implements HttpClientInterface
      */
     public function withBody(StreamInterface $body): static
     {
-        return $this->withUpdatedRequest(fn ($r) => $r->withBody($body));
+        return $this->withUpdatedRequest(fn($r) => $r->withBody($body));
     }
 
     /**
@@ -256,7 +255,7 @@ class HttpClient implements HttpClientInterface
      */
     public function withRequestTarget(string $requestTarget): static
     {
-        return $this->withUpdatedRequest(fn ($r) => $r->withRequestTarget($requestTarget));
+        return $this->withUpdatedRequest(fn($r) => $r->withRequestTarget($requestTarget));
     }
 
     /**
@@ -272,7 +271,7 @@ class HttpClient implements HttpClientInterface
      */
     public function withMethod(string $method): static
     {
-        $new = $this->withUpdatedRequest(fn ($r) => $r->withMethod($method));
+        $new = $this->withUpdatedRequest(fn($r) => $r->withMethod($method));
         $new->methodExplicitlySet = true;
 
         return $new;
@@ -291,7 +290,7 @@ class HttpClient implements HttpClientInterface
      */
     public function withUri(UriInterface $uri, bool $preserveHost = false): static
     {
-        return $this->withUpdatedRequest(fn ($r) => $r->withUri($uri, $preserveHost));
+        return $this->withUpdatedRequest(fn($r) => $r->withUri($uri, $preserveHost));
     }
 
     /**
@@ -299,7 +298,7 @@ class HttpClient implements HttpClientInterface
      */
     public function contentType(string $type): static
     {
-        return $this->withUpdatedRequest(fn ($r) => $r->contentType($type));
+        return $this->withUpdatedRequest(fn($r) => $r->contentType($type));
     }
 
     /**
@@ -307,7 +306,7 @@ class HttpClient implements HttpClientInterface
      */
     public function accept(string $type): static
     {
-        return $this->withUpdatedRequest(fn ($r) => $r->accept($type));
+        return $this->withUpdatedRequest(fn($r) => $r->accept($type));
     }
 
     /**
@@ -315,7 +314,7 @@ class HttpClient implements HttpClientInterface
      */
     public function asJson(): static
     {
-        return $this->withUpdatedRequest(fn ($r) => $r->asJson());
+        return $this->withUpdatedRequest(fn($r) => $r->asJson());
     }
 
     /**
@@ -323,7 +322,7 @@ class HttpClient implements HttpClientInterface
      */
     public function asForm(): static
     {
-        return $this->withUpdatedRequest(fn ($r) => $r->asForm());
+        return $this->withUpdatedRequest(fn($r) => $r->asForm());
     }
 
     /**
@@ -331,7 +330,7 @@ class HttpClient implements HttpClientInterface
      */
     public function withUserAgent(string $userAgent): static
     {
-        return $this->withUpdatedRequest(fn ($r) => $r->withUserAgent($userAgent));
+        return $this->withUpdatedRequest(fn($r) => $r->withUserAgent($userAgent));
     }
 
     /**
@@ -339,7 +338,7 @@ class HttpClient implements HttpClientInterface
      */
     public function withHeaders(array $headers): static
     {
-        return $this->withUpdatedRequest(fn ($r) => $r->withHeaders($headers));
+        return $this->withUpdatedRequest(fn($r) => $r->withHeaders($headers));
     }
 
     /**
@@ -347,7 +346,7 @@ class HttpClient implements HttpClientInterface
      */
     public function withToken(string $token, string $type = 'Bearer'): static
     {
-        return $this->withUpdatedRequest(fn ($r) => $r->withToken($token, $type));
+        return $this->withUpdatedRequest(fn($r) => $r->withToken($token, $type));
     }
 
     /**
@@ -355,7 +354,7 @@ class HttpClient implements HttpClientInterface
      */
     public function withBasicAuth(string $username, string $password): static
     {
-        return $this->withUpdatedRequest(fn ($r) => $r->withBasicAuth($username, $password));
+        return $this->withUpdatedRequest(fn($r) => $r->withBasicAuth($username, $password));
     }
 
     /**
@@ -363,7 +362,7 @@ class HttpClient implements HttpClientInterface
      */
     public function withDigestAuth(string $username, string $password): static
     {
-        return $this->withUpdatedRequest(fn ($r) => $r->withDigestAuth($username, $password));
+        return $this->withUpdatedRequest(fn($r) => $r->withDigestAuth($username, $password));
     }
 
     /**
@@ -371,7 +370,7 @@ class HttpClient implements HttpClientInterface
      */
     public function body(string $content): static
     {
-        return $this->withUpdatedRequest(fn ($r) => $r->body($content));
+        return $this->withUpdatedRequest(fn($r) => $r->body($content));
     }
 
     /**
@@ -379,7 +378,7 @@ class HttpClient implements HttpClientInterface
      */
     public function withJson(array $data): static
     {
-        return $this->withUpdatedRequest(fn ($r) => $r->withJson($data));
+        return $this->withUpdatedRequest(fn($r) => $r->withJson($data));
     }
 
     /**
@@ -387,7 +386,7 @@ class HttpClient implements HttpClientInterface
      */
     public function asXml(): static
     {
-        return $this->withUpdatedRequest(fn ($r) => $r->asXml());
+        return $this->withUpdatedRequest(fn($r) => $r->asXml());
     }
 
     /**
@@ -395,7 +394,7 @@ class HttpClient implements HttpClientInterface
      */
     public function withXml(string|\SimpleXMLElement $xml): static
     {
-        return $this->withUpdatedRequest(fn ($r) => $r->withXml($xml));
+        return $this->withUpdatedRequest(fn($r) => $r->withXml($xml));
     }
 
     /**
@@ -403,7 +402,7 @@ class HttpClient implements HttpClientInterface
      */
     public function withForm(array $data): static
     {
-        return $this->withUpdatedRequest(fn ($r) => $r->withForm($data));
+        return $this->withUpdatedRequest(fn($r) => $r->withForm($data));
     }
 
     /**
@@ -411,7 +410,7 @@ class HttpClient implements HttpClientInterface
      */
     public function withMultipart(array $data): static
     {
-        return $this->withUpdatedRequest(fn ($r) => $r->withMultipart($data));
+        return $this->withUpdatedRequest(fn($r) => $r->withMultipart($data));
     }
 
     /**
@@ -419,7 +418,7 @@ class HttpClient implements HttpClientInterface
      */
     public function withCookie(string $name, string $value): static
     {
-        return $this->withUpdatedRequest(fn ($r) => $r->withCookie($name, $value));
+        return $this->withUpdatedRequest(fn($r) => $r->withCookie($name, $value));
     }
 
     /**
@@ -427,7 +426,7 @@ class HttpClient implements HttpClientInterface
      */
     public function withCookies(array $cookies): static
     {
-        return $this->withUpdatedRequest(fn ($r) => $r->withCookies($cookies));
+        return $this->withUpdatedRequest(fn($r) => $r->withCookies($cookies));
     }
 
     /**
@@ -435,7 +434,7 @@ class HttpClient implements HttpClientInterface
      */
     public function withCookieJar(): static
     {
-        return $this->withUpdatedRequest(fn ($r) => $r->withCookieJar());
+        return $this->withUpdatedRequest(fn($r) => $r->withCookieJar());
     }
 
     /**
@@ -443,7 +442,7 @@ class HttpClient implements HttpClientInterface
      */
     public function useCookieJar(CookieJarInterface $cookieJar): static
     {
-        return $this->withUpdatedRequest(fn ($r) => $r->useCookieJar($cookieJar));
+        return $this->withUpdatedRequest(fn($r) => $r->useCookieJar($cookieJar));
     }
 
     /**
@@ -451,7 +450,7 @@ class HttpClient implements HttpClientInterface
      */
     public function clearCookies(): static
     {
-        return $this->withUpdatedRequest(fn ($r) => $r->clearCookies());
+        return $this->withUpdatedRequest(fn($r) => $r->clearCookies());
     }
 
     /**
@@ -467,7 +466,7 @@ class HttpClient implements HttpClientInterface
      */
     public function cookieWithAttributes(string $name, string $value, array $attributes = []): static
     {
-        return $this->withUpdatedRequest(fn ($r) => $r->cookieWithAttributes($name, $value, $attributes));
+        return $this->withUpdatedRequest(fn($r) => $r->cookieWithAttributes($name, $value, $attributes));
     }
 
     /**
@@ -682,19 +681,15 @@ class HttpClient implements HttpClientInterface
                 'filename' => $filename ?? $file->getClientFilename(),
                 'Content-Type' => $contentType ?? $file->getClientMediaType(),
             ];
-        } elseif (is_string($file) && file_exists($file)) {
-            $resource = fopen($file, 'r');
-            if ($resource === false) {
-                throw new InvalidArgumentException("Unable to open file: {$file}");
-            }
+        } elseif (\is_string($file) && file_exists($file)) {
             $mime = mime_content_type($file);
             $entry = [
                 'name' => $name,
-                'contents' => $resource,
+                'filepath' => $file,
                 'filename' => $filename ?? basename($file),
                 'Content-Type' => $contentType ?? ($mime !== false ? $mime : 'application/octet-stream'),
             ];
-        } elseif (is_resource($file)) {
+        } elseif (\is_resource($file)) {
             $entry = [
                 'name' => $name,
                 'contents' => $file,
@@ -705,7 +700,7 @@ class HttpClient implements HttpClientInterface
             throw new InvalidArgumentException('File must be a file path, UploadedFileInterface, or resource.');
         }
 
-        return $this->withUpdatedRequest(fn ($r) => $r->withMultipartEntry($name, $entry));
+        return $this->withUpdatedRequest(fn($r) => $r->withMultipartEntry($name, $entry));
     }
 
     /**
@@ -779,7 +774,7 @@ class HttpClient implements HttpClientInterface
                     /** @var PromiseInterface<RequestInterface> $result */
                     /** @var PromiseInterface<ResponseInterface> $chained */
                     $chained = $result->then(
-                        static fn (mixed $resolved): PromiseInterface => $next(self::resolveRequest($resolved, true))
+                        static fn(mixed $resolved): PromiseInterface => $next(self::resolveRequest($resolved, true))
                     );
 
                     return $chained;
@@ -814,7 +809,7 @@ class HttpClient implements HttpClientInterface
                         if ($result instanceof PromiseInterface) {
                             /** @var PromiseInterface<ResponseInterface> $result */
                             return $result->then(
-                                static fn (mixed $resolved): ResponseInterface => self::resolveResponse($resolved, true)
+                                static fn(mixed $resolved): ResponseInterface => self::resolveResponse($resolved, true)
                             );
                         }
 
@@ -931,8 +926,7 @@ class HttpClient implements HttpClientInterface
         $expandedUrl = $this->expandUriTemplate($url);
         $initialRequest = $this->request
             ->withMethod($method)
-            ->withUri(new Uri($expandedUrl))
-        ;
+            ->withUri(new Uri($expandedUrl));
 
         return $this->interceptorHandler->process(
             request: $initialRequest,
@@ -949,8 +943,7 @@ class HttpClient implements HttpClientInterface
         $expandedUrl = $this->expandUriTemplate($url);
         $initialRequest = $this->request
             ->withMethod($this->getMethod())
-            ->withUri(new Uri($expandedUrl))
-        ;
+            ->withUri(new Uri($expandedUrl));
 
         return $this->interceptorHandler->process(
             request: $initialRequest,
@@ -981,8 +974,7 @@ class HttpClient implements HttpClientInterface
         $initialRequest = $this->request
             ->withMethod('POST')
             ->withUri(new Uri($expandedUrl))
-            ->withBody($postBody)
-        ;
+            ->withBody($postBody);
 
         return $this->interceptorHandler->process(
             request: $initialRequest,
@@ -1005,8 +997,7 @@ class HttpClient implements HttpClientInterface
         $method = $this->methodExplicitlySet ? $this->getMethod() : 'PUT';
         $initialRequest = $this->request
             ->withMethod($method)
-            ->withUri(new Uri($expandedUrl))
-        ;
+            ->withUri(new Uri($expandedUrl));
 
         return $this->interceptorHandler->process(
             request: $initialRequest,
@@ -1035,8 +1026,7 @@ class HttpClient implements HttpClientInterface
         $expandedUrl = $this->expandUriTemplate($url);
         $initialRequest = $this->request
             ->withMethod($this->getMethod())
-            ->withUri(new Uri($expandedUrl))
-        ;
+            ->withUri(new Uri($expandedUrl));
 
         return $this->interceptorHandler->process(
             request: $initialRequest,
@@ -1070,8 +1060,7 @@ class HttpClient implements HttpClientInterface
 
         $initialRequest = $this->request
             ->withMethod($method)
-            ->withUri(new Uri($expandedUrl))
-        ;
+            ->withUri(new Uri($expandedUrl));
 
         $effectiveTimeout = $this->timeoutExplicitlySet ? $this->timeout : 0;
         $clientOptions = $this->buildClientOptions(

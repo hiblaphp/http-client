@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Interfaces;
 
-use Psr\Http\Message\StreamInterface;
+use Hibla\HttpClient\Interfaces\StreamInterface;
 
 /**
  * Extends ResponseInterface for responses whose body is consumed
@@ -17,10 +17,10 @@ use Psr\Http\Message\StreamInterface;
 interface StreamingResponseInterface extends ResponseInterface
 {
     /**
-     * Return the underlying PSR-7 stream for direct consumption.
+     * Return the underlying enhanced Hibla stream.
      *
-     * The stream cursor position is not guaranteed — callers should
-     * check isSeekable() and rewind() if they need to read from the start.
+     * This stream supports both PSR-7 methods and Hibla's 
+     * asynchronous readAsync/pipe capabilities.
      */
     public function getStream(): StreamInterface;
 
