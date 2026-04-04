@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient;
 
+use Hibla\EventLoop\Loop;
 use Hibla\HttpClient\Interfaces\StreamingResponseInterface;
 use Hibla\HttpClient\Interfaces\StreamInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
-use Hibla\EventLoop\Loop;
 
 /**
  * A streaming HTTP response whose body is consumed incrementally.
@@ -203,7 +203,7 @@ class StreamingResponse extends Response implements StreamingResponseInterface
 
     /**
      * Links the cURL handle ID to this response for cancellation.
-     * 
+     *
      * @internal use by Handler for cancellation
      */
     public function setRequestId(string $requestId): void

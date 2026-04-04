@@ -35,7 +35,7 @@ class StreamingResponseFactory
     public function create(
         MockedRequest $mock,
         ?callable $onChunk,
-        callable $createStream 
+        callable $createStream
     ): PromiseInterface {
         /** @var Promise<StreamingResponse> $promise */
         $promise = new Promise();
@@ -77,7 +77,7 @@ class StreamingResponseFactory
                 if ($resource === false) {
                     throw new HttpException('Failed to create internal stream buffer');
                 }
-                
+
                 $stream = new Stream($resource);
 
                 $promise->resolve(new StreamingResponse(
@@ -102,7 +102,7 @@ class StreamingResponseFactory
     private function processChunks(MockedRequest $mock, ?callable $onChunk, Stream $stream): void
     {
         $chunks = $mock->getBodySequence();
-        
+
         if ($chunks === []) {
             $chunks = [$mock->getBody()];
         }
@@ -115,7 +115,7 @@ class StreamingResponseFactory
 
     /**
      * Recursively schedules the next chunk using the Event Loop.
-     * 
+     *
      * @param array<int, string> $chunks
      */
     private function deliverNextChunk(
@@ -128,6 +128,7 @@ class StreamingResponseFactory
     ): void {
         if ($index >= \count($chunks)) {
             $stream->getHandler()->markEof();
+
             return;
         }
 

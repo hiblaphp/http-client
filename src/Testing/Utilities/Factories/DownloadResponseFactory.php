@@ -89,13 +89,14 @@ class DownloadResponseFactory
                 }
 
                 $this->ensureDirectoryExists($destination, $fileManager);
-                
+
                 $content = $mock->getBody();
                 $file = @fopen($destination, 'wb');
-                
+
                 if ($file === false) {
                     $exception = new HttpStreamException("Cannot open file for writing: {$destination}");
                     $exception->setStreamState('file_write_failed');
+
                     throw $exception;
                 }
 
@@ -121,7 +122,7 @@ class DownloadResponseFactory
 
     /**
      * Recursively writes chunks to the file using the Event Loop to simulate network timing.
-     * 
+     *
      * @param resource $file The open file handle.
      * @param string $content The full body content to write.
      * @param int $offset The current byte offset.
@@ -139,17 +140,18 @@ class DownloadResponseFactory
             if (\is_resource($file)) {
                 fclose($file);
             }
+
             return;
         }
 
         $totalSize = \strlen($content);
-        $chunkSize = 8192; 
+        $chunkSize = 8192;
 
         if ($offset >= $totalSize) {
             if (\is_resource($file)) {
                 fclose($file);
             }
-            
+
             $promise->resolve([
                 'file' => $destination,
                 'status' => $mock->getStatusCode(),
@@ -157,6 +159,7 @@ class DownloadResponseFactory
                 'size' => $totalSize,
                 'protocol_version' => '2.0',
             ]);
+
             return;
         }
 
@@ -174,14 +177,16 @@ class DownloadResponseFactory
                 if (\is_resource($file)) {
                     fclose($file);
                 }
+
                 return;
             }
 
             $chunk = substr($content, $offset, $chunkSize);
-            
+
             if (fwrite($file, $chunk) === false) {
                 fclose($file);
-                $promise->reject(new HttpStreamException("Disk write error during mocked download transfer"));
+                $promise->reject(new HttpStreamException('Disk write error during mocked download transfer'));
+
                 return;
             }
 

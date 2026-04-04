@@ -76,6 +76,7 @@ class UploadResponseFactory
             try {
                 if ($mock->shouldFail()) {
                     $error = $mock->getError() ?? 'Mocked failure';
+
                     throw new NetworkException($error, 0, null, $url, $error);
                 }
 
@@ -89,9 +90,9 @@ class UploadResponseFactory
                         $onProgress(new UploadProgress(0, 0));
                     }
                     $promise->resolve($this->buildResponse($mock, $url));
+
                     return;
                 }
-
 
                 $this->deliverUploadProgressAsync(
                     0,
@@ -129,6 +130,7 @@ class UploadResponseFactory
 
         if ($offset >= $totalSize) {
             $promise->resolve($this->buildResponse($mock, $url));
+
             return;
         }
 
@@ -156,7 +158,7 @@ class UploadResponseFactory
         });
     }
 
-    /** 
+    /**
      * @param MockedRequest $mock
      * @param string $url
      * @return array{headers: array, protocol_version: string, status: int, url: string}

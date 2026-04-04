@@ -112,7 +112,7 @@ class StreamingHandler implements StreamingHandlerInterface
             $streamingResponse->setRequestId($requestId);
         }
 
-        $promise->onCancel(function () use (&$requestId, $stream, $tmpFiles): void { 
+        $promise->onCancel(function () use (&$requestId, $stream, $tmpFiles): void {
             if ($requestId !== null) {
                 Loop::cancelCurlRequest($requestId);
             }

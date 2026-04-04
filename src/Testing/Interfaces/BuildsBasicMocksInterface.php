@@ -28,7 +28,7 @@ interface BuildsBasicMocksInterface
 
     /**
      * Configure the latency injected between each 8KB chunk of data during a transfer.
-     * 
+     *
      * Useful for simulating slow connections, testing timeouts, or progress bars.
      *
      * @param float $seconds Seconds to wait between each chunk.
