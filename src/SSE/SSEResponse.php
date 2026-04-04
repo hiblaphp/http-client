@@ -7,12 +7,17 @@ namespace Hibla\HttpClient\SSE;
 use Hibla\EventLoop\Loop;
 use Hibla\HttpClient\Interfaces\SSEResponseInterface;
 use Hibla\HttpClient\Interfaces\StreamInterface;
-use Hibla\HttpClient\StreamingResponse;
+use Hibla\HttpClient\Response;
 
 /**
- * Represents an SSE streaming response with event parsing capabilities.
+ * Represents an SSE response with event parsing capabilities.
+ *
+ * Extends Response rather than StreamingResponse intentionally — the
+ * underlying stream is an internal implementation detail consumed by
+ * SSEHandler via parseEvents(). Callers interact through onEvent
+ * callbacks and SSEControl, not through stream primitives directly.
  */
-class SSEResponse extends StreamingResponse implements SSEResponseInterface
+class SSEResponse extends Response implements SSEResponseInterface
 {
     private ?string $lastEventId = null;
 
@@ -21,10 +26,10 @@ class SSEResponse extends StreamingResponse implements SSEResponseInterface
     private SSEParser $parser;
 
     /**
-     * @param StreamInterface $stream
-     * @param int $statusCode
-     * @param array<string, string|string[]> $headers
-     * @param string|null $requestId The event loop request ID for this SSE connection
+     * @param StreamInterface $stream The live SSE stream.
+     * @param int $statusCode HTTP status code.
+     * @param array<string, string|string[]> $headers Response headers.
+     * @param string|null $requestId  Event loop request ID for this connection.
      */
     public function __construct(
         StreamInterface $stream,
@@ -38,17 +43,10 @@ class SSEResponse extends StreamingResponse implements SSEResponseInterface
     }
 
     /**
-     * Sets the request ID for this SSE connection.
-     *
-     * @internal Called by SSEBuilder::connect() only.
-     */
-    public function setRequestId(?string $requestId): void
-    {
-        $this->requestId = $requestId;
-    }
-
-    /**
      * @inheritDoc
+     *
+     * Cancels the underlying cURL request before closing the stream.
+     * Safe to call multiple times — subsequent calls are no-ops.
      */
     public function close(): void
     {
@@ -57,7 +55,7 @@ class SSEResponse extends StreamingResponse implements SSEResponseInterface
             $this->requestId = null;
         }
 
-        parent::close();
+        $this->getBody()->close();
     }
 
     /**
@@ -69,11 +67,23 @@ class SSEResponse extends StreamingResponse implements SSEResponseInterface
     }
 
     /**
-     * Parses incoming SSE data chunks and yields events.
+     * Sets the request ID for this SSE connection.
+     *
+     * @internal Called by SSEHandler only after the cURL request is registered.
+     */
+    public function setRequestId(?string $requestId): void
+    {
+        $this->requestId = $requestId;
+    }
+
+    /**
+     * Parse an incoming SSE data chunk and yield discrete events.
+     * Each yielded event updates the
+     * last event ID if the server supplied one.
      *
      * @internal
      *
-     * @param  string  $chunk  Raw SSE data chunk.
+     * @param  string  $chunk  Raw SSE data chunk from the transport layer.
      * @return \Generator<SSEEvent>
      */
     public function parseEvents(string $chunk): \Generator

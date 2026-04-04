@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Hibla\HttpClient\Handlers;
 
 use Hibla\EventLoop\Loop;
+use Hibla\HttpClient\Exceptions\HttpStreamException;
 use Hibla\Promise\Promise;
 use RuntimeException;
 
@@ -117,7 +118,7 @@ class HttpStreamStateHandler
 
         while ($req = array_shift($this->readQueue)) {
             if (! $req['promise']->isCancelled()) {
-                $req['promise']->reject(new RuntimeException('Stream closed'));
+                $req['promise']->reject(new HttpStreamException('Stream closed unexpectedly'));
             }
         }
     }

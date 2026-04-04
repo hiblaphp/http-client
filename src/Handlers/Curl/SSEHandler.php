@@ -315,6 +315,10 @@ class SSEHandler implements SSEHandlerInterface
             }
         );
 
+        if ($sseResponse !== null && $requestId !== null) {
+            $sseResponse->setRequestId($requestId);
+        }
+
         $promise->onCancel(function () use (&$requestId, &$sseResponse, $tmpFiles): void {
             if ($requestId !== null) {
                 Loop::cancelCurlRequest($requestId);

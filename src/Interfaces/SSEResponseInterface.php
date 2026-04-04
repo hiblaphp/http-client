@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Hibla\HttpClient\Interfaces;
 
 /**
- * Extends StreamingResponseInterface for Server-Sent Events connections.
+ * Extends ResponseInterface for Server-Sent Events connections.
  *
  * SSE responses are long-lived streams where the server pushes discrete
  * events.
  */
-interface SSEResponseInterface extends StreamingResponseInterface
+interface SSEResponseInterface extends ResponseInterface
 {
     /**
      * Close the SSE connection and release all underlying resources.

@@ -33,6 +33,12 @@ class StreamingHandler implements StreamingHandlerInterface
 
         $stream = new Stream();
 
+        /** @var StreamingResponse|null $streamingResponse Reference to the response object to link the request ID */
+        $streamingResponse = null;
+
+        /** @var string|null $requestId Reference to the curl request ID to pass into the closure */
+        $requestId = null;
+
         /** @var array<string> $tmpFiles */
         $tmpFiles = $options['_tmp_files'] ?? [];
         unset($options['_tmp_files']);
@@ -53,8 +59,7 @@ class StreamingHandler implements StreamingHandlerInterface
 
                 return \strlen($data);
             },
-
-            CURLOPT_HEADERFUNCTION => function ($ch, string $header) use (&$headersProcessed, &$rawHeaders, $promise, $stream, $url) {
+            CURLOPT_HEADERFUNCTION => function ($ch, string $header) use (&$headersProcessed, &$rawHeaders, $promise, $stream, $url, &$streamingResponse, &$requestId) {
                 $trimmed = trim($header);
                 if ($trimmed !== '') {
                     $rawHeaders[] = $header;
@@ -67,6 +72,11 @@ class StreamingHandler implements StreamingHandlerInterface
                         $parsedHeaders = $this->parseRawHeaders($rawHeaders);
 
                         $streamingResponse = new StreamingResponse($stream, $httpCode, $parsedHeaders);
+
+                        if ($requestId !== null) {
+                            $streamingResponse->setRequestId($requestId);
+                        }
+
                         $promise->resolve($streamingResponse);
                         $headersProcessed = true;
                     }
@@ -98,8 +108,14 @@ class StreamingHandler implements StreamingHandlerInterface
             }
         );
 
-        $promise->onCancel(function () use ($requestId, $stream, $tmpFiles): void {
-            Loop::cancelCurlRequest($requestId);
+        if ($streamingResponse !== null) {
+            $streamingResponse->setRequestId($requestId);
+        }
+
+        $promise->onCancel(function () use (&$requestId, $stream, $tmpFiles): void { 
+            if ($requestId !== null) {
+                Loop::cancelCurlRequest($requestId);
+            }
             $stream->close();
 
             foreach ($tmpFiles as $file) {

@@ -7,6 +7,7 @@ namespace Hibla\HttpClient;
 use Hibla\HttpClient\Interfaces\StreamingResponseInterface;
 use Hibla\HttpClient\Interfaces\StreamInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
+use Hibla\EventLoop\Loop;
 
 /**
  * A streaming HTTP response whose body is consumed incrementally.
@@ -24,6 +25,8 @@ class StreamingResponse extends Response implements StreamingResponseInterface
      * Stream so that subsequent body() calls remain consistent.
      */
     private bool $streamConsumed = false;
+
+    private ?string $requestId = null;
 
     /**
      * @param StreamInterface              $stream  The live response stream.
@@ -190,7 +193,22 @@ class StreamingResponse extends Response implements StreamingResponseInterface
      */
     public function close(): void
     {
+        if ($this->requestId !== null) {
+            Loop::cancelCurlRequest($this->requestId);
+            $this->requestId = null;
+        }
+
         $this->stream->close();
+    }
+
+    /**
+     * Links the cURL handle ID to this response for cancellation.
+     * 
+     * @internal use by Handler for cancellation
+     */
+    public function setRequestId(string $requestId): void
+    {
+        $this->requestId = $requestId;
     }
 
     /**
