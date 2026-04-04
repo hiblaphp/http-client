@@ -138,9 +138,7 @@ it('creates stream with formatted SSE content', function () {
 
     $resolvedResponse = $promise->wait();
 
-    expect($resolvedResponse)->toBeInstanceOf(SSEResponse::class)
-        ->and($resolvedResponse->getStream())->not->toBeNull()
-    ;
+    expect($resolvedResponse)->toBeInstanceOf(SSEResponse::class);
 });
 
 it('handles multiple event updates correctly', function () {

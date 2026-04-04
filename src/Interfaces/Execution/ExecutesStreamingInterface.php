@@ -21,15 +21,6 @@ interface ExecutesStreamingInterface
     public function stream(string $url, ?callable $onChunk = null): PromiseInterface;
 
     /**
-     * Open a streaming POST request.
-     *
-     * @param  string|resource|array<string, mixed>|null $body
-     * @param  (callable(string): void)|null $onChunk
-     * @return PromiseInterface<StreamingResponseInterface>
-     */
-    public function streamPost(string $url, mixed $body = null, ?callable $onChunk = null): PromiseInterface;
-
-    /**
      * Download a remote resource and write it to $destination.
      *
      * @param  string  $destination  Absolute path where the file should be written.

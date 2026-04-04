@@ -403,6 +403,39 @@ describe('Stream', function () {
             $result = await($stream->readLineAsync(5));
             expect($result)->toBe("hello world\n");
         });
+
+        it('correctly reads all lines when multiple lines arrive in a single chunk', function () {
+            $stream = Stream::fromString("line one\nline two\nline three\nline four\nline five\n");
+
+            expect(await($stream->readLineAsync()))->toBe("line one\n");
+            expect(await($stream->readLineAsync()))->toBe("line two\n");
+            expect(await($stream->readLineAsync()))->toBe("line three\n");
+            expect(await($stream->readLineAsync()))->toBe("line four\n");
+            expect(await($stream->readLineAsync()))->toBe("line five\n");
+            expect(await($stream->readLineAsync()))->toBeNull();
+        });
+
+        it('does not duplicate content when lines span multiple async writes', function () {
+            $stream = new Stream();
+
+            $promise1 = $stream->readLineAsync();
+            $stream->write("first\n");
+            expect(await($promise1))->toBe("first\n");
+
+            $promise2 = $stream->readLineAsync();
+            $stream->write("second\n");
+            expect(await($promise2))->toBe("second\n");
+
+            $promise3 = $stream->readLineAsync();
+            $stream->write("third\n");
+            expect(await($promise3))->toBe("third\n");
+
+            $promise4 = $stream->readLineAsync();
+            $stream->write("fourth\n");
+            $result = await($promise4);
+            expect($result)->toBe("fourth\n");
+            expect($result)->not->toContain('third');
+        });
     });
 
     describe('readAllAsync', function () {

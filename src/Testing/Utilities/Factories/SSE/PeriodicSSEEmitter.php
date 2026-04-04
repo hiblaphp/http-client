@@ -108,7 +108,7 @@ class PeriodicSSEEmitter
                 &$periodicTimerId,
                 $sseResponse,
             ) {
-                if (! $sseResponse->getStream()->isWritable()) {
+                if (! $sseResponse->isWritable()) {
                     if ($periodicTimerId !== null) {
                         Loop::cancelTimer($periodicTimerId);
                         $periodicTimerId = null;
@@ -118,7 +118,7 @@ class PeriodicSSEEmitter
                 }
 
                 try {
-                    $sseResponse->getStream()->tell();
+                    $sseResponse->tell();
                 } catch (\Throwable $e) {
                     if ($periodicTimerId !== null) {
                         Loop::cancelTimer($periodicTimerId);
@@ -141,7 +141,7 @@ class PeriodicSSEEmitter
                 $eventData = $eventGenerator($eventIndex);
                 if (\is_array($eventData)) {
                     $formattedEvent = $this->formatter->formatEvents([$eventData]);
-                    $sseResponse->getStream()->write($formattedEvent);
+                    $sseResponse->write($formattedEvent);
 
                     $parsedEvents = $sseResponse->parseEvents($formattedEvent);
                     foreach ($parsedEvents as $event) {
@@ -215,7 +215,7 @@ class PeriodicSSEEmitter
                 &$periodicTimerId,
                 $sseResponse
             ) {
-                if (! $sseResponse->getStream()->isWritable()) {
+                if (! $sseResponse->isWritable()) {
                     if ($periodicTimerId !== null) {
                         Loop::cancelTimer($periodicTimerId);
                         $periodicTimerId = null;
@@ -225,7 +225,7 @@ class PeriodicSSEEmitter
                 }
 
                 try {
-                    $sseResponse->getStream()->tell();
+                    $sseResponse->tell();
                 } catch (\Throwable $e) {
                     if ($periodicTimerId !== null) {
                         Loop::cancelTimer($periodicTimerId);
@@ -253,7 +253,7 @@ class PeriodicSSEEmitter
 
                 $eventData = $events[$eventIndex];
                 $formattedEvent = $this->formatter->formatEvents([$eventData]);
-                $sseResponse->getStream()->write($formattedEvent);
+                $sseResponse->write($formattedEvent);
 
                 $parsedEvents = $sseResponse->parseEvents($formattedEvent);
                 foreach ($parsedEvents as $event) {

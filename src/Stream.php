@@ -119,6 +119,8 @@ class Stream implements StreamInterface
             return Promise::resolved($line);
         }
 
+        $this->handler->setPrependBuffer('');
+
         return $this->lineHandler->readLineFromStream($buffer, $maxLen);
     }
 

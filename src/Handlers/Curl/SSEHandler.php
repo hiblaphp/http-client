@@ -320,7 +320,7 @@ class SSEHandler implements SSEHandlerInterface
                 Loop::cancelCurlRequest($requestId);
             }
 
-            $sseResponse?->getStream()->close();
+            $sseResponse?->close();
 
             foreach ($tmpFiles as $file) {
                 if (file_exists($file)) {

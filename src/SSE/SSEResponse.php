@@ -57,15 +57,7 @@ class SSEResponse extends StreamingResponse implements SSEResponseInterface
             $this->requestId = null;
         }
 
-        $this->getStream()->close();
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function getStream(): StreamInterface
-    {
-        return parent::getStream();
+        parent::close();
     }
 
     /**

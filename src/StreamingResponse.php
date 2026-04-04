@@ -6,43 +6,43 @@ namespace Hibla\HttpClient;
 
 use Hibla\HttpClient\Interfaces\StreamingResponseInterface;
 use Hibla\HttpClient\Interfaces\StreamInterface;
+use Hibla\Promise\Interfaces\PromiseInterface;
 
-use function Hibla\async;
-use function Hibla\await;
-
+/**
+ * A streaming HTTP response whose body is consumed incrementally.
+ *
+ * Extends Response with full StreamInterface delegation so callers can
+ * read the body asynchronously without buffering it in full — no getter
+ * required, the response itself is the stream.
+ */
 class StreamingResponse extends Response implements StreamingResponseInterface
 {
     /**
-     * The unified stream interface.
-     */
-    private StreamInterface $stream;
-
-    /**
-     * Flag to track whether the stream has been consumed.
+     * Tracks whether the stream body has already been fully consumed.
+     *
+     * Once consumed the body is snapshotted into a rewindable in-memory
+     * Stream so that subsequent body() calls remain consistent.
      */
     private bool $streamConsumed = false;
 
     /**
-     * @param  StreamInterface  $stream  The enhanced stream.
-     * @param  int  $status  The HTTP status code.
-     * @param  array<string, string|string[]>  $headers  Optional HTTP headers.
+     * @param StreamInterface              $stream  The live response stream.
+     * @param int                          $status  HTTP status code.
+     * @param array<string, string|string[]> $headers Optional response headers.
      */
-    public function __construct(StreamInterface $stream, int $status, array $headers = [])
-    {
-        $this->stream = $stream;
+    public function __construct(
+        private readonly StreamInterface $stream,
+        int $status,
+        array $headers = [],
+    ) {
         parent::__construct($stream, $status, $headers);
     }
 
     /**
      * @inheritDoc
-     */
-    public function getStream(): StreamInterface
-    {
-        return $this->stream;
-    }
-
-    /**
-     * @inheritDoc
+     *
+     * Reads the stream to exhaustion on first call, then snapshots the result
+     * into a rewindable buffer so repeated calls are safe.
      */
     public function body(): string
     {
@@ -52,7 +52,6 @@ class StreamingResponse extends Response implements StreamingResponseInterface
 
         $content = $this->stream->getContents();
         $this->streamConsumed = true;
-
         $this->body = Stream::fromString($content);
 
         return $content;
@@ -61,57 +60,144 @@ class StreamingResponse extends Response implements StreamingResponseInterface
     /**
      * @inheritDoc
      */
-    public function saveToFile(string $path): bool
+    public function readAsync(?int $length = null): PromiseInterface
     {
-        $file = @fopen($path, 'wb');
-        if ($file === false) {
-            return false;
-        }
-
-        try {
-            $success = $this->streamTo($file);
-
-            return $success;
-        } finally {
-            fclose($file);
-        }
+        return $this->stream->readAsync($length);
     }
 
     /**
      * @inheritDoc
      */
-    public function streamTo(mixed $destination): bool
+    public function readLineAsync(?int $maxLength = null): PromiseInterface
     {
-        return await(
-            async(function () use ($destination) {
-                if (\is_string($destination)) {
-                    return $this->saveToFile($destination);
-                }
+        return $this->stream->readLineAsync($maxLength);
+    }
 
-                if (! \is_resource($destination)) {
-                    return false;
-                }
+    /**
+     * @inheritDoc
+     */
+    public function readAllAsync(int $maxLength = 1048576): PromiseInterface
+    {
+        return $this->stream->readAllAsync($maxLength);
+    }
 
-                try {
-                    if ($this->stream->isSeekable()) {
-                        $this->stream->rewind();
-                    }
+    /**
+     * @inheritDoc
+     */
+    public function read(int $length): string
+    {
+        return $this->stream->read($length);
+    }
 
-                    while (($chunk = await($this->stream->readAsync(8192))) !== null) {
-                        if ($chunk === '') {
-                            continue;
-                        }
+    /**
+     * @inheritDoc
+     */
+    public function getContents(): string
+    {
+        return $this->stream->getContents();
+    }
 
-                        if (@fwrite($destination, $chunk) === false) {
-                            return false;
-                        }
-                    }
+    /**
+     * @inheritDoc
+     */
+    public function getSize(): ?int
+    {
+        return $this->stream->getSize();
+    }
 
-                    return true;
-                } catch (\Throwable) {
-                    return false;
-                }
-            })
-        );
+    /**
+     * @inheritDoc
+     */
+    public function getMetadata(?string $key = null): mixed
+    {
+        return $this->stream->getMetadata($key);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function tell(): int
+    {
+        return $this->stream->tell();
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function eof(): bool
+    {
+        return $this->stream->eof();
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function isSeekable(): bool
+    {
+        return $this->stream->isSeekable();
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function isReadable(): bool
+    {
+        return $this->stream->isReadable();
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function isWritable(): bool
+    {
+        return $this->stream->isWritable();
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function seek(int $offset, int $whence = SEEK_SET): void
+    {
+        $this->stream->seek($offset, $whence);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function rewind(): void
+    {
+        $this->stream->rewind();
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function write(string $string): int
+    {
+        return $this->stream->write($string);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function detach(): mixed
+    {
+        return $this->stream->detach();
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function close(): void
+    {
+        $this->stream->close();
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function __toString(): string
+    {
+        return (string) $this->stream;
     }
 }
