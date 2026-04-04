@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Testing\Utilities\Factories;
 
+use Hibla\EventLoop\Loop;
 use Hibla\HttpClient\Exceptions\HttpStreamException;
 use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Testing\MockedRequest;
@@ -27,7 +28,7 @@ class UploadResponseFactory
     }
 
     /**
-     * Creates a mock upload response.
+     * Creates a mock upload response with realistic asynchronous progress delivery.
      *
      * @return PromiseInterface<array{url: string, status: int, headers: array<string, string>, protocol_version: string|null}>
      */
@@ -75,39 +76,99 @@ class UploadResponseFactory
             try {
                 if ($mock->shouldFail()) {
                     $error = $mock->getError() ?? 'Mocked failure';
-
                     throw new NetworkException($error, 0, null, $url, $error);
                 }
 
-                if ($onProgress !== null) {
-                    $total = filesize($source);
-                    if ($total === false) {
-                        $total = 0;
-                    }
-
-                    if ($total === 0) {
-                        $onProgress(new UploadProgress(0, 0));
-                    } else {
-                        $chunkSize = 8192;
-                        for ($i = 0; $i < $total; $i += $chunkSize) {
-                            $uploaded = min($total, $i + $chunkSize);
-                            $onProgress(new UploadProgress($total, $uploaded));
-                        }
-                    }
+                $totalSize = filesize($source);
+                if ($totalSize === false) {
+                    $totalSize = 0;
                 }
 
-                $promise->resolve([
-                    'url' => $url,
-                    'status' => $mock->getStatusCode(),
-                    'headers' => $this->normalizeHeaders($mock->getHeaders()),
-                    'protocol_version' => '2.0',
-                ]);
+                if ($totalSize === 0) {
+                    if ($onProgress !== null) {
+                        $onProgress(new UploadProgress(0, 0));
+                    }
+                    $promise->resolve($this->buildResponse($mock, $url));
+                    return;
+                }
+
+
+                $this->deliverUploadProgressAsync(
+                    0,
+                    $totalSize,
+                    $mock,
+                    $onProgress,
+                    $promise,
+                    $url
+                );
+
             } catch (\Exception $e) {
                 $promise->reject($e);
             }
         });
 
         return $promise;
+    }
+
+    /**
+     * Recursively simulates the upload progress using the Event Loop.
+     */
+    private function deliverUploadProgressAsync(
+        int $offset,
+        int $totalSize,
+        MockedRequest $mock,
+        ?callable $onProgress,
+        Promise $promise,
+        string $url
+    ): void {
+        if ($promise->isCancelled()) {
+            return;
+        }
+
+        $chunkSize = 8192;
+
+        if ($offset >= $totalSize) {
+            $promise->resolve($this->buildResponse($mock, $url));
+            return;
+        }
+
+        $baseDelay = $mock->getChunkDelay();
+        $jitter = $mock->getChunkJitter();
+
+        $actualDelay = $baseDelay;
+        if ($jitter > 0 && $baseDelay > 0) {
+            $variation = ($baseDelay * $jitter);
+            $actualDelay += (mt_rand() / mt_getrandmax() * 2 * $variation) - $variation;
+        }
+
+        Loop::addTimer(max(0, $actualDelay), function () use ($offset, $totalSize, $chunkSize, $mock, $onProgress, $promise, $url) {
+            if ($promise->isCancelled()) {
+                return;
+            }
+
+            $newOffset = min($totalSize, $offset + $chunkSize);
+
+            if ($onProgress !== null) {
+                $onProgress(new UploadProgress($totalSize, $newOffset));
+            }
+
+            $this->deliverUploadProgressAsync($newOffset, $totalSize, $mock, $onProgress, $promise, $url);
+        });
+    }
+
+    /** 
+     * @param MockedRequest $mock
+     * @param string $url
+     * @return array{headers: array, protocol_version: string, status: int, url: string}
+     */
+    private function buildResponse(MockedRequest $mock, string $url): array
+    {
+        return [
+            'url' => $url,
+            'status' => $mock->getStatusCode(),
+            'headers' => $this->normalizeHeaders($mock->getHeaders()),
+            'protocol_version' => '2.0',
+        ];
     }
 
     private function normalizeHeaders(array $headers): array

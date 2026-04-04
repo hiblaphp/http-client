@@ -27,6 +27,16 @@ interface BuildsBasicMocksInterface
     public function respondWith(string $body): static;
 
     /**
+     * Configure the latency injected between each 8KB chunk of data during a transfer.
+     * 
+     * Useful for simulating slow connections, testing timeouts, or progress bars.
+     *
+     * @param float $seconds Seconds to wait between each chunk.
+     * @param float $jitter Random variation (0.0 to 1.0) to apply to the latency.
+     */
+    public function dataStreamTransferLatency(float $seconds, float $jitter = 0): static;
+
+    /**
      * Set the response body as JSON.
      *
      * @param array<string, mixed> $data
