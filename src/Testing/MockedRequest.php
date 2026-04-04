@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Testing;
 
+use Hibla\HttpClient\Testing\Utilities\RecordedRequest;
+
 /**
  * Represents a mocked HTTP request with matching criteria and response data.
  */
@@ -110,6 +112,20 @@ class MockedRequest
     private array $sseEvents = [];
 
     /**
+     * A custom closure to match the request.
+     *
+     * @var (callable(RecordedRequest): bool)|null
+     */
+    private $matcherClosure = null;
+
+    /**
+     * SSE stream configuration.
+     *
+     * @var array<string, mixed>|null
+     */
+    private ?array $sseStreamConfig = null;
+
+    /**
      * Creates a new mocked request.
      *
      * @param string $method HTTP method to match (default: '*' for any)
@@ -119,8 +135,15 @@ class MockedRequest
         $this->method = $method;
     }
 
-    /** @var array<string, mixed>|null */
-    private ?array $sseStreamConfig = null;
+    /**
+     * Sets a custom closure matcher.
+     *
+     * @param callable(RecordedRequest): bool $callback
+     */
+    public function setMatcherClosure(callable $callback): void
+    {
+        $this->matcherClosure = $callback;
+    }
 
     /**
      * @param array<string, mixed> $config
@@ -352,6 +375,13 @@ class MockedRequest
             }
             $decoded = json_decode($body, true);
             if ($decoded !== $this->jsonMatcher) {
+                return false;
+            }
+        }
+
+        if ($this->matcherClosure !== null) {
+            $recorded = new RecordedRequest($method, $url, $options);
+            if (!($this->matcherClosure)($recorded)) {
                 return false;
             }
         }

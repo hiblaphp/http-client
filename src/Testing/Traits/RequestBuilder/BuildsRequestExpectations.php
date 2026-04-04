@@ -4,9 +4,23 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Testing\Traits\RequestBuilder;
 
+use Hibla\HttpClient\Testing\Utilities\RecordedRequest;
+
 trait BuildsRequestExpectations
 {
     abstract protected function getRequest();
+
+    /**
+     * Expect a custom condition via closure.
+     * 
+     * @param callable(RecordedRequest): bool $callback
+     */
+    public function expect(callable $callback): static
+    {
+        $this->getRequest()->setMatcherClosure($callback);
+
+        return $this;
+    }
 
     /**
      * Expect a specific header in the request.

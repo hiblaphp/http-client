@@ -4,8 +4,19 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Testing\Interfaces;
 
+use Hibla\HttpClient\Testing\Utilities\RecordedRequest;
+
 interface BuildsRequestExpectationsInterface
 {
+    /**
+     * Use a custom closure to determine if a request matches this mock.
+     * 
+     * The callback receives a RecordedRequest instance and must return a boolean.
+     *
+     * @param callable(RecordedRequest): bool $callback
+     */
+    public function expect(callable $callback): static;
+
     /**
      * Expect a specific header in the request.
      */
