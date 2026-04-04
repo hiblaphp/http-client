@@ -8,6 +8,9 @@ use Hibla\HttpClient\Exceptions\HttpStreamException;
 use Hibla\HttpClient\Interfaces\StreamInterface;
 use Hibla\HttpClient\Handlers\HttpStreamStateHandler;
 use Hibla\Promise\Interfaces\PromiseInterface;
+use Hibla\Promise\Promise;
+use Hibla\Stream\Handlers\ReadAllHandler;
+use Hibla\Stream\Handlers\ReadLineHandler;
 use Hibla\Stream\Interfaces\WritableStreamInterface;
 
 /**
@@ -21,6 +24,10 @@ class Stream implements StreamInterface
 
     private HttpStreamStateHandler $handler;
 
+    private ReadLineHandler $lineHandler;
+
+    private ReadAllHandler $allHandler;
+
     /**
      * Initializes a new Stream instance.
      *
@@ -31,12 +38,22 @@ class Stream implements StreamInterface
     public function __construct($resource = null)
     {
         $this->resource = $resource ?? fopen('php://temp', 'w+b');
-        
+
         if ($this->resource === false || ! \is_resource($this->resource)) {
             throw new HttpStreamException('Unable to create or use temporary stream');
         }
 
         $this->handler = new HttpStreamStateHandler($this->resource);
+
+        $this->lineHandler = new ReadLineHandler(
+            $this->readAsync(...),
+            fn(string $data) => $this->handler->setPrependBuffer($data . $this->handler->getPrependBuffer())
+        );
+
+        $this->allHandler = new ReadAllHandler(
+            65536,
+            $this->readAsync(...)
+        );
     }
 
     /**
@@ -50,10 +67,10 @@ class Stream implements StreamInterface
     {
         $stream = new self();
         if ($content !== '') {
-            $stream->write($content); 
+            $stream->write($content);
         }
         $stream->getHandler()->markEof();
-        
+
         return $stream;
     }
 
@@ -72,7 +89,11 @@ class Stream implements StreamInterface
      */
     public function readAsync(?int $length = null): PromiseInterface
     {
-        return $this->handler->readAsync($length);
+        /** @var Promise<string|null> $promise */
+        $promise = new Promise();
+        $this->handler->enqueueRead($length ?? 65536, $promise);
+
+        return $promise;
     }
 
     /**
@@ -80,7 +101,25 @@ class Stream implements StreamInterface
      */
     public function readLineAsync(?int $maxLength = null): PromiseInterface
     {
-        return $this->handler->readLineAsync($maxLength);
+        if ($this->handler->isClosed()) {
+            return Promise::rejected(new HttpStreamException('Stream is closed'));
+        }
+
+        if ($this->handler->isEof()) {
+            return Promise::resolved(null);
+        }
+
+        $maxLen = $maxLength ?? 65536;
+        $buffer = $this->handler->getPrependBuffer();
+
+        $line = $this->lineHandler->findLineInBuffer($buffer, $maxLen);
+
+        if ($line !== null) {
+            $this->handler->setPrependBuffer($buffer);
+            return Promise::resolved($line);
+        }
+
+        return $this->lineHandler->readLineFromStream($buffer, $maxLen);
     }
 
     /**
@@ -88,7 +127,14 @@ class Stream implements StreamInterface
      */
     public function readAllAsync(int $maxLength = 1048576): PromiseInterface
     {
-        return $this->handler->readAllAsync($maxLength);
+        if ($this->handler->isClosed()) {
+            return Promise::rejected(new HttpStreamException('Stream is closed'));
+        }
+
+        $buffer = $this->handler->getPrependBuffer();
+        $this->handler->setPrependBuffer('');
+
+        return $this->allHandler->readAll($buffer, $maxLength);
     }
 
     /**
@@ -96,7 +142,43 @@ class Stream implements StreamInterface
      */
     public function pipeAsync(WritableStreamInterface $destination, array $options = []): PromiseInterface
     {
-        return $this->handler->pipeAsync($destination, $options);
+        /** @var Promise<int> $promise */
+        $promise = new Promise();
+        $total = 0;
+        $endDest = $options['end'] ?? true;
+        $cancelled = false;
+
+        /** @var PromiseInterface<string|null>|null $currentRead */
+        $currentRead = null;
+
+        $promise->onCancel(function () use (&$cancelled, &$currentRead) {
+            $cancelled = true;
+            if ($currentRead) $currentRead->cancel();
+        });
+
+        $pump = function () use ($destination, $promise, $endDest, &$total, &$pump, &$cancelled, &$currentRead) {
+            if ($this->handler->isClosed() || $cancelled) return;
+
+            $currentRead = $this->readAsync();
+            $currentRead->then(function ($chunk) use ($destination, $promise, $endDest, &$total, &$pump, $cancelled) {
+                if ($cancelled) return;
+                if ($chunk === null) {
+                    if ($endDest) $destination->end();
+                    $promise->resolve($total);
+                    return;
+                }
+                $total += \strlen($chunk);
+                if ($destination->write($chunk)) {
+                    $pump();
+                } else {
+                    $destination->once('drain', $pump);
+                }
+            })->catch($promise->reject(...));
+        };
+
+        $pump();
+        
+        return $promise;
     }
 
     /**
@@ -126,15 +208,11 @@ class Stream implements StreamInterface
             throw new HttpStreamException('Stream is detached');
         }
 
-        if (! $this->isSeekable()) {
-            throw new HttpStreamException('Stream is not seekable');
-        }
-
         if (fseek($this->resource, $offset, $whence) === -1) {
-            throw new HttpStreamException("Unable to seek to position {$offset} with whence {$whence}");
+            throw new HttpStreamException("Unable to seek to position {$offset}");
         }
-
-        $this->handler->clearBuffer();
+        
+        $this->handler->clearBuffers();
     }
 
     /**
@@ -145,7 +223,7 @@ class Stream implements StreamInterface
         $res = $this->resource;
         $this->resource = null;
         $this->close();
-        
+
         return $res;
     }
 
@@ -190,16 +268,16 @@ class Stream implements StreamInterface
     /**
      * {@inheritdoc}
      */
-    public function rewind(): void 
-    { 
-        $this->seek(0); 
+    public function rewind(): void
+    {
+        $this->seek(0);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function isWritable(): bool 
-    { 
+    public function isWritable(): bool
+    {
         if ($this->resource === null) {
             return false;
         }
@@ -213,8 +291,8 @@ class Stream implements StreamInterface
     /**
      * {@inheritdoc}
      */
-    public function write(string $string): int 
-    { 
+    public function write(string $string): int
+    {
         if ($this->resource === null) {
             throw new HttpStreamException('Stream is detached');
         }
@@ -224,7 +302,7 @@ class Stream implements StreamInterface
         }
 
         $this->handler->writeToBuffer($string);
-        
+
         return \strlen($string);
     }
 
@@ -267,7 +345,7 @@ class Stream implements StreamInterface
         }
 
         $data = fread($this->resource, $length);
-        
+
         if ($data === false) {
             throw new HttpStreamException('Unable to read from stream');
         }
@@ -291,7 +369,7 @@ class Stream implements StreamInterface
         }
 
         $data = stream_get_contents($this->resource);
-        
+
         if ($data === false) {
             throw new HttpStreamException('Unable to read stream contents');
         }
