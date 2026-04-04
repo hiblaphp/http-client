@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Interfaces;
 
-use Hibla\HttpClient\Interfaces\StreamInterface;
-
 /**
  * Extends ResponseInterface for responses whose body is consumed
  * incrementally rather than buffered in full.
@@ -19,7 +17,7 @@ interface StreamingResponseInterface extends ResponseInterface
     /**
      * Return the underlying enhanced Hibla stream.
      *
-     * This stream supports both PSR-7 methods and Hibla's 
+     * This stream supports both PSR-7 methods and Hibla's
      * asynchronous readAsync/pipe capabilities.
      */
     public function getStream(): StreamInterface;

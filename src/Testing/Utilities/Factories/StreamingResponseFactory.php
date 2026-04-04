@@ -5,14 +5,13 @@ declare(strict_types=1);
 namespace Hibla\HttpClient\Testing\Utilities\Factories;
 
 use Hibla\HttpClient\Exceptions\HttpException;
-use Hibla\HttpClient\Exceptions\HttpStreamException;
+use Hibla\HttpClient\Stream;
 use Hibla\HttpClient\StreamingResponse;
 use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Testing\Utilities\Handlers\DelayCalculator;
 use Hibla\HttpClient\Testing\Utilities\Handlers\NetworkSimulationHandler;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Hibla\Promise\Promise;
-use Psr\Http\Message\StreamInterface;
 
 use function Hibla\delay;
 
@@ -77,8 +76,8 @@ class StreamingResponseFactory
 
                 $stream = $createStream($mock->getBody());
 
-                if (! $stream instanceof StreamInterface) {
-                    throw new HttpStreamException('Stream creator must return a StreamInterface instance');
+                if ($stream instanceof Stream) {
+                    $stream->getHandler()->markEof();
                 }
 
                 $promise->resolve(new StreamingResponse(

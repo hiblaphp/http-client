@@ -58,7 +58,7 @@ class CurlOptionsBuilder implements TransportOptionsBuilderInterface
 
         $stringKeyOptions = array_filter(
             $options->additionalOptions,
-            fn($key) => \is_string($key),
+            fn ($key) => \is_string($key),
             ARRAY_FILTER_USE_KEY
         );
 
@@ -280,7 +280,7 @@ class CurlOptionsBuilder implements TransportOptionsBuilderInterface
                 if ($contents->isSeekable()) {
                     $contents->rewind();
                 }
-                while (!$contents->eof()) {
+                while (! $contents->eof()) {
                     fwrite($dest, $contents->read(8192));
                 }
             } elseif (\is_resource($contents)) {
@@ -290,7 +290,7 @@ class CurlOptionsBuilder implements TransportOptionsBuilderInterface
                 fwrite($dest, $contents);
             }
         }
-        
+
         fclose($dest);
 
         $tmpFiles[] = $tmpPath;

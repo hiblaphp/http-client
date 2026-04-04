@@ -70,6 +70,7 @@ class StreamingResponse extends Response implements StreamingResponseInterface
 
         try {
             $success = $this->streamTo($file);
+
             return $success;
         } finally {
             fclose($file);
@@ -102,7 +103,7 @@ class StreamingResponse extends Response implements StreamingResponseInterface
                         }
 
                         if (@fwrite($destination, $chunk) === false) {
-                            return false; 
+                            return false;
                         }
                     }
 

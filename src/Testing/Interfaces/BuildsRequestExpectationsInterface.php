@@ -10,7 +10,7 @@ interface BuildsRequestExpectationsInterface
 {
     /**
      * Use a custom closure to determine if a request matches this mock.
-     * 
+     *
      * The callback receives a RecordedRequest instance and must return a boolean.
      *
      * @param callable(RecordedRequest): bool $callback

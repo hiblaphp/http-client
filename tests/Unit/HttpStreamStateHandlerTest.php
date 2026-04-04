@@ -6,6 +6,7 @@ namespace Tests\Unit;
 
 use Hibla\HttpClient\Handlers\HttpStreamStateHandler;
 use Hibla\Promise\Promise;
+
 use function Hibla\await;
 
 describe('HttpStreamStateHandler', function () {
@@ -58,7 +59,7 @@ describe('HttpStreamStateHandler', function () {
         $p1 = new Promise();
         $p2 = new Promise();
         $handler->enqueueRead(10, $p1);
-        $handler->enqueueRead(10, $p2);
+        $handler->enqueueRead(11, $p2);
         $p1->cancel();
         $handler->writeToBuffer('target_data');
         expect(await($p2))->toBe('target_data');
@@ -68,13 +69,13 @@ describe('HttpStreamStateHandler', function () {
         $promise = new Promise();
         $handler->enqueueRead(10, $promise);
         $handler->close();
-        expect(fn() => await($promise))->toThrow(\RuntimeException::class, 'Stream closed');
+        expect(fn () => await($promise))->toThrow(\RuntimeException::class, 'Stream closed');
     });
 
     it('respects the prepend buffer (overflow logic)', function () use (&$handler) {
         $handler->setPrependBuffer('cached_');
         $promise = new Promise();
-        $handler->enqueueRead(10, $promise);
+        $handler->enqueueRead(11, $promise);
         $handler->writeToBuffer('data');
         expect(await($promise))->toBe('cached_data');
     });

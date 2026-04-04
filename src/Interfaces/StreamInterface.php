@@ -5,13 +5,12 @@ declare(strict_types=1);
 namespace Hibla\HttpClient\Interfaces;
 
 use Hibla\Promise\Interfaces\PromiseInterface;
-use Hibla\Stream\Interfaces\WritableStreamInterface;
 use Psr\Http\Message\StreamInterface as Psr7StreamInterface;
 
 /**
  * The modern, expressive HTTP Stream interface for Hibla.
- * 
- * Provides full PSR-7 compatibility combined with high-performance, 
+ *
+ * Provides full PSR-7 compatibility combined with high-performance,
  * non-blocking Promise-based operations.
  */
 interface StreamInterface extends Psr7StreamInterface
@@ -39,14 +38,4 @@ interface StreamInterface extends Psr7StreamInterface
      * @return PromiseInterface<string> Resolves with the complete contents.
      */
     public function readAllAsync(int $maxLength = 1048576): PromiseInterface;
-
-    /**
-     * Forwards all data from this stream to a destination, automatically 
-     * handling backpressure.
-     *
-     * @param WritableStreamInterface $destination The stream to receive the data.
-     * @param array{end?: bool} $options Configure piping behavior.
-     * @return PromiseInterface<int> Resolves with the total number of bytes piped.
-     */
-    public function pipeAsync(WritableStreamInterface $destination, array $options = []): PromiseInterface;
 }

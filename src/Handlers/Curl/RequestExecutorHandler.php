@@ -52,7 +52,7 @@ class RequestExecutorHandler implements RequestExecutorHandlerInterface
             $url,
             $curlOnlyOptions,
             function (?string $error, ?string $response, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $promise, $cookieJar, $timeout, $connectTimeout, $tmpFiles) {
-                
+
                 // Clean up temporary multipart files
                 foreach ($tmpFiles as $file) {
                     if (file_exists($file)) {

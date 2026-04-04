@@ -381,7 +381,7 @@ class MockedRequest
 
         if ($this->matcherClosure !== null) {
             $recorded = new RecordedRequest($method, $url, $options);
-            if (!($this->matcherClosure)($recorded)) {
+            if (! ($this->matcherClosure)($recorded)) {
                 return false;
             }
         }

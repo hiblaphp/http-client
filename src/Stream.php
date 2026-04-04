@@ -5,16 +5,15 @@ declare(strict_types=1);
 namespace Hibla\HttpClient;
 
 use Hibla\HttpClient\Exceptions\HttpStreamException;
-use Hibla\HttpClient\Interfaces\StreamInterface;
 use Hibla\HttpClient\Handlers\HttpStreamStateHandler;
+use Hibla\HttpClient\Interfaces\StreamInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Hibla\Promise\Promise;
 use Hibla\Stream\Handlers\ReadAllHandler;
 use Hibla\Stream\Handlers\ReadLineHandler;
-use Hibla\Stream\Interfaces\WritableStreamInterface;
 
 /**
- * A perfectly clean, PSR-7 compliant HTTP stream with modern Promise-based 
+ * A perfectly clean, PSR-7 compliant HTTP stream with modern Promise-based
  * asynchronous iteration capabilities.
  */
 class Stream implements StreamInterface
@@ -47,7 +46,7 @@ class Stream implements StreamInterface
 
         $this->lineHandler = new ReadLineHandler(
             $this->readAsync(...),
-            fn(string $data) => $this->handler->setPrependBuffer($data . $this->handler->getPrependBuffer())
+            fn (string $data) => $this->handler->setPrependBuffer($data . $this->handler->getPrependBuffer())
         );
 
         $this->allHandler = new ReadAllHandler(
@@ -76,7 +75,7 @@ class Stream implements StreamInterface
 
     /**
      * Retrieve the internal state machine handler.
-     * 
+     *
      * @internal Used by StreamingHandler to interact natively.
      */
     public function getHandler(): HttpStreamStateHandler
@@ -116,6 +115,7 @@ class Stream implements StreamInterface
 
         if ($line !== null) {
             $this->handler->setPrependBuffer($buffer);
+
             return Promise::resolved($line);
         }
 
@@ -135,50 +135,6 @@ class Stream implements StreamInterface
         $this->handler->setPrependBuffer('');
 
         return $this->allHandler->readAll($buffer, $maxLength);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function pipeAsync(WritableStreamInterface $destination, array $options = []): PromiseInterface
-    {
-        /** @var Promise<int> $promise */
-        $promise = new Promise();
-        $total = 0;
-        $endDest = $options['end'] ?? true;
-        $cancelled = false;
-
-        /** @var PromiseInterface<string|null>|null $currentRead */
-        $currentRead = null;
-
-        $promise->onCancel(function () use (&$cancelled, &$currentRead) {
-            $cancelled = true;
-            if ($currentRead) $currentRead->cancel();
-        });
-
-        $pump = function () use ($destination, $promise, $endDest, &$total, &$pump, &$cancelled, &$currentRead) {
-            if ($this->handler->isClosed() || $cancelled) return;
-
-            $currentRead = $this->readAsync();
-            $currentRead->then(function ($chunk) use ($destination, $promise, $endDest, &$total, &$pump, $cancelled) {
-                if ($cancelled) return;
-                if ($chunk === null) {
-                    if ($endDest) $destination->end();
-                    $promise->resolve($total);
-                    return;
-                }
-                $total += \strlen($chunk);
-                if ($destination->write($chunk)) {
-                    $pump();
-                } else {
-                    $destination->once('drain', $pump);
-                }
-            })->catch($promise->reject(...));
-        };
-
-        $pump();
-        
-        return $promise;
     }
 
     /**
@@ -208,10 +164,14 @@ class Stream implements StreamInterface
             throw new HttpStreamException('Stream is detached');
         }
 
+        if (! $this->isSeekable()) {
+            throw new HttpStreamException("Unable to seek to position {$offset}");
+        }
+
         if (fseek($this->resource, $offset, $whence) === -1) {
             throw new HttpStreamException("Unable to seek to position {$offset}");
         }
-        
+
         $this->handler->clearBuffers();
     }
 
@@ -237,6 +197,7 @@ class Stream implements StreamInterface
         }
 
         $stats = fstat($this->resource);
+
         return $stats['size'] ?? null;
     }
 
@@ -262,6 +223,7 @@ class Stream implements StreamInterface
         }
 
         $meta = stream_get_meta_data($this->resource);
+
         return $meta['seekable'];
     }
 
@@ -323,7 +285,7 @@ class Stream implements StreamInterface
 
     /**
      * {@inheritdoc}
-     * 
+     *
      * Note: This is a blocking operation. Use readAsync() instead.
      */
     public function read(int $length): string
@@ -355,7 +317,7 @@ class Stream implements StreamInterface
 
     /**
      * {@inheritdoc}
-     * 
+     *
      * Note: This is a blocking operation. Use readAllAsync() instead.
      */
     public function getContents(): string
@@ -387,6 +349,7 @@ class Stream implements StreamInterface
         }
 
         $meta = stream_get_meta_data($this->resource);
+
         return $key ? ($meta[$key] ?? null) : $meta;
     }
 
@@ -415,6 +378,7 @@ class Stream implements StreamInterface
             if ($this->isSeekable()) {
                 $this->rewind();
             }
+
             return $this->getContents();
         } catch (\Throwable) {
             return '';

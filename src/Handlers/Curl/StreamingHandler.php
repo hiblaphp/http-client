@@ -10,6 +10,7 @@ use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Interfaces\Handler\StreamingHandlerInterface;
 use Hibla\HttpClient\Stream;
 use Hibla\HttpClient\StreamingResponse;
+use Hibla\HttpClient\Traits\NormalizeHeaderTrait;
 use Hibla\HttpClient\ValueObjects\DownloadProgress;
 use Hibla\HttpClient\ValueObjects\UploadProgress;
 use Hibla\Promise\Interfaces\PromiseInterface;
@@ -17,6 +18,8 @@ use Hibla\Promise\Promise;
 
 class StreamingHandler implements StreamingHandlerInterface
 {
+    use NormalizeHeaderTrait;
+
     /**
      * @inheritDoc
      */
@@ -57,11 +60,11 @@ class StreamingHandler implements StreamingHandlerInterface
                     $rawHeaders[] = $header;
                 }
 
-                if (!$headersProcessed && $trimmed === '') {
+                if (! $headersProcessed && $trimmed === '') {
                     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
                     if ($httpCode > 0) {
-                        $parsedHeaders = $this->parseHeaders($rawHeaders);
+                        $parsedHeaders = $this->parseRawHeaders($rawHeaders);
 
                         $streamingResponse = new StreamingResponse($stream, $httpCode, $parsedHeaders);
                         $promise->resolve($streamingResponse);
@@ -70,7 +73,7 @@ class StreamingHandler implements StreamingHandlerInterface
                 }
 
                 return \strlen($header);
-            }
+            },
         ]);
 
         $requestId = Loop::addCurlRequest(
@@ -85,7 +88,7 @@ class StreamingHandler implements StreamingHandlerInterface
                 }
 
                 if ($error !== null) {
-                    if (!$promise->isSettled()) {
+                    if (! $promise->isSettled()) {
                         $promise->reject(new NetworkException("Streaming failed: $error", 0, null, $url, $error));
                     }
                     $stream->close();
@@ -314,24 +317,5 @@ class StreamingHandler implements StreamingHandlerInterface
         });
 
         return $promise;
-    }
-
-    /**
-     * Helper to parse raw header strings into an associative array.
-     * 
-     * @param string[] $rawHeaders
-     * @return array<string, string>
-     */
-    private function parseHeaders(array $rawHeaders): array
-    {
-        $parsed = [];
-        foreach ($rawHeaders as $line) {
-            if (str_contains($line, ':')) {
-                [$name, $value] = explode(':', $line, 2);
-                $parsed[trim($name)] = trim($value);
-            }
-        }
-
-        return $parsed;
     }
 }

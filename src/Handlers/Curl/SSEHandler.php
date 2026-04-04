@@ -14,11 +14,14 @@ use Hibla\HttpClient\SSE\SSEEvent;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
 use Hibla\HttpClient\SSE\SSEResponse;
 use Hibla\HttpClient\Stream;
+use Hibla\HttpClient\Traits\NormalizeHeaderTrait;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Hibla\Promise\Promise;
 
 class SSEHandler implements SSEHandlerInterface
 {
+    use NormalizeHeaderTrait;
+
     /**
      * {@inheritDoc}
      */
@@ -191,9 +194,14 @@ class SSEHandler implements SSEHandlerInterface
         $promise = new Promise();
         /** @var SSEResponse|null $sseResponse */
         $sseResponse = null;
+        /** @var Stream|null $stream */
+        $stream = null;
         $headersProcessed = false;
         $rawHeaders = [];
         $requestId = null;
+
+        $tmpFiles = $options['_tmp_files'] ?? [];
+        unset($options['_tmp_files']);
 
         $curlOnlyOptions = array_filter($options, 'is_int', ARRAY_FILTER_USE_KEY);
 
@@ -222,7 +230,7 @@ class SSEHandler implements SSEHandlerInterface
 
                 return \strlen($data);
             },
-            CURLOPT_HEADERFUNCTION => function ($ch, string $header) use ($url, $promise, &$sseResponse, &$headersProcessed, &$rawHeaders, &$requestId) {
+            CURLOPT_HEADERFUNCTION => function ($ch, string $header) use ($url, $promise, &$sseResponse, &$headersProcessed, &$rawHeaders, &$requestId, &$stream) {
                 if ($promise->isSettled()) {
                     return \strlen($header);
                 }
@@ -240,32 +248,16 @@ class SSEHandler implements SSEHandlerInterface
 
                 if (! $headersProcessed && $httpCode > 0 && $trimmedHeader === '') {
                     if ($httpCode >= 200 && $httpCode < 300) {
-                        $tempStream = fopen('php://temp', 'r+');
-                        if ($tempStream === false) {
-                            $exception = new HttpStreamException('Failed to create temp stream', 0, null, $url);
-                            $exception->setStreamState('stream_creation_failed');
-                            $promise->reject($exception);
-                        } else {
-                            $parsedHeaders = [];
-                            foreach ($rawHeaders as $h) {
-                                if (str_contains($h, ':')) {
-                                    [$name, $value] = explode(':', $h, 2);
-                                    $name = trim($name);
-                                    if (! isset($parsedHeaders[$name])) {
-                                        $parsedHeaders[$name] = [];
-                                    }
-                                    $parsedHeaders[$name][] = trim($value);
-                                }
-                            }
+                        $parsedHeaders = $this->parseRawHeaders($rawHeaders);
 
-                            $sseResponse = new SSEResponse(new Stream($tempStream), $httpCode, $parsedHeaders);
+                        $stream = new Stream();
+                        $sseResponse = new SSEResponse($stream, $httpCode, $parsedHeaders);
 
-                            if ($requestId !== null) {
-                                $sseResponse->setRequestId($requestId);
-                            }
-
-                            $promise->resolve($sseResponse);
+                        if ($requestId !== null) {
+                            $sseResponse->setRequestId($requestId);
                         }
+
+                        $promise->resolve($sseResponse);
                     } else {
                         $exception = new HttpStreamException("SSE connection failed with status: {$httpCode}", 0, null, $url);
                         $exception->setStreamState('invalid_status_code');
@@ -281,7 +273,14 @@ class SSEHandler implements SSEHandlerInterface
         $requestId = Loop::addCurlRequest(
             $url,
             $sseOptions,
-            function (?string $error, ?string $response, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $promise, $onError, &$sseResponse) {
+            function (?string $error, ?string $response, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $promise, $onError, &$sseResponse, $tmpFiles, &$stream) {
+
+                foreach ($tmpFiles as $file) {
+                    if (file_exists($file)) {
+                        @unlink($file);
+                    }
+                }
+
                 if ($promise->isSettled()) {
                     if ($onError !== null && $error !== null) {
                         $onError($error);
@@ -305,7 +304,8 @@ class SSEHandler implements SSEHandlerInterface
 
                     $promise->reject($exception);
                 } else {
-                    if ($sseResponse !== null) {
+                    if ($sseResponse !== null && $stream !== null) {
+                        $stream->getHandler()->markEof();
                         $promise->resolve($sseResponse);
                     } else {
                         $exception = new HttpStreamException('SSE stream completed without response', 0, null, $url);
@@ -315,11 +315,18 @@ class SSEHandler implements SSEHandlerInterface
             }
         );
 
-        $promise->onCancel(function () use (&$requestId, &$sseResponse): void {
+        $promise->onCancel(function () use (&$requestId, &$sseResponse, $tmpFiles): void {
             if ($requestId !== null) {
                 Loop::cancelCurlRequest($requestId);
             }
+
             $sseResponse?->getStream()->close();
+
+            foreach ($tmpFiles as $file) {
+                if (file_exists($file)) {
+                    @unlink($file);
+                }
+            }
         });
 
         return $promise;

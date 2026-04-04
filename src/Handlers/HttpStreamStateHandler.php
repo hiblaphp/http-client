@@ -10,11 +10,11 @@ use RuntimeException;
 
 /**
  * Manages the internal state, buffer, and promise fulfilling for an HttpStream.
- * 
+ *
  * This class is internal and should not be used directly by application code.
- * It focuses strictly on the state machine logic required to support push-based 
+ * It focuses strictly on the state machine logic required to support push-based
  * updates from cURL.
- * 
+ *
  * @internal
  */
 class HttpStreamStateHandler
@@ -22,7 +22,9 @@ class HttpStreamStateHandler
     /** @var resource|null */
     private $resource;
 
-    /** @var array<int, array{promise: Promise<string|null>, length: int}> */
+    /**
+     *  @var array<int, array{promise: Promise<string|null>, length: int}>
+     */
     private array $readQueue = [];
 
     private bool $eof = false;
@@ -39,18 +41,20 @@ class HttpStreamStateHandler
     }
 
     /**
-     * Adds a promise to the internal fulfillment queue.
+     * @param int $length
+     * @param Promise<string|null> $promise
      */
     public function enqueueRead(int $length, Promise $promise): void
     {
         if ($this->closed) {
             $promise->reject(new RuntimeException('Stream is closed'));
+
             return;
         }
 
         $this->readQueue[] = ['promise' => $promise, 'length' => $length];
 
-        $promise->onCancel(fn() => $this->dequeueRead($promise));
+        $promise->onCancel(fn () => $this->dequeueRead($promise));
 
         $this->pump();
     }
@@ -61,6 +65,7 @@ class HttpStreamStateHandler
             if ($item['promise'] === $promise) {
                 unset($this->readQueue[$index]);
                 $this->readQueue = array_values($this->readQueue);
+
                 break;
             }
         }
@@ -94,19 +99,24 @@ class HttpStreamStateHandler
 
     public function isEof(): bool
     {
-        if ($this->resource === null) return true;
+        if ($this->resource === null) {
+            return true;
+        }
         $fstat = fstat($this->resource);
         $size = $fstat['size'] ?? 0;
-        return $this->eof && empty($this->prependBuffer) && ($this->readPosition >= $size);
+
+        return $this->eof && $this->prependBuffer === '' && ($this->readPosition >= $size);
     }
 
     public function close(): void
     {
-        if ($this->closed) return;
+        if ($this->closed) {
+            return;
+        }
         $this->closed = true;
 
         while ($req = array_shift($this->readQueue)) {
-            if (!$req['promise']->isCancelled()) {
+            if (! $req['promise']->isCancelled()) {
                 $req['promise']->reject(new RuntimeException('Stream closed'));
             }
         }
@@ -114,7 +124,7 @@ class HttpStreamStateHandler
 
     public function pump(): void
     {
-        if (empty($this->readQueue) || $this->resource === null) {
+        if (\count($this->readQueue) === 0 || $this->resource === null) {
             return;
         }
 
@@ -125,12 +135,20 @@ class HttpStreamStateHandler
         fseek($this->resource, $current, SEEK_SET);
 
         $available = $end - $current;
+        $totalAvailable = \strlen($this->prependBuffer) + $available;
 
-        if ($available > 0 || $this->prependBuffer !== '') {
+        if ($totalAvailable > 0) {
+            $next = $this->readQueue[0];
+
+            if ($available === 0 && $totalAvailable < $next['length'] && ! $this->eof) {
+                return;
+            }
+
             $req = array_shift($this->readQueue);
 
             if ($req['promise']->isCancelled()) {
                 Loop::microTask($this->pump(...));
+
                 return;
             }
 
@@ -140,25 +158,25 @@ class HttpStreamStateHandler
             if ($this->prependBuffer !== '') {
                 $chunk = substr($this->prependBuffer, 0, $length);
                 $this->prependBuffer = substr($this->prependBuffer, strlen($chunk));
-                $length -= \strlen($chunk);
+                $length -= strlen($chunk);
             }
 
             if ($length > 0 && $available > 0) {
                 $fileChunk = fread($this->resource, $length);
                 if ($fileChunk !== false) {
                     $chunk .= $fileChunk;
-                    $this->readPosition += \strlen($fileChunk);
+                    $this->readPosition += strlen($fileChunk);
                 }
             }
 
             $req['promise']->resolve($chunk);
 
-            if (!empty($this->readQueue)) {
+            if (\count($this->readQueue) > 0) {
                 Loop::microTask($this->pump(...));
             }
         } elseif ($this->eof) {
             while ($req = array_shift($this->readQueue)) {
-                if (!$req['promise']->isCancelled()) {
+                if (! $req['promise']->isCancelled()) {
                     $req['promise']->resolve(null);
                 }
             }
@@ -174,7 +192,6 @@ class HttpStreamStateHandler
     {
         $this->prependBuffer = $data;
     }
-
 
     public function getReadPosition(): int
     {

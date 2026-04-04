@@ -16,7 +16,6 @@ trait StreamTrait
     private function createTempStream(): StreamInterface
     {
         $resource = fopen('php://temp', 'r+');
-        
         if ($resource === false) {
             throw new HttpStreamException('Unable to create temporary stream');
         }
@@ -41,12 +40,15 @@ trait StreamTrait
             throw new HttpStreamException('Failed to create temporary stream');
         }
 
+        $stream = new Stream($resource);
+
         if ($content !== '') {
-            fwrite($resource, $content);
-            rewind($resource);
+            $stream->getHandler()->writeToBuffer($content);
         }
 
-        return new Stream($resource);
+        $stream->getHandler()->markEof();
+
+        return $stream;
     }
 
     /**

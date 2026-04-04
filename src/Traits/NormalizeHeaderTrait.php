@@ -32,4 +32,30 @@ trait NormalizeHeaderTrait
 
         return $normalized;
     }
+
+    /**
+     * Parses raw header strings from cURL into an associative array of arrays.
+     *
+     * Groups multiple headers with the same name (e.g., Set-Cookie) into
+     * a single array under that name, complying with PSR-7 structure.
+     *
+     * @param string[] $rawHeaders Array of raw header lines (e.g., "Content-Type: text/html").
+     * @return array<string, array<int, string>> Parsed headers.
+     */
+    private function parseRawHeaders(array $rawHeaders): array
+    {
+        $parsed = [];
+
+        foreach ($rawHeaders as $line) {
+            if (str_contains($line, ':')) {
+                [$name, $value] = explode(':', $line, 2);
+                $name = trim($name);
+                $value = trim($value);
+
+                $parsed[$name][] = $value;
+            }
+        }
+
+        return $parsed;
+    }
 }

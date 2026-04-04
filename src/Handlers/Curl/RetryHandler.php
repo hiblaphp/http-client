@@ -68,6 +68,7 @@ class RetryHandler implements RetryHandlerInterface
                                 @unlink($file);
                             }
                         }
+
                         return;
                     }
 
