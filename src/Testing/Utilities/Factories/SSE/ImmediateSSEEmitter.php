@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Hibla\HttpClient\Testing\Utilities\Factories\SSE;
 
 use Hibla\EventLoop\Loop;
-use Hibla\HttpClient\Exceptions\HttpStreamException;
+use Hibla\HttpClient\SSE\SSEParser;
 use Hibla\HttpClient\SSE\SSEResponse;
 use Hibla\HttpClient\Stream;
 use Hibla\HttpClient\Testing\MockedRequest;
@@ -35,27 +35,21 @@ class ImmediateSSEEmitter
         ?string &$lastEventId,
         ?int &$retryInterval
     ): void {
-        $resource = fopen('php://temp', 'w+b');
-        if ($resource === false) {
-            throw new HttpStreamException('Failed to create temporary stream');
-        }
-
-        $stream = new Stream($resource);
+        $stream = new Stream(fopen('php://temp', 'r+b'));
         $sseResponse = new SSEResponse(
             $stream,
             $mock->getStatusCode(),
             $mock->getHeaders()
         );
 
-        $sseContent = $this->formatter->formatEvents($mock->getSSEEvents());
-        $sseResponse->getStream()->write($sseContent);
-
         $promise->resolve($sseResponse);
 
-        Loop::addTimer(0, function () use ($sseResponse, $sseContent, $onEvent, &$lastEventId, &$retryInterval) {
-            $events = $sseResponse->parseEvents($sseContent);
+        $sseContent = $this->formatter->formatEvents($mock->getSSEEvents());
 
-            foreach ($events as $event) {
+        Loop::addTimer(0, function () use ($sseContent, $onEvent, &$lastEventId, &$retryInterval) {
+            $parser = new SSEParser();
+
+            foreach ($parser->parse($sseContent) as $event) {
                 if ($event->id !== null) {
                     $lastEventId = $event->id;
                 }
