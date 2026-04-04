@@ -6,6 +6,8 @@ namespace Hibla\HttpClient\ValueObjects;
 
 class Cookie
 {
+    private int $receivedAt;
+
     public function __construct(
         private string $name,
         private string $value,
@@ -17,6 +19,7 @@ class Cookie
         private ?int $maxAge = null,
         private ?string $sameSite = null
     ) {
+        $this->receivedAt = time();
     }
 
     /**
@@ -93,15 +96,19 @@ class Cookie
 
     /**
      * Checks if the cookie has expired.
+     *
+     * Per RFC 6265 section 4.1.2.2, Max-Age takes precedence over Expires when both
+     * are present. Max-Age is a relative duration in seconds from when the
+     * cookie was received, not a static flag.
      */
     public function isExpired(): bool
     {
-        if ($this->expires !== null) {
-            return time() >= $this->expires;
+        if ($this->maxAge !== null) {
+            return time() >= ($this->receivedAt + $this->maxAge);
         }
 
-        if ($this->maxAge !== null) {
-            return $this->maxAge <= 0;
+        if ($this->expires !== null) {
+            return time() >= $this->expires;
         }
 
         return false;
@@ -112,22 +119,18 @@ class Cookie
      */
     public function matches(string $domain, string $path, bool $isSecure = false): bool
     {
-        // Check if cookie is expired
         if ($this->isExpired()) {
             return false;
         }
 
-        // Check secure flag
         if ($this->secure && ! $isSecure) {
             return false;
         }
 
-        // Check domain
         if (! $this->matchesDomain($domain)) {
             return false;
         }
 
-        // Check path
         if (! $this->matchesPath($path)) {
             return false;
         }
@@ -137,6 +140,11 @@ class Cookie
 
     /**
      * Checks if the cookie's domain matches the request domain.
+     *
+     * Per RFC 6265 section 5.1.3:
+     * - Comparison is case-insensitive (both sides canonicalized to lowercase).
+     * - Suffix matching is only valid for hostnames, not IP addresses.
+     * - A leading dot on the cookie domain enables subdomain matching.
      */
     private function matchesDomain(string $requestDomain): bool
     {
@@ -144,18 +152,17 @@ class Cookie
             return true;
         }
 
-        $cookieDomain = $this->domain;
-
-        if (str_starts_with($cookieDomain, '.')) {
-            $cookieDomain = substr($cookieDomain, 1);
-        }
+        $cookieDomain = strtolower(ltrim($this->domain, '.'));
+        $requestDomain = strtolower($requestDomain);
 
         if ($cookieDomain === $requestDomain) {
             return true;
         }
 
-        if (str_starts_with($this->domain, '.')) {
-            return str_ends_with($requestDomain, '.' . $cookieDomain) || $requestDomain === $cookieDomain;
+        // Subdomain suffix match — only when domain starts with '.'
+        // and the request host is not a raw IP address (RFC 6265 section 5.1.3).
+        if (str_starts_with($this->domain, '.') && ! filter_var($requestDomain, FILTER_VALIDATE_IP)) {
+            return str_ends_with($requestDomain, '.' . $cookieDomain);
         }
 
         return false;
@@ -170,12 +177,10 @@ class Cookie
             return true;
         }
 
-        // Exact match
         if ($this->path === $requestPath) {
             return true;
         }
 
-        // Path prefix match
         if (str_starts_with($requestPath, $this->path)) {
             return str_ends_with($this->path, '/') ||
                 (isset($requestPath[strlen($this->path)]) && $requestPath[strlen($this->path)] === '/');
@@ -232,16 +237,24 @@ class Cookie
 
     /**
      * Creates a Cookie from a Set-Cookie header value.
+     *
+     * Per rfc6265 section 5.2:
+     * - Strings containing CTL characters (except HTAB) are rejected.
+     * - A cookie with an empty name is rejected.
      */
     public static function fromSetCookieHeader(string $setCookieHeader): ?self
     {
+        // Reject CTL characters excluding HTAB (\x09) per rfc6265 section 5.2.
+        if (preg_match('/[\x00-\x08\x0A-\x1F\x7F]/', $setCookieHeader)) {
+            return null;
+        }
+
         $parts = array_map('trim', explode(';', $setCookieHeader));
 
         if (\count($parts) === 0) {
             return null;
         }
 
-        // Parse name=value pair
         $nameValuePair = array_shift($parts);
         $equalPos = strpos($nameValuePair, '=');
 
@@ -249,7 +262,13 @@ class Cookie
             return null;
         }
 
-        $name = substr($nameValuePair, 0, $equalPos);
+        $name = trim(substr($nameValuePair, 0, $equalPos));
+
+        // Reject empty cookie names.
+        if ($name === '') {
+            return null;
+        }
+
         $value = urldecode(substr($nameValuePair, $equalPos + 1));
 
         $expires = null;
@@ -260,7 +279,6 @@ class Cookie
         $httpOnly = false;
         $sameSite = null;
 
-        // Parse attributes
         foreach ($parts as $part) {
             if (strcasecmp($part, 'Secure') === 0) {
                 $secure = true;
