@@ -7,6 +7,7 @@ namespace Hibla\HttpClient\ValueObjects;
 class Cookie
 {
     private int $receivedAt;
+    private int $createdAt;
 
     public function __construct(
         private string $name,
@@ -17,88 +18,173 @@ class Cookie
         private bool $secure = false,
         private bool $httpOnly = false,
         private ?int $maxAge = null,
-        private ?string $sameSite = null
+        private ?string $sameSite = null,
+        private bool $hostOnly = false,
+        private bool $persistent = false,
+        ?int $createdAt = null,
     ) {
         $this->receivedAt = time();
+        $this->createdAt  = $createdAt ?? time();
     }
 
     /**
-     * Gets the cookie name.
+     * Checks if the given string is a valid RFC 2616 token for use as a cookie name.
+     *
+     * Rejects empty strings, control characters, and HTTP separator characters.
      */
+    public static function isValidName(string $name): bool
+    {
+        return $name !== ''
+            && ! preg_match('/[\x00-\x1F\x7F-\xFF()<>@,;:\\\\"\/\[\]?={} \t]/', $name);
+    }
+
+    /**
+     * Checks if the given string conforms to the cookie-octet character set
+     * defined in RFC 6265 section 4.1.1.
+     *
+     * Allowed octets: %x21 / %x23-2B / %x2D-3A / %x3C-5B / %x5D-7E
+     *
+     * DQUOTE-wrapped values ("cookie-octets") are also accepted per the RFC grammar.
+     */
+    public static function isValidValue(string $value): bool
+    {
+        $inner = (str_starts_with($value, '"') && str_ends_with($value, '"') && strlen($value) >= 2)
+            ? substr($value, 1, -1)
+            : $value;
+
+        return $inner === ''
+            || ! preg_match('/[^\x21\x23-\x2B\x2D-\x3A\x3C-\x5B\x5D-\x7E]/', $inner);
+    }
+
+    /**
+     * Assert the cookie name is a valid RFC 2616 token.
+     *
+     * @throws \InvalidArgumentException
+     */
+    public static function assertValidName(string $name): void
+    {
+        if (! self::isValidName($name)) {
+            throw new \InvalidArgumentException(
+                $name === ''
+                    ? 'Cookie name must not be empty (RFC 6265 section 4.1.1).'
+                    : sprintf(
+                        'Cookie name "%s" contains characters not permitted in an HTTP token '
+                            . '(RFC 2616 section 2.2, referenced by RFC 6265 section 4.1.1).',
+                        $name,
+                    )
+            );
+        }
+    }
+
+    /**
+     * Assert the cookie value contains only cookie-octet characters.
+     *
+     * Allowed octets per RFC 6265 section 4.1.1:
+     *   %x21 / %x23-2B / %x2D-3A / %x3C-5B / %x5D-7E
+     *
+     * For values containing characters outside the allowed set (e.g. spaces,
+     * commas), encode first using Base64 as recommended by RFC 6265 section 4.1.1:
+     *   assertValidValue(base64_encode($arbitraryValue))
+     *
+     * @throws \InvalidArgumentException
+     */
+    public static function assertValidValue(string $value): void
+    {
+        if (! self::isValidValue($value)) {
+            throw new \InvalidArgumentException(sprintf(
+                'Cookie value "%s" contains characters outside the cookie-octet set '
+                    . 'defined in RFC 6265 section 4.1.1. '
+                    . 'For arbitrary data, Base64-encode the value first: base64_encode($value).',
+                $value,
+            ));
+        }
+    }
+
     public function getName(): string
     {
         return $this->name;
     }
 
-    /**
-     * Gets the cookie value.
-     */
     public function getValue(): string
     {
         return $this->value;
     }
 
-    /**
-     * Gets the cookie domain.
-     */
     public function getDomain(): ?string
     {
         return $this->domain;
     }
 
-    /**
-     * Gets the cookie path, defaults to '/'.
-     */
     public function getPath(): string
     {
         return $this->path ?? '/';
     }
 
-    /**
-     * Gets the cookie expiration timestamp.
-     */
     public function getExpires(): ?int
     {
         return $this->expires;
     }
 
-    /**
-     * Gets the cookie max-age value.
-     */
     public function getMaxAge(): ?int
     {
         return $this->maxAge;
     }
 
-    /**
-     * Checks if the cookie is secure.
-     */
     public function isSecure(): bool
     {
         return $this->secure;
     }
 
-    /**
-     * Checks if the cookie is HTTP-only.
-     */
     public function isHttpOnly(): bool
     {
         return $this->httpOnly;
     }
 
-    /**
-     * Gets the SameSite attribute value.
-     */
     public function getSameSite(): ?string
     {
         return $this->sameSite;
     }
 
     /**
+     * Whether this cookie is host-only.
+     *
+     * Per RFC 6265 section 5.3 step 6: when the Set-Cookie header contains no
+     * Domain attribute, the host-only-flag is set to true and the cookie may
+     * only be sent to the exact origin host that set it.
+     */
+    public function isHostOnly(): bool
+    {
+        return $this->hostOnly;
+    }
+
+    /**
+     * Whether this cookie is persistent.
+     *
+     * Per RFC 6265 section 5.3 step 3: a cookie is persistent when a Max-Age
+     * or Expires attribute was present. Session cookies (persistent-flag false)
+     * should be discarded when the session ends.
+     */
+    public function isPersistent(): bool
+    {
+        return $this->persistent;
+    }
+
+    /**
+     * Return the creation timestamp.
+     *
+     * Per RFC 6265 section 5.3 step 11.3: when a cookie is overwritten in the
+     * store, the creation-time of the old cookie is preserved on the replacement.
+     */
+    public function getCreatedAt(): int
+    {
+        return $this->createdAt;
+    }
+
+    /**
      * Checks if the cookie has expired.
      *
-     * Per RFC 6265 section 4.1.2.2, Max-Age takes precedence over Expires when both
-     * are present. Max-Age is a relative duration in seconds from when the
+     * Per RFC 6265 section 4.1.2.2, Max-Age takes precedence over Expires when
+     * both are present. Max-Age is a relative duration in seconds from when the
      * cookie was received, not a static flag.
      */
     public function isExpired(): bool
@@ -115,7 +201,7 @@ class Cookie
     }
 
     /**
-     * Checks if this cookie matches the given domain and path.
+     * Checks if this cookie matches the given domain, path, and scheme.
      */
     public function matches(string $domain, string $path, bool $isSecure = false): bool
     {
@@ -141,19 +227,27 @@ class Cookie
     /**
      * Checks if the cookie's domain matches the request domain.
      *
-     * Per RFC 6265 section 5.1.3:
-     * - Comparison is case-insensitive (both sides canonicalized to lowercase).
-     * - Suffix matching is only valid for hostnames, not IP addresses.
-     * - A leading dot on the cookie domain enables subdomain matching.
+     * Per RFC 6265 section 5.3 step 6:
+     * - Host-only cookies must match the exact origin domain (no subdomain matching).
+     * - Domain cookies use suffix matching rules from section 5.1.3.
      */
     private function matchesDomain(string $requestDomain): bool
     {
+        $requestDomain = strtolower($requestDomain);
+
+        // Host-only: must match the exact domain the cookie was set on.
+        // Per RFC 6265 section 5.3 step 6 — no Domain attribute was present
+        // in the Set-Cookie header, so subdomain matching is not permitted.
+        if ($this->hostOnly) {
+            return $this->domain !== null
+                && $requestDomain === strtolower($this->domain);
+        }
+
         if ($this->domain === null) {
             return true;
         }
 
         $cookieDomain = strtolower(ltrim($this->domain, '.'));
-        $requestDomain = strtolower($requestDomain);
 
         if ($cookieDomain === $requestDomain) {
             return true;
@@ -182,8 +276,8 @@ class Cookie
         }
 
         if (str_starts_with($requestPath, $this->path)) {
-            return str_ends_with($this->path, '/') ||
-                (isset($requestPath[strlen($this->path)]) && $requestPath[strlen($this->path)] === '/');
+            return str_ends_with($this->path, '/')
+                || (isset($requestPath[strlen($this->path)]) && $requestPath[strlen($this->path)] === '/');
         }
 
         return false;
@@ -238,13 +332,24 @@ class Cookie
     /**
      * Creates a Cookie from a Set-Cookie header value.
      *
-     * Per rfc6265 section 5.2:
+     * Per RFC 6265 section 5.3:
      * - Strings containing CTL characters (except HTAB) are rejected.
-     * - A cookie with an empty name is rejected.
+     * - A cookie with an empty or invalid name is rejected.
+     * - A cookie with a value outside the cookie-octet set is rejected.
+     * - When no Domain attribute is present, the host-only-flag is set to true
+     *   and the domain is set to the canonicalized request-host (step 6).
+     * - The persistent-flag is set to true when Max-Age or Expires is present (step 3).
+     *
+     * @param string      $setCookieHeader The raw Set-Cookie header value.
+     * @param string|null $originHost      The host that sent the response. Required
+     *                                     for correct host-only-flag behaviour.
      */
-    public static function fromSetCookieHeader(string $setCookieHeader): ?self
+    public static function fromSetCookieHeader(string $setCookieHeader, ?string $originHost = null): ?self
     {
-        // Reject CTL characters excluding HTAB (\x09) per rfc6265 section 5.2.
+        // Defensively reject CTL characters (excluding HTAB) to prevent malformed
+        // input from producing unpredictable behaviour. This aligns with the direction
+        // of draft-ietf-httpbis-rfc6265bis but is applied here as an implementation
+        // hardening measure, not as a finalized RFC requirement.
         if (preg_match('/[\x00-\x08\x0A-\x1F\x7F]/', $setCookieHeader)) {
             return null;
         }
@@ -256,26 +361,27 @@ class Cookie
         }
 
         $nameValuePair = array_shift($parts);
-        $equalPos = strpos($nameValuePair, '=');
+        $equalPos      = strpos($nameValuePair, '=');
 
         if ($equalPos === false) {
             return null;
         }
 
-        $name = trim(substr($nameValuePair, 0, $equalPos));
+        $name     = trim(substr($nameValuePair, 0, $equalPos));
+        $rawValue = substr($nameValuePair, $equalPos + 1);
 
-        // Reject empty cookie names.
-        if ($name === '') {
+        // Validate before decoding — percent-encoded values like 'hello%20world'
+        // are valid cookie-octets and must be checked in their encoded form.
+        if (! self::isValidName($name) || ! self::isValidValue($rawValue)) {
             return null;
         }
 
-        $value = urldecode(substr($nameValuePair, $equalPos + 1));
-
-        $expires = null;
-        $maxAge = null;
-        $domain = null;
-        $path = null;
-        $secure = false;
+        $value    = urldecode($rawValue);
+        $expires  = null;
+        $maxAge   = null;
+        $domain   = null;
+        $path     = null;
+        $secure   = false;
         $httpOnly = false;
         $sameSite = null;
 
@@ -290,7 +396,7 @@ class Cookie
                 switch (strtolower($attrName)) {
                     case 'expires':
                         $timestamp = strtotime($attrValue);
-                        $expires = $timestamp !== false ? $timestamp : null;
+                        $expires   = $timestamp !== false ? $timestamp : null;
 
                         break;
                     case 'max-age':
@@ -313,7 +419,26 @@ class Cookie
             }
         }
 
-        return new self($name, $value, $expires, $domain, $path, $secure, $httpOnly, $maxAge, $sameSite);
+        // RFC 6265 section 5.3 step 6:
+        // If no Domain attribute was present, set host-only-flag to true and
+        // use the canonicalized request-host as the cookie's domain so that
+        // the cookie is only sent back to the exact origin host.
+        if ($domain === null && $originHost !== null) {
+            $domain   = strtolower($originHost);
+            $hostOnly = true;
+        } else {
+            $hostOnly = false;
+        }
+
+        // RFC 6265 section 5.3 step 3:
+        // persistent-flag is true when Max-Age or Expires was present.
+        $persistent = $maxAge !== null || $expires !== null;
+
+        return new self(
+            $name, $value, $expires, $domain, $path,
+            $secure, $httpOnly, $maxAge, $sameSite,
+            $hostOnly, $persistent,
+        );
     }
 
     /**

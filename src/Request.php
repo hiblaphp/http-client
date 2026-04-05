@@ -384,11 +384,28 @@ class Request extends Message implements RequestInterface
 
     /**
      * @inheritDoc
+     *
+     * The name must be a valid RFC 2616 token (no separators or control chars).
+     * The value must conform to the cookie-octet character set defined in
+     * RFC 6265 section 4.1.1, which this client enforces as a client-side
+     * policy to prevent malformed Cookie headers. This is stricter than
+     * what the RFC strictly requires of clients, but it prevents header
+     * corruption from characters like ';' which would break attribute parsing.
+     *
+     * For values containing characters outside the allowed set (e.g. spaces,
+     * commas), encode first using Base64 as recommended by RFC 6265 section 4.1.1:
+     *   withCookie('data', base64_encode($arbitraryValue))
+     *
+     * @throws \InvalidArgumentException If the name or value contains
+     *         characters that would produce a malformed Cookie header.
      */
     public function withCookie(string $name, string $value): static
     {
-        $existing = $this->getHeaderLine('Cookie');
-        $newCookie = $name . '=' . urlencode($value);
+        Cookie::assertValidName($name);
+        Cookie::assertValidValue($value);
+
+        $existing  = $this->getHeaderLine('Cookie');
+        $newCookie = $name . '=' . $value;
 
         return $this->withHeader(
             'Cookie',
@@ -436,7 +453,7 @@ class Request extends Message implements RequestInterface
         $new = clone $this;
         $new->cookieJar?->clear();
 
-        return $new;
+        return $new->withoutHeader('Cookie');
     }
 
     /**
