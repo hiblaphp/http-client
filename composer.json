@@ -28,6 +28,7 @@
         "hiblaphp/event-loop": "dev-main",
         "hiblaphp/promise": "dev-main",
         "hiblaphp/async": "dev-main",
+        "hiblaphp/stream": "dev-main",
         "psr/http-message": "^2.0"
     },
     "require-dev": {
@@ -43,10 +44,12 @@
         "format": "./vendor/bin/pint",
         "format-test": "./vendor/bin/pint --test",
         "test": "./vendor/bin/pest",
+        "docker:network": "@php docker/create-network.php",
         "proxy:env": "@php -r \"file_exists('docker/proxy/.env') || copy('docker/proxy/.env.example', 'docker/proxy/.env');\"",
         "proxy:up": [
             "@proxy:env",
-            "docker compose -f docker/proxy/docker-compose.yml --env-file docker/proxy/.env up -d --wait"
+            "@docker:network",
+            "docker compose -f docker/proxy/docker-compose.yml --env-file docker/proxy/.env up -d"
         ],
         "proxy:down": "docker compose -f docker/proxy/docker-compose.yml down",
         "proxy:logs": "docker compose -f docker/proxy/docker-compose.yml logs -f",
@@ -54,9 +57,18 @@
             "@proxy:down",
             "@proxy:up"
         ],
-        "test:proxy": [
-            "@proxy:up",
-            "./vendor/bin/pest tests/Proxy/ProxyTest.php"
+        "httpbin:env": "@php -r \"file_exists('docker/httpbin/.env') || copy('docker/httpbin/.env.example', 'docker/httpbin/.env');\"",
+        "httpbin:up": [
+            "@httpbin:env",
+            "@docker:network",
+            "docker compose -f docker/httpbin/docker-compose.yml --env-file docker/httpbin/.env up -d",
+            "@php -r \"sleep(2);\""
+        ],
+        "httpbin:down": "docker compose -f docker/httpbin/docker-compose.yml down",
+        "httpbin:logs": "docker compose -f docker/httpbin/docker-compose.yml logs -f",
+        "httpbin:reset": [
+            "@httpbin:down",
+            "@httpbin:up"
         ]
     },
     "config": {

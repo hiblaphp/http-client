@@ -21,5 +21,8 @@
 
         <env name="SOCKS4_PROXY_HOST" value="127.0.0.1" force="false"/>
         <env name="SOCKS4_PROXY_PORT" value="1081" force="false"/>
+
+        <env name="HTTPBIN_HOST" value="127.0.0.1" force="false"/>
+        <env name="HTTPBIN_PORT" value="8080" force="false"/>
     </php>
 </phpunit>
