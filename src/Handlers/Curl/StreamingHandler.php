@@ -7,10 +7,13 @@ namespace Hibla\HttpClient\Handlers\Curl;
 use Hibla\EventLoop\Loop;
 use Hibla\HttpClient\Exceptions\HttpStreamException;
 use Hibla\HttpClient\Exceptions\NetworkException;
+use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
 use Hibla\HttpClient\Interfaces\Handler\StreamingHandlerInterface;
 use Hibla\HttpClient\Stream;
 use Hibla\HttpClient\StreamingResponse;
 use Hibla\HttpClient\Traits\NormalizeHeaderTrait;
+use Hibla\HttpClient\Uri;
+use Hibla\HttpClient\ValueObjects\Cookie;
 use Hibla\HttpClient\ValueObjects\DownloadProgress;
 use Hibla\HttpClient\ValueObjects\UploadProgress;
 use Hibla\Promise\Interfaces\PromiseInterface;
@@ -43,6 +46,9 @@ class StreamingHandler implements StreamingHandlerInterface
         $tmpFiles = $options['_tmp_files'] ?? [];
         unset($options['_tmp_files']);
 
+        $cookieJar = $options['_cookie_jar'] ?? null;
+        unset($options['_cookie_jar']);
+
         $curlOnlyOptions = array_filter($options, 'is_int', ARRAY_FILTER_USE_KEY);
 
         $headersProcessed = false;
@@ -59,7 +65,7 @@ class StreamingHandler implements StreamingHandlerInterface
 
                 return \strlen($data);
             },
-            CURLOPT_HEADERFUNCTION => function ($ch, string $header) use (&$headersProcessed, &$rawHeaders, $promise, $stream, $url, &$streamingResponse, &$requestId) {
+            CURLOPT_HEADERFUNCTION => function ($ch, string $header) use ($url, &$headersProcessed, &$rawHeaders, $promise, $stream, &$streamingResponse, &$requestId, $cookieJar) {
                 $trimmed = trim($header);
                 if ($trimmed !== '') {
                     $rawHeaders[] = $header;
@@ -75,6 +81,18 @@ class StreamingHandler implements StreamingHandlerInterface
 
                         if ($requestId !== null) {
                             $streamingResponse->setRequestId($requestId);
+                        }
+
+                        // Persist any Set-Cookie headers from the streaming response into
+                        // the jar so subsequent requests on the same jar replay them correctly.
+                        if ($cookieJar instanceof CookieJarInterface) {
+                            $originHost = (new Uri($url))->getHost();
+                            foreach ($parsedHeaders['Set-Cookie'] ?? [] as $setCookie) {
+                                $cookie = Cookie::fromSetCookieHeader($setCookie, $originHost ?: null);
+                                if ($cookie !== null) {
+                                    $cookieJar->setCookie($cookie);
+                                }
+                            }
                         }
 
                         $promise->resolve($streamingResponse);
@@ -140,6 +158,11 @@ class StreamingHandler implements StreamingHandlerInterface
         /** @var Promise<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}> $promise */
         $promise = new Promise();
 
+        // Extract the cookie jar before array_filter strips string keys — without this
+        // the jar reference is silently discarded and response cookies are never stored.
+        $cookieJar = $options['_cookie_jar'] ?? null;
+        unset($options['_cookie_jar']);
+
         $file = fopen($destination, 'wb');
         if ($file === false) {
             $exception = new HttpStreamException("Cannot open file for writing: {$destination}", 0, null, $url);
@@ -179,7 +202,7 @@ class StreamingHandler implements StreamingHandlerInterface
         $requestId = Loop::addCurlRequest(
             $url,
             $downloadOptions,
-            function (?string $error, $response, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $promise, $file, $destination): void {
+            function (?string $error, $response, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $promise, $file, $destination, $cookieJar): void {
                 fclose($file);
 
                 if ($promise->isCancelled()) {
@@ -195,15 +218,31 @@ class StreamingHandler implements StreamingHandlerInterface
                         unlink($destination);
                     }
 
-                    $exception = new NetworkException(
+                    $promise->reject(new NetworkException(
                         "Download failed: {$error}",
                         0,
                         null,
                         $url,
                         $error
-                    );
-                    $promise->reject($exception);
+                    ));
                 } else {
+                    // CurlRequest normalizes captured header names to lowercase, so
+                    // Set-Cookie arrives as 'set-cookie'. The value may be a plain string
+                    // when only one header was received, or an array when multiple were sent.
+                    if ($cookieJar instanceof CookieJarInterface) {
+                        $originHost = (new Uri($url))->getHost();
+                        $setCookieHeaders = $headers['set-cookie'] ?? [];
+                        if (\is_string($setCookieHeaders)) {
+                            $setCookieHeaders = [$setCookieHeaders];
+                        }
+                        foreach ($setCookieHeaders as $setCookie) {
+                            $cookie = Cookie::fromSetCookieHeader($setCookie, $originHost ?: null);
+                            if ($cookie !== null) {
+                                $cookieJar->setCookie($cookie);
+                            }
+                        }
+                    }
+
                     $fileSize = file_exists($destination) ? filesize($destination) : 0;
 
                     $promise->resolve([
@@ -241,6 +280,11 @@ class StreamingHandler implements StreamingHandlerInterface
     ): PromiseInterface {
         /** @var Promise<array{url: string, status: int, headers: array<mixed>, protocol_version: string|null}> $promise */
         $promise = new Promise();
+
+        // Extract the cookie jar before array_filter strips string keys — without this
+        // the jar reference is silently discarded and response cookies are never stored.
+        $cookieJar = $options['_cookie_jar'] ?? null;
+        unset($options['_cookie_jar']);
 
         if (! file_exists($source)) {
             $exception = new HttpStreamException("Cannot open file for reading: {$source}", 0, null, $url);
@@ -299,7 +343,7 @@ class StreamingHandler implements StreamingHandlerInterface
         $requestId = Loop::addCurlRequest(
             $url,
             $uploadOptions,
-            function (?string $error, $response, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $promise, $file): void {
+            function (?string $error, $response, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $promise, $file, $cookieJar): void {
                 fclose($file);
 
                 if ($promise->isCancelled()) {
@@ -315,6 +359,23 @@ class StreamingHandler implements StreamingHandlerInterface
                         $error
                     ));
                 } else {
+                    // CurlRequest normalizes captured header names to lowercase, so
+                    // Set-Cookie arrives as 'set-cookie'. The value may be a plain string
+                    // when only one header was received, or an array when multiple were sent.
+                    if ($cookieJar instanceof CookieJarInterface) {
+                        $originHost = (new Uri($url))->getHost();
+                        $setCookieHeaders = $headers['set-cookie'] ?? [];
+                        if (\is_string($setCookieHeaders)) {
+                            $setCookieHeaders = [$setCookieHeaders];
+                        }
+                        foreach ($setCookieHeaders as $setCookie) {
+                            $cookie = Cookie::fromSetCookieHeader($setCookie, $originHost ?: null);
+                            if ($cookie !== null) {
+                                $cookieJar->setCookie($cookie);
+                            }
+                        }
+                    }
+
                     $promise->resolve([
                         'url' => $url,
                         'status' => $httpCode ?? 0,

@@ -8,6 +8,7 @@ use Hibla\EventLoop\Loop;
 use Hibla\HttpClient\Exceptions\HttpStreamException;
 use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Exceptions\RequestException;
+use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
 use Hibla\HttpClient\Interfaces\Handler\SSEHandlerInterface;
 use Hibla\HttpClient\SSE\SSEConnectionState;
 use Hibla\HttpClient\SSE\SSEEvent;
@@ -15,6 +16,8 @@ use Hibla\HttpClient\SSE\SSEReconnectConfig;
 use Hibla\HttpClient\SSE\SSEResponse;
 use Hibla\HttpClient\Stream;
 use Hibla\HttpClient\Traits\NormalizeHeaderTrait;
+use Hibla\HttpClient\Uri;
+use Hibla\HttpClient\ValueObjects\Cookie;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Hibla\Promise\Promise;
 
@@ -203,6 +206,9 @@ class SSEHandler implements SSEHandlerInterface
         $tmpFiles = $options['_tmp_files'] ?? [];
         unset($options['_tmp_files']);
 
+        $cookieJar = $options['_cookie_jar'] ?? null;
+        unset($options['_cookie_jar']);
+
         $curlOnlyOptions = array_filter($options, 'is_int', ARRAY_FILTER_USE_KEY);
 
         $existingHeaders = $curlOnlyOptions[CURLOPT_HTTPHEADER] ?? [];
@@ -230,7 +236,7 @@ class SSEHandler implements SSEHandlerInterface
 
                 return \strlen($data);
             },
-            CURLOPT_HEADERFUNCTION => function ($ch, string $header) use ($url, $promise, &$sseResponse, &$headersProcessed, &$rawHeaders, &$requestId, &$stream) {
+            CURLOPT_HEADERFUNCTION => function ($ch, string $header) use ($url, $promise, &$sseResponse, &$headersProcessed, &$rawHeaders, &$requestId, &$stream, $cookieJar) {
                 if ($promise->isSettled()) {
                     return \strlen($header);
                 }
@@ -255,6 +261,18 @@ class SSEHandler implements SSEHandlerInterface
 
                         if ($requestId !== null) {
                             $sseResponse->setRequestId($requestId);
+                        }
+
+                        // Persist any Set-Cookie headers from the SSE handshake response into
+                        // the jar so subsequent requests on the same jar replay them correctly.
+                        if ($cookieJar instanceof CookieJarInterface) {
+                            $originHost = (new Uri($url))->getHost();
+                            foreach ($parsedHeaders['Set-Cookie'] ?? [] as $setCookie) {
+                                $cookie = Cookie::fromSetCookieHeader($setCookie, $originHost ?: null);
+                                if ($cookie !== null) {
+                                    $cookieJar->setCookie($cookie);
+                                }
+                            }
                         }
 
                         $promise->resolve($sseResponse);
