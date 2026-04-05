@@ -8,8 +8,6 @@ use function Rcalicdan\ConfigLoader\env;
 
 final class HttpBinFixture
 {
-    // ── Direct access (host → httpbin) ────────────────────────────────────────
-
     public static function host(): string
     {
         return (string) env('HTTPBIN_HOST', '127.0.0.1');
@@ -29,8 +27,6 @@ final class HttpBinFixture
     {
         return self::baseUrl() . '/' . ltrim($path, '/');
     }
-
-    // ── Internal access (HTTP proxy container → httpbin container) ────────────
 
     public static function internalHost(): string
     {
@@ -52,8 +48,6 @@ final class HttpBinFixture
         return self::internalBaseUrl() . '/' . ltrim($path, '/');
     }
 
-    // ── SOCKS access (host resolves → SOCKS container tunnels to host) ────────
-
     public static function socksHost(): string
     {
         return (string) env('HTTPBIN_SOCKS_HOST', 'host.docker.internal');
@@ -73,8 +67,6 @@ final class HttpBinFixture
     {
         return self::socksBaseUrl() . '/' . ltrim($path, '/');
     }
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
 
     public static function skipIfUnreachable(): void
     {

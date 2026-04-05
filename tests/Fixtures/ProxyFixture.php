@@ -57,7 +57,7 @@ final class ProxyFixture
         $sock = @fsockopen($host, $port, $errno, $errstr, 1);
 
         if ($sock === false) {
-            test()->skip("Proxy unreachable at {$host}:{$port} — run: composer proxy:up");
+            test()->markTestSkipped("Proxy unreachable at {$host}:{$port} — run: composer proxy:up");
         }
 
         fclose($sock);

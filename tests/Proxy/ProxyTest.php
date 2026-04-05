@@ -6,8 +6,6 @@ use Hibla\HttpClient\ValueObjects\ProxyConfig;
 use Tests\Fixtures\HttpBinFixture;
 use Tests\Fixtures\ProxyFixture;
 
-// ── ProxyConfig value object tests ────────────────────────────────────────────
-
 describe('ProxyConfig value object', function () {
 
     it('builds an HTTP proxy URL without credentials', function () {
@@ -48,12 +46,10 @@ describe('ProxyConfig value object', function () {
 
     it('returns correct cURL proxy type constants', function () {
         expect(ProxyConfig::http('h', 1)->getCurlProxyType())->toBe(CURLPROXY_HTTP)
-            ->and(ProxyConfig::socks4('h', 1)->getCurlProxyType())->toBe(CURLPROXY_SOCKS4)
-            ->and(ProxyConfig::socks5('h', 1)->getCurlProxyType())->toBe(CURLPROXY_SOCKS5);
+            ->and(ProxyConfig::socks4('h', 1)->getCurlProxyType())->toBe(CURLPROXY_SOCKS4A)
+            ->and(ProxyConfig::socks5('h', 1)->getCurlProxyType())->toBe(CURLPROXY_SOCKS5_HOSTNAME);
     });
 });
-
-// ── Immutability & chain tests ────────────────────────────────────────────────
 
 describe('HttpClient proxy chain immutability', function () {
 
@@ -121,8 +117,6 @@ describe('HttpClient proxy chain immutability', function () {
     });
 });
 
-// ── HTTP proxy (Squid) integration tests ─────────────────────────────────────
-
 describe('HTTP proxy — Squid', function () {
 
     beforeEach(function () {
@@ -150,7 +144,6 @@ describe('HTTP proxy — Squid', function () {
             ->get(HttpBinFixture::proxyUrl('/headers'))
             ->wait();
 
-        // go-httpbin returns header values as arrays
         expect($response->successful())->toBeTrue()
             ->and($response->json('headers.X-Proxy-Test.0'))->toBe('squid');
     });
@@ -189,7 +182,6 @@ describe('HTTP proxy — Squid', function () {
         $base = ProxyFixture::client()
             ->withProxy(ProxyFixture::httpHost(), ProxyFixture::httpPort());
 
-        // Direct from host — use url() not proxyUrl()
         $response = $base->noProxy()
             ->get(HttpBinFixture::url('/get'))
             ->wait();
@@ -207,8 +199,6 @@ describe('HTTP proxy — Squid', function () {
         expect($response->successful())->toBeTrue();
     });
 });
-
-// ── SOCKS5 proxy integration tests ───────────────────────────────────────────
 
 describe('SOCKS5 proxy', function () {
 
@@ -247,7 +237,6 @@ describe('SOCKS5 proxy', function () {
             ->get(HttpBinFixture::socksProxyUrl('/headers'))
             ->wait();
 
-        // go-httpbin returns header values as arrays
         expect($response->successful())->toBeTrue()
             ->and($response->json('headers.X-Proxy-Test.0'))->toBe('socks5');
     });
@@ -273,8 +262,6 @@ describe('SOCKS5 proxy', function () {
         expect($response->successful())->toBeTrue();
     });
 });
-
-// ── SOCKS4 proxy integration tests ───────────────────────────────────────────
 
 describe('SOCKS4 proxy', function () {
 
@@ -306,8 +293,6 @@ describe('SOCKS4 proxy', function () {
             ->and($response->json('json.via'))->toBe('socks4');
     });
 });
-
-// ── Proxy switching tests ─────────────────────────────────────────────────────
 
 describe('proxy switching across types', function () {
 
@@ -342,5 +327,324 @@ describe('proxy switching across types', function () {
             ->wait();
 
         expect(ProxyFixture::readPrivate($base, 'proxyConfig'))->toBeNull();
+    });
+});
+
+describe('large payload proxying', function () {
+
+    beforeEach(function () {
+        HttpBinFixture::skipIfUnreachable();
+    });
+
+    it('sends a large JSON payload through the HTTP proxy', function () {
+        ProxyFixture::skipIfUnreachable(ProxyFixture::httpHost(), ProxyFixture::httpPort());
+
+        $payload = ['data' => str_repeat('x', 10_000)];
+
+        $response = ProxyFixture::client()
+            ->withProxy(ProxyFixture::httpHost(), ProxyFixture::httpPort())
+            ->post(HttpBinFixture::proxyUrl('/post'), $payload)
+            ->wait();
+
+        expect($response->successful())->toBeTrue()
+            ->and(strlen($response->json('json.data')))->toBe(10_000);
+    });
+
+    it('sends a large JSON payload through SOCKS5', function () {
+        ProxyFixture::skipIfUnreachable(ProxyFixture::socks5Host(), ProxyFixture::socks5Port());
+
+        $payload = ['data' => str_repeat('y', 10_000)];
+
+        $response = ProxyFixture::client()
+            ->withSocks5Proxy(ProxyFixture::socks5Host(), ProxyFixture::socks5Port())
+            ->post(HttpBinFixture::socksProxyUrl('/post'), $payload)
+            ->wait();
+
+        expect($response->successful())->toBeTrue()
+            ->and(strlen($response->json('json.data')))->toBe(10_000);
+    });
+
+    it('sends a large JSON payload through SOCKS4', function () {
+        ProxyFixture::skipIfUnreachable(ProxyFixture::socks4Host(), ProxyFixture::socks4Port());
+
+        $payload = ['data' => str_repeat('z', 10_000)];
+
+        $response = ProxyFixture::client()
+            ->withSocks4Proxy(ProxyFixture::socks4Host(), ProxyFixture::socks4Port())
+            ->post(HttpBinFixture::socksProxyUrl('/post'), $payload)
+            ->wait();
+
+        expect($response->successful())->toBeTrue()
+            ->and(strlen($response->json('json.data')))->toBe(10_000);
+    });
+});
+
+describe('query string preservation through proxy', function () {
+
+    beforeEach(function () {
+        HttpBinFixture::skipIfUnreachable();
+    });
+
+    it('preserves query parameters through the HTTP proxy', function () {
+        ProxyFixture::skipIfUnreachable(ProxyFixture::httpHost(), ProxyFixture::httpPort());
+
+        $response = ProxyFixture::client()
+            ->withProxy(ProxyFixture::httpHost(), ProxyFixture::httpPort())
+            ->get(HttpBinFixture::proxyUrl('/get') . '?foo=bar&baz=qux')
+            ->wait();
+
+        expect($response->successful())->toBeTrue()
+            ->and($response->json('args.foo'))->toBe('bar')
+            ->and($response->json('args.baz'))->toBe('qux');
+    });
+
+    it('preserves query parameters through SOCKS5', function () {
+        ProxyFixture::skipIfUnreachable(ProxyFixture::socks5Host(), ProxyFixture::socks5Port());
+
+        $response = ProxyFixture::client()
+            ->withSocks5Proxy(ProxyFixture::socks5Host(), ProxyFixture::socks5Port())
+            ->get(HttpBinFixture::socksProxyUrl('/get') . '?via=socks5&test=1')
+            ->wait();
+
+        expect($response->successful())->toBeTrue()
+            ->and($response->json('args.via'))->toBe('socks5')
+            ->and($response->json('args.test'))->toBe('1');
+    });
+
+    it('preserves query parameters through SOCKS4', function () {
+        ProxyFixture::skipIfUnreachable(ProxyFixture::socks4Host(), ProxyFixture::socks4Port());
+
+        $response = ProxyFixture::client()
+            ->withSocks4Proxy(ProxyFixture::socks4Host(), ProxyFixture::socks4Port())
+            ->get(HttpBinFixture::socksProxyUrl('/get') . '?via=socks4&test=1')
+            ->wait();
+
+        expect($response->successful())->toBeTrue()
+            ->and($response->json('args.via'))->toBe('socks4')
+            ->and($response->json('args.test'))->toBe('1');
+    });
+});
+
+describe('redirect handling through SOCKS proxies', function () {
+
+    beforeEach(function () {
+        HttpBinFixture::skipIfUnreachable();
+    });
+
+    it('follows redirects through SOCKS5', function () {
+        ProxyFixture::skipIfUnreachable(ProxyFixture::socks5Host(), ProxyFixture::socks5Port());
+
+        $response = ProxyFixture::client()
+            ->withSocks5Proxy(ProxyFixture::socks5Host(), ProxyFixture::socks5Port())
+            ->redirects(true, 5)
+            ->get(HttpBinFixture::socksProxyUrl('/absolute-redirect/2'))
+            ->wait();
+
+        expect($response->successful())->toBeTrue();
+    });
+
+    it('follows redirects through SOCKS4', function () {
+        ProxyFixture::skipIfUnreachable(ProxyFixture::socks4Host(), ProxyFixture::socks4Port());
+
+        $response = ProxyFixture::client()
+            ->withSocks4Proxy(ProxyFixture::socks4Host(), ProxyFixture::socks4Port())
+            ->redirects(true, 5)
+            ->get(HttpBinFixture::socksProxyUrl('/absolute-redirect/2'))
+            ->wait();
+
+        expect($response->successful())->toBeTrue();
+    });
+
+    it('does not follow redirects when disabled through proxy', function () {
+        ProxyFixture::skipIfUnreachable(ProxyFixture::httpHost(), ProxyFixture::httpPort());
+
+        $response = ProxyFixture::client()
+            ->withProxy(ProxyFixture::httpHost(), ProxyFixture::httpPort())
+            ->redirects(false)
+            ->get(HttpBinFixture::proxyUrl('/absolute-redirect/1'))
+            ->wait();
+
+        expect($response->status())->toBe(302);
+    });
+});
+
+describe('empty response body through proxy', function () {
+
+    beforeEach(function () {
+        HttpBinFixture::skipIfUnreachable();
+    });
+
+    it('handles 204 No Content through HTTP proxy', function () {
+        ProxyFixture::skipIfUnreachable(ProxyFixture::httpHost(), ProxyFixture::httpPort());
+
+        $response = ProxyFixture::client()
+            ->withProxy(ProxyFixture::httpHost(), ProxyFixture::httpPort())
+            ->get(HttpBinFixture::proxyUrl('/status/204'))
+            ->wait();
+
+        expect($response->status())->toBe(204)
+            ->and($response->body())->toBe('');
+    });
+
+    it('handles 204 No Content through SOCKS5', function () {
+        ProxyFixture::skipIfUnreachable(ProxyFixture::socks5Host(), ProxyFixture::socks5Port());
+
+        $response = ProxyFixture::client()
+            ->withSocks5Proxy(ProxyFixture::socks5Host(), ProxyFixture::socks5Port())
+            ->get(HttpBinFixture::socksProxyUrl('/status/204'))
+            ->wait();
+
+        expect($response->status())->toBe(204)
+            ->and($response->body())->toBe('');
+    });
+});
+
+describe('graceful failure on unreachable or bad proxy', function () {
+
+    beforeEach(function () {
+        HttpBinFixture::skipIfUnreachable();
+    });
+
+    it('throws on unreachable HTTP proxy', function () {
+        expect(fn () => ProxyFixture::client(timeout: 3)
+            ->withProxy('127.0.0.1', 19999)
+            ->get(HttpBinFixture::url('/get'))
+            ->wait()
+        )->toThrow(\Throwable::class);
+    });
+
+    it('throws on unreachable SOCKS5 proxy', function () {
+        expect(fn () => ProxyFixture::client(timeout: 3)
+            ->withSocks5Proxy('127.0.0.1', 19998)
+            ->get(HttpBinFixture::socksProxyUrl('/get'))
+            ->wait()
+        )->toThrow(\Throwable::class);
+    });
+
+    it('throws on unreachable SOCKS4 proxy', function () {
+        expect(fn () => ProxyFixture::client(timeout: 3)
+            ->withSocks4Proxy('127.0.0.1', 19997)
+            ->get(HttpBinFixture::socksProxyUrl('/get'))
+            ->wait()
+        )->toThrow(\Throwable::class);
+    });
+
+    it('throws on wrong SOCKS5 credentials', function () {
+        ProxyFixture::skipIfUnreachable(ProxyFixture::socks5Host(), ProxyFixture::socks5Port());
+
+        $user = ProxyFixture::socks5User();
+
+        if ($user === null) {
+            test()->markTestSkipped('SOCKS5_USER not set — skipping credential rejection test');
+        }
+
+        expect(fn () => ProxyFixture::client(timeout: 3)
+            ->withSocks5Proxy(
+                ProxyFixture::socks5Host(),
+                ProxyFixture::socks5Port(),
+                'wrong_user',
+                'wrong_pass',
+            )
+            ->get(HttpBinFixture::socksProxyUrl('/get'))
+            ->wait()
+        )->toThrow(\Throwable::class);
+    });
+});
+
+describe('proxy security', function () {
+    it('does not expose password in ProxyConfig toString or url when inspected', function () {
+        $config = ProxyConfig::http('proxy.local', 8080, 'user', 'secret_password');
+
+        expect($config->host)->toBe('proxy.local')
+            ->and($config->port)->toBe(8080)
+            ->and($config->type)->toBe('http')
+            ->and($config->username)->toBe('user')
+            ->and($config->host)->not->toContain('secret_password')
+            ->and($config->type)->not->toContain('secret_password');
+    });
+
+    it('SOCKS4 does not accept a password field', function () {
+        $config = ProxyConfig::socks4('proxy.local', 1080, 'user');
+
+        expect($config->password)->toBeNull()
+            ->and($config->getProxyUrl())->not->toContain(':@')
+            ->and($config->getProxyUrl())->toBe('socks4://user@proxy.local:1080');
+    });
+
+    it('proxy URL without credentials contains no auth separator', function () {
+        $configs = [
+            ProxyConfig::http('h', 80),
+            ProxyConfig::socks5('h', 1080),
+            ProxyConfig::socks4('h', 1080),
+        ];
+
+        foreach ($configs as $config) {
+            expect($config->getProxyUrl())->not->toContain('@');
+        }
+    });
+
+    it('does not allow newline injection in custom headers through HTTP proxy', function () {
+        HttpBinFixture::skipIfUnreachable();
+        ProxyFixture::skipIfUnreachable(ProxyFixture::httpHost(), ProxyFixture::httpPort());
+
+        $injected = "safe\r\nX-Injected: evil";
+
+        try {
+            $response = ProxyFixture::client()
+                ->withProxy(ProxyFixture::httpHost(), ProxyFixture::httpPort())
+                ->withHeader('X-Test', $injected)
+                ->get(HttpBinFixture::proxyUrl('/headers'))
+                ->wait();
+
+            $headers = $response->json('headers') ?? [];
+            expect(array_key_exists('X-Injected', $headers))->toBeFalse();
+        } catch (\Throwable) {
+            expect(true)->toBeTrue();
+        }
+    });
+
+    it('noProxy() request contains no Proxy-Authorization header', function () {
+        HttpBinFixture::skipIfUnreachable();
+
+        $response = ProxyFixture::client()
+            ->withProxy(ProxyFixture::httpHost(), ProxyFixture::httpPort(), 'user', 'pass')
+            ->noProxy()
+            ->get(HttpBinFixture::url('/headers'))
+            ->wait();
+
+        $headers = $response->json('headers') ?? [];
+
+        expect($response->successful())->toBeTrue()
+            ->and(array_key_exists('Proxy-Authorization', $headers))->toBeFalse();
+    });
+
+    it('noProxy() request contains no Via header injected by proxy', function () {
+        HttpBinFixture::skipIfUnreachable();
+
+        $response = ProxyFixture::client()
+            ->withProxy(ProxyFixture::httpHost(), ProxyFixture::httpPort())
+            ->noProxy()
+            ->get(HttpBinFixture::url('/headers'))
+            ->wait();
+
+        $headers = $response->json('headers') ?? [];
+
+        expect($response->successful())->toBeTrue()
+            ->and(array_key_exists('Via', $headers))->toBeFalse();
+    });
+
+    it('proxied request through Squid contains a Via header', function () {
+        HttpBinFixture::skipIfUnreachable();
+        ProxyFixture::skipIfUnreachable(ProxyFixture::httpHost(), ProxyFixture::httpPort());
+
+        $response = ProxyFixture::client()
+            ->withProxy(ProxyFixture::httpHost(), ProxyFixture::httpPort())
+            ->get(HttpBinFixture::proxyUrl('/headers'))
+            ->wait();
+
+        $headers = $response->json('headers') ?? [];
+
+        expect($response->successful())->toBeTrue()
+            ->and(array_key_exists('Via', $headers))->toBeTrue();
     });
 });

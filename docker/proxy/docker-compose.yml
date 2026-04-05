@@ -45,9 +45,8 @@ services:
     ports:
       - "${SOCKS4_PROXY_PORT:-1081}:1080"
     environment:
-      PROXY_LOGIN: ""
-      PROXY_PASSWORD: ""
       SOCKS_PORT: "1080"
+      PRIMARY_RESOLVER: "127.0.0.11"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     healthcheck:
