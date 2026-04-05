@@ -6,7 +6,7 @@ namespace Tests\Fixtures;
 
 use function Rcalicdan\ConfigLoader\env;
 
-final class HttpBinFixture
+final class HttpBin
 {
     public static function host(): string
     {

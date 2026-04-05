@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use Hibla\HttpClient\ValueObjects\ProxyConfig;
-use Tests\Fixtures\HttpBinFixture;
-use Tests\Fixtures\ProxyFixture;
+use Tests\Fixtures\HttpBin;
+use Tests\Fixtures\ProxySetup;
 
 describe('ProxyConfig value object', function () {
 
@@ -54,18 +54,18 @@ describe('ProxyConfig value object', function () {
 describe('HttpClient proxy chain immutability', function () {
 
     it('withProxy() returns a new instance', function () {
-        $a = ProxyFixture::client();
-        $b = $a->withProxy(ProxyFixture::httpHost(), ProxyFixture::httpPort());
+        $a = ProxySetup::client();
+        $b = $a->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort());
 
         expect($b)->not->toBe($a);
     });
 
     it('noProxy() strips a previously configured proxy', function () {
-        $stripped = ProxyFixture::client()
-            ->withProxy(ProxyFixture::httpHost(), ProxyFixture::httpPort())
+        $stripped = ProxySetup::client()
+            ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
             ->noProxy();
 
-        expect(ProxyFixture::readPrivate($stripped, 'proxyConfig'))->toBeNull();
+        expect(ProxySetup::readPrivate($stripped, 'proxyConfig'))->toBeNull();
     });
 
     it('proxyWith() stores a hand-crafted ProxyConfig', function () {
@@ -77,40 +77,40 @@ describe('HttpClient proxy chain immutability', function () {
             type: 'socks5',
         );
 
-        $client = ProxyFixture::client()->proxyWith($config);
+        $client = ProxySetup::client()->proxyWith($config);
 
-        expect(ProxyFixture::readPrivate($client, 'proxyConfig'))->toBe($config);
+        expect(ProxySetup::readPrivate($client, 'proxyConfig'))->toBe($config);
     });
 
     it('does not mutate the base instance when branching', function () {
-        $base      = ProxyFixture::client()->withToken('tok')->asJson();
-        $proxied   = $base->withProxy(ProxyFixture::httpHost(), ProxyFixture::httpPort());
+        $base      = ProxySetup::client()->withToken('tok')->asJson();
+        $proxied   = $base->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort());
         $unproxied = $base->noProxy();
 
-        expect(ProxyFixture::readPrivate($proxied, 'proxyConfig'))->not->toBeNull()
-            ->and(ProxyFixture::readPrivate($unproxied, 'proxyConfig'))->toBeNull()
-            ->and(ProxyFixture::readPrivate($base, 'proxyConfig'))->toBeNull();
+        expect(ProxySetup::readPrivate($proxied, 'proxyConfig'))->not->toBeNull()
+            ->and(ProxySetup::readPrivate($unproxied, 'proxyConfig'))->toBeNull()
+            ->and(ProxySetup::readPrivate($base, 'proxyConfig'))->toBeNull();
     });
 
     it('the last withProxy() call wins', function () {
-        $client = ProxyFixture::client()
+        $client = ProxySetup::client()
             ->withProxy('first.proxy', 8080)
             ->withProxy('second.proxy', 9090);
 
         /** @var ProxyConfig $config */
-        $config = ProxyFixture::readPrivate($client, 'proxyConfig');
+        $config = ProxySetup::readPrivate($client, 'proxyConfig');
 
         expect($config->host)->toBe('second.proxy')
             ->and($config->port)->toBe(9090);
     });
 
     it('switching proxy type mid-chain stores the latest type', function () {
-        $client = ProxyFixture::client()
+        $client = ProxySetup::client()
             ->withProxy('http.proxy', 8080)
             ->withSocks5Proxy('socks.proxy', 1080);
 
         /** @var ProxyConfig $config */
-        $config = ProxyFixture::readPrivate($client, 'proxyConfig');
+        $config = ProxySetup::readPrivate($client, 'proxyConfig');
 
         expect($config->type)->toBe('socks5')
             ->and($config->host)->toBe('socks.proxy');
@@ -120,17 +120,17 @@ describe('HttpClient proxy chain immutability', function () {
 describe('HTTP proxy — Squid', function () {
 
     beforeEach(function () {
-        HttpBinFixture::skipIfUnreachable();
-        ProxyFixture::skipIfUnreachable(
-            ProxyFixture::httpHost(),
-            ProxyFixture::httpPort(),
+        HttpBin::skipIfUnreachable();
+        ProxySetup::skipIfUnreachable(
+            ProxySetup::httpHost(),
+            ProxySetup::httpPort(),
         );
     });
 
     it('routes GET /get through the HTTP proxy', function () {
-        $response = ProxyFixture::client()
-            ->withProxy(ProxyFixture::httpHost(), ProxyFixture::httpPort())
-            ->get(HttpBinFixture::proxyUrl('/get'))
+        $response = ProxySetup::client()
+            ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
+            ->get(HttpBin::proxyUrl('/get'))
             ->wait();
 
         expect($response->successful())->toBeTrue()
@@ -138,10 +138,10 @@ describe('HTTP proxy — Squid', function () {
     });
 
     it('forwards custom headers through the proxy', function () {
-        $response = ProxyFixture::client()
-            ->withProxy(ProxyFixture::httpHost(), ProxyFixture::httpPort())
+        $response = ProxySetup::client()
+            ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
             ->withHeader('X-Proxy-Test', 'squid')
-            ->get(HttpBinFixture::proxyUrl('/headers'))
+            ->get(HttpBin::proxyUrl('/headers'))
             ->wait();
 
         expect($response->successful())->toBeTrue()
@@ -149,9 +149,9 @@ describe('HTTP proxy — Squid', function () {
     });
 
     it('POSTs JSON through the HTTP proxy', function () {
-        $response = ProxyFixture::client()
-            ->withProxy(ProxyFixture::httpHost(), ProxyFixture::httpPort())
-            ->post(HttpBinFixture::proxyUrl('/post'), ['proxy' => 'http', 'framework' => 'pest'])
+        $response = ProxySetup::client()
+            ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
+            ->post(HttpBin::proxyUrl('/post'), ['proxy' => 'http', 'framework' => 'pest'])
             ->wait();
 
         expect($response->successful())->toBeTrue()
@@ -160,9 +160,9 @@ describe('HTTP proxy — Squid', function () {
     });
 
     it('PUTs JSON through the HTTP proxy', function () {
-        $response = ProxyFixture::client()
-            ->withProxy(ProxyFixture::httpHost(), ProxyFixture::httpPort())
-            ->put(HttpBinFixture::proxyUrl('/put'), ['action' => 'update'])
+        $response = ProxySetup::client()
+            ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
+            ->put(HttpBin::proxyUrl('/put'), ['action' => 'update'])
             ->wait();
 
         expect($response->successful())->toBeTrue()
@@ -170,30 +170,30 @@ describe('HTTP proxy — Squid', function () {
     });
 
     it('DELETEs through the HTTP proxy', function () {
-        $response = ProxyFixture::client()
-            ->withProxy(ProxyFixture::httpHost(), ProxyFixture::httpPort())
-            ->delete(HttpBinFixture::proxyUrl('/delete'))
+        $response = ProxySetup::client()
+            ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
+            ->delete(HttpBin::proxyUrl('/delete'))
             ->wait();
 
         expect($response->successful())->toBeTrue();
     });
 
     it('noProxy() branch bypasses the proxy on the same chain', function () {
-        $base = ProxyFixture::client()
-            ->withProxy(ProxyFixture::httpHost(), ProxyFixture::httpPort());
+        $base = ProxySetup::client()
+            ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort());
 
         $response = $base->noProxy()
-            ->get(HttpBinFixture::url('/get'))
+            ->get(HttpBin::url('/get'))
             ->wait();
 
         expect($response->successful())->toBeTrue();
     });
 
     it('follows redirects through the proxy', function () {
-        $response = ProxyFixture::client()
-            ->withProxy(ProxyFixture::httpHost(), ProxyFixture::httpPort())
+        $response = ProxySetup::client()
+            ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
             ->redirects(true, 5)
-            ->get(HttpBinFixture::proxyUrl('/absolute-redirect/2'))
+            ->get(HttpBin::proxyUrl('/absolute-redirect/2'))
             ->wait();
 
         expect($response->successful())->toBeTrue();
@@ -203,17 +203,17 @@ describe('HTTP proxy — Squid', function () {
 describe('SOCKS5 proxy', function () {
 
     beforeEach(function () {
-        HttpBinFixture::skipIfUnreachable();
-        ProxyFixture::skipIfUnreachable(
-            ProxyFixture::socks5Host(),
-            ProxyFixture::socks5Port(),
+        HttpBin::skipIfUnreachable();
+        ProxySetup::skipIfUnreachable(
+            ProxySetup::socks5Host(),
+            ProxySetup::socks5Port(),
         );
     });
 
     it('routes GET /get through the SOCKS5 proxy', function () {
-        $response = ProxyFixture::client()
-            ->withSocks5Proxy(ProxyFixture::socks5Host(), ProxyFixture::socks5Port())
-            ->get(HttpBinFixture::socksProxyUrl('/get'))
+        $response = ProxySetup::client()
+            ->withSocks5Proxy(ProxySetup::socks5Host(), ProxySetup::socks5Port())
+            ->get(HttpBin::socksProxyUrl('/get'))
             ->wait();
 
         expect($response->successful())->toBeTrue()
@@ -221,9 +221,9 @@ describe('SOCKS5 proxy', function () {
     });
 
     it('POSTs JSON through SOCKS5', function () {
-        $response = ProxyFixture::client()
-            ->withSocks5Proxy(ProxyFixture::socks5Host(), ProxyFixture::socks5Port())
-            ->post(HttpBinFixture::socksProxyUrl('/post'), ['via' => 'socks5'])
+        $response = ProxySetup::client()
+            ->withSocks5Proxy(ProxySetup::socks5Host(), ProxySetup::socks5Port())
+            ->post(HttpBin::socksProxyUrl('/post'), ['via' => 'socks5'])
             ->wait();
 
         expect($response->successful())->toBeTrue()
@@ -231,10 +231,10 @@ describe('SOCKS5 proxy', function () {
     });
 
     it('forwards custom headers through SOCKS5', function () {
-        $response = ProxyFixture::client()
-            ->withSocks5Proxy(ProxyFixture::socks5Host(), ProxyFixture::socks5Port())
+        $response = ProxySetup::client()
+            ->withSocks5Proxy(ProxySetup::socks5Host(), ProxySetup::socks5Port())
             ->withHeader('X-Proxy-Test', 'socks5')
-            ->get(HttpBinFixture::socksProxyUrl('/headers'))
+            ->get(HttpBin::socksProxyUrl('/headers'))
             ->wait();
 
         expect($response->successful())->toBeTrue()
@@ -242,21 +242,21 @@ describe('SOCKS5 proxy', function () {
     });
 
     it('authenticates with SOCKS5 when credentials are set', function () {
-        $user = ProxyFixture::socks5User();
-        $pass = ProxyFixture::socks5Pass();
+        $user = ProxySetup::socks5User();
+        $pass = ProxySetup::socks5Pass();
 
         if ($user === null) {
             test()->markTestSkipped('SOCKS5_USER not set in .env — skipping auth test');
         }
 
-        $response = ProxyFixture::client()
+        $response = ProxySetup::client()
             ->withSocks5Proxy(
-                ProxyFixture::socks5Host(),
-                ProxyFixture::socks5Port(),
+                ProxySetup::socks5Host(),
+                ProxySetup::socks5Port(),
                 $user,
                 $pass,
             )
-            ->get(HttpBinFixture::socksProxyUrl('/get'))
+            ->get(HttpBin::socksProxyUrl('/get'))
             ->wait();
 
         expect($response->successful())->toBeTrue();
@@ -266,17 +266,17 @@ describe('SOCKS5 proxy', function () {
 describe('SOCKS4 proxy', function () {
 
     beforeEach(function () {
-        HttpBinFixture::skipIfUnreachable();
-        ProxyFixture::skipIfUnreachable(
-            ProxyFixture::socks4Host(),
-            ProxyFixture::socks4Port(),
+        HttpBin::skipIfUnreachable();
+        ProxySetup::skipIfUnreachable(
+            ProxySetup::socks4Host(),
+            ProxySetup::socks4Port(),
         );
     });
 
     it('routes GET /get through the SOCKS4 proxy', function () {
-        $response = ProxyFixture::client()
-            ->withSocks4Proxy(ProxyFixture::socks4Host(), ProxyFixture::socks4Port())
-            ->get(HttpBinFixture::socksProxyUrl('/get'))
+        $response = ProxySetup::client()
+            ->withSocks4Proxy(ProxySetup::socks4Host(), ProxySetup::socks4Port())
+            ->get(HttpBin::socksProxyUrl('/get'))
             ->wait();
 
         expect($response->successful())->toBeTrue()
@@ -284,9 +284,9 @@ describe('SOCKS4 proxy', function () {
     });
 
     it('POSTs JSON through SOCKS4', function () {
-        $response = ProxyFixture::client()
-            ->withSocks4Proxy(ProxyFixture::socks4Host(), ProxyFixture::socks4Port())
-            ->post(HttpBinFixture::socksProxyUrl('/post'), ['via' => 'socks4'])
+        $response = ProxySetup::client()
+            ->withSocks4Proxy(ProxySetup::socks4Host(), ProxySetup::socks4Port())
+            ->post(HttpBin::socksProxyUrl('/post'), ['via' => 'socks4'])
             ->wait();
 
         expect($response->successful())->toBeTrue()
@@ -297,22 +297,22 @@ describe('SOCKS4 proxy', function () {
 describe('proxy switching across types', function () {
 
     beforeEach(function () {
-        HttpBinFixture::skipIfUnreachable();
-        ProxyFixture::skipIfUnreachable(ProxyFixture::httpHost(), ProxyFixture::httpPort());
-        ProxyFixture::skipIfUnreachable(ProxyFixture::socks5Host(), ProxyFixture::socks5Port());
+        HttpBin::skipIfUnreachable();
+        ProxySetup::skipIfUnreachable(ProxySetup::httpHost(), ProxySetup::httpPort());
+        ProxySetup::skipIfUnreachable(ProxySetup::socks5Host(), ProxySetup::socks5Port());
     });
 
     it('can branch from HTTP proxy to SOCKS5 proxy off the same base client', function () {
-        $base = ProxyFixture::client()->withToken('test-token');
+        $base = ProxySetup::client()->withToken('test-token');
 
         $viaHttp = $base
-            ->withProxy(ProxyFixture::httpHost(), ProxyFixture::httpPort())
-            ->get(HttpBinFixture::proxyUrl('/get'))
+            ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
+            ->get(HttpBin::proxyUrl('/get'))
             ->wait();
 
         $viaSocks5 = $base
-            ->withSocks5Proxy(ProxyFixture::socks5Host(), ProxyFixture::socks5Port())
-            ->get(HttpBinFixture::socksProxyUrl('/get'))
+            ->withSocks5Proxy(ProxySetup::socks5Host(), ProxySetup::socks5Port())
+            ->get(HttpBin::socksProxyUrl('/get'))
             ->wait();
 
         expect($viaHttp->successful())->toBeTrue()
@@ -320,30 +320,30 @@ describe('proxy switching across types', function () {
     });
 
     it('base client is unaffected after branching', function () {
-        $base = ProxyFixture::client();
+        $base = ProxySetup::client();
 
-        $base->withProxy(ProxyFixture::httpHost(), ProxyFixture::httpPort())
-            ->get(HttpBinFixture::proxyUrl('/get'))
+        $base->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
+            ->get(HttpBin::proxyUrl('/get'))
             ->wait();
 
-        expect(ProxyFixture::readPrivate($base, 'proxyConfig'))->toBeNull();
+        expect(ProxySetup::readPrivate($base, 'proxyConfig'))->toBeNull();
     });
 });
 
 describe('large payload proxying', function () {
 
     beforeEach(function () {
-        HttpBinFixture::skipIfUnreachable();
+        HttpBin::skipIfUnreachable();
     });
 
     it('sends a large JSON payload through the HTTP proxy', function () {
-        ProxyFixture::skipIfUnreachable(ProxyFixture::httpHost(), ProxyFixture::httpPort());
+        ProxySetup::skipIfUnreachable(ProxySetup::httpHost(), ProxySetup::httpPort());
 
         $payload = ['data' => str_repeat('x', 10_000)];
 
-        $response = ProxyFixture::client()
-            ->withProxy(ProxyFixture::httpHost(), ProxyFixture::httpPort())
-            ->post(HttpBinFixture::proxyUrl('/post'), $payload)
+        $response = ProxySetup::client()
+            ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
+            ->post(HttpBin::proxyUrl('/post'), $payload)
             ->wait();
 
         expect($response->successful())->toBeTrue()
@@ -351,13 +351,13 @@ describe('large payload proxying', function () {
     });
 
     it('sends a large JSON payload through SOCKS5', function () {
-        ProxyFixture::skipIfUnreachable(ProxyFixture::socks5Host(), ProxyFixture::socks5Port());
+        ProxySetup::skipIfUnreachable(ProxySetup::socks5Host(), ProxySetup::socks5Port());
 
         $payload = ['data' => str_repeat('y', 10_000)];
 
-        $response = ProxyFixture::client()
-            ->withSocks5Proxy(ProxyFixture::socks5Host(), ProxyFixture::socks5Port())
-            ->post(HttpBinFixture::socksProxyUrl('/post'), $payload)
+        $response = ProxySetup::client()
+            ->withSocks5Proxy(ProxySetup::socks5Host(), ProxySetup::socks5Port())
+            ->post(HttpBin::socksProxyUrl('/post'), $payload)
             ->wait();
 
         expect($response->successful())->toBeTrue()
@@ -365,13 +365,13 @@ describe('large payload proxying', function () {
     });
 
     it('sends a large JSON payload through SOCKS4', function () {
-        ProxyFixture::skipIfUnreachable(ProxyFixture::socks4Host(), ProxyFixture::socks4Port());
+        ProxySetup::skipIfUnreachable(ProxySetup::socks4Host(), ProxySetup::socks4Port());
 
         $payload = ['data' => str_repeat('z', 10_000)];
 
-        $response = ProxyFixture::client()
-            ->withSocks4Proxy(ProxyFixture::socks4Host(), ProxyFixture::socks4Port())
-            ->post(HttpBinFixture::socksProxyUrl('/post'), $payload)
+        $response = ProxySetup::client()
+            ->withSocks4Proxy(ProxySetup::socks4Host(), ProxySetup::socks4Port())
+            ->post(HttpBin::socksProxyUrl('/post'), $payload)
             ->wait();
 
         expect($response->successful())->toBeTrue()
@@ -382,15 +382,15 @@ describe('large payload proxying', function () {
 describe('query string preservation through proxy', function () {
 
     beforeEach(function () {
-        HttpBinFixture::skipIfUnreachable();
+        HttpBin::skipIfUnreachable();
     });
 
     it('preserves query parameters through the HTTP proxy', function () {
-        ProxyFixture::skipIfUnreachable(ProxyFixture::httpHost(), ProxyFixture::httpPort());
+        ProxySetup::skipIfUnreachable(ProxySetup::httpHost(), ProxySetup::httpPort());
 
-        $response = ProxyFixture::client()
-            ->withProxy(ProxyFixture::httpHost(), ProxyFixture::httpPort())
-            ->get(HttpBinFixture::proxyUrl('/get') . '?foo=bar&baz=qux')
+        $response = ProxySetup::client()
+            ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
+            ->get(HttpBin::proxyUrl('/get') . '?foo=bar&baz=qux')
             ->wait();
 
         expect($response->successful())->toBeTrue()
@@ -399,11 +399,11 @@ describe('query string preservation through proxy', function () {
     });
 
     it('preserves query parameters through SOCKS5', function () {
-        ProxyFixture::skipIfUnreachable(ProxyFixture::socks5Host(), ProxyFixture::socks5Port());
+        ProxySetup::skipIfUnreachable(ProxySetup::socks5Host(), ProxySetup::socks5Port());
 
-        $response = ProxyFixture::client()
-            ->withSocks5Proxy(ProxyFixture::socks5Host(), ProxyFixture::socks5Port())
-            ->get(HttpBinFixture::socksProxyUrl('/get') . '?via=socks5&test=1')
+        $response = ProxySetup::client()
+            ->withSocks5Proxy(ProxySetup::socks5Host(), ProxySetup::socks5Port())
+            ->get(HttpBin::socksProxyUrl('/get') . '?via=socks5&test=1')
             ->wait();
 
         expect($response->successful())->toBeTrue()
@@ -412,11 +412,11 @@ describe('query string preservation through proxy', function () {
     });
 
     it('preserves query parameters through SOCKS4', function () {
-        ProxyFixture::skipIfUnreachable(ProxyFixture::socks4Host(), ProxyFixture::socks4Port());
+        ProxySetup::skipIfUnreachable(ProxySetup::socks4Host(), ProxySetup::socks4Port());
 
-        $response = ProxyFixture::client()
-            ->withSocks4Proxy(ProxyFixture::socks4Host(), ProxyFixture::socks4Port())
-            ->get(HttpBinFixture::socksProxyUrl('/get') . '?via=socks4&test=1')
+        $response = ProxySetup::client()
+            ->withSocks4Proxy(ProxySetup::socks4Host(), ProxySetup::socks4Port())
+            ->get(HttpBin::socksProxyUrl('/get') . '?via=socks4&test=1')
             ->wait();
 
         expect($response->successful())->toBeTrue()
@@ -428,40 +428,40 @@ describe('query string preservation through proxy', function () {
 describe('redirect handling through SOCKS proxies', function () {
 
     beforeEach(function () {
-        HttpBinFixture::skipIfUnreachable();
+        HttpBin::skipIfUnreachable();
     });
 
     it('follows redirects through SOCKS5', function () {
-        ProxyFixture::skipIfUnreachable(ProxyFixture::socks5Host(), ProxyFixture::socks5Port());
+        ProxySetup::skipIfUnreachable(ProxySetup::socks5Host(), ProxySetup::socks5Port());
 
-        $response = ProxyFixture::client()
-            ->withSocks5Proxy(ProxyFixture::socks5Host(), ProxyFixture::socks5Port())
+        $response = ProxySetup::client()
+            ->withSocks5Proxy(ProxySetup::socks5Host(), ProxySetup::socks5Port())
             ->redirects(true, 5)
-            ->get(HttpBinFixture::socksProxyUrl('/absolute-redirect/2'))
+            ->get(HttpBin::socksProxyUrl('/absolute-redirect/2'))
             ->wait();
 
         expect($response->successful())->toBeTrue();
     });
 
     it('follows redirects through SOCKS4', function () {
-        ProxyFixture::skipIfUnreachable(ProxyFixture::socks4Host(), ProxyFixture::socks4Port());
+        ProxySetup::skipIfUnreachable(ProxySetup::socks4Host(), ProxySetup::socks4Port());
 
-        $response = ProxyFixture::client()
-            ->withSocks4Proxy(ProxyFixture::socks4Host(), ProxyFixture::socks4Port())
+        $response = ProxySetup::client()
+            ->withSocks4Proxy(ProxySetup::socks4Host(), ProxySetup::socks4Port())
             ->redirects(true, 5)
-            ->get(HttpBinFixture::socksProxyUrl('/absolute-redirect/2'))
+            ->get(HttpBin::socksProxyUrl('/absolute-redirect/2'))
             ->wait();
 
         expect($response->successful())->toBeTrue();
     });
 
     it('does not follow redirects when disabled through proxy', function () {
-        ProxyFixture::skipIfUnreachable(ProxyFixture::httpHost(), ProxyFixture::httpPort());
+        ProxySetup::skipIfUnreachable(ProxySetup::httpHost(), ProxySetup::httpPort());
 
-        $response = ProxyFixture::client()
-            ->withProxy(ProxyFixture::httpHost(), ProxyFixture::httpPort())
+        $response = ProxySetup::client()
+            ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
             ->redirects(false)
-            ->get(HttpBinFixture::proxyUrl('/absolute-redirect/1'))
+            ->get(HttpBin::proxyUrl('/absolute-redirect/1'))
             ->wait();
 
         expect($response->status())->toBe(302);
@@ -471,15 +471,15 @@ describe('redirect handling through SOCKS proxies', function () {
 describe('empty response body through proxy', function () {
 
     beforeEach(function () {
-        HttpBinFixture::skipIfUnreachable();
+        HttpBin::skipIfUnreachable();
     });
 
     it('handles 204 No Content through HTTP proxy', function () {
-        ProxyFixture::skipIfUnreachable(ProxyFixture::httpHost(), ProxyFixture::httpPort());
+        ProxySetup::skipIfUnreachable(ProxySetup::httpHost(), ProxySetup::httpPort());
 
-        $response = ProxyFixture::client()
-            ->withProxy(ProxyFixture::httpHost(), ProxyFixture::httpPort())
-            ->get(HttpBinFixture::proxyUrl('/status/204'))
+        $response = ProxySetup::client()
+            ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
+            ->get(HttpBin::proxyUrl('/status/204'))
             ->wait();
 
         expect($response->status())->toBe(204)
@@ -487,11 +487,11 @@ describe('empty response body through proxy', function () {
     });
 
     it('handles 204 No Content through SOCKS5', function () {
-        ProxyFixture::skipIfUnreachable(ProxyFixture::socks5Host(), ProxyFixture::socks5Port());
+        ProxySetup::skipIfUnreachable(ProxySetup::socks5Host(), ProxySetup::socks5Port());
 
-        $response = ProxyFixture::client()
-            ->withSocks5Proxy(ProxyFixture::socks5Host(), ProxyFixture::socks5Port())
-            ->get(HttpBinFixture::socksProxyUrl('/status/204'))
+        $response = ProxySetup::client()
+            ->withSocks5Proxy(ProxySetup::socks5Host(), ProxySetup::socks5Port())
+            ->get(HttpBin::socksProxyUrl('/status/204'))
             ->wait();
 
         expect($response->status())->toBe(204)
@@ -502,50 +502,50 @@ describe('empty response body through proxy', function () {
 describe('graceful failure on unreachable or bad proxy', function () {
 
     beforeEach(function () {
-        HttpBinFixture::skipIfUnreachable();
+        HttpBin::skipIfUnreachable();
     });
 
     it('throws on unreachable HTTP proxy', function () {
-        expect(fn () => ProxyFixture::client(timeout: 3)
+        expect(fn () => ProxySetup::client(timeout: 3)
             ->withProxy('127.0.0.1', 19999)
-            ->get(HttpBinFixture::url('/get'))
+            ->get(HttpBin::url('/get'))
             ->wait()
         )->toThrow(\Throwable::class);
     });
 
     it('throws on unreachable SOCKS5 proxy', function () {
-        expect(fn () => ProxyFixture::client(timeout: 3)
+        expect(fn () => ProxySetup::client(timeout: 3)
             ->withSocks5Proxy('127.0.0.1', 19998)
-            ->get(HttpBinFixture::socksProxyUrl('/get'))
+            ->get(HttpBin::socksProxyUrl('/get'))
             ->wait()
         )->toThrow(\Throwable::class);
     });
 
     it('throws on unreachable SOCKS4 proxy', function () {
-        expect(fn () => ProxyFixture::client(timeout: 3)
+        expect(fn () => ProxySetup::client(timeout: 3)
             ->withSocks4Proxy('127.0.0.1', 19997)
-            ->get(HttpBinFixture::socksProxyUrl('/get'))
+            ->get(HttpBin::socksProxyUrl('/get'))
             ->wait()
         )->toThrow(\Throwable::class);
     });
 
     it('throws on wrong SOCKS5 credentials', function () {
-        ProxyFixture::skipIfUnreachable(ProxyFixture::socks5Host(), ProxyFixture::socks5Port());
+        ProxySetup::skipIfUnreachable(ProxySetup::socks5Host(), ProxySetup::socks5Port());
 
-        $user = ProxyFixture::socks5User();
+        $user = ProxySetup::socks5User();
 
         if ($user === null) {
             test()->markTestSkipped('SOCKS5_USER not set — skipping credential rejection test');
         }
 
-        expect(fn () => ProxyFixture::client(timeout: 3)
+        expect(fn () => ProxySetup::client(timeout: 3)
             ->withSocks5Proxy(
-                ProxyFixture::socks5Host(),
-                ProxyFixture::socks5Port(),
+                ProxySetup::socks5Host(),
+                ProxySetup::socks5Port(),
                 'wrong_user',
                 'wrong_pass',
             )
-            ->get(HttpBinFixture::socksProxyUrl('/get'))
+            ->get(HttpBin::socksProxyUrl('/get'))
             ->wait()
         )->toThrow(\Throwable::class);
     });
@@ -584,16 +584,16 @@ describe('proxy security', function () {
     });
 
     it('does not allow newline injection in custom headers through HTTP proxy', function () {
-        HttpBinFixture::skipIfUnreachable();
-        ProxyFixture::skipIfUnreachable(ProxyFixture::httpHost(), ProxyFixture::httpPort());
+        HttpBin::skipIfUnreachable();
+        ProxySetup::skipIfUnreachable(ProxySetup::httpHost(), ProxySetup::httpPort());
 
         $injected = "safe\r\nX-Injected: evil";
 
         try {
-            $response = ProxyFixture::client()
-                ->withProxy(ProxyFixture::httpHost(), ProxyFixture::httpPort())
+            $response = ProxySetup::client()
+                ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
                 ->withHeader('X-Test', $injected)
-                ->get(HttpBinFixture::proxyUrl('/headers'))
+                ->get(HttpBin::proxyUrl('/headers'))
                 ->wait();
 
             $headers = $response->json('headers') ?? [];
@@ -604,12 +604,12 @@ describe('proxy security', function () {
     });
 
     it('noProxy() request contains no Proxy-Authorization header', function () {
-        HttpBinFixture::skipIfUnreachable();
+        HttpBin::skipIfUnreachable();
 
-        $response = ProxyFixture::client()
-            ->withProxy(ProxyFixture::httpHost(), ProxyFixture::httpPort(), 'user', 'pass')
+        $response = ProxySetup::client()
+            ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort(), 'user', 'pass')
             ->noProxy()
-            ->get(HttpBinFixture::url('/headers'))
+            ->get(HttpBin::url('/headers'))
             ->wait();
 
         $headers = $response->json('headers') ?? [];
@@ -619,12 +619,12 @@ describe('proxy security', function () {
     });
 
     it('noProxy() request contains no Via header injected by proxy', function () {
-        HttpBinFixture::skipIfUnreachable();
+        HttpBin::skipIfUnreachable();
 
-        $response = ProxyFixture::client()
-            ->withProxy(ProxyFixture::httpHost(), ProxyFixture::httpPort())
+        $response = ProxySetup::client()
+            ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
             ->noProxy()
-            ->get(HttpBinFixture::url('/headers'))
+            ->get(HttpBin::url('/headers'))
             ->wait();
 
         $headers = $response->json('headers') ?? [];
@@ -634,12 +634,12 @@ describe('proxy security', function () {
     });
 
     it('proxied request through Squid contains a Via header', function () {
-        HttpBinFixture::skipIfUnreachable();
-        ProxyFixture::skipIfUnreachable(ProxyFixture::httpHost(), ProxyFixture::httpPort());
+        HttpBin::skipIfUnreachable();
+        ProxySetup::skipIfUnreachable(ProxySetup::httpHost(), ProxySetup::httpPort());
 
-        $response = ProxyFixture::client()
-            ->withProxy(ProxyFixture::httpHost(), ProxyFixture::httpPort())
-            ->get(HttpBinFixture::proxyUrl('/headers'))
+        $response = ProxySetup::client()
+            ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
+            ->get(HttpBin::proxyUrl('/headers'))
             ->wait();
 
         $headers = $response->json('headers') ?? [];

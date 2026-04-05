@@ -8,7 +8,7 @@ use Hibla\HttpClient\HttpClient;
 
 use function Rcalicdan\ConfigLoader\env;
 
-final class ProxyFixture
+final class ProxySetup
 {
     public static function httpHost(): string
     {
