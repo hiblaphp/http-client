@@ -32,6 +32,7 @@
     },
     "require-dev": {
         "pestphp/pest": "^4.0",
+        "rcalicdan/config-loader": "^1.0",
         "phpstan/phpstan": "^2.1",
         "phpstan/phpstan-strict-rules": "^2.0",
         "laravel/pint": "^1.25",
@@ -41,7 +42,22 @@
         "analyze": "./vendor/bin/phpstan analyse",
         "format": "./vendor/bin/pint",
         "format-test": "./vendor/bin/pint --test",
-        "test": "./vendor/bin/pest"
+        "test": "./vendor/bin/pest",
+        "proxy:env": "@php -r \"file_exists('docker/proxy/.env') || copy('docker/proxy/.env.example', 'docker/proxy/.env');\"",
+        "proxy:up": [
+            "@proxy:env",
+            "docker compose -f docker/proxy/docker-compose.yml --env-file docker/proxy/.env up -d --wait"
+        ],
+        "proxy:down": "docker compose -f docker/proxy/docker-compose.yml down",
+        "proxy:logs": "docker compose -f docker/proxy/docker-compose.yml logs -f",
+        "proxy:reset": [
+            "@proxy:down",
+            "@proxy:up"
+        ],
+        "test:proxy": [
+            "@proxy:up",
+            "./vendor/bin/pest tests/Proxy/ProxyTest.php"
+        ]
     },
     "config": {
         "allow-plugins": {

@@ -10,4 +10,16 @@
             <directory>src</directory>
         </include>
     </source>
+    <php>
+        <env name="HTTP_PROXY_HOST" value="127.0.0.1" force="false"/>
+        <env name="HTTP_PROXY_PORT" value="8888" force="false"/>
+
+        <env name="SOCKS5_PROXY_HOST" value="127.0.0.1" force="false"/>
+        <env name="SOCKS5_PROXY_PORT" value="1080" force="false"/>
+        <env name="SOCKS5_USER" value="" force="false"/>
+        <env name="SOCKS5_PASS" value="" force="false"/>
+
+        <env name="SOCKS4_PROXY_HOST" value="127.0.0.1" force="false"/>
+        <env name="SOCKS4_PROXY_PORT" value="1081" force="false"/>
+    </php>
 </phpunit>
