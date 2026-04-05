@@ -19,6 +19,7 @@ trait NormalizeHeaderTrait
 
         foreach ($headers as $key => $value) {
             if (\is_string($key)) {
+                $key = strtolower($key);
                 if (\is_string($value)) {
                     $normalized[$key] = $value;
                 } elseif (\is_array($value)) {
@@ -36,7 +37,11 @@ trait NormalizeHeaderTrait
     /**
      * Parses raw header strings from cURL into an associative array of arrays.
      *
-     * Groups multiple headers with the same name (e.g., Set-Cookie) into
+     * Header names are lowercased so that HTTP/2 (which mandates lowercase on
+     * the wire) and HTTP/1.1 (case-insensitive by RFC 7230) are treated
+     * identically by all consumers. Lookup must always use lowercase keys.
+     *
+     * Groups multiple headers with the same name (e.g., set-cookie) into
      * a single array under that name, complying with PSR-7 structure.
      *
      * @param string[] $rawHeaders Array of raw header lines (e.g., "Content-Type: text/html").
@@ -49,7 +54,7 @@ trait NormalizeHeaderTrait
         foreach ($rawHeaders as $line) {
             if (str_contains($line, ':')) {
                 [$name, $value] = explode(':', $line, 2);
-                $name = trim($name);
+                $name  = strtolower(trim($name)); 
                 $value = trim($value);
 
                 $parsed[$name][] = $value;

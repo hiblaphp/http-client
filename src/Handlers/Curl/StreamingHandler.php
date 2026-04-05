@@ -87,7 +87,11 @@ class StreamingHandler implements StreamingHandlerInterface
                         // the jar so subsequent requests on the same jar replay them correctly.
                         if ($cookieJar instanceof CookieJarInterface) {
                             $originHost = (new Uri($url))->getHost();
-                            foreach ($parsedHeaders['Set-Cookie'] ?? [] as $setCookie) {
+                            $setCookieValues = $parsedHeaders['set-cookie'] ?? [];
+                            if (\is_string($setCookieValues)) {
+                                $setCookieValues = [$setCookieValues];
+                            }
+                            foreach ($setCookieValues as $setCookie) {
                                 $cookie = Cookie::fromSetCookieHeader($setCookie, $originHost ?: null);
                                 if ($cookie !== null) {
                                     $cookieJar->setCookie($cookie);
