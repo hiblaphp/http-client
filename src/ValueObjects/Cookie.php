@@ -243,8 +243,11 @@ class Cookie
                 && $requestDomain === strtolower($this->domain);
         }
 
+        // A domain-less, non-host-only cookie has no scope — don't match anything.
+        // This state should not occur in practice; fromSetCookieHeader always
+        // sets hostOnly=true when no Domain attribute is present and originHost is given.
         if ($this->domain === null) {
-            return true;
+            return false; 
         }
 
         $cookieDomain = strtolower(ltrim($this->domain, '.'));
@@ -253,8 +256,6 @@ class Cookie
             return true;
         }
 
-        // Subdomain suffix match — only when domain starts with '.'
-        // and the request host is not a raw IP address (RFC 6265 section 5.1.3).
         if (str_starts_with($this->domain, '.') && ! filter_var($requestDomain, FILTER_VALIDATE_IP)) {
             return str_ends_with($requestDomain, '.' . $cookieDomain);
         }
@@ -435,9 +436,17 @@ class Cookie
         $persistent = $maxAge !== null || $expires !== null;
 
         return new self(
-            $name, $value, $expires, $domain, $path,
-            $secure, $httpOnly, $maxAge, $sameSite,
-            $hostOnly, $persistent,
+            $name,
+            $value,
+            $expires,
+            $domain,
+            $path,
+            $secure,
+            $httpOnly,
+            $maxAge,
+            $sameSite,
+            $hostOnly,
+            $persistent,
         );
     }
 

@@ -11,6 +11,7 @@ use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
 use Hibla\HttpClient\Interfaces\Handler\RequestExecutorHandlerInterface;
 use Hibla\HttpClient\Response;
 use Hibla\HttpClient\Traits\NormalizeHeaderTrait;
+use Hibla\HttpClient\Uri;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Hibla\Promise\Promise;
 
@@ -77,7 +78,8 @@ class RequestExecutorHandler implements RequestExecutorHandlerInterface
                     }
 
                     if ($cookieJar instanceof CookieJarInterface) {
-                        $responseObj->applyCookiesToJar($cookieJar);
+                        $originHost = (new Uri($url))->getHost();
+                        $responseObj->applyCookiesToJar($cookieJar, $originHost ?: null);
                     }
 
                     $promise->resolve($responseObj);
