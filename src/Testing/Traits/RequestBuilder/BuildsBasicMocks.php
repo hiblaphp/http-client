@@ -21,6 +21,17 @@ trait BuildsBasicMocks
     }
 
     /**
+     * Configure the latency injected between each 8KB chunk of data during a transfer.
+     */
+    public function dataStreamTransferLatency(float $seconds, float $jitter = 0): static
+    {
+        $this->getRequest()->setChunkDelay($seconds);
+        $this->getRequest()->setChunkJitter($jitter);
+
+        return $this;
+    }
+
+    /**
      * Set the HTTP status code for the response.
      */
     public function respondWithStatus(int $status = 200): static

@@ -125,6 +125,10 @@ class MockedRequest
      */
     private ?array $sseStreamConfig = null;
 
+    private float $chunkDelay = 0;
+
+    private float $chunkJitter = 0;
+
     /**
      * Creates a new mocked request.
      *
@@ -133,6 +137,26 @@ class MockedRequest
     public function __construct(string $method = '*')
     {
         $this->method = $method;
+    }
+
+    public function setChunkDelay(float $seconds): void
+    {
+        $this->chunkDelay = $seconds;
+    }
+
+    public function getChunkDelay(): float
+    {
+        return $this->chunkDelay;
+    }
+
+    public function setChunkJitter(float $jitter): void
+    {
+        $this->chunkJitter = $jitter;
+    }
+
+    public function getChunkJitter(): float
+    {
+        return $this->chunkJitter;
     }
 
     /**
@@ -381,7 +405,7 @@ class MockedRequest
 
         if ($this->matcherClosure !== null) {
             $recorded = new RecordedRequest($method, $url, $options);
-            if (!($this->matcherClosure)($recorded)) {
+            if (! ($this->matcherClosure)($recorded)) {
                 return false;
             }
         }

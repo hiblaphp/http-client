@@ -70,11 +70,12 @@ test('parses retry interval', function () {
     $stream = new Stream(fopen('php://temp', 'r+'));
     $response = new SSEResponse($stream);
 
-    $sseData = "retry: 5000\n\n";
+    $sseData = "retry: 5000\ndata: Test\n\n";
     $events = iterator_to_array($response->parseEvents($sseData));
 
     expect($events)->toHaveCount(1);
     expect($events[0]->retry)->toBe(5000);
+    expect($events[0]->data)->toBe('Test');
 });
 
 test('ignores comments', function () {
@@ -246,20 +247,6 @@ it('does not update last event id when not present', function () {
     expect($response->getLastEventId())->toBe('original');
 });
 
-it('gets events from stream', function () {
-    $sseData = "data: Event 1\n\ndata: Event 2\n\ndata: Event 3\n\n";
-    $stream = Stream::fromString($sseData);
-    $response = new SSEResponse($stream, 200);
-
-    $events = iterator_to_array($response->getEvents());
-
-    expect($events)->toHaveCount(3)
-        ->and($events[0]->data)->toBe('Event 1')
-        ->and($events[1]->data)->toBe('Event 2')
-        ->and($events[2]->data)->toBe('Event 3')
-    ;
-});
-
 it('handles field without colon', function () {
     $sseData = "data\n\n";
     $stream = Stream::fromString($sseData);
@@ -288,7 +275,7 @@ it('trims leading space from field value', function () {
 
     $events = iterator_to_array($response->parseEvents($sseData));
 
-    expect($events[0]->data)->toBe('Value with spaces  ');
+    expect($events[0]->data)->toBe(' Value with spaces  '); // one leading space remains
 });
 
 it('handles CRLF line endings', function () {
@@ -348,29 +335,9 @@ it('handles duplicate field names', function () {
 
     $events = iterator_to_array($response->parseEvents($sseData));
 
-    expect($events[0]->id)->toBe('third') // Last one wins
+    expect($events[0]->id)->toBe('third')
         ->and($events[0]->rawFields['id'])->toBe(['first', 'second', 'third'])
     ;
-});
-
-it('processes buffered data at end of stream', function () {
-    $stream = Stream::fromString('data: Incomplete event');
-    $response = new SSEResponse($stream, 200);
-
-    $events = iterator_to_array($response->getEvents());
-
-    expect($events)->toHaveCount(1)
-        ->and($events[0]->data)->toBe('Incomplete event')
-    ;
-});
-
-it('handles empty stream', function () {
-    $stream = Stream::fromString('');
-    $response = new SSEResponse($stream, 200);
-
-    $events = iterator_to_array($response->getEvents());
-
-    expect($events)->toHaveCount(0);
 });
 
 it('handles stream with only comments', function () {

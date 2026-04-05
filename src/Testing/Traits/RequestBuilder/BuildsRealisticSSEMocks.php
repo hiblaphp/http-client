@@ -11,23 +11,18 @@ trait BuildsRealisticSSEMocks
     abstract public function respondWithHeader(string $name, string $value): static;
 
     /**
-     * Mock an SSE stream that emits events periodically with realistic timing.
+     * Mock an SSE stream that emits a specific list of events.
+     * 
+     * Use ->dataStreamTransferLatency() to control the timing between events.
      *
      * @param array<int, array{data?: string, event?: string, id?: string, retry?: int}> $events
-     * @param float $intervalSeconds Interval between events in seconds
-     * @param float $jitter Random jitter to add/subtract (0.0 to 1.0, where 1.0 = 100% of interval)
      */
-    public function sseWithPeriodicEvents(
-        array $events,
-        float $intervalSeconds = 1.0,
-        float $jitter = 0.0
-    ): static {
+    public function sseWithPeriodicEvents(array $events): static
+    {
         $this->getRequest()->asSSE();
         $this->getRequest()->setSSEStreamConfig([
             'type' => 'periodic',
             'events' => $events,
-            'interval' => $intervalSeconds,
-            'jitter' => $jitter,
         ]);
 
         $this->respondWithHeader('Content-Type', 'text/event-stream');
@@ -38,15 +33,15 @@ trait BuildsRealisticSSEMocks
     }
 
     /**
-     * Mock an SSE stream that emits a limited number of events then closes.
+     * Mock an SSE stream that emits a limited number of generated events then closes.
+     * 
+     * Use ->dataStreamTransferLatency() to control the timing between events.
      *
-     * @param int $eventCount Number of events to send
-     * @param float $intervalSeconds Interval between events
+     * @param int $eventCount Number of events to send.
      * @param callable|null $eventGenerator Callback to generate event data: fn(int $index) => array
      */
     public function sseWithLimitedEvents(
         int $eventCount,
-        float $intervalSeconds = 1.0,
         ?callable $eventGenerator = null
     ): static {
         $events = [];
@@ -70,8 +65,6 @@ trait BuildsRealisticSSEMocks
         $this->getRequest()->setSSEStreamConfig([
             'type' => 'periodic',
             'events' => $events,
-            'interval' => $intervalSeconds,
-            'jitter' => 0.0,
             'auto_close' => true,
         ]);
 
@@ -83,22 +76,21 @@ trait BuildsRealisticSSEMocks
     }
 
     /**
-     * Mock an infinite SSE stream (useful for long-polling tests).
+     * Mock an infinite SSE stream (emits until the client cancels).
+     * 
+     * Use ->dataStreamTransferLatency() to control the timing between events.
      *
      * @param callable $eventGenerator Callback to generate events: fn(int $index) => array
-     * @param float $intervalSeconds Interval between events
-     * @param int|null $maxEvents Maximum events to send (null = infinite until cancelled)
+     * @param int|null $maxEvents Optional maximum events to send before stopping.
      */
     public function sseInfiniteStream(
         callable $eventGenerator,
-        float $intervalSeconds = 1.0,
         ?int $maxEvents = null
     ): static {
         $this->getRequest()->asSSE();
         $this->getRequest()->setSSEStreamConfig([
             'type' => 'infinite',
             'event_generator' => $eventGenerator,
-            'interval' => $intervalSeconds,
             'max_events' => $maxEvents,
         ]);
 
@@ -110,16 +102,14 @@ trait BuildsRealisticSSEMocks
     }
 
     /**
-     * Mock an SSE stream that drops connection after sending N events.
+     * Mock an SSE stream that emits N events and then simulates a network drop.
      *
-     * @param int $eventCount Number of events before disconnect
-     * @param float $intervalSeconds Interval between events
-     * @param string $disconnectError Error message on disconnect
+     * @param int $eventCount Number of events before disconnect.
+     * @param string $disconnectError Error message on disconnect.
      * @param callable|null $eventGenerator
      */
     public function ssePeriodicThenDisconnect(
         int $eventCount,
-        float $intervalSeconds = 1.0,
         string $disconnectError = 'Connection lost',
         ?callable $eventGenerator = null
     ): static {
@@ -143,8 +133,6 @@ trait BuildsRealisticSSEMocks
         $this->getRequest()->setSSEStreamConfig([
             'type' => 'periodic',
             'events' => $events,
-            'interval' => $intervalSeconds,
-            'jitter' => 0.0,
             'auto_close' => true,
         ]);
 

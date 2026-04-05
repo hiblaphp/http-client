@@ -92,17 +92,27 @@ class RecordedRequest
      */
     private function parseBody(): void
     {
-        if (isset($this->options[CURLOPT_POSTFIELDS]) && is_string($this->options[CURLOPT_POSTFIELDS])) {
-            $this->body = $this->options[CURLOPT_POSTFIELDS];
-        } elseif (isset($this->options['body']) && is_string($this->options['body'])) {
-            $this->body = $this->options['body'];
-        }
+        $rawBody = $this->options[CURLOPT_POSTFIELDS] ?? $this->options['body'] ?? null;
 
-        if ($this->body !== null) {
+        if (is_string($rawBody)) {
+            $this->body = $rawBody;
+
             $decoded = json_decode($this->body, true);
             if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
                 $this->parsedJson = $decoded;
             }
+        } elseif (is_array($rawBody)) {
+            $this->body = '[Multipart Form Data: ' . count($rawBody) . ' fields]';
+
+            $safeArray = [];
+            foreach ($rawBody as $key => $value) {
+                if ($value instanceof \CURLFile) {
+                    $safeArray[$key] = '[File: ' . $value->getPostFilename() . ' | MIME: ' . $value->getMimeType() . ']';
+                } else {
+                    $safeArray[$key] = $value;
+                }
+            }
+            $this->parsedJson = $safeArray;
         }
     }
 

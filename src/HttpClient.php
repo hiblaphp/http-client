@@ -682,19 +682,15 @@ class HttpClient implements HttpClientInterface
                 'filename' => $filename ?? $file->getClientFilename(),
                 'Content-Type' => $contentType ?? $file->getClientMediaType(),
             ];
-        } elseif (is_string($file) && file_exists($file)) {
-            $resource = fopen($file, 'r');
-            if ($resource === false) {
-                throw new InvalidArgumentException("Unable to open file: {$file}");
-            }
+        } elseif (\is_string($file) && file_exists($file)) {
             $mime = mime_content_type($file);
             $entry = [
                 'name' => $name,
-                'contents' => $resource,
+                'filepath' => $file,
                 'filename' => $filename ?? basename($file),
                 'Content-Type' => $contentType ?? ($mime !== false ? $mime : 'application/octet-stream'),
             ];
-        } elseif (is_resource($file)) {
+        } elseif (\is_resource($file)) {
             $entry = [
                 'name' => $name,
                 'contents' => $file,
@@ -950,38 +946,6 @@ class HttpClient implements HttpClientInterface
         $initialRequest = $this->request
             ->withMethod($this->getMethod())
             ->withUri(new Uri($expandedUrl))
-        ;
-
-        return $this->interceptorHandler->process(
-            request: $initialRequest,
-            interceptors: $this->interceptors,
-            executor: function (RequestInterface $processed) use ($onChunk) {
-                $clientOptions = $this->buildClientOptionsFromProcessed($processed);
-                $options = $this->resolveTransportOptionsBuilder()->buildForStreaming($clientOptions);
-
-                return $this->resolveHandler()->stream((string) $processed->getUri(), $options, $onChunk);
-            }
-        );
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function streamPost(string $url, mixed $body = null, ?callable $onChunk = null): PromiseInterface
-    {
-        $expandedUrl = $this->expandUriTemplate($url);
-        $postBody = $this->request->getBody();
-
-        if ($body !== null) {
-            $postBody = $this->createTempStream();
-            $postBody->write($this->convertToString($body));
-            $postBody->rewind();
-        }
-
-        $initialRequest = $this->request
-            ->withMethod('POST')
-            ->withUri(new Uri($expandedUrl))
-            ->withBody($postBody)
         ;
 
         return $this->interceptorHandler->process(

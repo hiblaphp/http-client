@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Testing\Utilities\Factories;
 
+use Hibla\EventLoop\Loop;
 use Hibla\HttpClient\Exceptions\HttpException;
-use Hibla\HttpClient\Exceptions\HttpStreamException;
+use Hibla\HttpClient\Stream;
 use Hibla\HttpClient\StreamingResponse;
 use Hibla\HttpClient\Testing\MockedRequest;
 use Hibla\HttpClient\Testing\Utilities\Handlers\DelayCalculator;
 use Hibla\HttpClient\Testing\Utilities\Handlers\NetworkSimulationHandler;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Hibla\Promise\Promise;
-use Psr\Http\Message\StreamInterface;
 
 use function Hibla\delay;
 
@@ -63,7 +63,7 @@ class StreamingResponseFactory
             return $promise;
         }
 
-        $delayPromise->then(function () use ($promise, $mock, $onChunk, $createStream) {
+        $delayPromise->then(function () use ($promise, $mock, $onChunk) {
             if ($promise->isCancelled()) {
                 return;
             }
@@ -73,19 +73,21 @@ class StreamingResponseFactory
                     throw new HttpException($mock->getError() ?? 'Mocked failure');
                 }
 
-                $this->processChunks($mock, $onChunk);
-
-                $stream = $createStream($mock->getBody());
-
-                if (! $stream instanceof StreamInterface) {
-                    throw new HttpStreamException('Stream creator must return a StreamInterface instance');
+                $resource = fopen('php://temp', 'w+b');
+                if ($resource === false) {
+                    throw new HttpException('Failed to create internal stream buffer');
                 }
+
+                $stream = new Stream($resource);
 
                 $promise->resolve(new StreamingResponse(
                     $stream,
                     $mock->getStatusCode(),
                     $mock->getHeaders()
                 ));
+
+                $this->processChunks($mock, $onChunk, $stream);
+
             } catch (\Exception $e) {
                 $promise->reject($e);
             }
@@ -94,20 +96,62 @@ class StreamingResponseFactory
         return $promise;
     }
 
-    private function processChunks(MockedRequest $mock, ?callable $onChunk): void
+    /**
+     * Orchestrates the delivery of chunks into the stream buffer.
+     */
+    private function processChunks(MockedRequest $mock, ?callable $onChunk, Stream $stream): void
     {
-        if ($onChunk === null) {
+        $chunks = $mock->getBodySequence();
+
+        if ($chunks === []) {
+            $chunks = [$mock->getBody()];
+        }
+
+        $baseDelay = $mock->getChunkDelay();
+        $jitter = $mock->getChunkJitter();
+
+        $this->deliverNextChunk($chunks, 0, $baseDelay, $jitter, $onChunk, $stream);
+    }
+
+    /**
+     * Recursively schedules the next chunk using the Event Loop.
+     *
+     * @param array<int, string> $chunks
+     */
+    private function deliverNextChunk(
+        array $chunks,
+        int $index,
+        float $baseDelay,
+        float $jitter,
+        ?callable $onChunk,
+        Stream $stream
+    ): void {
+        if ($index >= \count($chunks)) {
+            $stream->getHandler()->markEof();
+
             return;
         }
 
-        $bodySequence = $mock->getBodySequence();
-
-        if ($bodySequence !== []) {
-            foreach ($bodySequence as $chunk) {
-                $onChunk($chunk);
-            }
-        } else {
-            $onChunk($mock->getBody());
+        $actualDelay = $baseDelay;
+        if ($jitter > 0 && $baseDelay > 0) {
+            $variation = ($baseDelay * $jitter);
+            $actualDelay += (mt_rand() / mt_getrandmax() * 2 * $variation) - $variation;
         }
+
+        Loop::addTimer(max(0, $actualDelay), function () use ($chunks, $index, $baseDelay, $jitter, $onChunk, $stream) {
+            if ($stream->getHandler()->isClosed()) {
+                return;
+            }
+
+            $data = $chunks[$index];
+
+            $stream->getHandler()->writeToBuffer($data);
+
+            if ($onChunk !== null) {
+                $onChunk($data);
+            }
+
+            $this->deliverNextChunk($chunks, $index + 1, $baseDelay, $jitter, $onChunk, $stream);
+        });
     }
 }

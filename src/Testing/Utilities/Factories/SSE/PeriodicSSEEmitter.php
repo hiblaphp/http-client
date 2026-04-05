@@ -27,7 +27,6 @@ class PeriodicSSEEmitter
      * @param callable|null $onEvent
      * @param callable|null $onError
      * @param string|null &$periodicTimerId
-     * @param-out string $periodicTimerId
      */
     public function emit(
         Promise $promise,
@@ -56,8 +55,9 @@ class PeriodicSSEEmitter
         $promise->resolve($sseResponse);
 
         $type = $config['type'] ?? 'periodic';
-        $interval = $this->getConfigValue($config, 'interval', 1.0);
-        $jitter = $this->getConfigValue($config, 'jitter', 0.0);
+
+        $interval = $mock->getChunkDelay();
+        $jitter = $mock->getChunkJitter();
 
         if ($type === 'infinite' && isset($config['event_generator']) && is_callable($config['event_generator'])) {
             $this->setupInfiniteEmitter($config, $onEvent, $interval, $jitter, $periodicTimerId, $sseResponse);
@@ -67,13 +67,7 @@ class PeriodicSSEEmitter
     }
 
     /**
-     * @param array<string, mixed> $config
-     * @param callable|null $onEvent
-     * @param float $interval
-     * @param float $jitter
-     * @param string|null &$periodicTimerId
-     * @param SSEResponse $sseResponse
-     * @param-out string $periodicTimerId
+     * Sets up an infinite event stream.
      */
     private function setupInfiniteEmitter(
         array $config,
@@ -83,17 +77,8 @@ class PeriodicSSEEmitter
         ?string &$periodicTimerId,
         SSEResponse $sseResponse
     ): void {
-        if (! isset($config['event_generator'])) {
-            return;
-        }
-
         $eventGenerator = $config['event_generator'];
-
-        if (! is_callable($eventGenerator)) {
-            return;
-        }
-
-        $maxEvents = isset($config['max_events']) && is_int($config['max_events']) ? $config['max_events'] : null;
+        $maxEvents = $config['max_events'] ?? null;
         $eventIndex = 0;
 
         $periodicTimerId = Loop::addPeriodicTimer(
@@ -108,18 +93,9 @@ class PeriodicSSEEmitter
                 &$periodicTimerId,
                 $sseResponse,
             ) {
-                if (! $sseResponse->getStream()->isWritable()) {
-                    if ($periodicTimerId !== null) {
-                        Loop::cancelTimer($periodicTimerId);
-                        $periodicTimerId = null;
-                    }
-
-                    return;
-                }
-
                 try {
-                    $sseResponse->getStream()->tell();
-                } catch (\Throwable $e) {
+                    $sseResponse->getBody()->tell();
+                } catch (\Throwable) {
                     if ($periodicTimerId !== null) {
                         Loop::cancelTimer($periodicTimerId);
                         $periodicTimerId = null;
@@ -129,19 +105,17 @@ class PeriodicSSEEmitter
                 }
 
                 if ($maxEvents !== null && $eventIndex >= $maxEvents) {
-                    if ($periodicTimerId !== null) {
-                        Loop::cancelTimer($periodicTimerId);
-                        $periodicTimerId = null;
-                    }
+                    Loop::cancelTimer($periodicTimerId);
+                    $periodicTimerId = null;
 
                     return;
                 }
 
-                /** @var callable $eventGenerator */
                 $eventData = $eventGenerator($eventIndex);
                 if (\is_array($eventData)) {
                     $formattedEvent = $this->formatter->formatEvents([$eventData]);
-                    $sseResponse->getStream()->write($formattedEvent);
+
+                    $sseResponse->getBody()->write($formattedEvent);
 
                     $parsedEvents = $sseResponse->parseEvents($formattedEvent);
                     foreach ($parsedEvents as $event) {
@@ -152,22 +126,16 @@ class PeriodicSSEEmitter
                 }
                 $eventIndex++;
 
-                $this->applyJitter($jitter, $interval);
+                if ($jitter > 0) {
+                    $this->applyJitter($jitter, $interval);
+                }
             },
             maxExecutions: $maxEvents
         );
     }
 
     /**
-     * @param array<string, mixed> $config
-     * @param MockedRequest $mock
-     * @param callable|null $onEvent
-     * @param callable|null $onError
-     * @param float $interval
-     * @param float $jitter
-     * @param string|null &$periodicTimerId
-     * @param SSEResponse $sseResponse
-     * @param-out string $periodicTimerId
+     * Sets up a finite stream from a predefined list of events.
      */
     private function setupFiniteEmitter(
         array $config,
@@ -180,24 +148,10 @@ class PeriodicSSEEmitter
         SSEResponse $sseResponse
     ): void {
         $events = $config['events'] ?? [];
-        if (! \is_array($events)) {
-            $events = [];
-        }
-
-        /** @var array<array{data?: string, event?: string, id?: string, retry?: int}> $validatedEvents */
-        $validatedEvents = [];
-        foreach ($events as $event) {
-            if (\is_array($event)) {
-                $validatedEvents[] = $event;
-            }
-        }
-        $events = $validatedEvents;
-
         $eventIndex = 0;
         $totalEvents = \count($events);
-        $autoClose = isset($config['auto_close']) && is_bool($config['auto_close']) ? $config['auto_close'] : false;
+        $autoClose = $config['auto_close'] ?? false;
 
-        // Allow one extra tick to handle the closing/failing logic if autoClose is true
         $maxExecutions = $autoClose ? $totalEvents + 1 : $totalEvents;
 
         $periodicTimerId = Loop::addPeriodicTimer(
@@ -215,18 +169,9 @@ class PeriodicSSEEmitter
                 &$periodicTimerId,
                 $sseResponse
             ) {
-                if (! $sseResponse->getStream()->isWritable()) {
-                    if ($periodicTimerId !== null) {
-                        Loop::cancelTimer($periodicTimerId);
-                        $periodicTimerId = null;
-                    }
-
-                    return;
-                }
-
                 try {
-                    $sseResponse->getStream()->tell();
-                } catch (\Throwable $e) {
+                    $sseResponse->getBody()->tell();
+                } catch (\Throwable) {
                     if ($periodicTimerId !== null) {
                         Loop::cancelTimer($periodicTimerId);
                         $periodicTimerId = null;
@@ -236,10 +181,8 @@ class PeriodicSSEEmitter
                 }
 
                 if ($eventIndex >= $totalEvents) {
-                    if ($periodicTimerId !== null) {
-                        Loop::cancelTimer($periodicTimerId);
-                        $periodicTimerId = null;
-                    }
+                    Loop::cancelTimer($periodicTimerId);
+                    $periodicTimerId = null;
 
                     if ($mock->shouldFail() && $autoClose) {
                         $error = $mock->getError() ?? 'Connection closed';
@@ -253,7 +196,8 @@ class PeriodicSSEEmitter
 
                 $eventData = $events[$eventIndex];
                 $formattedEvent = $this->formatter->formatEvents([$eventData]);
-                $sseResponse->getStream()->write($formattedEvent);
+
+                $sseResponse->getBody()->write($formattedEvent);
 
                 $parsedEvents = $sseResponse->parseEvents($formattedEvent);
                 foreach ($parsedEvents as $event) {
@@ -263,38 +207,21 @@ class PeriodicSSEEmitter
                 }
                 $eventIndex++;
 
-                $this->applyJitter($jitter, $interval);
+                if ($jitter > 0) {
+                    $this->applyJitter($jitter, $interval);
+                }
             },
             maxExecutions: $maxExecutions
         );
     }
 
-    /**
-     * @param array<string, mixed> $config
-     */
-    private function getConfigValue(array $config, string $key, float $default): float
-    {
-        if (! isset($config[$key])) {
-            return $default;
-        }
-
-        $value = $config[$key];
-        if (\is_float($value) || \is_int($value)) {
-            return (float)$value;
-        }
-
-        return $default;
-    }
-
     private function applyJitter(float $jitter, float $interval): void
     {
-        if ($jitter <= 0) {
+        if ($jitter <= 0 || $interval <= 0) {
             return;
         }
-
         $jitterAmount = $interval * $jitter;
-        $randomJitter = (mt_rand() / mt_getrandmax()) * 2 * $jitterAmount - $jitterAmount;
-
+        $randomJitter = (mt_rand() / mt_getrandmax() * 2 * $jitterAmount) - $jitterAmount;
         if ($randomJitter > 0) {
             usleep((int)($randomJitter * 1000000));
         }

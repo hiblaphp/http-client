@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Testing\Utilities\Factories;
 
+use Hibla\EventLoop\Loop;
 use Hibla\HttpClient\Exceptions\HttpStreamException;
 use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Testing\MockedRequest;
@@ -28,8 +29,12 @@ class DownloadResponseFactory
     }
 
     /**
-     * Creates a download response with the given configuration.
+     * Creates a mock download response with realistic asynchronous chunk delivery.
      *
+     * @param MockedRequest $mock The mock configuration.
+     * @param string $destination The local path to save the file.
+     * @param FileManager $fileManager Manager for tracking temporary files.
+     * @param (callable(DownloadProgress): void)|null $onProgress Optional progress callback.
      * @return PromiseInterface<array{file: string, status: int, headers: array<string, string>, size: int, protocol_version: string}>
      */
     public function create(
@@ -84,15 +89,29 @@ class DownloadResponseFactory
                 }
 
                 $this->ensureDirectoryExists($destination, $fileManager);
-                $this->writeFileWithProgress($destination, $mock->getBody(), $fileManager, $onProgress);
 
-                $promise->resolve([
-                    'file' => $destination,
-                    'status' => $mock->getStatusCode(),
-                    'headers' => $this->normalizeHeaders($mock->getHeaders()),
-                    'size' => strlen($mock->getBody()),
-                    'protocol_version' => '2.0',
-                ]);
+                $content = $mock->getBody();
+                $file = @fopen($destination, 'wb');
+
+                if ($file === false) {
+                    $exception = new HttpStreamException("Cannot open file for writing: {$destination}");
+                    $exception->setStreamState('file_write_failed');
+
+                    throw $exception;
+                }
+
+                $fileManager->trackFile($destination);
+
+                $this->deliverChunksAsync(
+                    $file,
+                    $content,
+                    0,
+                    $mock,
+                    $onProgress,
+                    $promise,
+                    $destination
+                );
+
             } catch (\Exception $e) {
                 $promise->reject($e);
             }
@@ -101,55 +120,89 @@ class DownloadResponseFactory
         return $promise;
     }
 
-    private function writeFileWithProgress(string $destination, string $content, FileManager $fileManager, ?callable $onProgress): void
-    {
-        $total = \strlen($content);
-        if ($total === 0) {
-            if ($onProgress !== null) {
-                $onProgress(new DownloadProgress(0, 0));
+    /**
+     * Recursively writes chunks to the file using the Event Loop to simulate network timing.
+     *
+     * @param resource $file The open file handle.
+     * @param string $content The full body content to write.
+     * @param int $offset The current byte offset.
+     */
+    private function deliverChunksAsync(
+        $file,
+        string $content,
+        int $offset,
+        MockedRequest $mock,
+        ?callable $onProgress,
+        Promise $promise,
+        string $destination
+    ): void {
+        if ($promise->isCancelled()) {
+            if (\is_resource($file)) {
+                fclose($file);
             }
-            if (file_put_contents($destination, '') === false) {
-                $exception = new HttpStreamException("Cannot write to file: {$destination}");
-                $exception->setStreamState('file_write_failed');
-
-                throw $exception;
-            }
-            $fileManager->trackFile($destination);
 
             return;
         }
 
-        $file = @fopen($destination, 'wb');
-        if ($file === false) {
-            $exception = new HttpStreamException("Cannot write to file: {$destination}");
-            $exception->setStreamState('file_write_failed');
+        $totalSize = \strlen($content);
+        $chunkSize = 8192;
 
-            throw $exception;
+        if ($offset >= $totalSize) {
+            if (\is_resource($file)) {
+                fclose($file);
+            }
+
+            $promise->resolve([
+                'file' => $destination,
+                'status' => $mock->getStatusCode(),
+                'headers' => $this->normalizeHeaders($mock->getHeaders()),
+                'size' => $totalSize,
+                'protocol_version' => '2.0',
+            ]);
+
+            return;
         }
 
-        $chunkSize = 8192;
-        $downloaded = 0;
+        $baseDelay = $mock->getChunkDelay();
+        $jitter = $mock->getChunkJitter();
 
-        for ($i = 0; $i < $total; $i += $chunkSize) {
-            $chunk = substr($content, $i, $chunkSize);
+        $actualDelay = $baseDelay;
+        if ($jitter > 0 && $baseDelay > 0) {
+            $variation = ($baseDelay * $jitter);
+            $actualDelay += (mt_rand() / mt_getrandmax() * 2 * $variation) - $variation;
+        }
+
+        Loop::addTimer(max(0, $actualDelay), function () use ($file, $content, $offset, $chunkSize, $totalSize, $mock, $onProgress, $promise, $destination) {
+            if ($promise->isCancelled()) {
+                if (\is_resource($file)) {
+                    fclose($file);
+                }
+
+                return;
+            }
+
+            $chunk = substr($content, $offset, $chunkSize);
+
             if (fwrite($file, $chunk) === false) {
                 fclose($file);
-                $exception = new HttpStreamException("Cannot write to file: {$destination}");
-                $exception->setStreamState('file_write_failed');
+                $promise->reject(new HttpStreamException('Disk write error during mocked download transfer'));
 
-                throw $exception;
+                return;
             }
-            $downloaded += \strlen($chunk);
+
+            $newOffset = $offset + strlen($chunk);
 
             if ($onProgress !== null) {
-                $onProgress(new DownloadProgress($total, $downloaded));
+                $onProgress(new DownloadProgress($totalSize, $newOffset));
             }
-        }
 
-        fclose($file);
-        $fileManager->trackFile($destination);
+            $this->deliverChunksAsync($file, $content, $newOffset, $mock, $onProgress, $promise, $destination);
+        });
     }
 
+    /**
+     * Ensures the parent directory of the destination exists.
+     */
     private function ensureDirectoryExists(string $destination, FileManager $fileManager): void
     {
         $directory = dirname($destination);
@@ -165,19 +218,9 @@ class DownloadResponseFactory
         }
     }
 
-    private function writeFile(string $destination, string $content, FileManager $fileManager): void
-    {
-        if (file_put_contents($destination, $content) === false) {
-            $exception = new HttpStreamException("Cannot write to file: {$destination}");
-            $exception->setStreamState('file_write_failed');
-
-            throw $exception;
-        }
-
-        $fileManager->trackFile($destination);
-    }
-
     /**
+     * Normalizes headers array to standard string/string pairs.
+     *
      * @param array<string, string|array<string>> $headers
      * @return array<string, string>
      */

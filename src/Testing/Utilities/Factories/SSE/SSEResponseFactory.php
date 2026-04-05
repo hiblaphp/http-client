@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Hibla\HttpClient\Testing\Utilities\Factories\SSE;
 
 use Hibla\EventLoop\Loop;
-use Hibla\HttpClient\Exceptions\HttpStreamException;
 use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\SSE\SSEResponse;
 use Hibla\HttpClient\Stream;
@@ -113,17 +112,13 @@ class SSEResponseFactory
                 }
 
                 $sseContent = $this->formatter->formatEvents($mock->getSSEEvents());
-                $resource = fopen('php://temp', 'w+b');
-                if ($resource === false) {
-                    throw new HttpStreamException('Failed to create temporary stream');
-                }
 
-                fwrite($resource, $sseContent);
-                rewind($resource);
-                $stream = new Stream($resource);
+                $stream = new Stream();
+                $stream->getHandler()->writeToBuffer($sseContent);
+
+                $stream->getHandler()->markEof();
 
                 $sseResponse = new SSEResponse($stream, $mock->getStatusCode(), $mock->getHeaders());
-
                 $promise->resolve($sseResponse);
 
                 Loop::addTimer(0, function () use ($mock, $onEvent) {

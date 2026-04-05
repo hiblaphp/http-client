@@ -298,11 +298,11 @@ class Response extends Message implements ResponseInterface
      *
      * @return Cookie[]
      */
-    public function getCookies(): array
+    public function getCookies(?string $originHost = null): array
     {
         $cookies = [];
         foreach ($this->getHeader('Set-Cookie') as $header) {
-            $cookie = Cookie::fromSetCookieHeader($header);
+            $cookie = Cookie::fromSetCookieHeader($header, $originHost);
             if ($cookie !== null) {
                 $cookies[] = $cookie;
             }
@@ -314,9 +314,9 @@ class Response extends Message implements ResponseInterface
     /**
      * Apply all cookies from this response into the given jar.
      */
-    public function applyCookiesToJar(CookieJarInterface $cookieJar): void
+    public function applyCookiesToJar(CookieJarInterface $cookieJar, ?string $originHost = null): void
     {
-        foreach ($this->getCookies() as $cookie) {
+        foreach ($this->getCookies($originHost) as $cookie) {
             $cookieJar->setCookie($cookie);
         }
     }

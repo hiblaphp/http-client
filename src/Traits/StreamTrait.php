@@ -20,14 +20,14 @@ trait StreamTrait
             throw new HttpStreamException('Unable to create temporary stream');
         }
 
-        return new Stream($resource, null);
+        return new Stream($resource);
     }
 
     /**
      * Creates a new stream from a string.
      *
      * @param  string  $content  The initial content of the stream.
-     * @return Stream A new Stream object.
+     * @return StreamInterface A new Stream object.
      *
      * @throws HttpStreamException If temporary stream creation fails.
      *
@@ -40,12 +40,15 @@ trait StreamTrait
             throw new HttpStreamException('Failed to create temporary stream');
         }
 
+        $stream = new Stream($resource);
+
         if ($content !== '') {
-            fwrite($resource, $content);
-            rewind($resource);
+            $stream->getHandler()->writeToBuffer($content);
         }
 
-        return new Stream($resource);
+        $stream->getHandler()->markEof();
+
+        return $stream;
     }
 
     /**

@@ -12,7 +12,7 @@ trait BuildsRequestExpectations
 
     /**
      * Expect a custom condition via closure.
-     * 
+     *
      * @param callable(RecordedRequest): bool $callback
      */
     public function expect(callable $callback): static

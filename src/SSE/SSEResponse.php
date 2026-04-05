@@ -6,45 +6,47 @@ namespace Hibla\HttpClient\SSE;
 
 use Hibla\EventLoop\Loop;
 use Hibla\HttpClient\Interfaces\SSEResponseInterface;
-use Hibla\HttpClient\Stream;
-use Hibla\HttpClient\StreamingResponse;
-use Psr\Http\Message\StreamInterface;
+use Hibla\HttpClient\Interfaces\StreamInterface;
+use Hibla\HttpClient\Response;
 
 /**
- * Represents an SSE streaming response with event parsing capabilities.
+ * Represents an SSE response with event parsing capabilities.
+ *
+ * Extends Response rather than StreamingResponse intentionally — the
+ * underlying stream is an internal implementation detail consumed by
+ * SSEHandler via parseEvents(). Callers interact through onEvent
+ * callbacks and SSEControl, not through stream primitives directly.
  */
-class SSEResponse extends StreamingResponse implements SSEResponseInterface
+class SSEResponse extends Response implements SSEResponseInterface
 {
-    private string $buffer = '';
-
     private ?string $lastEventId = null;
 
     private ?string $requestId = null;
 
-    /**
-     * @param Stream $stream
-     * @param int $statusCode
-     * @param array<string, string|string[]> $headers
-     * @param string|null $requestId The event loop request ID for this SSE connection
-     */
-    public function __construct(Stream $stream, int $statusCode = 200, array $headers = [], ?string $requestId = null)
-    {
-        parent::__construct($stream, $statusCode, $headers);
-        $this->requestId = $requestId;
-    }
+    private SSEParser $parser;
 
     /**
-     * Sets the request ID for this SSE connection.
-     *
-     * @internal Called by SSEBuilder::connect() only.
+     * @param StreamInterface $stream The live SSE stream.
+     * @param int $statusCode HTTP status code.
+     * @param array<string, string|string[]> $headers Response headers.
+     * @param string|null $requestId  Event loop request ID for this connection.
      */
-    public function setRequestId(?string $requestId): void
-    {
+    public function __construct(
+        StreamInterface $stream,
+        int $statusCode = 200,
+        array $headers = [],
+        ?string $requestId = null,
+    ) {
+        parent::__construct($stream, $statusCode, $headers);
         $this->requestId = $requestId;
+        $this->parser = new SSEParser();
     }
 
     /**
      * @inheritDoc
+     *
+     * Cancels the underlying cURL request before closing the stream.
+     * Safe to call multiple times — subsequent calls are no-ops.
      */
     public function close(): void
     {
@@ -53,15 +55,7 @@ class SSEResponse extends StreamingResponse implements SSEResponseInterface
             $this->requestId = null;
         }
 
-        $this->getStream()->close();
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function getStream(): StreamInterface
-    {
-        return parent::getStream();
+        $this->getBody()->close();
     }
 
     /**
@@ -73,94 +67,33 @@ class SSEResponse extends StreamingResponse implements SSEResponseInterface
     }
 
     /**
-     * Parses incoming SSE data chunks and yields events.
+     * Sets the request ID for this SSE connection.
+     *
+     * @internal Called by SSEHandler only after the cURL request is registered.
+     */
+    public function setRequestId(?string $requestId): void
+    {
+        $this->requestId = $requestId;
+    }
+
+    /**
+     * Parse an incoming SSE data chunk and yield discrete events.
+     * Each yielded event updates the
+     * last event ID if the server supplied one.
      *
      * @internal
      *
-     * @param  string  $chunk  Raw SSE data chunk.
+     * @param  string  $chunk  Raw SSE data chunk from the transport layer.
      * @return \Generator<SSEEvent>
      */
     public function parseEvents(string $chunk): \Generator
     {
-        $this->buffer .= $chunk;
+        foreach ($this->parser->parse($chunk) as $event) {
+            if ($event->id !== null) {
+                $this->lastEventId = $event->id;
+            }
 
-        $normalized = str_replace("\r\n", "\n", $this->buffer);
-        $parts = explode("\n\n", $normalized);
-
-        if (! str_ends_with($normalized, "\n\n")) {
-            $this->buffer = array_pop($parts) ?? '';
-        } else {
-            $this->buffer = '';
+            yield $event;
         }
-
-        foreach ($parts as $eventData) {
-            if ($eventData === '') {
-                continue;
-            }
-
-            $event = $this->parseEvent($eventData);
-            if ($event !== null) {
-                if ($event->id !== null) {
-                    $this->lastEventId = $event->id;
-                }
-                yield $event;
-            }
-        }
-    }
-
-    /**
-     * Parses a single SSE event from a raw data block.
-     */
-    private function parseEvent(string $eventData): ?SSEEvent
-    {
-        $lines = explode("\n", str_replace("\r\n", "\n", $eventData));
-
-        /** @var array<string, list<string>> $fields */
-        $fields = [];
-
-        foreach ($lines as $line) {
-            if (str_starts_with($line, ':')) {
-                continue;
-            }
-
-            $colonPos = strpos($line, ':');
-            if ($colonPos !== false) {
-                $field = substr($line, 0, $colonPos);
-                $value = substr($line, $colonPos + 1);
-                if (str_starts_with($value, ' ')) {
-                    $value = substr($value, 1);
-                }
-            } else {
-                $field = $line;
-                $value = '';
-            }
-
-            $field = trim($field);
-            if ($field === '') {
-                continue;
-            }
-
-            $fields[$field][] = $value;
-        }
-
-        if ($fields === []) {
-            return null;
-        }
-
-        $idValues = $fields['id'] ?? [];
-        $eventValues = $fields['event'] ?? [];
-        $retryValues = $fields['retry'] ?? [];
-
-        $id = end($idValues) !== false ? end($idValues) : null;
-        $event = end($eventValues) !== false ? end($eventValues) : null;
-        $retryValue = end($retryValues) !== false ? end($retryValues) : null;
-
-        return new SSEEvent(
-            id: $id,
-            event: $event,
-            data: implode("\n", $fields['data'] ?? []),
-            retry: is_numeric($retryValue) ? (int) $retryValue : null,
-            rawFields: $fields
-        );
     }
 }

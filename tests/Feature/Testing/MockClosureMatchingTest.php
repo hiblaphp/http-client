@@ -7,6 +7,7 @@ namespace Tests\Feature\Testing;
 use Hibla\HttpClient\Http;
 use Hibla\HttpClient\Testing\Exceptions\UnexpectedRequestException;
 use Hibla\HttpClient\Testing\Utilities\RecordedRequest;
+
 use function Hibla\await;
 
 describe('Mock Closure Matching', function () {
@@ -19,23 +20,26 @@ describe('Mock Closure Matching', function () {
             ->url('https://api.test.com/orders')
             ->expect(function (RecordedRequest $request) {
                 $json = $request->getJson();
+
                 return isset($json['total']) && $json['total'] === 150;
             })
             ->respondWithStatus(200)
             ->respondJson(['status' => 'accepted'])
-            ->register();
+            ->register()
+        ;
 
         try {
             await(Http::post('https://api.test.com/orders', ['total' => 50]));
-            expect(true)->toBeFalse(); 
+            expect(true)->toBeFalse();
         } catch (UnexpectedRequestException $e) {
             expect($e->getMessage())->toContain('No mock matched');
         }
 
         $response = await(Http::post('https://api.test.com/orders', ['total' => 150]));
-        
+
         expect($response->status())->toBe(200)
-            ->and($response->json('status'))->toBe('accepted');
+            ->and($response->json('status'))->toBe('accepted')
+        ;
     });
 
     it('can combine closure matching with standard matchers', function () {
@@ -43,7 +47,8 @@ describe('Mock Closure Matching', function () {
             ->url('https://api.test.com/secure/*')
             ->expect(fn (RecordedRequest $request) => $request->hasHeader('X-Custom-Auth'))
             ->respondWithStatus(200)
-            ->register();
+            ->register()
+        ;
 
         try {
             await(Http::get('https://api.test.com/public/data'));
@@ -60,7 +65,7 @@ describe('Mock Closure Matching', function () {
         }
 
         $response = await(Http::request()->withHeader('X-Custom-Auth', '1')->get('https://api.test.com/secure/data'));
-        
+
         expect($response->status())->toBe(200);
     });
 });

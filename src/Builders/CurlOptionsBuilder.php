@@ -241,10 +241,61 @@ class CurlOptionsBuilder implements TransportOptionsBuilderInterface
     private function addBodyOptions(array &$options, StreamInterface $body, array $additionalOptions): void
     {
         if (isset($additionalOptions['multipart'])) {
-            $options[CURLOPT_POSTFIELDS] = $additionalOptions['multipart'];
+            $postFields = [];
+            $tmpFiles = [];
+
+            foreach ($additionalOptions['multipart'] as $key => $value) {
+                if (\is_array($value) && (isset($value['filepath']) || isset($value['contents']))) {
+                    $postFields[$key] = $this->createCurlFile($value, $tmpFiles);
+                } else {
+                    $postFields[$key] = \is_scalar($value) ? (string) $value : json_encode($value);
+                }
+            }
+
+            $options[CURLOPT_POSTFIELDS] = $postFields;
+
+            if ($tmpFiles !== []) {
+                $options['_tmp_files'] = $tmpFiles;
+            }
         } elseif ($body->getSize() > 0) {
             $options[CURLOPT_POSTFIELDS] = (string) $body;
         }
+    }
+
+    private function createCurlFile(array $entry, array &$tmpFiles): \CURLFile
+    {
+        $filename = $entry['filename'] ?? 'file';
+        $mimeType = $entry['Content-Type'] ?? 'application/octet-stream';
+
+        if (isset($entry['filepath'])) {
+            return new \CURLFile($entry['filepath'], $mimeType, $filename);
+        }
+
+        $tmpPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'hibla_upload_' . uniqid('', true) . '.tmp';
+        $dest = fopen($tmpPath, 'wb');
+
+        if (isset($entry['contents'])) {
+            $contents = $entry['contents'];
+            if ($contents instanceof StreamInterface) {
+                if ($contents->isSeekable()) {
+                    $contents->rewind();
+                }
+                while (! $contents->eof()) {
+                    fwrite($dest, $contents->read(8192));
+                }
+            } elseif (\is_resource($contents)) {
+                rewind($contents);
+                stream_copy_to_stream($contents, $dest);
+            } elseif (\is_string($contents)) {
+                fwrite($dest, $contents);
+            }
+        }
+
+        fclose($dest);
+
+        $tmpFiles[] = $tmpPath;
+
+        return new \CURLFile($tmpPath, $mimeType, $filename);
     }
 
     /**

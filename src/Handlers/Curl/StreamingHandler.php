@@ -10,6 +10,7 @@ use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Interfaces\Handler\StreamingHandlerInterface;
 use Hibla\HttpClient\Stream;
 use Hibla\HttpClient\StreamingResponse;
+use Hibla\HttpClient\Traits\NormalizeHeaderTrait;
 use Hibla\HttpClient\ValueObjects\DownloadProgress;
 use Hibla\HttpClient\ValueObjects\UploadProgress;
 use Hibla\Promise\Interfaces\PromiseInterface;
@@ -17,6 +18,8 @@ use Hibla\Promise\Promise;
 
 class StreamingHandler implements StreamingHandlerInterface
 {
+    use NormalizeHeaderTrait;
+
     /**
      * @inheritDoc
      */
@@ -28,70 +31,97 @@ class StreamingHandler implements StreamingHandlerInterface
         /** @var Promise<StreamingResponse> $promise */
         $promise = new Promise();
 
-        $responseStream = fopen('php://temp', 'w+b');
-        if ($responseStream === false) {
-            $exception = new HttpStreamException('Failed to create response stream', 0, null, $url);
-            $exception->setStreamState('stream_creation_failed');
-            $promise->reject($exception);
+        $stream = new Stream();
 
-            return $promise;
-        }
+        /** @var StreamingResponse|null $streamingResponse Reference to the response object to link the request ID */
+        $streamingResponse = null;
+
+        /** @var string|null $requestId Reference to the curl request ID to pass into the closure */
+        $requestId = null;
+
+        /** @var array<string> $tmpFiles */
+        $tmpFiles = $options['_tmp_files'] ?? [];
+        unset($options['_tmp_files']);
 
         $curlOnlyOptions = array_filter($options, 'is_int', ARRAY_FILTER_USE_KEY);
 
+        $headersProcessed = false;
+        $rawHeaders = [];
+
         $streamingOptions = array_replace($curlOnlyOptions, [
             CURLOPT_HEADER => false,
-            CURLOPT_WRITEFUNCTION => function ($ch, string $data) use ($responseStream, $onChunk): int {
-                fwrite($responseStream, $data);
+            CURLOPT_WRITEFUNCTION => function ($ch, string $data) use ($stream, $onChunk): int {
+                $stream->getHandler()->writeToBuffer($data);
+
                 if ($onChunk !== null) {
                     $onChunk($data);
                 }
 
                 return \strlen($data);
             },
+            CURLOPT_HEADERFUNCTION => function ($ch, string $header) use (&$headersProcessed, &$rawHeaders, $promise, $stream, $url, &$streamingResponse, &$requestId) {
+                $trimmed = trim($header);
+                if ($trimmed !== '') {
+                    $rawHeaders[] = $header;
+                }
+
+                if (! $headersProcessed && $trimmed === '') {
+                    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+                    if ($httpCode > 0) {
+                        $parsedHeaders = $this->parseRawHeaders($rawHeaders);
+
+                        $streamingResponse = new StreamingResponse($stream, $httpCode, $parsedHeaders);
+
+                        if ($requestId !== null) {
+                            $streamingResponse->setRequestId($requestId);
+                        }
+
+                        $promise->resolve($streamingResponse);
+                        $headersProcessed = true;
+                    }
+                }
+
+                return \strlen($header);
+            },
         ]);
 
         $requestId = Loop::addCurlRequest(
             $url,
             $streamingOptions,
-            function (?string $error, $response, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $promise, $responseStream): void {
-                if ($promise->isCancelled()) {
-                    fclose($responseStream);
+            function (?string $error) use ($url, $promise, $stream, $tmpFiles): void {
 
-                    return;
+                foreach ($tmpFiles as $file) {
+                    if (file_exists($file)) {
+                        @unlink($file);
+                    }
                 }
 
                 if ($error !== null) {
-                    fclose($responseStream);
-
-                    $exception = new NetworkException(
-                        "Streaming request failed: {$error}",
-                        0,
-                        null,
-                        $url,
-                        $error
-                    );
-                    $promise->reject($exception);
-                } else {
-                    rewind($responseStream);
-                    $stream = new Stream($responseStream);
-
-                    /** @var array<string, string|string[]> $headers */
-                    $streamingResponse = new StreamingResponse($stream, $httpCode ?? 200, $headers);
-
-                    if ($httpVersion !== null) {
-                        $streamingResponse->setHttpVersion($httpVersion);
+                    if (! $promise->isSettled()) {
+                        $promise->reject(new NetworkException("Streaming failed: $error", 0, null, $url, $error));
                     }
-
-                    $promise->resolve($streamingResponse);
+                    $stream->close();
+                } else {
+                    $stream->getHandler()->markEof();
                 }
             }
         );
 
-        $promise->onCancel(function () use ($requestId, $responseStream): void {
-            Loop::cancelCurlRequest($requestId);
-            if (\is_resource($responseStream)) {
-                fclose($responseStream);
+        if ($streamingResponse !== null) {
+            $streamingResponse->setRequestId($requestId);
+        }
+
+        $promise->onCancel(function () use (&$requestId, $stream, $tmpFiles): void {
+            if ($requestId !== null) {
+                Loop::cancelCurlRequest($requestId);
+            }
+            $stream->close();
+
+            foreach ($tmpFiles as $file) {
+                if (file_exists($file)) {
+                    @unlink($file);
+                }
             }
         });
 
