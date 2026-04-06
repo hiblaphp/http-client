@@ -214,9 +214,18 @@ use Psr\Http\Message\UploadedFileInterface;
  * @method static void assertRequestBodyMatches(string $method, string $url, string $pattern) Assert that a request body matches a pattern.
  *
  * Cookie assertions:
- * @method static void assertCookieSent(string $name) Assert a cookie was sent.
- * @method static void assertCookieExists(string $name) Assert a cookie exists in jar.
- * @method static void assertCookieValue(string $name, string $expectedValue) Assert cookie value.
+ * @method static void assertCookieSent(string $name) Assert a cookie was sent in the last request.
+ * @method static void assertCookieNotSent(string $name) Assert a cookie was NOT sent in the last request.
+ * @method static void assertCookieSentToUrl(string $name, string $url) Assert a cookie was sent to a specific URL.
+ * @method static void assertCookieNotSentToUrl(string $name, string $url) Assert a cookie was NOT sent to a specific URL.
+ * @method static void assertCookieExists(string $name) Assert a cookie exists in the jar.
+ * @method static void assertCookieValue(string $name, string $expectedValue) Assert cookie value in the jar.
+ * @method static void assertCookieHasAttributes(string $name, array<string, mixed> $attributes) Assert a cookie in the jar has specific attributes.
+ * @method static void assertCookieExpired(string $name) Assert a cookie in the jar is expired.
+ * @method static void assertCookieNotExpired(string $name) Assert a cookie in the jar is not expired.
+ * @method static void assertCookieIsSecure(string $name) Assert a cookie in the jar has the Secure flag.
+ * @method static void assertCookieIsHttpOnly(string $name) Assert a cookie in the jar has the HttpOnly flag.
+ * @method static void assertCookieIsHostOnly(string $name) Assert a cookie in the jar is host-only (no Domain attribute).
  *
  * Download assertions:
  * @method static void assertDownloadMade(string $url, string $destination) Assert that a download was made to a specific destination.
@@ -498,8 +507,17 @@ class Http
 
             // Cookie assertions
             'assertCookieSent',
+            'assertCookieNotSent',
+            'assertCookieSentToUrl',
+            'assertCookieNotSentToUrl',
             'assertCookieExists',
             'assertCookieValue',
+            'assertCookieHasAttributes',
+            'assertCookieExpired',
+            'assertCookieNotExpired',
+            'assertCookieIsSecure',
+            'assertCookieIsHttpOnly',
+            'assertCookieIsHostOnly',
 
             // Download assertions
             'assertDownloadMade',
