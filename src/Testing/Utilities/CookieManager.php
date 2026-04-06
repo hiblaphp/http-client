@@ -316,7 +316,7 @@ class CookieManager
         }
 
         if (! isset($cookies[$name])) {
-            throw new MockAssertionException("Cookie '{$name}' was not sent in request. Sent cookies: ".implode(', ', array_keys($cookies)));
+            throw new MockAssertionException("Cookie '{$name}' was not sent in request. Sent cookies: " . implode(', ', array_keys($cookies)));
         }
     }
 
@@ -442,7 +442,7 @@ class CookieManager
      */
     public function createTempCookieFile(string $prefix = 'test_cookies_'): string
     {
-        $filename = sys_get_temp_dir().DIRECTORY_SEPARATOR.$prefix.uniqid().'.json';
+        $filename = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $prefix . uniqid() . '.json';
 
         if ($this->autoManage) {
             $this->createdCookieFiles[] = $filename;
@@ -665,6 +665,133 @@ class CookieManager
             }
 
             $customJar->setCookie($cookie);
+        }
+    }
+
+    /**
+     * Helper to get a cookie directly from a jar.
+     */
+    private function getCookieFromJar(string $name, string $jarName): Cookie
+    {
+        $jar = $this->getCookieJar($jarName);
+        if ($jar === null) {
+            throw new MockAssertionException("Cookie jar '{$jarName}' not found");
+        }
+
+        foreach ($jar->getAllCookies() as $cookie) {
+            if ($cookie->getName() === $name) {
+                return $cookie;
+            }
+        }
+
+        throw new MockAssertionException("Cookie '{$name}' not found in jar '{$jarName}'");
+    }
+
+    /**
+     * Asserts that a cookie was NOT sent in a request.
+     */
+    public function assertCookieNotSent(string $name, array $curlOptions): void
+    {
+        $cookieHeader = '';
+
+        $httpHeaders = $curlOptions[CURLOPT_HTTPHEADER] ?? null;
+        if (is_array($httpHeaders)) {
+            foreach ($httpHeaders as $header) {
+                if (! is_string($header)) {
+                    continue;
+                }
+                if (str_starts_with(strtolower($header), 'cookie:')) {
+                    $cookieHeader = substr($header, 7);
+                    break;
+                }
+            }
+        }
+
+        if ($cookieHeader === '') {
+            return;
+        }
+
+        $cookies = [];
+        foreach (explode(';', $cookieHeader) as $cookie) {
+            $parts = explode('=', trim($cookie), 2);
+            if (count($parts) === 2) {
+                $cookies[trim($parts[0])] = trim($parts[1]);
+            }
+        }
+
+        if (isset($cookies[$name])) {
+            throw new MockAssertionException("Cookie '{$name}' was unexpectedly sent in request.");
+        }
+    }
+
+    /**
+     * Asserts deep cookie attributes within the jar.
+     */
+    public function assertCookieHasAttributes(string $name, array $attributes, string $jarName = 'default'): void
+    {
+        $cookie = $this->getCookieFromJar($name, $jarName);
+
+        foreach ($attributes as $key => $expectedValue) {
+            $actualValue = match (strtolower($key)) {
+                'value' => $cookie->getValue(),
+                'domain' => $cookie->getDomain(),
+                'path' => $cookie->getPath(),
+                'expires' => $cookie->getExpires(),
+                'maxage', 'max-age' => $cookie->getMaxAge(),
+                'secure' => $cookie->isSecure(),
+                'httponly' => $cookie->isHttpOnly(),
+                'samesite' => $cookie->getSameSite(),
+                'hostonly', 'host-only' => $cookie->isHostOnly(),
+                default => throw new \InvalidArgumentException("Unknown cookie attribute: {$key}"),
+            };
+
+            if ($actualValue !== $expectedValue) {
+                $expectedStr = var_export($expectedValue, true);
+                $actualStr = var_export($actualValue, true);
+                throw new MockAssertionException(
+                    "Cookie '{$name}' attribute '{$key}' mismatch. Expected: {$expectedStr}, Got: {$actualStr}"
+                );
+            }
+        }
+    }
+
+    public function assertCookieExpired(string $name, string $jarName = 'default'): void
+    {
+        $cookie = $this->getCookieFromJar($name, $jarName);
+        if (! $cookie->isExpired()) {
+            throw new MockAssertionException("Cookie '{$name}' is not expired in jar '{$jarName}'");
+        }
+    }
+
+    public function assertCookieNotExpired(string $name, string $jarName = 'default'): void
+    {
+        $cookie = $this->getCookieFromJar($name, $jarName);
+        if ($cookie->isExpired()) {
+            throw new MockAssertionException("Cookie '{$name}' is expired in jar '{$jarName}'");
+        }
+    }
+
+    public function assertCookieIsSecure(string $name, string $jarName = 'default'): void
+    {
+        $cookie = $this->getCookieFromJar($name, $jarName);
+        if (! $cookie->isSecure()) {
+            throw new MockAssertionException("Cookie '{$name}' is missing the Secure flag in jar '{$jarName}'");
+        }
+    }
+
+    public function assertCookieIsHttpOnly(string $name, string $jarName = 'default'): void
+    {
+        $cookie = $this->getCookieFromJar($name, $jarName);
+        if (! $cookie->isHttpOnly()) {
+            throw new MockAssertionException("Cookie '{$name}' is missing the HttpOnly flag in jar '{$jarName}'");
+        }
+    }
+
+    public function assertCookieIsHostOnly(string $name, string $jarName = 'default'): void
+    {
+        $cookie = $this->getCookieFromJar($name, $jarName);
+        if (! $cookie->isHostOnly()) {
+            throw new MockAssertionException("Cookie '{$name}' is not host-only (Domain attribute was set) in jar '{$jarName}'");
         }
     }
 }
