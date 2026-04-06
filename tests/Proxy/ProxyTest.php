@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\ValueObjects\ProxyConfig;
 use Tests\Fixtures\HttpBin;
 use Tests\Fixtures\ProxySetup;
@@ -394,8 +395,8 @@ describe('query string preservation through proxy', function () {
             ->wait();
 
         expect($response->successful())->toBeTrue()
-            ->and($response->json('args.foo'))->toBe('bar')
-            ->and($response->json('args.baz'))->toBe('qux');
+            ->and($response->json('args.foo.0'))->toBe('bar')
+            ->and($response->json('args.baz.0'))->toBe('qux');
     });
 
     it('preserves query parameters through SOCKS5', function () {
@@ -407,8 +408,8 @@ describe('query string preservation through proxy', function () {
             ->wait();
 
         expect($response->successful())->toBeTrue()
-            ->and($response->json('args.via'))->toBe('socks5')
-            ->and($response->json('args.test'))->toBe('1');
+            ->and($response->json('args.via.0'))->toBe('socks5')
+            ->and($response->json('args.test.0'))->toBe('1');
     });
 
     it('preserves query parameters through SOCKS4', function () {
@@ -420,8 +421,8 @@ describe('query string preservation through proxy', function () {
             ->wait();
 
         expect($response->successful())->toBeTrue()
-            ->and($response->json('args.via'))->toBe('socks4')
-            ->and($response->json('args.test'))->toBe('1');
+            ->and($response->json('args.via.0'))->toBe('socks4')
+            ->and($response->json('args.test.0'))->toBe('1');
     });
 });
 
@@ -506,27 +507,30 @@ describe('graceful failure on unreachable or bad proxy', function () {
     });
 
     it('throws on unreachable HTTP proxy', function () {
-        expect(fn () => ProxySetup::client(timeout: 3)
-            ->withProxy('127.0.0.1', 19999)
-            ->get(HttpBin::url('/get'))
-            ->wait()
-        )->toThrow(\Throwable::class);
+        expect(
+            fn() => ProxySetup::client(timeout: 3)
+                ->withProxy('127.0.0.1', 19999)
+                ->get(HttpBin::url('/get'))
+                ->wait()
+        )->toThrow(NetworkException::class);
     });
 
     it('throws on unreachable SOCKS5 proxy', function () {
-        expect(fn () => ProxySetup::client(timeout: 3)
-            ->withSocks5Proxy('127.0.0.1', 19998)
-            ->get(HttpBin::socksProxyUrl('/get'))
-            ->wait()
-        )->toThrow(\Throwable::class);
+        expect(
+            fn() => ProxySetup::client(timeout: 3)
+                ->withSocks5Proxy('127.0.0.1', 19998)
+                ->get(HttpBin::socksProxyUrl('/get'))
+                ->wait()
+        )->toThrow(NetworkException::class);
     });
 
     it('throws on unreachable SOCKS4 proxy', function () {
-        expect(fn () => ProxySetup::client(timeout: 3)
-            ->withSocks4Proxy('127.0.0.1', 19997)
-            ->get(HttpBin::socksProxyUrl('/get'))
-            ->wait()
-        )->toThrow(\Throwable::class);
+        expect(
+            fn() => ProxySetup::client(timeout: 3)
+                ->withSocks4Proxy('127.0.0.1', 19997)
+                ->get(HttpBin::socksProxyUrl('/get'))
+                ->wait()
+        )->toThrow(NetworkException::class);
     });
 
     it('throws on wrong SOCKS5 credentials', function () {
@@ -538,16 +542,17 @@ describe('graceful failure on unreachable or bad proxy', function () {
             test()->markTestSkipped('SOCKS5_USER not set — skipping credential rejection test');
         }
 
-        expect(fn () => ProxySetup::client(timeout: 3)
-            ->withSocks5Proxy(
-                ProxySetup::socks5Host(),
-                ProxySetup::socks5Port(),
-                'wrong_user',
-                'wrong_pass',
-            )
-            ->get(HttpBin::socksProxyUrl('/get'))
-            ->wait()
-        )->toThrow(\Throwable::class);
+        expect(
+            fn() => ProxySetup::client(timeout: 3)
+                ->withSocks5Proxy(
+                    ProxySetup::socks5Host(),
+                    ProxySetup::socks5Port(),
+                    'wrong_user',
+                    'wrong_pass',
+                )
+                ->get(HttpBin::socksProxyUrl('/get'))
+                ->wait()
+        )->toThrow(NetworkException::class);
     });
 });
 

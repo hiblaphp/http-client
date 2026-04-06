@@ -26,7 +26,7 @@ services:
     environment:
       PROXY_USER: ${SOCKS5_USER:-}
       PROXY_PASSWORD: ${SOCKS5_PASS:-}
-      REQUIRE_AUTH: "false"
+      REQUIRE_AUTH: ${SOCKS5_REQUIRE_AUTH:-false}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     healthcheck:
