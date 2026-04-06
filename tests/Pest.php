@@ -10,3 +10,7 @@ function getPrivateProperty($object, string $property)
     return $prop->getValue($object);
 }
 
+function testingHttpHandler(): TestingHttpHandler
+{
+    return new TestingHttpHandler();
+}
