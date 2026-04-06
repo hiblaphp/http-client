@@ -336,7 +336,6 @@ describe('Proxy', function () {
         });
     });
 
-
     describe('SOCKS4 proxy', function () {
 
         beforeEach(function () {
@@ -439,26 +438,29 @@ describe('Proxy', function () {
         });
 
         it('throws on unreachable HTTP proxy', function () {
-            expect(fn () => ProxySetup::client(timeout: 3)
-                ->withProxy('127.0.0.1', 19999)
-                ->get(HttpBin::url('/get'))
-                ->wait()
+            expect(
+                fn() => ProxySetup::client(timeout: 3)
+                    ->withProxy('127.0.0.1', 19999)
+                    ->get(HttpBin::url('/get'))
+                    ->wait()
             )->toThrow(NetworkException::class);
         });
 
         it('throws on unreachable SOCKS5 proxy', function () {
-            expect(fn () => ProxySetup::client(timeout: 3)
-                ->withSocks5Proxy('127.0.0.1', 19998)
-                ->get(HttpBin::socksProxyUrl('/get'))
-                ->wait()
+            expect(
+                fn() => ProxySetup::client(timeout: 3)
+                    ->withSocks5Proxy('127.0.0.1', 19998)
+                    ->get(HttpBin::socksProxyUrl('/get'))
+                    ->wait()
             )->toThrow(NetworkException::class);
         });
 
         it('throws on unreachable SOCKS4 proxy', function () {
-            expect(fn () => ProxySetup::client(timeout: 3)
-                ->withSocks4Proxy('127.0.0.1', 19997)
-                ->get(HttpBin::socksProxyUrl('/get'))
-                ->wait()
+            expect(
+                fn() => ProxySetup::client(timeout: 3)
+                    ->withSocks4Proxy('127.0.0.1', 19997)
+                    ->get(HttpBin::socksProxyUrl('/get'))
+                    ->wait()
             )->toThrow(NetworkException::class);
         });
 
@@ -469,11 +471,319 @@ describe('Proxy', function () {
                 test()->markTestSkipped('SOCKS5_USER not set — skipping credential rejection test');
             }
 
-            expect(fn () => ProxySetup::client(timeout: 3)
-                ->withSocks5Proxy(ProxySetup::socks5Host(), ProxySetup::socks5Port(), 'wrong_user', 'wrong_pass')
-                ->get(HttpBin::socksProxyUrl('/get'))
-                ->wait()
+            expect(
+                fn() => ProxySetup::client(timeout: 3)
+                    ->withSocks5Proxy(ProxySetup::socks5Host(), ProxySetup::socks5Port(), 'wrong_user', 'wrong_pass')
+                    ->get(HttpBin::socksProxyUrl('/get'))
+                    ->wait()
             )->toThrow(NetworkException::class);
+        });
+    });
+
+    describe('streaming through proxy', function () {
+
+        beforeEach(function () {
+            HttpBin::skipIfUnreachable();
+        });
+
+        it('streams multiple JSON objects through HTTP proxy', function () {
+            ProxySetup::skipIfUnreachable(ProxySetup::httpHost(), ProxySetup::httpPort());
+
+            $response = ProxySetup::client()
+                ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
+                ->get(HttpBin::proxyUrl('/stream/5'))
+                ->wait();
+
+            expect($response->successful())->toBeTrue();
+
+            $lines = array_filter(explode("\n", trim($response->body())));
+            expect(count($lines))->toBe(5);
+
+            foreach ($lines as $line) {
+                $decoded = json_decode($line, true);
+                expect($decoded)->toBeArray()
+                    ->and(array_key_exists('id', $decoded))->toBeTrue();
+            }
+        });
+
+        it('streams multiple JSON objects through SOCKS5', function () {
+            ProxySetup::skipIfUnreachable(ProxySetup::socks5Host(), ProxySetup::socks5Port());
+
+            $response = ProxySetup::client()
+                ->withSocks5Proxy(ProxySetup::socks5Host(), ProxySetup::socks5Port(), ProxySetup::socks5User(), ProxySetup::socks5Pass())
+                ->get(HttpBin::socksProxyUrl('/stream/5'))
+                ->wait();
+
+            expect($response->successful())->toBeTrue();
+
+            $lines = array_filter(explode("\n", trim($response->body())));
+            expect(count($lines))->toBe(5);
+
+            foreach ($lines as $line) {
+                $decoded = json_decode($line, true);
+                expect($decoded)->toBeArray()
+                    ->and(array_key_exists('id', $decoded))->toBeTrue();
+            }
+        });
+
+        it('streams multiple JSON objects through SOCKS4', function () {
+            ProxySetup::skipIfUnreachable(ProxySetup::socks4Host(), ProxySetup::socks4Port());
+
+            $response = ProxySetup::client()
+                ->withSocks4Proxy(ProxySetup::socks4Host(), ProxySetup::socks4Port())
+                ->get(HttpBin::socksProxyUrl('/stream/5'))
+                ->wait();
+
+            expect($response->successful())->toBeTrue();
+
+            $lines = array_filter(explode("\n", trim($response->body())));
+            expect(count($lines))->toBe(5);
+
+            foreach ($lines as $line) {
+                $decoded = json_decode($line, true);
+                expect($decoded)->toBeArray()
+                    ->and(array_key_exists('id', $decoded))->toBeTrue();
+            }
+        });
+
+        it('streams raw bytes through HTTP proxy', function () {
+            ProxySetup::skipIfUnreachable(ProxySetup::httpHost(), ProxySetup::httpPort());
+
+            $response = ProxySetup::client()
+                ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
+                ->get(HttpBin::proxyUrl('/stream-bytes/1024'))
+                ->wait();
+
+            expect($response->successful())->toBeTrue()
+                ->and(strlen($response->body()))->toBe(1024);
+        });
+
+        it('streams raw bytes through SOCKS5', function () {
+            ProxySetup::skipIfUnreachable(ProxySetup::socks5Host(), ProxySetup::socks5Port());
+
+            $response = ProxySetup::client()
+                ->withSocks5Proxy(ProxySetup::socks5Host(), ProxySetup::socks5Port(), ProxySetup::socks5User(), ProxySetup::socks5Pass())
+                ->get(HttpBin::socksProxyUrl('/stream-bytes/1024'))
+                ->wait();
+
+            expect($response->successful())->toBeTrue()
+                ->and(strlen($response->body()))->toBe(1024);
+        });
+
+        it('streams raw bytes through SOCKS4', function () {
+            ProxySetup::skipIfUnreachable(ProxySetup::socks4Host(), ProxySetup::socks4Port());
+
+            $response = ProxySetup::client()
+                ->withSocks4Proxy(ProxySetup::socks4Host(), ProxySetup::socks4Port())
+                ->get(HttpBin::socksProxyUrl('/stream-bytes/1024'))
+                ->wait();
+
+            expect($response->successful())->toBeTrue()
+                ->and(strlen($response->body()))->toBe(1024);
+        });
+    });
+
+    describe('download through proxy', function () {
+
+        beforeEach(function () {
+            HttpBin::skipIfUnreachable();
+        });
+
+        it('downloads binary bytes through HTTP proxy', function () {
+            ProxySetup::skipIfUnreachable(ProxySetup::httpHost(), ProxySetup::httpPort());
+
+            $response = ProxySetup::client()
+                ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
+                ->get(HttpBin::proxyUrl('/bytes/2048'))
+                ->wait();
+
+            expect($response->successful())->toBeTrue()
+                ->and(strlen($response->body()))->toBe(2048);
+        });
+
+        it('downloads binary bytes through SOCKS5', function () {
+            ProxySetup::skipIfUnreachable(ProxySetup::socks5Host(), ProxySetup::socks5Port());
+
+            $response = ProxySetup::client()
+                ->withSocks5Proxy(ProxySetup::socks5Host(), ProxySetup::socks5Port(), ProxySetup::socks5User(), ProxySetup::socks5Pass())
+                ->get(HttpBin::socksProxyUrl('/bytes/2048'))
+                ->wait();
+
+            expect($response->successful())->toBeTrue()
+                ->and(strlen($response->body()))->toBe(2048);
+        });
+
+        it('downloads binary bytes through SOCKS4', function () {
+            ProxySetup::skipIfUnreachable(ProxySetup::socks4Host(), ProxySetup::socks4Port());
+
+            $response = ProxySetup::client()
+                ->withSocks4Proxy(ProxySetup::socks4Host(), ProxySetup::socks4Port())
+                ->get(HttpBin::socksProxyUrl('/bytes/2048'))
+                ->wait();
+
+            expect($response->successful())->toBeTrue()
+                ->and(strlen($response->body()))->toBe(2048);
+        });
+
+        it('downloads a PNG image through HTTP proxy', function () {
+            ProxySetup::skipIfUnreachable(ProxySetup::httpHost(), ProxySetup::httpPort());
+
+            $response = ProxySetup::client()
+                ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
+                ->withHeader('Accept', 'image/png')
+                ->get(HttpBin::proxyUrl('/image/png'))
+                ->wait();
+
+            expect($response->successful())->toBeTrue()
+                ->and($response->header('Content-Type'))->toContain('image/png')
+                ->and(strlen($response->body()))->toBeGreaterThan(0);
+        });
+
+        it('downloads a PNG image through SOCKS5', function () {
+            ProxySetup::skipIfUnreachable(ProxySetup::socks5Host(), ProxySetup::socks5Port());
+
+            $response = ProxySetup::client()
+                ->withSocks5Proxy(ProxySetup::socks5Host(), ProxySetup::socks5Port(), ProxySetup::socks5User(), ProxySetup::socks5Pass())
+                ->withHeader('Accept', 'image/png')
+                ->get(HttpBin::socksProxyUrl('/image/png'))
+                ->wait();
+
+            expect($response->successful())->toBeTrue()
+                ->and($response->header('Content-Type'))->toContain('image/png')
+                ->and(strlen($response->body()))->toBeGreaterThan(0);
+        });
+
+        it('downloads a PNG image through SOCKS4', function () {
+            ProxySetup::skipIfUnreachable(ProxySetup::socks4Host(), ProxySetup::socks4Port());
+
+            $response = ProxySetup::client()
+                ->withSocks4Proxy(ProxySetup::socks4Host(), ProxySetup::socks4Port())
+                ->withHeader('Accept', 'image/png')
+                ->get(HttpBin::socksProxyUrl('/image/png'))
+                ->wait();
+
+            expect($response->successful())->toBeTrue()
+                ->and($response->header('Content-Type'))->toContain('image/png')
+                ->and(strlen($response->body()))->toBeGreaterThan(0);
+        });
+    });
+
+    describe('upload through proxy', function () {
+
+        beforeEach(function () {
+            HttpBin::skipIfUnreachable();
+        });
+
+        it('uploads a file via multipart form through HTTP proxy', function () {
+            ProxySetup::skipIfUnreachable(ProxySetup::httpHost(), ProxySetup::httpPort());
+
+            $content  = str_repeat('proxy-upload-test', 100);
+            $tmpFile  = tempnam(sys_get_temp_dir(), 'proxy_upload_');
+            file_put_contents($tmpFile, $content);
+
+            try {
+                $response = ProxySetup::client()
+                    ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
+                    ->withFile('file', $tmpFile, 'test.txt')
+                    ->post(HttpBin::proxyUrl('/post'))
+                    ->wait();
+
+                expect($response->successful())->toBeTrue()
+                    ->and($response->json('files.file'))->not->toBeEmpty();
+            } finally {
+                @unlink($tmpFile);
+            }
+        });
+
+        it('uploads a file via multipart form through SOCKS5', function () {
+            ProxySetup::skipIfUnreachable(ProxySetup::socks5Host(), ProxySetup::socks5Port());
+
+            $content  = str_repeat('socks5-upload-test', 100);
+            $tmpFile  = tempnam(sys_get_temp_dir(), 'proxy_upload_');
+            file_put_contents($tmpFile, $content);
+
+            try {
+                $response = ProxySetup::client()
+                    ->withSocks5Proxy(ProxySetup::socks5Host(), ProxySetup::socks5Port(), ProxySetup::socks5User(), ProxySetup::socks5Pass())
+                    ->withFile('file', $tmpFile, 'test.txt')
+                    ->post(HttpBin::socksProxyUrl('/post'))
+                    ->wait();
+
+                expect($response->successful())->toBeTrue()
+                    ->and($response->json('files.file'))->not->toBeEmpty();
+            } finally {
+                @unlink($tmpFile);
+            }
+        });
+
+        it('uploads a file via multipart form through SOCKS4', function () {
+            ProxySetup::skipIfUnreachable(ProxySetup::socks4Host(), ProxySetup::socks4Port());
+
+            $content  = str_repeat('socks4-upload-test', 100);
+            $tmpFile  = tempnam(sys_get_temp_dir(), 'proxy_upload_');
+            file_put_contents($tmpFile, $content);
+
+            try {
+                $response = ProxySetup::client()
+                    ->withSocks4Proxy(ProxySetup::socks4Host(), ProxySetup::socks4Port())
+                    ->withFile('file', $tmpFile, 'test.txt')
+                    ->post(HttpBin::socksProxyUrl('/post'))
+                    ->wait();
+
+                expect($response->successful())->toBeTrue()
+                    ->and($response->json('files.file'))->not->toBeEmpty();
+            } finally {
+                @unlink($tmpFile);
+            }
+        });
+
+        it('uploads raw binary body through HTTP proxy', function () {
+            ProxySetup::skipIfUnreachable(ProxySetup::httpHost(), ProxySetup::httpPort());
+
+            $binary = random_bytes(512);
+
+            $response = ProxySetup::client()
+                ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
+                ->contentType('application/octet-stream')
+                ->body($binary)
+                ->post(HttpBin::proxyUrl('/post'))
+                ->wait();
+
+            expect($response->successful())->toBeTrue()
+                ->and($response->json('data'))->not->toBeEmpty();
+        });
+
+
+        it('uploads raw binary body through SOCKS5', function () {
+            ProxySetup::skipIfUnreachable(ProxySetup::socks5Host(), ProxySetup::socks5Port());
+
+            $binary = random_bytes(512);
+
+            $response = ProxySetup::client()
+                ->withSocks5Proxy(ProxySetup::socks5Host(), ProxySetup::socks5Port(), ProxySetup::socks5User(), ProxySetup::socks5Pass())
+                ->contentType('application/octet-stream')
+                ->body($binary)
+                ->post(HttpBin::socksProxyUrl('/post'))
+                ->wait();
+
+            expect($response->successful())->toBeTrue()
+                ->and($response->json('data'))->not->toBeEmpty();
+        });
+
+        it('uploads raw binary body through SOCKS4', function () {
+            ProxySetup::skipIfUnreachable(ProxySetup::socks4Host(), ProxySetup::socks4Port());
+
+            $binary = random_bytes(512);
+
+            $response = ProxySetup::client()
+                ->withSocks4Proxy(ProxySetup::socks4Host(), ProxySetup::socks4Port())
+                ->contentType('application/octet-stream')
+                ->body($binary)
+                ->post(HttpBin::socksProxyUrl('/post'))
+                ->wait();
+
+            expect($response->successful())->toBeTrue()
+                ->and($response->json('data'))->not->toBeEmpty();
         });
     });
 });

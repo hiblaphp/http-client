@@ -5,19 +5,15 @@ declare(strict_types=1);
 use Hibla\HttpClient\CookieJar;
 use Hibla\HttpClient\HttpClient;
 use Hibla\HttpClient\ValueObjects\Cookie;
+use Tests\Fixtures\HttpBin;
 
 use function Hibla\await;
 
-const HTTPBIN = 'https://httpbin.org';
-
 describe('Cookie Streaming Handling Integration Test', function () {
 
-    // -------------------------------------------------------------------------
-    // Streaming
-    // -------------------------------------------------------------------------
-    // Uses HttpClient::stream() which owns its own CURLOPT_HEADERFUNCTION and
-    // calls parseRawHeaders() internally, so header keys are title-cased.
-    // -------------------------------------------------------------------------
+    beforeEach(function () {
+        HttpBin::skipIfUnreachable();
+    });
 
     describe('Streaming cookie handling', function () {
 
@@ -26,7 +22,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
             $jar->setCookie(new Cookie(
                 name: 'stream_token',
                 value: 'streamed',
-                domain: 'httpbin.org',
+                domain: HttpBin::host(),
                 path: '/',
             ));
 
@@ -35,7 +31,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
             await(
                 (new HttpClient())
                     ->useCookieJar($jar)
-                    ->stream(HTTPBIN . '/cookies', function (string $chunk) use (&$chunks): void {
+                    ->stream(HttpBin::url('/cookies'), function (string $chunk) use (&$chunks): void {
                         $chunks .= $chunk;
                     })
             );
@@ -50,12 +46,12 @@ describe('Cookie Streaming Handling Integration Test', function () {
             await(
                 (new HttpClient())
                     ->useCookieJar($jar)
-                    ->stream(HTTPBIN . '/response-headers?' . http_build_query([
-                        'Set-Cookie' => 'stream_inbound=yes; Path=/; Domain=httpbin.org',
-                    ]))
+                    ->stream(HttpBin::url('/response-headers?' . http_build_query([
+                        'Set-Cookie' => 'stream_inbound=yes; Path=/; Domain=' . HttpBin::host(),
+                    ])))
             );
 
-            $cookies = array_values($jar->getCookies('httpbin.org', '/'));
+            $cookies = array_values($jar->getCookies(HttpBin::host(), '/'));
             $names   = array_map(fn(Cookie $c) => $c->getName(), $cookies);
 
             expect($names)->toContain('stream_inbound');
@@ -67,15 +63,15 @@ describe('Cookie Streaming Handling Integration Test', function () {
             await(
                 (new HttpClient())
                     ->useCookieJar($jar)
-                    ->stream(HTTPBIN . '/response-headers?' . http_build_query([
-                        'Set-Cookie' => 'stream_replay=yes; Path=/; Domain=httpbin.org',
-                    ]))
+                    ->stream(HttpBin::url('/response-headers?' . http_build_query([
+                        'Set-Cookie' => 'stream_replay=yes; Path=/; Domain=' . HttpBin::host(),
+                    ])))
             );
 
             $response = await(
                 (new HttpClient())
                     ->useCookieJar($jar)
-                    ->get(HTTPBIN . '/cookies')
+                    ->get(HttpBin::url('/cookies'))
             );
 
             expect($response->json('cookies.stream_replay'))->toBe('yes');
@@ -84,21 +80,19 @@ describe('Cookie Streaming Handling Integration Test', function () {
         test('cookie stored from a streaming response is replayed on the next streaming request', function () {
             $jar = new CookieJar();
 
-            // First stream — server sets a cookie
             await(
                 (new HttpClient())
                     ->useCookieJar($jar)
-                    ->stream(HTTPBIN . '/response-headers?' . http_build_query([
-                        'Set-Cookie' => 'stream_chain=chained; Path=/; Domain=httpbin.org',
-                    ]))
+                    ->stream(HttpBin::url('/response-headers?' . http_build_query([
+                        'Set-Cookie' => 'stream_chain=chained; Path=/; Domain=' . HttpBin::host(),
+                    ])))
             );
 
-            // Second stream — jar should replay the stored cookie
             $chunks = '';
             await(
                 (new HttpClient())
                     ->useCookieJar($jar)
-                    ->stream(HTTPBIN . '/cookies', function (string $chunk) use (&$chunks): void {
+                    ->stream(HttpBin::url('/cookies'), function (string $chunk) use (&$chunks): void {
                         $chunks .= $chunk;
                     })
             );
@@ -112,7 +106,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
             $jar->setCookie(new Cookie(
                 name: 'jar_stream',
                 value: 'fromjar',
-                domain: 'httpbin.org',
+                domain: HttpBin::host(),
                 path: '/',
             ));
 
@@ -122,7 +116,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 (new HttpClient())
                     ->useCookieJar($jar)
                     ->withCookie('manual_stream', 'manual')
-                    ->stream(HTTPBIN . '/cookies', function (string $chunk) use (&$chunks): void {
+                    ->stream(HttpBin::url('/cookies'), function (string $chunk) use (&$chunks): void {
                         $chunks .= $chunk;
                     })
             );
@@ -140,7 +134,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 name: 'stale_stream',
                 value: 'old',
                 expires: time() - 3600,
-                domain: 'httpbin.org',
+                domain: HttpBin::host(),
                 path: '/',
             ));
 
@@ -149,7 +143,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
             await(
                 (new HttpClient())
                     ->useCookieJar($jar)
-                    ->stream(HTTPBIN . '/cookies', function (string $chunk) use (&$chunks): void {
+                    ->stream(HttpBin::url('/cookies'), function (string $chunk) use (&$chunks): void {
                         $chunks .= $chunk;
                     })
             );
@@ -159,14 +153,6 @@ describe('Cookie Streaming Handling Integration Test', function () {
         });
     });
 
-    // -------------------------------------------------------------------------
-    // Download
-    // -------------------------------------------------------------------------
-    // Uses StreamingHandler::downloadFile(). CurlRequest normalises captured
-    // header names to lowercase, so Set-Cookie arrives as 'set-cookie' in
-    // the completion callback.
-    // -------------------------------------------------------------------------
-
     describe('Download cookie handling', function () {
 
         test('jar cookie is sent during a download request', function () {
@@ -174,7 +160,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
             $jar->setCookie(new Cookie(
                 name: 'download_token',
                 value: 'downloading',
-                domain: 'httpbin.org',
+                domain: HttpBin::host(),
                 path: '/',
             ));
 
@@ -184,7 +170,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 await(
                     (new HttpClient())
                         ->useCookieJar($jar)
-                        ->download(HTTPBIN . '/cookies', $destination)
+                        ->download(HttpBin::url('/cookies'), $destination)
                 );
 
                 $data = json_decode(file_get_contents($destination), true);
@@ -205,14 +191,14 @@ describe('Cookie Streaming Handling Integration Test', function () {
                     (new HttpClient())
                         ->useCookieJar($jar)
                         ->download(
-                            HTTPBIN . '/response-headers?' . http_build_query([
-                                'Set-Cookie' => 'download_inbound=yes; Path=/; Domain=httpbin.org',
-                            ]),
+                            HttpBin::url('/response-headers?' . http_build_query([
+                                'Set-Cookie' => 'download_inbound=yes; Path=/; Domain=' . HttpBin::host(),
+                            ])),
                             $destination
                         )
                 );
 
-                $cookies = array_values($jar->getCookies('httpbin.org', '/'));
+                $cookies = array_values($jar->getCookies(HttpBin::host(), '/'));
                 $names   = array_map(fn(Cookie $c) => $c->getName(), $cookies);
 
                 expect($names)->toContain('download_inbound');
@@ -232,9 +218,9 @@ describe('Cookie Streaming Handling Integration Test', function () {
                     (new HttpClient())
                         ->useCookieJar($jar)
                         ->download(
-                            HTTPBIN . '/response-headers?' . http_build_query([
-                                'Set-Cookie' => 'download_replay=yes; Path=/; Domain=httpbin.org',
-                            ]),
+                            HttpBin::url('/response-headers?' . http_build_query([
+                                'Set-Cookie' => 'download_replay=yes; Path=/; Domain=' . HttpBin::host(),
+                            ])),
                             $destination
                         )
                 );
@@ -242,7 +228,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 $response = await(
                     (new HttpClient())
                         ->useCookieJar($jar)
-                        ->get(HTTPBIN . '/cookies')
+                        ->get(HttpBin::url('/cookies'))
                 );
 
                 expect($response->json('cookies.download_replay'))->toBe('yes');
@@ -259,23 +245,21 @@ describe('Cookie Streaming Handling Integration Test', function () {
             $destination2 = tempnam(sys_get_temp_dir(), 'hibla_dl_');
 
             try {
-                // First download — server sets a cookie
                 await(
                     (new HttpClient())
                         ->useCookieJar($jar)
                         ->download(
-                            HTTPBIN . '/response-headers?' . http_build_query([
-                                'Set-Cookie' => 'dl_chain=chained; Path=/; Domain=httpbin.org',
-                            ]),
+                            HttpBin::url('/response-headers?' . http_build_query([
+                                'Set-Cookie' => 'dl_chain=chained; Path=/; Domain=' . HttpBin::host(),
+                            ])),
                             $destination1
                         )
                 );
 
-                // Second download — jar should replay the stored cookie
                 await(
                     (new HttpClient())
                         ->useCookieJar($jar)
-                        ->download(HTTPBIN . '/cookies', $destination2)
+                        ->download(HttpBin::url('/cookies'), $destination2)
                 );
 
                 $data = json_decode(file_get_contents($destination2), true);
@@ -295,7 +279,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 name: 'stale_download',
                 value: 'old',
                 expires: time() - 3600,
-                domain: 'httpbin.org',
+                domain: HttpBin::host(),
                 path: '/',
             ));
 
@@ -305,7 +289,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 await(
                     (new HttpClient())
                         ->useCookieJar($jar)
-                        ->download(HTTPBIN . '/cookies', $destination)
+                        ->download(HttpBin::url('/cookies'), $destination)
                 );
 
                 $data = json_decode(file_get_contents($destination), true);
@@ -319,9 +303,9 @@ describe('Cookie Streaming Handling Integration Test', function () {
 
         test('multiple cookies in jar are all sent during a download request', function () {
             $jar = new CookieJar();
-            $jar->setCookie(new Cookie(name: 'dl_a', value: '1', domain: 'httpbin.org', path: '/'));
-            $jar->setCookie(new Cookie(name: 'dl_b', value: '2', domain: 'httpbin.org', path: '/'));
-            $jar->setCookie(new Cookie(name: 'dl_c', value: '3', domain: 'httpbin.org', path: '/'));
+            $jar->setCookie(new Cookie(name: 'dl_a', value: '1', domain: HttpBin::host(), path: '/'));
+            $jar->setCookie(new Cookie(name: 'dl_b', value: '2', domain: HttpBin::host(), path: '/'));
+            $jar->setCookie(new Cookie(name: 'dl_c', value: '3', domain: HttpBin::host(), path: '/'));
 
             $destination = tempnam(sys_get_temp_dir(), 'hibla_dl_');
 
@@ -329,7 +313,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 await(
                     (new HttpClient())
                         ->useCookieJar($jar)
-                        ->download(HTTPBIN . '/cookies', $destination)
+                        ->download(HttpBin::url('/cookies'), $destination)
                 );
 
                 $data    = json_decode(file_get_contents($destination), true);
@@ -346,17 +330,6 @@ describe('Cookie Streaming Handling Integration Test', function () {
         });
     });
 
-    // -------------------------------------------------------------------------
-    // Upload
-    // -------------------------------------------------------------------------
-    // Uses StreamingHandler::uploadFile(). Same CurlRequest header normalisation
-    // applies — 'set-cookie' lowercase in the completion callback.
-    //
-    // Note: httpbin's /put and /post endpoints do not return Set-Cookie headers,
-    // so inbound cookie tests use /response-headers to synthesise a Set-Cookie
-    // response on GET, which upload() honours via its explicit method override.
-    // -------------------------------------------------------------------------
-
     describe('Upload cookie handling', function () {
 
         test('jar cookie is sent during an upload request', function () {
@@ -364,7 +337,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
             $jar->setCookie(new Cookie(
                 name: 'upload_token',
                 value: 'uploading',
-                domain: 'httpbin.org',
+                domain: HttpBin::host(),
                 path: '/',
             ));
 
@@ -372,19 +345,14 @@ describe('Cookie Streaming Handling Integration Test', function () {
             file_put_contents($source, 'test upload content');
 
             try {
-                // httpbin /put echoes request headers in the body. upload() does not
-                // expose the body, but status 200 confirms the server accepted the
-                // request. Outbound cookie correctness is enforced by the same
-                // CurlOptionsBuilder::mergeCookieHeader() path used by all other methods.
                 $result = await(
                     (new HttpClient())
                         ->useCookieJar($jar)
-                        ->upload(HTTPBIN . '/put', $source)
+                        ->upload(HttpBin::url('/put'), $source)
                 );
 
                 expect($result['status'])->toBe(200);
-                // The jar must still contain our cookie after the upload completes.
-                $cookies = array_values($jar->getCookies('httpbin.org', '/'));
+                $cookies = array_values($jar->getCookies(HttpBin::host(), '/'));
                 $names   = array_map(fn(Cookie $c) => $c->getName(), $cookies);
                 expect($names)->toContain('upload_token');
             } finally {
@@ -405,14 +373,14 @@ describe('Cookie Streaming Handling Integration Test', function () {
                         ->useCookieJar($jar)
                         ->withMethod('GET')
                         ->upload(
-                            HTTPBIN . '/response-headers?' . http_build_query([
-                                'Set-Cookie' => 'upload_inbound=yes; Path=/; Domain=httpbin.org',
-                            ]),
+                            HttpBin::url('/response-headers?' . http_build_query([
+                                'Set-Cookie' => 'upload_inbound=yes; Path=/; Domain=' . HttpBin::host(),
+                            ])),
                             $source
                         )
                 );
 
-                $cookies = array_values($jar->getCookies('httpbin.org', '/'));
+                $cookies = array_values($jar->getCookies(HttpBin::host(), '/'));
                 $names   = array_map(fn(Cookie $c) => $c->getName(), $cookies);
 
                 expect($names)->toContain('upload_inbound');
@@ -434,9 +402,9 @@ describe('Cookie Streaming Handling Integration Test', function () {
                         ->useCookieJar($jar)
                         ->withMethod('GET')
                         ->upload(
-                            HTTPBIN . '/response-headers?' . http_build_query([
-                                'Set-Cookie' => 'upload_replay=yes; Path=/; Domain=httpbin.org',
-                            ]),
+                            HttpBin::url('/response-headers?' . http_build_query([
+                                'Set-Cookie' => 'upload_replay=yes; Path=/; Domain=' . HttpBin::host(),
+                            ])),
                             $source
                         )
                 );
@@ -444,7 +412,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 $response = await(
                     (new HttpClient())
                         ->useCookieJar($jar)
-                        ->get(HTTPBIN . '/cookies')
+                        ->get(HttpBin::url('/cookies'))
                 );
 
                 expect($response->json('cookies.upload_replay'))->toBe('yes');
@@ -461,7 +429,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 name: 'stale_upload',
                 value: 'old',
                 expires: time() - 3600,
-                domain: 'httpbin.org',
+                domain: HttpBin::host(),
                 path: '/',
             ));
 
@@ -472,12 +440,11 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 $result = await(
                     (new HttpClient())
                         ->useCookieJar($jar)
-                        ->upload(HTTPBIN . '/put', $source)
+                        ->upload(HttpBin::url('/put'), $source)
                 );
 
                 expect($result['status'])->toBe(200);
-                // Expired cookie must not have been added back to the jar by the response.
-                expect($jar->getCookies('httpbin.org', '/'))->toBeEmpty();
+                expect($jar->getCookies(HttpBin::host(), '/'))->toBeEmpty();
             } finally {
                 if (file_exists($source)) {
                     unlink($source);
@@ -490,7 +457,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
             $jar->setCookie(new Cookie(
                 name: 'persistent',
                 value: 'survive',
-                domain: 'httpbin.org',
+                domain: HttpBin::host(),
                 path: '/',
             ));
 
@@ -501,10 +468,10 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 await(
                     (new HttpClient())
                         ->useCookieJar($jar)
-                        ->upload(HTTPBIN . '/put', $source)
+                        ->upload(HttpBin::url('/put'), $source)
                 );
 
-                $cookies = array_values($jar->getCookies('httpbin.org', '/'));
+                $cookies = array_values($jar->getCookies(HttpBin::host(), '/'));
                 $names   = array_map(fn(Cookie $c) => $c->getName(), $cookies);
 
                 expect($names)->toContain('persistent');
@@ -516,20 +483,6 @@ describe('Cookie Streaming Handling Integration Test', function () {
         });
     });
 
-    // -------------------------------------------------------------------------
-    // SSE
-    // -------------------------------------------------------------------------
-    // The SSE handshake is a standard HTTP request whose response headers are
-    // processed by a dedicated CURLOPT_HEADERFUNCTION inside createSSEConnection.
-    // Cookie storage fires before the promise resolves, so by the time await()
-    // returns the jar is already populated.
-    //
-    // httpbin does not expose a native SSE endpoint. These tests connect to
-    // /response-headers (200 JSON) to exercise the handshake cookie path.
-    // The SSE handler accepts any 2xx response at the header level; the body
-    // is parsed for events but silently ignored when no valid SSE frames arrive.
-    // -------------------------------------------------------------------------
-
     describe('SSE cookie handling', function () {
 
         test('jar cookie is sent during the SSE handshake', function () {
@@ -537,21 +490,18 @@ describe('Cookie Streaming Handling Integration Test', function () {
             $jar->setCookie(new Cookie(
                 name: 'sse_token',
                 value: 'handshake',
-                domain: 'httpbin.org',
+                domain: HttpBin::host(),
                 path: '/',
             ));
 
-            // /cookies echoes back every cookie the client sends.
-            // The SSE handler connects and resolves the promise on the 200 response.
             await(
                 (new HttpClient())
                     ->useCookieJar($jar)
-                    ->sse(HTTPBIN . '/cookies')
+                    ->sse(HttpBin::url('/cookies'))
                     ->connect()
             );
 
-            // The jar must still hold our cookie after the SSE lifecycle completes.
-            $cookies = array_values($jar->getCookies('httpbin.org', '/'));
+            $cookies = array_values($jar->getCookies(HttpBin::host(), '/'));
             $names   = array_map(fn(Cookie $c) => $c->getName(), $cookies);
 
             expect($names)->toContain('sse_token');
@@ -563,13 +513,13 @@ describe('Cookie Streaming Handling Integration Test', function () {
             await(
                 (new HttpClient())
                     ->useCookieJar($jar)
-                    ->sse(HTTPBIN . '/response-headers?' . http_build_query([
-                        'Set-Cookie' => 'sse_inbound=yes; Path=/; Domain=httpbin.org',
-                    ]))
+                    ->sse(HttpBin::url('/response-headers?' . http_build_query([
+                        'Set-Cookie' => 'sse_inbound=yes; Path=/; Domain=' . HttpBin::host(),
+                    ])))
                     ->connect()
             );
 
-            $cookies = array_values($jar->getCookies('httpbin.org', '/'));
+            $cookies = array_values($jar->getCookies(HttpBin::host(), '/'));
             $names   = array_map(fn(Cookie $c) => $c->getName(), $cookies);
 
             expect($names)->toContain('sse_inbound');
@@ -581,16 +531,16 @@ describe('Cookie Streaming Handling Integration Test', function () {
             await(
                 (new HttpClient())
                     ->useCookieJar($jar)
-                    ->sse(HTTPBIN . '/response-headers?' . http_build_query([
-                        'Set-Cookie' => 'sse_replay=yes; Path=/; Domain=httpbin.org',
-                    ]))
+                    ->sse(HttpBin::url('/response-headers?' . http_build_query([
+                        'Set-Cookie' => 'sse_replay=yes; Path=/; Domain=' . HttpBin::host(),
+                    ])))
                     ->connect()
             );
 
             $response = await(
                 (new HttpClient())
                     ->useCookieJar($jar)
-                    ->get(HTTPBIN . '/cookies')
+                    ->get(HttpBin::url('/cookies'))
             );
 
             expect($response->json('cookies.sse_replay'))->toBe('yes');
@@ -602,19 +552,18 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 name: 'stale_sse',
                 value: 'old',
                 expires: time() - 3600,
-                domain: 'httpbin.org',
+                domain: HttpBin::host(),
                 path: '/',
             ));
 
             await(
                 (new HttpClient())
                     ->useCookieJar($jar)
-                    ->sse(HTTPBIN . '/response-headers')
+                    ->sse(HttpBin::url('/response-headers'))
                     ->connect()
             );
 
-            // Expired cookie must not have been re-introduced into the jar.
-            expect($jar->getCookies('httpbin.org', '/'))->toBeEmpty();
+            expect($jar->getCookies(HttpBin::host(), '/'))->toBeEmpty();
         });
 
         test('SSE does not corrupt pre-existing cookies in the jar', function () {
@@ -622,27 +571,23 @@ describe('Cookie Streaming Handling Integration Test', function () {
             $jar->setCookie(new Cookie(
                 name: 'persistent_sse',
                 value: 'survive',
-                domain: 'httpbin.org',
+                domain: HttpBin::host(),
                 path: '/',
             ));
 
             await(
                 (new HttpClient())
                     ->useCookieJar($jar)
-                    ->sse(HTTPBIN . '/response-headers')
+                    ->sse(HttpBin::url('/response-headers'))
                     ->connect()
             );
 
-            $cookies = array_values($jar->getCookies('httpbin.org', '/'));
+            $cookies = array_values($jar->getCookies(HttpBin::host(), '/'));
             $names   = array_map(fn(Cookie $c) => $c->getName(), $cookies);
 
             expect($names)->toContain('persistent_sse');
         });
     });
-
-    // -------------------------------------------------------------------------
-    // Security
-    // -------------------------------------------------------------------------
 
     describe('Streaming cookie security', function () {
 
@@ -652,7 +597,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 expect(
                     fn() => (new HttpClient())
                         ->withCookie("bad\r\nname", 'value')
-                        ->stream(HTTPBIN . '/stream/1')
+                        ->stream(HttpBin::url('/stream/1'))
                 )->toThrow(\InvalidArgumentException::class);
             });
 
@@ -660,7 +605,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 expect(
                     fn() => (new HttpClient())
                         ->withCookie("bad\nname", 'value')
-                        ->stream(HTTPBIN . '/stream/1')
+                        ->stream(HttpBin::url('/stream/1'))
                 )->toThrow(\InvalidArgumentException::class);
             });
 
@@ -668,7 +613,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 expect(
                     fn() => (new HttpClient())
                         ->withCookie("bad\rname", 'value')
-                        ->stream(HTTPBIN . '/stream/1')
+                        ->stream(HttpBin::url('/stream/1'))
                 )->toThrow(\InvalidArgumentException::class);
             });
 
@@ -676,7 +621,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 expect(
                     fn() => (new HttpClient())
                         ->withCookie('name', "bad\r\nvalue")
-                        ->stream(HTTPBIN . '/stream/1')
+                        ->stream(HttpBin::url('/stream/1'))
                 )->toThrow(\InvalidArgumentException::class);
             });
 
@@ -684,7 +629,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 expect(
                     fn() => (new HttpClient())
                         ->withCookie("name\x00evil", 'value')
-                        ->stream(HTTPBIN . '/stream/1')
+                        ->stream(HttpBin::url('/stream/1'))
                 )->toThrow(\InvalidArgumentException::class);
             });
 
@@ -692,7 +637,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 expect(
                     fn() => (new HttpClient())
                         ->withCookie('name', "value\x00evil")
-                        ->stream(HTTPBIN . '/stream/1')
+                        ->stream(HttpBin::url('/stream/1'))
                 )->toThrow(\InvalidArgumentException::class);
             });
 
@@ -700,7 +645,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 expect(
                     fn() => (new HttpClient())
                         ->withCookie('legit', 'val; injected=bad')
-                        ->stream(HTTPBIN . '/cookies')
+                        ->stream(HttpBin::url('/cookies'))
                 )->toThrow(\InvalidArgumentException::class);
             });
         });
@@ -713,17 +658,15 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 await(
                     (new HttpClient())
                         ->useCookieJar($jar)
-                        ->stream(HTTPBIN . '/response-headers?' . http_build_query([
-                            'Set-Cookie' => 'stream_secret=yes; Path=/; Domain=httpbin.org',
-                        ]))
+                        ->stream(HttpBin::url('/response-headers?' . http_build_query([
+                            'Set-Cookie' => 'stream_secret=yes; Path=/; Domain=' . HttpBin::host(),
+                        ])))
                 );
 
-                // Confirm it was stored for the correct domain
-                $cookies = array_values($jar->getCookies('httpbin.org', '/'));
+                $cookies = array_values($jar->getCookies(HttpBin::host(), '/'));
                 $names   = array_map(fn(Cookie $c) => $c->getName(), $cookies);
                 expect($names)->toContain('stream_secret');
 
-                // Must not be accessible to a different domain
                 $leaked = array_values($jar->getCookies('evil.com', '/'));
                 expect($leaked)->toBeEmpty();
             });
@@ -733,7 +676,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 $jar->setCookie(new Cookie(
                     name: 'scoped_stream',
                     value: 'yes',
-                    domain: 'httpbin.org',
+                    domain: HttpBin::host(),
                     path: '/',
                 ));
 
@@ -748,10 +691,10 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 $jar = new CookieJar();
                 $jar->setCookie(Cookie::fromSetCookieHeader(
                     'secure_stream=yes; Secure; Path=/',
-                    'httpbin.org'
+                    HttpBin::host()
                 ));
 
-                $cookies = array_values($jar->getCookies('httpbin.org', '/', false));
+                $cookies = array_values($jar->getCookies(HttpBin::host(), '/', false));
                 expect($cookies)->toBeEmpty();
             });
 
@@ -759,10 +702,10 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 $jar = new CookieJar();
                 $jar->setCookie(Cookie::fromSetCookieHeader(
                     'plain_stream=yes; Path=/',
-                    'httpbin.org'
+                    HttpBin::host()
                 ));
 
-                $cookies = array_values($jar->getCookies('httpbin.org', '/', false));
+                $cookies = array_values($jar->getCookies(HttpBin::host(), '/', false));
                 $names   = array_map(fn(Cookie $c) => $c->getName(), $cookies);
                 expect($names)->toContain('plain_stream');
             });
@@ -774,7 +717,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 $jar = new CookieJar();
                 $jar->setCookie(Cookie::fromSetCookieHeader(
                     'dead_stream=yes; Expires=' . gmdate('D, d M Y H:i:s T', time() - 3600) . '; Path=/',
-                    'httpbin.org'
+                    HttpBin::host()
                 ));
 
                 $chunks = '';
@@ -782,7 +725,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 await(
                     (new HttpClient())
                         ->useCookieJar($jar)
-                        ->stream(HTTPBIN . '/cookies', function (string $chunk) use (&$chunks): void {
+                        ->stream(HttpBin::url('/cookies'), function (string $chunk) use (&$chunks): void {
                             $chunks .= $chunk;
                         })
                 );
@@ -795,10 +738,10 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 $jar = new CookieJar();
                 $jar->setCookie(Cookie::fromSetCookieHeader(
                     'gone_stream=yes; Max-Age=0; Path=/',
-                    'httpbin.org'
+                    HttpBin::host()
                 ));
 
-                $cookies = array_values($jar->getCookies('httpbin.org', '/'));
+                $cookies = array_values($jar->getCookies(HttpBin::host(), '/'));
                 expect($cookies)->toBeEmpty();
             });
         });
@@ -809,12 +752,10 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 $jar    = new CookieJar();
                 $chunks = '';
 
-                // /stream/1 returns JSON lines in the body — not real HTTP headers.
-                // Nothing in the body must ever be treated as a Set-Cookie header.
                 await(
                     (new HttpClient())
                         ->useCookieJar($jar)
-                        ->stream(HTTPBIN . '/stream/1', function (string $chunk) use (&$chunks): void {
+                        ->stream(HttpBin::url('/stream/1'), function (string $chunk) use (&$chunks): void {
                             $chunks .= $chunk;
                         })
                 );
@@ -833,7 +774,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 expect(
                     fn() => (new HttpClient())
                         ->withCookie("bad\r\nname", 'value')
-                        ->sse(HTTPBIN . '/response-headers')
+                        ->sse(HttpBin::url('/response-headers'))
                         ->connect()
                 )->toThrow(\InvalidArgumentException::class);
             });
@@ -842,7 +783,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 expect(
                     fn() => (new HttpClient())
                         ->withCookie("bad\nname", 'value')
-                        ->sse(HTTPBIN . '/response-headers')
+                        ->sse(HttpBin::url('/response-headers'))
                         ->connect()
                 )->toThrow(\InvalidArgumentException::class);
             });
@@ -851,7 +792,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 expect(
                     fn() => (new HttpClient())
                         ->withCookie('name', "bad\r\nvalue")
-                        ->sse(HTTPBIN . '/response-headers')
+                        ->sse(HttpBin::url('/response-headers'))
                         ->connect()
                 )->toThrow(\InvalidArgumentException::class);
             });
@@ -860,7 +801,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 expect(
                     fn() => (new HttpClient())
                         ->withCookie("name\x00evil", 'value')
-                        ->sse(HTTPBIN . '/response-headers')
+                        ->sse(HttpBin::url('/response-headers'))
                         ->connect()
                 )->toThrow(\InvalidArgumentException::class);
             });
@@ -869,7 +810,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 expect(
                     fn() => (new HttpClient())
                         ->withCookie('name', "value\x00evil")
-                        ->sse(HTTPBIN . '/response-headers')
+                        ->sse(HttpBin::url('/response-headers'))
                         ->connect()
                 )->toThrow(\InvalidArgumentException::class);
             });
@@ -883,18 +824,16 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 await(
                     (new HttpClient())
                         ->useCookieJar($jar)
-                        ->sse(HTTPBIN . '/response-headers?' . http_build_query([
-                            'Set-Cookie' => 'sse_secret=yes; Path=/; Domain=httpbin.org',
-                        ]))
+                        ->sse(HttpBin::url('/response-headers?' . http_build_query([
+                            'Set-Cookie' => 'sse_secret=yes; Path=/; Domain=' . HttpBin::host(),
+                        ])))
                         ->connect()
                 );
 
-                // Confirm stored for the correct domain
-                $cookies = array_values($jar->getCookies('httpbin.org', '/'));
+                $cookies = array_values($jar->getCookies(HttpBin::host(), '/'));
                 $names   = array_map(fn(Cookie $c) => $c->getName(), $cookies);
                 expect($names)->toContain('sse_secret');
 
-                // Must not leak to a different domain
                 $leaked = array_values($jar->getCookies('attacker.com', '/'));
                 expect($leaked)->toBeEmpty();
             });
@@ -904,7 +843,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 $jar->setCookie(new Cookie(
                     name: 'scoped_sse',
                     value: 'yes',
-                    domain: 'httpbin.org',
+                    domain: HttpBin::host(),
                     path: '/',
                 ));
 
@@ -919,10 +858,10 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 $jar = new CookieJar();
                 $jar->setCookie(Cookie::fromSetCookieHeader(
                     'secure_sse=yes; Secure; Path=/',
-                    'httpbin.org'
+                    HttpBin::host()
                 ));
 
-                $cookies = array_values($jar->getCookies('httpbin.org', '/', false));
+                $cookies = array_values($jar->getCookies(HttpBin::host(), '/', false));
                 expect($cookies)->toBeEmpty();
             });
         });
@@ -933,10 +872,10 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 $jar = new CookieJar();
                 $jar->setCookie(Cookie::fromSetCookieHeader(
                     'dead_sse=yes; Expires=' . gmdate('D, d M Y H:i:s T', time() - 3600) . '; Path=/',
-                    'httpbin.org'
+                    HttpBin::host()
                 ));
 
-                $cookies = array_values($jar->getCookies('httpbin.org', '/'));
+                $cookies = array_values($jar->getCookies(HttpBin::host(), '/'));
                 expect($cookies)->toBeEmpty();
             });
 
@@ -944,10 +883,10 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 $jar = new CookieJar();
                 $jar->setCookie(Cookie::fromSetCookieHeader(
                     'gone_sse=yes; Max-Age=-1; Path=/',
-                    'httpbin.org'
+                    HttpBin::host()
                 ));
 
-                $cookies = array_values($jar->getCookies('httpbin.org', '/'));
+                $cookies = array_values($jar->getCookies(HttpBin::host(), '/'));
                 expect($cookies)->toBeEmpty();
             });
         });
@@ -964,7 +903,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
                     expect(
                         fn() => (new HttpClient())
                             ->withCookie("bad\r\nname", 'value')
-                            ->download(HTTPBIN . '/get', $destination)
+                            ->download(HttpBin::url('/get'), $destination)
                     )->toThrow(\InvalidArgumentException::class);
                 } finally {
                     if (file_exists($destination)) {
@@ -980,7 +919,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
                     expect(
                         fn() => (new HttpClient())
                             ->withCookie('name', "bad\r\nvalue")
-                            ->download(HTTPBIN . '/get', $destination)
+                            ->download(HttpBin::url('/get'), $destination)
                     )->toThrow(\InvalidArgumentException::class);
                 } finally {
                     if (file_exists($destination)) {
@@ -1001,19 +940,17 @@ describe('Cookie Streaming Handling Integration Test', function () {
                         (new HttpClient())
                             ->useCookieJar($jar)
                             ->download(
-                                HTTPBIN . '/response-headers?' . http_build_query([
-                                    'Set-Cookie' => 'dl_secret=yes; Path=/; Domain=httpbin.org',
-                                ]),
+                                HttpBin::url('/response-headers?' . http_build_query([
+                                    'Set-Cookie' => 'dl_secret=yes; Path=/; Domain=' . HttpBin::host(),
+                                ])),
                                 $destination
                             )
                     );
 
-                    // Confirm stored correctly
-                    $cookies = array_values($jar->getCookies('httpbin.org', '/'));
+                    $cookies = array_values($jar->getCookies(HttpBin::host(), '/'));
                     $names   = array_map(fn(Cookie $c) => $c->getName(), $cookies);
                     expect($names)->toContain('dl_secret');
 
-                    // Must not leak
                     $leaked = array_values($jar->getCookies('evil.com', '/'));
                     expect($leaked)->toBeEmpty();
                 } finally {
@@ -1030,7 +967,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 $jar = new CookieJar();
                 $jar->setCookie(Cookie::fromSetCookieHeader(
                     'dead_dl=yes; Expires=' . gmdate('D, d M Y H:i:s T', time() - 3600) . '; Path=/',
-                    'httpbin.org'
+                    HttpBin::host()
                 ));
 
                 $destination = tempnam(sys_get_temp_dir(), 'hibla_dl_');
@@ -1039,7 +976,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
                     await(
                         (new HttpClient())
                             ->useCookieJar($jar)
-                            ->download(HTTPBIN . '/cookies', $destination)
+                            ->download(HttpBin::url('/cookies'), $destination)
                     );
 
                     $data = json_decode(file_get_contents($destination), true);
@@ -1065,7 +1002,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
                     expect(
                         fn() => (new HttpClient())
                             ->withCookie("bad\r\nname", 'value')
-                            ->upload(HTTPBIN . '/put', $source)
+                            ->upload(HttpBin::url('/put'), $source)
                     )->toThrow(\InvalidArgumentException::class);
                 } finally {
                     if (file_exists($source)) {
@@ -1082,7 +1019,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
                     expect(
                         fn() => (new HttpClient())
                             ->withCookie('name', "bad\r\nvalue")
-                            ->upload(HTTPBIN . '/put', $source)
+                            ->upload(HttpBin::url('/put'), $source)
                     )->toThrow(\InvalidArgumentException::class);
                 } finally {
                     if (file_exists($source)) {
@@ -1099,7 +1036,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 $jar->setCookie(new Cookie(
                     name: 'ul_scoped',
                     value: 'yes',
-                    domain: 'httpbin.org',
+                    domain: HttpBin::host(),
                     path: '/',
                 ));
 
@@ -1114,7 +1051,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 $jar = new CookieJar();
                 $jar->setCookie(Cookie::fromSetCookieHeader(
                     'dead_ul=yes; Expires=' . gmdate('D, d M Y H:i:s T', time() - 3600) . '; Path=/',
-                    'httpbin.org'
+                    HttpBin::host()
                 ));
 
                 $source = tempnam(sys_get_temp_dir(), 'hibla_ul_');
@@ -1124,12 +1061,11 @@ describe('Cookie Streaming Handling Integration Test', function () {
                     $result = await(
                         (new HttpClient())
                             ->useCookieJar($jar)
-                            ->upload(HTTPBIN . '/put', $source)
+                            ->upload(HttpBin::url('/put'), $source)
                     );
 
                     expect($result['status'])->toBe(200);
-                    // Expired cookie must not have been re-introduced by the response
-                    expect($jar->getCookies('httpbin.org', '/'))->toBeEmpty();
+                    expect($jar->getCookies(HttpBin::host(), '/'))->toBeEmpty();
                 } finally {
                     if (file_exists($source)) {
                         unlink($source);
@@ -1138,4 +1074,4 @@ describe('Cookie Streaming Handling Integration Test', function () {
             });
         });
     });
-})->skipOnCI();
+});

@@ -23,12 +23,12 @@ describe('ProxyConfig Value Object', function () {
 
     it('uses the correct cURL constant for a SOCKS4 proxy', function () {
         $proxy = ProxyConfig::socks4('proxy.example.com', 1080);
-        expect($proxy->getCurlProxyType())->toBe(CURLPROXY_SOCKS4);
+        expect($proxy->getCurlProxyType())->toBe(CURLPROXY_SOCKS4A);
     });
 
     it('uses the correct cURL constant for a SOCKS5 proxy', function () {
         $proxy = ProxyConfig::socks5('proxy.example.com', 1080);
-        expect($proxy->getCurlProxyType())->toBe(CURLPROXY_SOCKS5);
+        expect($proxy->getCurlProxyType())->toBe(CURLPROXY_SOCKS5_HOSTNAME);
     });
 
     it('generates the correct proxy URL string with authentication', function () {
