@@ -709,7 +709,6 @@ describe('Nested JSON Access Edge Cases', function () {
 
         $response = Http::get('https://api.example.com/trailing-dots')->wait();
 
-        // Trailing dots should be handled gracefully (likely return null)
         expect($response->json('data.'))->toBeNull()
             ->and($response->json('data.value.'))->toBeNull()
         ;
@@ -728,7 +727,6 @@ describe('Nested JSON Access Edge Cases', function () {
 
         $response = Http::get('https://api.example.com/leading-dots')->wait();
 
-        // Leading dots should be handled gracefully (likely return null)
         expect($response->json('.data'))->toBeNull()
             ->and($response->json('.data.value'))->toBeNull()
         ;
@@ -747,7 +745,6 @@ describe('Nested JSON Access Edge Cases', function () {
 
         $response = Http::get('https://api.example.com/consecutive-dots')->wait();
 
-        // Consecutive dots should be handled gracefully
         expect($response->json('data..value'))->toBeNull()
             ->and($response->json('data...value'))->toBeNull()
         ;
