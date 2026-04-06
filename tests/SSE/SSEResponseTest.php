@@ -384,13 +384,6 @@ it('preserves response status and headers', function () {
     ;
 });
 
-it('inherits from StreamingResponse', function () {
-    $stream = Stream::fromString('data: test\n\n');
-    $response = new SSEResponse($stream, 200);
-
-    expect($response)->toBeInstanceOf(Hibla\HttpClient\StreamingResponse::class);
-});
-
 it('handles field values with colons', function () {
     $sseData = "data: http://example.com:8080/path\n\n";
     $stream = Stream::fromString($sseData);

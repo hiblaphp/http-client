@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
+use Hibla\HttpClient\Exceptions\HttpStreamException;
 use Hibla\HttpClient\Handlers\HttpStreamStateHandler;
 use Hibla\Promise\Promise;
 
@@ -69,7 +70,7 @@ describe('HttpStreamStateHandler', function () {
         $promise = new Promise();
         $handler->enqueueRead(10, $promise);
         $handler->close();
-        expect(fn () => await($promise))->toThrow(\RuntimeException::class, 'Stream closed');
+        expect(fn () => await($promise))->toThrow(HttpStreamException::class, 'Stream closed');
     });
 
     it('respects the prepend buffer (overflow logic)', function () use (&$handler) {
