@@ -36,6 +36,7 @@ class CurlOptionsBuilder implements TransportOptionsBuilderInterface
             CURLOPT_USERAGENT => $options->userAgent,
             CURLOPT_HEADER => true,
             CURLOPT_NOBODY => false,
+            CURLOPT_ENCODING => '',
         ];
 
         $curlOptions[CURLOPT_HTTP_VERSION] = $this->resolveHttpVersion($options->protocol);
@@ -58,7 +59,7 @@ class CurlOptionsBuilder implements TransportOptionsBuilderInterface
 
         $stringKeyOptions = array_filter(
             $options->additionalOptions,
-            fn ($key) => \is_string($key),
+            fn($key) => \is_string($key),
             ARRAY_FILTER_USE_KEY
         );
 
