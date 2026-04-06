@@ -382,7 +382,16 @@ class Http
      */
     public static function startTesting(): TestingHttpHandler
     {
-        self::$testingInstance ??= new TestingHttpHandler();
+        $testingClass = '\\Hibla\\HttpClient\\Testing\\TestingHttpHandler';
+
+        if (!class_exists($testingClass)) {
+            throw new \RuntimeException(
+                'To use HTTP testing features, please install the testing package: ' .
+                    'composer require --dev hiblaphp/http-client-testing'
+            );
+        }
+
+        self::$testingInstance ??= new $testingClass();
 
         return self::$testingInstance;
     }
