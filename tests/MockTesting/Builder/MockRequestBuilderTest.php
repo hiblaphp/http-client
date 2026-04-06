@@ -465,27 +465,26 @@ test('SSE rate limited until attempt', function () {
     expect($builder)->toBeInstanceOf(MockRequestBuilder::class);
 });
 
-// BuildsRealisticSSEMocks tests
 test('SSE with periodic events', function () {
     $builder = createBuilder();
     $builder->sseWithPeriodicEvents([
         ['data' => 'event1'],
         ['data' => 'event2'],
-    ], 1.0, 0.1);
+    ]);
 
     expect($builder)->toBeInstanceOf(MockRequestBuilder::class);
 });
 
 test('SSE with limited events', function () {
     $builder = createBuilder();
-    $builder->sseWithLimitedEvents(5, 1.0);
+    $builder->sseWithLimitedEvents(5);
 
     expect($builder)->toBeInstanceOf(MockRequestBuilder::class);
 });
 
 test('SSE with limited events and custom generator', function () {
     $builder = createBuilder();
-    $builder->sseWithLimitedEvents(3, 1.0, function ($index) {
+    $builder->sseWithLimitedEvents(3, function ($index) {
         return ['data' => "custom_$index", 'id' => (string)$index];
     });
 
@@ -496,7 +495,7 @@ test('SSE infinite stream', function () {
     $builder = createBuilder();
     $builder->sseInfiniteStream(function ($index) {
         return ['data' => "event_$index"];
-    }, 1.0, 10);
+    });
 
     expect($builder)->toBeInstanceOf(MockRequestBuilder::class);
 });
@@ -510,7 +509,7 @@ test('SSE periodic then disconnect', function () {
 
 test('SSE periodic then disconnect with custom generator', function () {
     $builder = createBuilder();
-    $builder->ssePeriodicThenDisconnect(2, 1.0, 'Lost connection', function ($index) {
+    $builder->ssePeriodicThenDisconnect(2, 'Lost connection', function ($index) {
         return ['data' => "custom_$index"];
     });
 
