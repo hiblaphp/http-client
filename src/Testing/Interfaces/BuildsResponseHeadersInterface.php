@@ -8,13 +8,15 @@ interface BuildsResponseHeadersInterface
 {
     /**
      * Add a response header.
+     * 
+     * @param string|array<string> $value
      */
-    public function respondWithHeader(string $name, string $value): static;
+    public function respondWithHeader(string $name, string|array $value): static;
 
     /**
      * Add multiple response headers.
      *
-     * @param array<string, string> $headers
+     * @param array<string, string|array<string>> $headers
      */
     public function respondWithHeaders(array $headers): static;
 

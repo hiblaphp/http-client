@@ -404,8 +404,9 @@ class CookieManager
      *
      * @param array<string, string|array<string>> $headers Response headers
      * @param string $jarName Jar name
+     * @param string|null $originHost Origin host
      */
-    public function processSetCookieHeaders(array $headers, string $jarName = 'default'): void
+    public function processSetCookieHeaders(array $headers, string $jarName = 'default', ?string $originHost = null): void
     {
         $jar = $this->getCookieJar($jarName);
         if ($jar === null) {
@@ -427,7 +428,7 @@ class CookieManager
             if (! is_string($setCookieHeader)) {
                 continue;
             }
-            $cookie = Cookie::fromSetCookieHeader($setCookieHeader);
+            $cookie = Cookie::fromSetCookieHeader($setCookieHeader, $originHost);
             if ($cookie !== null) {
                 $jar->setCookie($cookie);
             }
@@ -603,13 +604,11 @@ class CookieManager
      */
     public function processResponseCookiesForOptions(array $headers, array $curlOptions, string $url): void
     {
-        $this->processSetCookieHeaders($headers, 'default');
+        $uri = new Uri($url);
+        $requestDomain = $uri->getHost();
+        $originHost = $requestDomain !== '' ? $requestDomain : null;
 
         $jarOption = $curlOptions['_cookie_jar'] ?? null;
-        if ($jarOption === null) {
-            return;
-        }
-
         $customJar = null;
         if ($jarOption instanceof CookieJarInterface) {
             $customJar = $jarOption;
@@ -617,54 +616,40 @@ class CookieManager
             $customJar = $this->getCookieJar($jarOption);
         }
 
-        if ($customJar === null) {
-            return;
-        }
-
         $setCookieHeaders = [];
         foreach ($headers as $name => $value) {
-            if (strtolower($name) !== 'set-cookie') {
-                continue;
+            if (strtolower($name) === 'set-cookie') {
+                if (is_array($value)) {
+                    $setCookieHeaders = array_merge($setCookieHeaders, $value);
+                } else {
+                    $setCookieHeaders[] = $value;
+                }
             }
-            if (\is_array($value)) {
-                $setCookieHeaders = \array_merge($setCookieHeaders, $value);
-
-                continue;
-            }
-            $setCookieHeaders[] = $value;
         }
 
         if ($setCookieHeaders === []) {
             return;
         }
 
-        $uri = new Uri($url);
-        $requestDomain = $uri->getHost();
-
+        $parsedCookies = [];
         foreach ($setCookieHeaders as $setCookieHeader) {
-            if (! \is_string($setCookieHeader)) {
-                continue;
+            if (is_string($setCookieHeader)) {
+                $cookie = Cookie::fromSetCookieHeader($setCookieHeader, $originHost);
+                if ($cookie !== null) {
+                    $parsedCookies[] = $cookie;
+                }
             }
-            $cookie = Cookie::fromSetCookieHeader($setCookieHeader);
-            if ($cookie === null) {
-                continue;
-            }
+        }
 
-            if ($cookie->getDomain() === null && $requestDomain !== '') {
-                $cookie = new Cookie(
-                    $cookie->getName(),
-                    $cookie->getValue(),
-                    $cookie->getExpires(),
-                    $requestDomain,
-                    $cookie->getPath(),
-                    $cookie->isSecure(),
-                    $cookie->isHttpOnly(),
-                    $cookie->getMaxAge(),
-                    $cookie->getSameSite()
-                );
-            }
+        $defaultJar = $this->getDefaultCookieJar();
+        foreach ($parsedCookies as $cookie) {
+            $defaultJar->setCookie($cookie);
+        }
 
-            $customJar->setCookie($cookie);
+        if ($customJar !== null && $customJar !== $defaultJar) {
+            foreach ($parsedCookies as $cookie) {
+                $customJar->setCookie($cookie);
+            }
         }
     }
 

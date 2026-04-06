@@ -10,16 +10,26 @@ trait BuildsResponseHeaders
 
     /**
      * Add a response header.
+     * 
+     * @param string|array<string> $value
      */
-    public function respondWithHeader(string $name, string $value): static
+    public function respondWithHeader(string $name, string|array $value): static
     {
-        $this->getRequest()->addResponseHeader($name, $value);
+        if (\is_array($value)) {
+            foreach ($value as $v) {
+                $this->getRequest()->addResponseHeader($name, (string) $v);
+            }
+        } else {
+            $this->getRequest()->addResponseHeader($name, $value);
+        }
 
         return $this;
     }
 
     /**
      * Add multiple response headers.
+     *
+     * @param array<string, string|array<string>> $headers
      */
     public function respondWithHeaders(array $headers): static
     {
