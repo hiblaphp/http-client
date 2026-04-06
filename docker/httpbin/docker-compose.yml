@@ -1,0 +1,16 @@
+services:
+
+  httpbin:
+    image: mccutchen/go-httpbin:latest
+    container_name: hibla_httpbin
+    ports:
+      - "${HTTPBIN_PORT:-8080}:8080"
+    networks:
+      - hibla_httpbin
+      - hibla_shared
+
+networks:
+  hibla_httpbin:
+    driver: bridge
+  hibla_shared:
+    external: true

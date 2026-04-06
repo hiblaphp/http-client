@@ -23,7 +23,7 @@ describe('PeriodicSSEEmitter', function () {
 
         $timerId = null;
 
-        expect(fn () => $emitter->emit(
+        expect(fn() => $emitter->emit(
             $promise,
             $mock,
             null,
@@ -150,6 +150,7 @@ describe('PeriodicSSEEmitter', function () {
             $mock->shouldReceive('getHeaders')->andReturn([]);
             $mock->shouldReceive('shouldFail')->andReturn(true);
             $mock->shouldReceive('getError')->andReturn(null);
+            $mock->shouldReceive('getChunkJitter')->andReturn(0.0);
 
             $errorReceived = null;
             $onError = function ($error) use (&$errorReceived) {
@@ -579,7 +580,7 @@ describe('PeriodicSSEEmitter', function () {
 
             $timerId = null;
 
-            expect(fn () => $emitter->emit(
+            expect(fn() => $emitter->emit(
                 $promise,
                 $mock,
                 null,
@@ -603,7 +604,7 @@ describe('PeriodicSSEEmitter', function () {
 
             $timerId = null;
 
-            expect(fn () => $emitter->emit(
+            expect(fn() => $emitter->emit(
                 $promise,
                 $mock,
                 null,

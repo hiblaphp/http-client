@@ -6,10 +6,6 @@ namespace Hibla\HttpClient\ValueObjects;
 
 /**
  * A configuration object for defining HTTP request retry behavior.
- *
- * This class encapsulates all parameters related to automatic retries,
- * including the number of attempts, backoff strategy, jitter, and the
- * conditions under which a retry should be triggered.
  */
 class RetryConfig
 {
@@ -29,6 +25,7 @@ class RetryConfig
      * Default error substrings that indicate transport-level failures.
      */
     private const array DEFAULT_EXCEPTIONS = [
+        'timeout',
         'Simulated timeout',
         'cURL error',
         'Operation timed out',
@@ -57,10 +54,8 @@ class RetryConfig
      * @param float $maxDelay The absolute maximum delay in seconds between retries.
      * @param float $backoffMultiplier The multiplier for exponential backoff.
      * @param bool $jitter Whether to apply a random jitter to the delay.
-     * @param array<int> $retryableStatusCodes Additional HTTP status codes to trigger a retry.
-     *                                          Merged with system defaults.
-     * @param array<string> $retryableExceptions Additional error message substrings to trigger a retry.
-     *                                           Merged with system defaults.
+     * @param array<int>|null $retryableStatusCodes Custom HTTP status codes to trigger a retry.
+     * @param array<string>|null $retryableExceptions Custom error message substrings to trigger a retry.
      */
     public function __construct(
         public readonly int $maxRetries = 3,
@@ -68,27 +63,20 @@ class RetryConfig
         public readonly float $maxDelay = 60.0,
         public readonly float $backoffMultiplier = 2.0,
         public readonly bool $jitter = true,
-        array $retryableStatusCodes = [],
-        array $retryableExceptions = []
+        ?array $retryableStatusCodes = null,
+        ?array $retryableExceptions = null
     ) {
-        $this->retryableStatusCodes = \array_values(\array_unique([
-            ...self::DEFAULT_STATUS_CODES,
-            ...$retryableStatusCodes,
-        ]));
+        $this->retryableStatusCodes = $retryableStatusCodes !== null
+            ? \array_values(\array_unique($retryableStatusCodes))
+            : self::DEFAULT_STATUS_CODES;
 
-        $this->retryableExceptions = \array_values(\array_unique([
-            ...self::DEFAULT_EXCEPTIONS,
-            ...$retryableExceptions,
-        ]));
+        $this->retryableExceptions = $retryableExceptions !== null
+            ? \array_values(\array_unique($retryableExceptions))
+            : self::DEFAULT_EXCEPTIONS;
     }
 
     /**
      * Determines if a retry should be attempted based on the current state.
-     *
-     * @param  int  $attempt  The current attempt number (e.g., 1 is the first attempt).
-     * @param  int|null  $statusCode  The HTTP status code of the failed response.
-     * @param  string|null  $error  The error message from the failed request.
-     * @return bool True if the request should be retried, false otherwise.
      */
     public function shouldRetry(int $attempt, ?int $statusCode = null, ?string $error = null): bool
     {
@@ -109,9 +97,6 @@ class RetryConfig
 
     /**
      * Calculates the delay in seconds for the next retry attempt.
-     *
-     * @param  int  $attempt  The current attempt number that has just failed.
-     * @return float The calculated delay in seconds.
      */
     public function getDelay(int $attempt): float
     {

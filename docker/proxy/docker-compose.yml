@@ -1,0 +1,66 @@
+services:
+
+  squid:
+    image: ubuntu/squid:latest
+    container_name: hibla_proxy_http
+    user: root
+    ports:
+      - "${HTTP_PROXY_PORT:-8888}:3128"
+    volumes:
+      - ./squid/squid.conf:/etc/squid/squid.conf:ro
+    healthcheck:
+      test: ["CMD", "squid", "-k", "check"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    networks:
+      - hibla_proxy
+      - hibla_shared
+
+  socks5:
+    image: serjs/go-socks5-proxy:latest
+    container_name: hibla_proxy_socks5
+    ports:
+      - "${SOCKS5_PROXY_PORT:-1080}:1080"
+    environment:
+      PROXY_USER: ${SOCKS5_USER:-}
+      PROXY_PASSWORD: ${SOCKS5_PASS:-}
+      REQUIRE_AUTH: ${SOCKS5_REQUIRE_AUTH:-false}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 1080 || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    networks:
+      - hibla_proxy
+      - hibla_shared
+
+  socks4:
+    image: ghcr.io/tarampampam/3proxy:1
+    container_name: hibla_proxy_socks4
+    ports:
+      - "${SOCKS4_PROXY_PORT:-1081}:1080"
+    environment:
+      SOCKS_PORT: "1080"
+      PRIMARY_RESOLVER: "127.0.0.11"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 1080 || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    networks:
+      - hibla_proxy
+      - hibla_shared
+
+networks:
+  hibla_proxy:
+    driver: bridge
+  hibla_shared:
+    external: true

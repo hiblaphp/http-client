@@ -311,7 +311,7 @@ describe('Stream', function () {
             $promise = $stream->readAsync(10);
             $stream->close();
 
-            expect(fn () => await($promise))->toThrow(RuntimeException::class, 'Stream closed');
+            expect(fn () => await($promise))->toThrow(HttpStreamException::class, 'Stream closed');
         });
 
         it('cancellation removes promise from queue so next read gets the data', function () {

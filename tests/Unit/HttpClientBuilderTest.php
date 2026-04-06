@@ -170,7 +170,6 @@ describe('Request Builder: Advanced Features', function () {
         $resInt = fn (Response $r) => $r;
         $request = (new HttpClient())->interceptRequest($reqInt)->interceptResponse($resInt);
 
-        // The unified pipeline wraps closures into the `$interceptors` array
         $interceptors = getPrivateProperty($request, 'interceptors');
         expect($interceptors)->toHaveCount(2);
     });

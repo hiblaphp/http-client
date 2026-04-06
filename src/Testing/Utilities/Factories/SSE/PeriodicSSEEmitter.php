@@ -56,8 +56,17 @@ class PeriodicSSEEmitter
 
         $type = $config['type'] ?? 'periodic';
 
-        $interval = $mock->getChunkDelay();
-        $jitter = $mock->getChunkJitter();
+        $interval = isset($config['interval']) && is_numeric($config['interval']) 
+            ? (float) $config['interval'] 
+            : $mock->getChunkDelay();
+
+        if ($interval <= 0) {
+            $interval = 0.01;
+        }
+
+        $jitter = isset($config['jitter']) && is_numeric($config['jitter']) 
+            ? (float) $config['jitter'] 
+            : $mock->getChunkJitter();
 
         if ($type === 'infinite' && isset($config['event_generator']) && is_callable($config['event_generator'])) {
             $this->setupInfiniteEmitter($config, $onEvent, $interval, $jitter, $periodicTimerId, $sseResponse);
@@ -147,9 +156,15 @@ class PeriodicSSEEmitter
         ?string &$periodicTimerId,
         SSEResponse $sseResponse
     ): void {
-        $events = $config['events'] ?? [];
+        $rawEvents = $config['events'] ?? [];
+        if (!is_array($rawEvents)) {
+            $rawEvents = [];
+        }
+
+        $events = array_values(array_filter($rawEvents, 'is_array'));
+        
         $eventIndex = 0;
-        $totalEvents = \count($events);
+        $totalEvents = count($events);
         $autoClose = $config['auto_close'] ?? false;
 
         $maxExecutions = $autoClose ? $totalEvents + 1 : $totalEvents;

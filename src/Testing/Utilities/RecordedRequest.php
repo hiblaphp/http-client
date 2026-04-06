@@ -7,6 +7,7 @@ namespace Hibla\HttpClient\Testing\Utilities;
 class RecordedRequest
 {
     public string $method;
+    
     public string $url;
 
     /**
@@ -83,29 +84,22 @@ class RecordedRequest
 
     /**
      * Parse request body from cURL or fetch-style options.
-     *
-     * Priority order:
-     * 1. CURLOPT_POSTFIELDS (cURL format) - takes precedence
-     * 2. body option (fetch format) - fallback
-     *
-     * Only string bodies are supported. Array/object bodies are ignored.
      */
     private function parseBody(): void
     {
-        $rawBody = $this->options[CURLOPT_POSTFIELDS] ?? $this->options['body'] ?? null;
+        $curlBody = $this->options[CURLOPT_POSTFIELDS] ?? null;
+        $fetchBody = $this->options['body'] ?? null;
 
-        if (is_string($rawBody)) {
-            $this->body = $rawBody;
-
-            $decoded = json_decode($this->body, true);
-            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-                $this->parsedJson = $decoded;
-            }
-        } elseif (is_array($rawBody)) {
-            $this->body = '[Multipart Form Data: ' . count($rawBody) . ' fields]';
+        if (is_string($curlBody)) {
+            $this->body = $curlBody;
+        } elseif (is_string($fetchBody)) {
+            $this->body = $fetchBody;
+        } 
+        elseif (is_array($curlBody)) {
+            $this->body = '[Multipart Form Data: ' . count($curlBody) . ' fields]';
 
             $safeArray = [];
-            foreach ($rawBody as $key => $value) {
+            foreach ($curlBody as $key => $value) {
                 if ($value instanceof \CURLFile) {
                     $safeArray[$key] = '[File: ' . $value->getPostFilename() . ' | MIME: ' . $value->getMimeType() . ']';
                 } else {
@@ -113,6 +107,16 @@ class RecordedRequest
                 }
             }
             $this->parsedJson = $safeArray;
+            return;
+        } else {
+            return;
+        }
+
+        if ($this->body !== null) {
+            $decoded = json_decode($this->body, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                $this->parsedJson = $decoded;
+            }
         }
     }
 
@@ -185,7 +189,7 @@ class RecordedRequest
      */
     public function isJson(): bool
     {
-        return $this->parsedJson !== null;
+        return $this->parsedJson !== null && !isset($this->options[CURLOPT_POSTFIELDS]);
     }
 
     /**

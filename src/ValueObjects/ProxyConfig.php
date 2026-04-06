@@ -13,8 +13,7 @@ final readonly class ProxyConfig
         public ?string $password = null,
         public string $type = 'http', // 'http', 'socks4', 'socks5'
         public ?int $tunnelPort = null
-    ) {
-    }
+    ) {}
 
     public static function http(string $host, int $port, ?string $username = null, ?string $password = null): self
     {
@@ -37,7 +36,7 @@ final readonly class ProxyConfig
         if ($this->username !== null) {
             $auth = $this->username;
             if ($this->password !== null) {
-                $auth .= ':'.$this->password;
+                $auth .= ':' . $this->password;
             }
             $auth .= '@';
         }
@@ -48,9 +47,9 @@ final readonly class ProxyConfig
     public function getCurlProxyType(): int
     {
         return match ($this->type) {
-            'socks4' => CURLPROXY_SOCKS4,
-            'socks5' => CURLPROXY_SOCKS5,
-            default => CURLPROXY_HTTP,
+            'socks4' => CURLPROXY_SOCKS4A,
+            'socks5' => CURLPROXY_SOCKS5_HOSTNAME,
+            default  => CURLPROXY_HTTP,
         };
     }
 }
