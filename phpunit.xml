@@ -17,7 +17,7 @@
         <env name="SOCKS5_PROXY_HOST" value="127.0.0.1" force="false"/>
         <env name="SOCKS5_PROXY_PORT" value="1080" force="false"/>
         <env name="SOCKS5_USER" value="my_user" force="false"/>
-        <env name="SOCKS5_PASS" value="mypassword" force="false"/>
+        <env name="SOCKS5_PASS" value="my_password" force="false"/>
 
         <env name="SOCKS4_PROXY_HOST" value="127.0.0.1" force="false"/>
         <env name="SOCKS4_PROXY_PORT" value="1081" force="false"/>
