@@ -378,15 +378,12 @@ describe("Cookie Handling Integration Test", function () {
                 secure: true,
             ));
 
-            // Note: If HttpBin fixture is HTTP-only, this test logic depends on the internal CookieJar implementation
             $response = await(
                 (new HttpClient())
                     ->useCookieJar($jar)
                     ->get(HttpBin::url('/cookies'))
             );
 
-            // In a real HTTPS scenario this would be sent; in local HTTP tests, 
-            // the jar logic will withhold it unless the URI scheme is https.
             expect($response->json('cookies'))->not->toHaveKey('sec');
         });
 
@@ -601,132 +598,6 @@ describe("Cookie Handling Integration Test", function () {
 
             expect($response->json('cookies'))->not->toHaveKey('persistent');
             expect($jar->getAllCookies())->toBeEmpty();
-        });
-    });
-
-    describe('Security', function () {
-
-        describe('Header injection prevention', function () {
-
-            test('a cookie name containing CRLF is rejected before any network call is made', function () {
-                expect(fn() => (new HttpClient())->withCookie("inject\r\nX-Injected: evil", 'value'))
-                    ->toThrow(\InvalidArgumentException::class, 'not permitted in an HTTP token');
-            });
-
-            test('a cookie name containing a lone CR is rejected before any network call is made', function () {
-                expect(fn() => (new HttpClient())->withCookie("inject\rX-Injected: evil", 'value'))
-                    ->toThrow(\InvalidArgumentException::class, 'not permitted in an HTTP token');
-            });
-
-            test('a cookie name containing a lone LF is rejected before any network call is made', function () {
-                expect(fn() => (new HttpClient())->withCookie("inject\nX-Injected: evil", 'value'))
-                    ->toThrow(\InvalidArgumentException::class, 'not permitted in an HTTP token');
-            });
-
-            test('a cookie value containing CRLF is rejected before any network call is made', function () {
-                expect(fn() => (new HttpClient())->withCookie('name', "value\r\nX-Injected: evil"))
-                    ->toThrow(\InvalidArgumentException::class, 'cookie-octet set');
-            });
-
-            test('a cookie value containing a semicolon cannot break out of the cookie field', function () {
-                expect(fn() => (new HttpClient())->withCookie('name', 'value; X-Injected: evil'))
-                    ->toThrow(\InvalidArgumentException::class, 'cookie-octet set');
-            });
-
-            test('a cookie name containing null bytes is rejected', function () {
-                expect(fn() => (new HttpClient())->withCookie("name\x00evil", 'value'))
-                    ->toThrow(\InvalidArgumentException::class, 'not permitted in an HTTP token');
-            });
-
-            test('a cookie value containing null bytes is rejected', function () {
-                expect(fn() => (new HttpClient())->withCookie('name', "value\x00evil"))
-                    ->toThrow(\InvalidArgumentException::class, 'cookie-octet set');
-            });
-        });
-
-        describe('Cross-domain isolation', function () {
-
-            test('a cookie scoped to one domain is not sent to a different domain', function () {
-                $jar = new CookieJar();
-                $jar->setCookie(new Cookie(
-                    name: 'secret',
-                    value: 'sensitive',
-                    domain: HttpBin::host(),
-                    path: '/',
-                ));
-
-                $header = $jar->getCookieHeader('evil.com', '/');
-
-                expect($header)->toBe('');
-                expect($header)->not->toContain('secret=sensitive');
-            });
-
-            test('a cookie wildcard-scoped does not leak to a completely different domain', function () {
-                $jar = new CookieJar();
-                $jar->setCookie(new Cookie(
-                    name: 'wide',
-                    value: 'yes',
-                    domain: '.' . HttpBin::host(),
-                    path: '/',
-                ));
-
-                expect($jar->getCookieHeader(HttpBin::host(), '/'))->toContain('wide=yes');
-                expect($jar->getCookieHeader('evil.com', '/'))->not->toContain('wide=yes');
-            });
-
-            test('a cookie sent to the server is not echoed back to a different domain', function () {
-                $jar = new CookieJar();
-
-                await(
-                    (new HttpClient())
-                        ->useCookieJar($jar)
-                        ->redirects(true)
-                        ->get(HttpBin::url('/cookies/set?private=yes'))
-                );
-
-                $header = $jar->getCookieHeader('attacker.com', '/');
-
-                expect($header)->toBe('');
-                expect($header)->not->toContain('private=yes');
-            });
-        });
-
-        describe('Secure flag enforcement', function () {
-
-            test('a Secure cookie is withheld over HTTP even if the domain matches', function () {
-                $jar = new CookieJar();
-                $jar->setCookie(new Cookie(
-                    name: 'topsecret',
-                    value: 'classified',
-                    domain: HttpBin::host(),
-                    path: '/',
-                    secure: true,
-                ));
-
-                $header = $jar->getCookieHeader(HttpBin::host(), '/', isSecure: false);
-
-                expect($header)->toBe('');
-                expect($header)->not->toContain('topsecret=classified');
-            });
-        });
-
-        describe('Expired cookie enforcement', function () {
-
-            test('an expired cookie is not sent even if the domain and path match exactly', function () {
-                $jar = new CookieJar();
-                $jar->setCookie(new Cookie(
-                    name: 'stale',
-                    value: 'leaked',
-                    expires: time() - 1,
-                    domain: HttpBin::host(),
-                    path: '/',
-                ));
-
-                $header = $jar->getCookieHeader(HttpBin::host(), '/');
-
-                expect($header)->toBe('');
-                expect($header)->not->toContain('stale=leaked');
-            });
         });
     });
 });

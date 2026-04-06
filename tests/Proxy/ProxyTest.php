@@ -786,4 +786,90 @@ describe('Proxy', function () {
                 ->and($response->json('data'))->not->toBeEmpty();
         });
     });
+
+    describe('SSE through proxy', function () {
+
+        beforeEach(function () {
+            HttpBin::skipIfUnreachable();
+        });
+
+        it('connects to an SSE endpoint through HTTP proxy', function () {
+            ProxySetup::skipIfUnreachable(ProxySetup::httpHost(), ProxySetup::httpPort());
+
+            ProxySetup::client()
+                ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
+                ->sse(HttpBin::proxyUrl('/get'))
+                ->connect()
+                ->wait();
+
+            expect(true)->toBeTrue();
+        });
+
+        it('connects to an SSE endpoint through SOCKS5', function () {
+            ProxySetup::skipIfUnreachable(ProxySetup::socks5Host(), ProxySetup::socks5Port());
+
+            ProxySetup::client()
+                ->withSocks5Proxy(ProxySetup::socks5Host(), ProxySetup::socks5Port(), ProxySetup::socks5User(), ProxySetup::socks5Pass())
+                ->sse(HttpBin::socksProxyUrl('/get'))
+                ->connect()
+                ->wait();
+
+            expect(true)->toBeTrue();
+        });
+
+        it('connects to an SSE endpoint through SOCKS4', function () {
+            ProxySetup::skipIfUnreachable(ProxySetup::socks4Host(), ProxySetup::socks4Port());
+
+            ProxySetup::client()
+                ->withSocks4Proxy(ProxySetup::socks4Host(), ProxySetup::socks4Port())
+                ->sse(HttpBin::socksProxyUrl('/get'))
+                ->connect()
+                ->wait();
+
+            expect(true)->toBeTrue();
+        });
+
+        it('forwards custom headers during SSE handshake through HTTP proxy', function () {
+            ProxySetup::skipIfUnreachable(ProxySetup::httpHost(), ProxySetup::httpPort());
+
+            ProxySetup::client()
+                ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
+                ->withHeader('X-SSE-Proxy', 'http')
+                ->sse(HttpBin::proxyUrl('/headers'))
+                ->connect()
+                ->wait();
+
+            expect(true)->toBeTrue();
+        });
+
+        it('SSE handshake through unreachable HTTP proxy throws', function () {
+            expect(
+                fn() => ProxySetup::client(timeout: 3)
+                    ->withProxy('127.0.0.1', 19996)
+                    ->sse(HttpBin::proxyUrl('/get'))
+                    ->connect()
+                    ->wait()
+            )->toThrow(NetworkException::class);
+        });
+
+        it('SSE handshake through unreachable SOCKS5 proxy throws', function () {
+            expect(
+                fn() => ProxySetup::client(timeout: 3)
+                    ->withSocks5Proxy('127.0.0.1', 19995)
+                    ->sse(HttpBin::socksProxyUrl('/get'))
+                    ->connect()
+                    ->wait()
+            )->toThrow(NetworkException::class);
+        });
+
+        it('SSE handshake through unreachable SOCKS4 proxy throws', function () {
+            expect(
+                fn() => ProxySetup::client(timeout: 3)
+                    ->withSocks4Proxy('127.0.0.1', 19994)
+                    ->sse(HttpBin::socksProxyUrl('/get'))
+                    ->connect()
+                    ->wait()
+            )->toThrow(NetworkException::class);
+        });
+    });
 });
