@@ -207,7 +207,8 @@ class StandardRequestExecutor
                 $curlOptions,
                 $retryConfig,
                 $method,
-                $mockedRequests
+                $mockedRequests,
+                $matchedMock
             );
         }
 

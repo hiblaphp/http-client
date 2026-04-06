@@ -39,6 +39,7 @@ class RetryableRequestExecutor
     /**
      * @param array<int|string, mixed> $curlOptions
      * @param list<MockedRequest> $mockedRequests
+     * @param array<string, mixed> $initialMatch Optional initial match result
      * @return PromiseInterface<Response|StreamingResponse|array<string, mixed>>
      */
     public function executeWithRetry(
@@ -46,7 +47,8 @@ class RetryableRequestExecutor
         array $curlOptions,
         RetryConfig $retryConfig,
         string $method,
-        array &$mockedRequests
+        array &$mockedRequests,
+        ?array $initialMatch = null
     ): PromiseInterface {
         /** @var Promise<Response|StreamingResponse|array<string, mixed>> $finalPromise */
         $finalPromise = new Promise();
@@ -54,7 +56,7 @@ class RetryableRequestExecutor
         /** @var array<string, mixed> $stringKeyedOptions */
         $stringKeyedOptions = array_filter($curlOptions, 'is_string', ARRAY_FILTER_USE_KEY);
 
-        $mockProvider = $this->createMockProvider($method, $url, $curlOptions, $mockedRequests);
+        $mockProvider = $this->createMockProvider($method, $url, $curlOptions, $mockedRequests, $initialMatch);
 
         $retryPromise = $this->responseFactory->createRetryableMockedResponse($retryConfig, $mockProvider);
 
@@ -67,36 +69,53 @@ class RetryableRequestExecutor
             }
         );
 
-        $finalPromise->onCancel(fn () => $retryPromise->cancel());
+        $finalPromise->onCancel(fn() => $retryPromise->cancel());
 
         return $finalPromise;
     }
 
     /**
      * @param array<int|string, mixed> $curlOptions
+     * @param array<string, mixed> $initialMatch Optional initial match result
      * @param list<MockedRequest> $mockedRequests
      */
     private function createMockProvider(
         string $method,
         string $url,
         array $curlOptions,
-        array &$mockedRequests
+        array &$mockedRequests,
+        ?array $initialMatch = null 
     ): callable {
         $curlOnlyOptions = array_filter($curlOptions, 'is_int', ARRAY_FILTER_USE_KEY);
 
-        return function (int $attemptNumber) use ($method, $url, $curlOptions, $curlOnlyOptions, &$mockedRequests): MockedRequest {
-            $match = $this->requestMatcher->findMatchingMock($mockedRequests, $method, $url, $curlOnlyOptions);
+        return function (int $attemptNumber) use ($method, $url, $curlOptions, $curlOnlyOptions, &$mockedRequests, $initialMatch): MockedRequest {
+            if ($attemptNumber === 1 && $initialMatch !== null) {
+                $mock = $initialMatch['mock'];
+                $index = array_search($mock, $mockedRequests, true);
 
-            if ($match === null) {
-                throw new MockAssertionException("No mock found for attempt #{$attemptNumber}: {$method} {$url}");
+                if ($index === false) {
+                    $match = $this->requestMatcher->findMatchingMock($mockedRequests, $method, $url, $curlOnlyOptions);
+                    if ($match === null) {
+                        throw new MockAssertionException("No mock found for attempt #{$attemptNumber}: {$method} {$url}");
+                    }
+                    $mock = $match['mock'];
+                    $index = $match['index'];
+                }
+            } else {
+                $match = $this->requestMatcher->findMatchingMock($mockedRequests, $method, $url, $curlOnlyOptions);
+
+                if ($match === null) {
+                    throw new MockAssertionException("No mock found for attempt #{$attemptNumber}: {$method} {$url}");
+                }
+
+                $mock = $match['mock'];
+                $index = $match['index'];
             }
-
-            $mock = $match['mock'];
 
             $this->requestRecorder->recordRequest($method, $url, $curlOptions);
 
             if (! $mock->isPersistent()) {
-                array_splice($mockedRequests, $match['index'], 1);
+                array_splice($mockedRequests, $index, 1);
             }
 
             return $mock;

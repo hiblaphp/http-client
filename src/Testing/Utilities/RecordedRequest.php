@@ -189,7 +189,11 @@ class RecordedRequest
      */
     public function isJson(): bool
     {
-        return $this->parsedJson !== null && !isset($this->options[CURLOPT_POSTFIELDS]);
+        if (isset($this->options[CURLOPT_POSTFIELDS]) && is_array($this->options[CURLOPT_POSTFIELDS])) {
+            return false; // Multipart form data is not a JSON body
+        }
+
+        return $this->parsedJson !== null;
     }
 
     /**
