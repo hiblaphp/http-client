@@ -16,10 +16,22 @@ use Hibla\HttpClient\Testing\Utilities\Handlers\NetworkSimulationHandler;
 use Hibla\HttpClient\Testing\Utilities\NetworkSimulator;
 use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Psr\Http\Message\StreamInterface;
+use Hibla\EventLoop\Loop;
 
 afterEach(function () {
     Mockery::close();
+    Loop::reset();
 });
+
+function createBaseMock()
+{
+    $mock = Mockery::mock(MockedRequest::class);
+    $mock->shouldReceive('getDelay')->andReturn(0.0)->byDefault();
+    $mock->shouldReceive('getChunkDelay')->andReturn(0.0)->byDefault();
+    $mock->shouldReceive('getChunkJitter')->andReturn(0.0)->byDefault();
+    $mock->shouldReceive('shouldFail')->andReturn(false)->byDefault();
+    return $mock;
+}
 
 describe('StandardResponseFactory', function () {
     test('creates successful response', function () {
@@ -27,8 +39,7 @@ describe('StandardResponseFactory', function () {
         $networkHandler = createNetworkHandler($networkSimulator);
         $factory = new StandardResponseFactory($networkHandler);
 
-        $mock = Mockery::mock(MockedRequest::class);
-        $mock->shouldReceive('getDelay')->andReturn(0.0);
+        $mock = createBaseMock();
         $mock->shouldReceive('shouldFail')->andReturn(false);
         $mock->shouldReceive('getBody')->andReturn('test body');
         $mock->shouldReceive('getStatusCode')->andReturn(200);
@@ -49,16 +60,14 @@ describe('StandardResponseFactory', function () {
         $networkHandler = createNetworkHandler($networkSimulator);
         $factory = new StandardResponseFactory($networkHandler);
 
-        $mock = Mockery::mock(MockedRequest::class);
-        $mock->shouldReceive('getDelay')->andReturn(0.0);
+        $mock = createBaseMock();
         $mock->shouldReceive('shouldFail')->andReturn(true);
         $mock->shouldReceive('getError')->andReturn('Custom error message');
 
         $promise = $factory->create($mock);
 
-        expect(fn () => $promise->wait())
-            ->toThrow(NetworkException::class, 'Custom error message')
-        ;
+        expect(fn() => $promise->wait())
+            ->toThrow(NetworkException::class, 'Custom error message');
     });
 
     test('handles network failure', function () {
@@ -66,14 +75,12 @@ describe('StandardResponseFactory', function () {
         $networkHandler = createNetworkHandler($networkSimulator);
         $factory = new StandardResponseFactory($networkHandler);
 
-        $mock = Mockery::mock(MockedRequest::class);
-        $mock->shouldReceive('getDelay')->andReturn(0.0);
+        $mock = createBaseMock();
 
         $promise = $factory->create($mock);
 
-        expect(fn () => $promise->wait())
-            ->toThrow(NetworkException::class)
-        ;
+        expect(fn() => $promise->wait())
+            ->toThrow(NetworkException::class);
     });
 
     test('handles network simulation failure', function () {
@@ -81,14 +88,12 @@ describe('StandardResponseFactory', function () {
         $networkHandler = createNetworkHandler($networkSimulator);
         $factory = new StandardResponseFactory($networkHandler);
 
-        $mock = Mockery::mock(MockedRequest::class);
-        $mock->shouldReceive('getDelay')->andReturn(0.0);
+        $mock = createBaseMock();
 
         $promise = $factory->create($mock);
 
-        expect(fn () => $promise->wait())
-            ->toThrow(NetworkException::class)
-        ;
+        expect(fn() => $promise->wait())
+            ->toThrow(NetworkException::class);
     });
 
     test('can be cancelled', function () {
@@ -97,8 +102,7 @@ describe('StandardResponseFactory', function () {
         $networkHandler = createNetworkHandler($networkSimulator);
         $factory = new StandardResponseFactory($networkHandler);
 
-        $mock = Mockery::mock(MockedRequest::class);
-        $mock->shouldReceive('getDelay')->andReturn(0.0);
+        $mock = createBaseMock();
 
         $promise = $factory->create($mock);
         $promise->cancel();
@@ -111,9 +115,8 @@ describe('StandardResponseFactory', function () {
         $networkHandler = createNetworkHandler($networkSimulator);
         $factory = new StandardResponseFactory($networkHandler);
 
-        $mock = Mockery::mock(MockedRequest::class);
+        $mock = createBaseMock();
         $mock->shouldReceive('getDelay')->andReturn(0.05);
-        $mock->shouldReceive('shouldFail')->andReturn(false);
         $mock->shouldReceive('getBody')->andReturn('delayed response');
         $mock->shouldReceive('getStatusCode')->andReturn(200);
         $mock->shouldReceive('getHeaders')->andReturn([]);
@@ -134,9 +137,7 @@ describe('StandardResponseFactory', function () {
         $networkHandler = createNetworkHandler($networkSimulator);
         $factory = new StandardResponseFactory($networkHandler);
 
-        $mock = Mockery::mock(MockedRequest::class);
-        $mock->shouldReceive('getDelay')->andReturn(0.0);
-        $mock->shouldReceive('shouldFail')->andReturn(false);
+        $mock = createBaseMock();
         $mock->shouldReceive('getBody')->andReturn('response');
         $mock->shouldReceive('getStatusCode')->andReturn(200);
         $mock->shouldReceive('getHeaders')->andReturn([]);
@@ -161,9 +162,7 @@ describe('DownloadResponseFactory', function () {
 
         $tempDir = createTempDir();
 
-        $mock = Mockery::mock(MockedRequest::class);
-        $mock->shouldReceive('getDelay')->andReturn(0.0);
-        $mock->shouldReceive('shouldFail')->andReturn(false);
+        $mock = createBaseMock();
         $mock->shouldReceive('getBody')->andReturn('file content');
         $mock->shouldReceive('getStatusCode')->andReturn(200);
         $mock->shouldReceive('getHeaders')->andReturn(['Content-Type' => 'text/plain']);
@@ -171,6 +170,9 @@ describe('DownloadResponseFactory', function () {
         $destination = $tempDir . '/test.txt';
         $promise = $factory->create($mock, $destination, $fileManager);
         $result = $promise->wait();
+
+        // Flush the event loop to ensure async chunks are written
+        Loop::run();
 
         expect($result)->toBeArray()
             ->and($result['file'])->toBe($destination)
@@ -193,9 +195,7 @@ describe('DownloadResponseFactory', function () {
 
         $tempDir = createTempDir();
 
-        $mock = Mockery::mock(MockedRequest::class);
-        $mock->shouldReceive('getDelay')->andReturn(0.0);
-        $mock->shouldReceive('shouldFail')->andReturn(false);
+        $mock = createBaseMock();
         $mock->shouldReceive('getBody')->andReturn('content');
         $mock->shouldReceive('getStatusCode')->andReturn(200);
         $mock->shouldReceive('getHeaders')->andReturn([]);
@@ -203,6 +203,8 @@ describe('DownloadResponseFactory', function () {
         $destination = $tempDir . '/nested/dir/file.txt';
         $promise = $factory->create($mock, $destination, $fileManager);
         $promise->wait();
+
+        Loop::run();
 
         expect(is_dir($tempDir . '/nested/dir'))->toBeTrue()
             ->and(file_exists($destination))->toBeTrue()
@@ -220,15 +222,12 @@ describe('DownloadResponseFactory', function () {
 
         $tempDir = createTempDir();
 
-        $mock = Mockery::mock(MockedRequest::class);
-        $mock->shouldReceive('getDelay')->andReturn(0.0);
+        $mock = createBaseMock();
 
         $destination = $tempDir . '/test.txt';
         $promise = $factory->create($mock, $destination, $fileManager);
 
-        expect(fn () => $promise->wait())
-            ->toThrow(NetworkException::class)
-        ;
+        expect(fn() => $promise->wait())->toThrow(NetworkException::class);
 
         $fileManager->cleanup();
         cleanupTempDir($tempDir);
@@ -242,17 +241,15 @@ describe('DownloadResponseFactory', function () {
 
         $tempDir = createTempDir();
 
-        $mock = Mockery::mock(MockedRequest::class);
-        $mock->shouldReceive('getDelay')->andReturn(0.0);
+        $mock = createBaseMock();
         $mock->shouldReceive('shouldFail')->andReturn(true);
         $mock->shouldReceive('getError')->andReturn('Download failed');
 
         $destination = $tempDir . '/test.txt';
         $promise = $factory->create($mock, $destination, $fileManager);
 
-        expect(fn () => $promise->wait())
-            ->toThrow(NetworkException::class, 'Download failed')
-        ;
+        expect(fn() => $promise->wait())
+            ->toThrow(NetworkException::class, 'Download failed');
 
         $fileManager->cleanup();
         cleanupTempDir($tempDir);
@@ -267,8 +264,7 @@ describe('DownloadResponseFactory', function () {
 
         $tempDir = createTempDir();
 
-        $mock = Mockery::mock(MockedRequest::class);
-        $mock->shouldReceive('getDelay')->andReturn(0.0);
+        $mock = createBaseMock();
 
         $destination = $tempDir . '/test.txt';
         $promise = $factory->create($mock, $destination, $fileManager);
@@ -288,9 +284,7 @@ describe('DownloadResponseFactory', function () {
 
         $tempDir = createTempDir();
 
-        $mock = Mockery::mock(MockedRequest::class);
-        $mock->shouldReceive('getDelay')->andReturn(0.0);
-        $mock->shouldReceive('shouldFail')->andReturn(false);
+        $mock = createBaseMock();
         $mock->shouldReceive('getBody')->andReturn('tracked content');
         $mock->shouldReceive('getStatusCode')->andReturn(200);
         $mock->shouldReceive('getHeaders')->andReturn([]);
@@ -298,6 +292,8 @@ describe('DownloadResponseFactory', function () {
         $destination = $tempDir . '/tracked/file.txt';
         $promise = $factory->create($mock, $destination, $fileManager);
         $promise->wait();
+
+        Loop::run();
 
         expect(file_exists($destination))->toBeTrue();
 
@@ -317,16 +313,14 @@ describe('StreamingResponseFactory', function () {
         $networkHandler = createNetworkHandler($networkSimulator);
         $factory = new StreamingResponseFactory($networkHandler);
 
-        $mock = Mockery::mock(MockedRequest::class);
-        $mock->shouldReceive('getDelay')->andReturn(0.0);
-        $mock->shouldReceive('shouldFail')->andReturn(false);
+        $mock = createBaseMock();
         $mock->shouldReceive('getBody')->andReturn('stream content');
         $mock->shouldReceive('getStatusCode')->andReturn(200);
         $mock->shouldReceive('getHeaders')->andReturn(['Content-Type' => 'text/event-stream']);
         $mock->shouldReceive('getBodySequence')->andReturn([]);
 
         $stream = Mockery::mock(StreamInterface::class);
-        $createStream = fn ($body) => $stream;
+        $createStream = fn($body) => $stream;
 
         $promise = $factory->create($mock, null, $createStream);
         $response = $promise->wait();
@@ -347,19 +341,20 @@ describe('StreamingResponseFactory', function () {
             $chunks[] = $chunk;
         };
 
-        $mock = Mockery::mock(MockedRequest::class);
-        $mock->shouldReceive('getDelay')->andReturn(0.0);
-        $mock->shouldReceive('shouldFail')->andReturn(false);
+        $mock = createBaseMock();
         $mock->shouldReceive('getBody')->andReturn('full content');
         $mock->shouldReceive('getStatusCode')->andReturn(200);
         $mock->shouldReceive('getHeaders')->andReturn([]);
         $mock->shouldReceive('getBodySequence')->andReturn(['chunk1', 'chunk2', 'chunk3']);
 
         $stream = Mockery::mock(StreamInterface::class);
-        $createStream = fn ($body) => $stream;
+        $createStream = fn($body) => $stream;
 
         $promise = $factory->create($mock, $onChunk, $createStream);
         $promise->wait();
+
+        // Flush the loop to fire chunk timers
+        Loop::run();
 
         expect($chunks)->toBe(['chunk1', 'chunk2', 'chunk3']);
     });
@@ -374,19 +369,19 @@ describe('StreamingResponseFactory', function () {
             $chunks[] = $chunk;
         };
 
-        $mock = Mockery::mock(MockedRequest::class);
-        $mock->shouldReceive('getDelay')->andReturn(0.0);
-        $mock->shouldReceive('shouldFail')->andReturn(false);
+        $mock = createBaseMock();
         $mock->shouldReceive('getBody')->andReturn('single chunk');
         $mock->shouldReceive('getStatusCode')->andReturn(200);
         $mock->shouldReceive('getHeaders')->andReturn([]);
         $mock->shouldReceive('getBodySequence')->andReturn([]);
 
         $stream = Mockery::mock(StreamInterface::class);
-        $createStream = fn ($body) => $stream;
+        $createStream = fn($body) => $stream;
 
         $promise = $factory->create($mock, $onChunk, $createStream);
         $promise->wait();
+
+        Loop::run();
 
         expect($chunks)->toBe(['single chunk']);
     });
@@ -396,17 +391,15 @@ describe('StreamingResponseFactory', function () {
         $networkHandler = createNetworkHandler($networkSimulator);
         $factory = new StreamingResponseFactory($networkHandler);
 
-        $mock = Mockery::mock(MockedRequest::class);
-        $mock->shouldReceive('getDelay')->andReturn(0.0);
+        $mock = createBaseMock();
 
         $stream = Mockery::mock(StreamInterface::class);
-        $createStream = fn ($body) => $stream;
+        $createStream = fn($body) => $stream;
 
         $promise = $factory->create($mock, null, $createStream);
 
-        expect(fn () => $promise->wait())
-            ->toThrow(HttpException::class)
-        ;
+        expect(fn() => $promise->wait())
+            ->toThrow(HttpException::class);
     });
 
     test('handles mock failure', function () {
@@ -414,19 +407,17 @@ describe('StreamingResponseFactory', function () {
         $networkHandler = createNetworkHandler($networkSimulator);
         $factory = new StreamingResponseFactory($networkHandler);
 
-        $mock = Mockery::mock(MockedRequest::class);
-        $mock->shouldReceive('getDelay')->andReturn(0.0);
+        $mock = createBaseMock();
         $mock->shouldReceive('shouldFail')->andReturn(true);
         $mock->shouldReceive('getError')->andReturn('Stream error');
 
         $stream = Mockery::mock(StreamInterface::class);
-        $createStream = fn ($body) => $stream;
+        $createStream = fn($body) => $stream;
 
         $promise = $factory->create($mock, null, $createStream);
 
-        expect(fn () => $promise->wait())
-            ->toThrow(HttpException::class, 'Stream error')
-        ;
+        expect(fn() => $promise->wait())
+            ->toThrow(HttpException::class, 'Stream error');
     });
 
     test('can be cancelled', function () {
@@ -435,11 +426,10 @@ describe('StreamingResponseFactory', function () {
         $networkHandler = createNetworkHandler($networkSimulator);
         $factory = new StreamingResponseFactory($networkHandler);
 
-        $mock = Mockery::mock(MockedRequest::class);
-        $mock->shouldReceive('getDelay')->andReturn(0.0);
+        $mock = createBaseMock();
 
         $stream = Mockery::mock(StreamInterface::class);
-        $createStream = fn ($body) => $stream;
+        $createStream = fn($body) => $stream;
 
         $promise = $factory->create($mock, null, $createStream);
         $promise->cancel();
@@ -452,19 +442,19 @@ describe('StreamingResponseFactory', function () {
         $networkHandler = createNetworkHandler($networkSimulator);
         $factory = new StreamingResponseFactory($networkHandler);
 
-        $mock = Mockery::mock(MockedRequest::class);
-        $mock->shouldReceive('getDelay')->andReturn(0.0);
-        $mock->shouldReceive('shouldFail')->andReturn(false);
+        $mock = createBaseMock();
         $mock->shouldReceive('getBody')->andReturn('content');
         $mock->shouldReceive('getStatusCode')->andReturn(200);
         $mock->shouldReceive('getHeaders')->andReturn([]);
         $mock->shouldReceive('getBodySequence')->andReturn([]);
 
         $stream = Mockery::mock(StreamInterface::class);
-        $createStream = fn ($body) => $stream;
+        $createStream = fn($body) => $stream;
 
         $promise = $factory->create($mock, null, $createStream);
         $response = $promise->wait();
+
+        Loop::run();
 
         expect($response)->toBeInstanceOf(StreamingResponse::class);
     });
@@ -476,15 +466,13 @@ describe('RetryableResponseFactory', function () {
         $networkHandler = createNetworkHandler($networkSimulator);
         $factory = new RetryableResponseFactory($networkHandler);
 
-        $mock = Mockery::mock(MockedRequest::class);
-        $mock->shouldReceive('getDelay')->andReturn(0.0);
-        $mock->shouldReceive('shouldFail')->andReturn(false);
+        $mock = createBaseMock();
         $mock->shouldReceive('getBody')->andReturn('success');
         $mock->shouldReceive('getStatusCode')->andReturn(200);
         $mock->shouldReceive('getHeaders')->andReturn([]);
 
         $retryConfig = new RetryConfig(maxRetries: 3);
-        $mockProvider = fn ($attempt) => $mock;
+        $mockProvider = fn($attempt) => $mock;
 
         $promise = $factory->create($retryConfig, $mockProvider);
         $response = $promise->wait();
@@ -498,10 +486,9 @@ describe('RetryableResponseFactory', function () {
     test('retries on network failure and succeeds', function () {
         $attemptCount = 0;
 
-        // Create a simulator that will fail the first 2 attempts
         $networkSimulator = createNetworkSimulator();
         $networkSimulator->enable([
-            'retryable_failure_rate' => 0.0, // Will be controlled per attempt
+            'retryable_failure_rate' => 0.0,
             'default_delay' => 0.0,
         ]);
 
@@ -516,8 +503,7 @@ describe('RetryableResponseFactory', function () {
 
         $mockProvider = function ($attempt) use (&$attemptCount) {
             $attemptCount++;
-            $mock = Mockery::mock(MockedRequest::class);
-            $mock->shouldReceive('getDelay')->andReturn(0.0);
+            $mock = createBaseMock();
 
             if ($attempt < 3) {
                 $mock->shouldReceive('shouldFail')->andReturn(true);
@@ -556,9 +542,7 @@ describe('RetryableResponseFactory', function () {
 
         $mockProvider = function ($attempt) use (&$attemptCount) {
             $attemptCount++;
-            $mock = Mockery::mock(MockedRequest::class);
-            $mock->shouldReceive('getDelay')->andReturn(0.0);
-            $mock->shouldReceive('shouldFail')->andReturn(false);
+            $mock = createBaseMock();
             $mock->shouldReceive('getStatusCode')->andReturn($attempt < 3 ? 503 : 200);
             $mock->shouldReceive('getBody')->andReturn('success');
             $mock->shouldReceive('getHeaders')->andReturn([]);
@@ -588,8 +572,7 @@ describe('RetryableResponseFactory', function () {
 
         $mockProvider = function ($attempt) use (&$attemptCount) {
             $attemptCount++;
-            $mock = Mockery::mock(MockedRequest::class);
-            $mock->shouldReceive('getDelay')->andReturn(0.0);
+            $mock = createBaseMock();
             $mock->shouldReceive('shouldFail')->andReturn($attempt < 3);
             $mock->shouldReceive('getError')->andReturn('Retryable error');
             $mock->shouldReceive('isRetryableFailure')->andReturn(true);
@@ -623,8 +606,7 @@ describe('RetryableResponseFactory', function () {
         );
 
         $mockProvider = function ($attempt) {
-            $mock = Mockery::mock(MockedRequest::class);
-            $mock->shouldReceive('getDelay')->andReturn(0.0);
+            $mock = createBaseMock();
             $mock->shouldReceive('shouldFail')->andReturn(true);
             $mock->shouldReceive('getError')->andReturn('timeout');
             $mock->shouldReceive('isRetryableFailure')->andReturn(false);
@@ -634,9 +616,8 @@ describe('RetryableResponseFactory', function () {
 
         $promise = $factory->create($retryConfig, $mockProvider);
 
-        expect(fn () => $promise->wait())
-            ->toThrow(NetworkException::class, 'HTTP Request failed after 4 attempt(s)')
-        ;
+        expect(fn() => $promise->wait())
+            ->toThrow(NetworkException::class, 'HTTP Request failed after 4 attempt(s)');
     });
 
     test('does not retry non-retryable errors', function () {
@@ -650,8 +631,7 @@ describe('RetryableResponseFactory', function () {
         );
 
         $mockProvider = function ($attempt) {
-            $mock = Mockery::mock(MockedRequest::class);
-            $mock->shouldReceive('getDelay')->andReturn(0.0);
+            $mock = createBaseMock();
             $mock->shouldReceive('shouldFail')->andReturn(true);
             $mock->shouldReceive('getError')->andReturn('Fatal error');
             $mock->shouldReceive('isRetryableFailure')->andReturn(false);
@@ -661,9 +641,8 @@ describe('RetryableResponseFactory', function () {
 
         $promise = $factory->create($retryConfig, $mockProvider);
 
-        expect(fn () => $promise->wait())
-            ->toThrow(NetworkException::class, 'HTTP Request failed after 1 attempt(s): Fatal error')
-        ;
+        expect(fn() => $promise->wait())
+            ->toThrow(NetworkException::class, 'HTTP Request failed after 1 attempt(s): Fatal error');
     });
 
     test('does not retry non-retryable status codes', function () {
@@ -677,8 +656,7 @@ describe('RetryableResponseFactory', function () {
         );
 
         $mockProvider = function ($attempt) {
-            $mock = Mockery::mock(MockedRequest::class);
-            $mock->shouldReceive('getDelay')->andReturn(0.0);
+            $mock = createBaseMock();
             $mock->shouldReceive('shouldFail')->andReturn(false);
             $mock->shouldReceive('getStatusCode')->andReturn(404);
 
@@ -687,9 +665,8 @@ describe('RetryableResponseFactory', function () {
 
         $promise = $factory->create($retryConfig, $mockProvider);
 
-        expect(fn () => $promise->wait())
-            ->toThrow(NetworkException::class, 'HTTP Request failed after 1 attempt(s): Mock responded with status 404')
-        ;
+        expect(fn() => $promise->wait())
+            ->toThrow(NetworkException::class, 'HTTP Request failed after 1 attempt(s): Mock responded with status 404');
     });
 
     test('can be cancelled during retry', function () {
@@ -703,8 +680,7 @@ describe('RetryableResponseFactory', function () {
         );
 
         $mockProvider = function ($attempt) {
-            $mock = Mockery::mock(MockedRequest::class);
-            $mock->shouldReceive('getDelay')->andReturn(0.0);
+            $mock = createBaseMock();
             $mock->shouldReceive('shouldFail')->andReturn(true);
             $mock->shouldReceive('getError')->andReturn('timeout');
             $mock->shouldReceive('isRetryableFailure')->andReturn(false);
@@ -733,8 +709,7 @@ describe('RetryableResponseFactory', function () {
 
         $mockProvider = function ($attempt) use (&$attemptCount) {
             $attemptCount++;
-            $mock = Mockery::mock(MockedRequest::class);
-            $mock->shouldReceive('getDelay')->andReturn(0.0);
+            $mock = createBaseMock();
             $mock->shouldReceive('shouldFail')->andReturn($attempt < 4);
             $mock->shouldReceive('getError')->andReturn('timeout');
             $mock->shouldReceive('isRetryableFailure')->andReturn(true);
@@ -766,13 +741,12 @@ describe('RetryableResponseFactory', function () {
         $factory = new RetryableResponseFactory($networkHandler);
 
         $retryConfig = new RetryConfig(maxRetries: 3);
-        $mockProvider = fn ($attempt) => throw new Exception('Provider error');
+        $mockProvider = fn($attempt) => throw new Exception('Provider error');
 
         $promise = $factory->create($retryConfig, $mockProvider);
 
-        expect(fn () => $promise->wait())
-            ->toThrow(Exception::class, 'Mock provider error: Provider error')
-        ;
+        expect(fn() => $promise->wait())
+            ->toThrow(Exception::class, 'Mock provider error: Provider error');
     });
 
     test('handles mock provider returning invalid type', function () {
@@ -781,13 +755,12 @@ describe('RetryableResponseFactory', function () {
         $factory = new RetryableResponseFactory($networkHandler);
 
         $retryConfig = new RetryConfig(maxRetries: 3);
-        $mockProvider = fn ($attempt) => 'not a mock';
+        $mockProvider = fn($attempt) => 'not a mock';
 
         $promise = $factory->create($retryConfig, $mockProvider);
 
-        expect(fn () => $promise->wait())
-            ->toThrow(Exception::class, 'Mock provider must return a MockedRequest instance')
-        ;
+        expect(fn() => $promise->wait())
+            ->toThrow(Exception::class, 'Mock provider must return a MockedRequest instance');
     });
 
     test('retries with retryable network failure', function () {
@@ -804,15 +777,12 @@ describe('RetryableResponseFactory', function () {
 
         $mockProvider = function ($attempt) use (&$attemptCount) {
             $attemptCount++;
-            $mock = Mockery::mock(MockedRequest::class);
-            $mock->shouldReceive('getDelay')->andReturn(0.0);
-
-            return $mock;
+            return createBaseMock();
         };
 
         $promise = $factory->create($retryConfig, $mockProvider);
 
-        expect(fn () => $promise->wait())
+        expect(fn() => $promise->wait())
             ->toThrow(NetworkException::class)
             ->and($attemptCount)->toBeGreaterThan(1)
         ;
@@ -823,7 +793,7 @@ describe('DelayCalculator', function () {
     test('returns maximum delay from all sources', function () {
         $calculator = new DelayCalculator();
 
-        $mock = Mockery::mock(MockedRequest::class);
+        $mock = createBaseMock();
         $mock->shouldReceive('getDelay')->andReturn(0.5);
 
         $networkConditions = ['delay' => 0.3];
@@ -837,7 +807,7 @@ describe('DelayCalculator', function () {
     test('handles missing network delay', function () {
         $calculator = new DelayCalculator();
 
-        $mock = Mockery::mock(MockedRequest::class);
+        $mock = createBaseMock();
         $mock->shouldReceive('getDelay')->andReturn(0.5);
 
         $networkConditions = [];
@@ -851,7 +821,7 @@ describe('DelayCalculator', function () {
     test('returns mock delay when it is the maximum', function () {
         $calculator = new DelayCalculator();
 
-        $mock = Mockery::mock(MockedRequest::class);
+        $mock = createBaseMock();
         $mock->shouldReceive('getDelay')->andReturn(0.8);
 
         $networkConditions = ['delay' => 0.3];
@@ -865,7 +835,7 @@ describe('DelayCalculator', function () {
     test('returns network delay when it is the maximum', function () {
         $calculator = new DelayCalculator();
 
-        $mock = Mockery::mock(MockedRequest::class);
+        $mock = createBaseMock();
         $mock->shouldReceive('getDelay')->andReturn(0.2);
 
         $networkConditions = ['delay' => 0.9];
@@ -879,7 +849,7 @@ describe('DelayCalculator', function () {
     test('handles all zero delays', function () {
         $calculator = new DelayCalculator();
 
-        $mock = Mockery::mock(MockedRequest::class);
+        $mock = createBaseMock();
         $mock->shouldReceive('getDelay')->andReturn(0.0);
 
         $networkConditions = ['delay' => 0.0];
@@ -965,7 +935,7 @@ describe('RetryConfig', function () {
         $config = new RetryConfig(retryableExceptions: ['timeout']);
 
         expect($config->isRetryableError('Connection timeout'))->toBeTrue()
-            ->and($config->isRetryableError('Request timed out'))->toBeFalse()
+            ->and($config->isRetryableError('Request timeout occurred'))->toBeTrue()
             ->and($config->isRetryableError('timeout'))->toBeTrue()
         ;
     });

@@ -502,7 +502,7 @@ test('SSE infinite stream', function () {
 
 test('SSE periodic then disconnect', function () {
     $builder = createBuilder();
-    $builder->ssePeriodicThenDisconnect(3, 1.0, 'Disconnected');
+    $builder->ssePeriodicThenDisconnect(3, 'Disconnected');
 
     expect($builder)->toBeInstanceOf(MockRequestBuilder::class);
 });

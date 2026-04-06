@@ -17,7 +17,7 @@ use Hibla\Promise\Interfaces\PromiseInterface;
  *   $base = Http::request()
  *       ->withToken($token)
  *       ->sse('https://api.example.com/stream')
- *       ->dataFormat('json')
+ *       ->dataFormat(SSEDataFormat::DecodedJson)
  *       ->reconnect(maxAttempts: 5);
  *
  *   // Safe — each derives from $base without mutating it
@@ -47,13 +47,10 @@ class SSEBuilder implements SSEBuilderInterface
 
     /**
      * @param string $url The target SSE endpoint.
-     * @param array<int|string, mixed> $curlOptions Pre-built transport options.
-     * @param (callable(string, array, ?callable, ?callable, ?SSEReconnectConfig): PromiseInterface) $connector
-     *        A closure provided by the client to execute the connection attempt.
+     * @param mixed $connector A closure provided by the client to execute the connection attempt.
      */
     public function __construct(
         private readonly string $url,
-        private readonly array $curlOptions,
         private readonly mixed $connector,
     ) {
     }
@@ -156,7 +153,6 @@ class SSEBuilder implements SSEBuilderInterface
 
         $promise = ($this->connector)(
             $this->url,
-            $this->curlOptions,
             $this->buildEventCallback($control),
             $this->buildErrorCallback(),
             $this->reconnectConfig,

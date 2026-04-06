@@ -1032,22 +1032,21 @@ class HttpClient implements HttpClientInterface
             ->withUri(new Uri($expandedUrl));
 
         $effectiveTimeout = $this->timeoutExplicitlySet ? $this->timeout : 0;
-        $clientOptions = $this->buildClientOptions(
-            $initialRequest->getMethod(),
-            $expandedUrl,
-            timeout: $effectiveTimeout,
-        );
 
-        $curlOptions = $this->resolveTransportOptionsBuilder()->buildForSSE($clientOptions);
+        $optionsBuilder = function (RequestInterface $processed) use ($effectiveTimeout): array {
+            $clientOptions = $this->buildClientOptionsFromProcessed($processed, timeout: $effectiveTimeout);
+            return $this->resolveTransportOptionsBuilder()->buildForSSE($clientOptions);
+        };
 
         $connector = new SSEConnector(
             interceptorHandler: $this->interceptorHandler,
             httpHandler: $this->resolveHandler(),
             interceptors: $this->interceptors,
-            request: $initialRequest
+            request: $initialRequest,
+            optionsBuilder: $optionsBuilder
         );
 
-        return new SSEBuilder($expandedUrl, $curlOptions, $connector);
+        return new SSEBuilder($expandedUrl, $connector);
     }
 
     /**

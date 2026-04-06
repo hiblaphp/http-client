@@ -24,18 +24,19 @@ final class SSEConnector
      * @param HttpHandler $httpHandler The HTTP handler to use for the request
      * @param array<HttpInterceptorInterface> $interceptors The interceptors to use for the request pipeline
      * @param Request $request The initial request to use for the connection attempt
+     * @param \Closure(RequestInterface): array<int|string, mixed> $optionsBuilder
      */
     public function __construct(
         private readonly InterceptorHandler $interceptorHandler,
         private readonly HttpHandler $httpHandler,
         private readonly array $interceptors,
         private readonly Request $request,
+        private readonly \Closure $optionsBuilder,
     ) {
     }
 
     /**
      * @param string $url The URL to connect to
-     * @param array $curlOptions The cURL options to pass to the request
      * @param callable|null $onEvent The callback to invoke on each event
      * @param callable|null $onError The callback to invoke on error
      * @param SSEReconnectConfig|null $reconnectConfig The reconnect config to use
@@ -43,7 +44,6 @@ final class SSEConnector
      */
     public function __invoke(
         string $url,
-        array $curlOptions,
         ?callable $onEvent,
         ?callable $onError,
         ?SSEReconnectConfig $reconnectConfig
@@ -51,15 +51,8 @@ final class SSEConnector
         $pipelinePromise = $this->interceptorHandler->process(
             $this->request,
             $this->interceptors,
-            function (RequestInterface $processed) use ($curlOptions, $onEvent, $onError, $reconnectConfig) {
-                $finalOptions = $curlOptions;
-                $headerStrings = [];
-
-                foreach ($processed->getHeaders() as $name => $values) {
-                    $headerStrings[] = "{$name}: " . implode(', ', $values);
-                }
-
-                $finalOptions[CURLOPT_HTTPHEADER] = $headerStrings;
+            function (RequestInterface $processed) use ($onEvent, $onError, $reconnectConfig) {
+                $finalOptions = ($this->optionsBuilder)($processed);
 
                 return $this->httpHandler->sse(
                     (string) $processed->getUri(),
