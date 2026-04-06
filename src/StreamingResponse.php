@@ -53,6 +53,10 @@ class StreamingResponse extends Response implements StreamingResponseInterface
             return (string) $this->body;
         }
 
+        if ($this->stream->isSeekable()) {
+            $this->stream->rewind();
+        }
+
         $content = $this->stream->getContents();
         $this->streamConsumed = true;
         $this->body = Stream::fromString($content);

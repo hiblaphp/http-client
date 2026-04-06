@@ -377,7 +377,12 @@ class Request extends Message implements RequestInterface
     {
         $new = clone $this;
         $new->body = $this->createTempStream();
-        $new->options['multipart'] = $data;
+
+        if (isset($new->options['multipart']) && \is_array($new->options['multipart'])) {
+            $new->options['multipart'] = array_merge($new->options['multipart'], $data);
+        } else {
+            $new->options['multipart'] = $data;
+        }
 
         return $new->withoutHeader('Content-Type');
     }

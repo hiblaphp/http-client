@@ -678,16 +678,23 @@ class HttpClient implements HttpClientInterface
             $entry = [
                 'name' => $name,
                 'contents' => $file->getStream(),
-                'filename' => $filename ?? $file->getClientFilename(),
-                'Content-Type' => $contentType ?? $file->getClientMediaType(),
+                'filename' => $filename ?? $file->getClientFilename() ?? 'file',
+                'Content-Type' => $contentType ?? $file->getClientMediaType() ?? 'application/octet-stream',
+            ];
+        } elseif ($file instanceof StreamInterface) {
+            $entry = [
+                'name' => $name,
+                'contents' => $file,
+                'filename' => $filename ?? 'file',
+                'Content-Type' => $contentType ?? 'application/octet-stream',
             ];
         } elseif (\is_string($file) && file_exists($file)) {
-            $mime = mime_content_type($file);
+            $mime = filesize($file) === 0 ? false : @mime_content_type($file);
             $entry = [
                 'name' => $name,
                 'filepath' => $file,
                 'filename' => $filename ?? basename($file),
-                'Content-Type' => $contentType ?? ($mime !== false ? $mime : 'application/octet-stream'),
+                'Content-Type' => $contentType ?? ($mime !== false && $mime !== '' ? $mime : 'application/octet-stream'),
             ];
         } elseif (\is_resource($file)) {
             $entry = [
@@ -697,7 +704,7 @@ class HttpClient implements HttpClientInterface
                 'Content-Type' => $contentType ?? 'application/octet-stream',
             ];
         } else {
-            throw new InvalidArgumentException('File must be a file path, UploadedFileInterface, or resource.');
+            throw new InvalidArgumentException('File must be a file path, UploadedFileInterface, StreamInterface, or resource.');
         }
 
         return $this->withUpdatedRequest(fn($r) => $r->withMultipartEntry($name, $entry));
