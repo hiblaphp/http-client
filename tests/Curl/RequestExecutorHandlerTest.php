@@ -7,8 +7,10 @@ use Hibla\HttpClient\Exceptions\NetworkException;
 use Hibla\HttpClient\Handlers\Curl\RequestExecutorHandler;
 use Hibla\HttpClient\Response;
 use Hibla\Promise\Promise;
+use Tests\Fixtures\HttpBin;
 
 beforeEach(function () {
+    HttpBin::skipIfUnreachable();
     Loop::reset();
 });
 
@@ -18,14 +20,14 @@ afterEach(function () {
 
 it('executes a basic HTTP request successfully', function () {
     $handler = new RequestExecutorHandler();
-    $promise = $handler->execute('https://jsonplaceholder.typicode.com/posts/1', [
-        CURLOPT_URL => 'https://jsonplaceholder.typicode.com/posts/1',
+    $promise = $handler->execute(HttpBin::url('/get'), [
+        CURLOPT_URL            => HttpBin::url('/get'),
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_FOLLOWLOCATION => true,
     ]);
 
     $response = null;
-    $error = null;
+    $error    = null;
 
     $promise->then(function ($res) use (&$response) {
         $response = $res;
@@ -41,12 +43,13 @@ it('executes a basic HTTP request successfully', function () {
     expect($response)->toBeInstanceOf(Response::class);
     expect($response->status())->toBe(200);
     expect($response->getBody())->not->toBeEmpty();
-})->skipOnCI();
+});
 
 it('rejects promise on network error', function () {
     $handler = new RequestExecutorHandler();
-    $promise = $handler->execute('https://invalid-domain-that-does-not-exist-12345.com', [
-        CURLOPT_URL => 'https://invalid-domain-that-does-not-exist-12345.com',
+    $promise = $handler->execute('http://127.0.0.1:19999', [
+        CURLOPT_URL            => 'http://127.0.0.1:19999',
+        CURLOPT_CONNECTTIMEOUT => 2,
     ]);
 
     $error = null;
@@ -58,12 +61,12 @@ it('rejects promise on network error', function () {
     Loop::run();
 
     expect($error)->toBeInstanceOf(NetworkException::class);
-})->skipOnCI();
+});
 
 it('handles cancellation properly', function () {
     $handler = new RequestExecutorHandler();
-    $promise = $handler->execute('https://jsonplaceholder.typicode.com/posts/1', [
-        CURLOPT_URL => 'https://jsonplaceholder.typicode.com/posts/1',
+    $promise = $handler->execute(HttpBin::url('/get'), [
+        CURLOPT_URL => HttpBin::url('/get'),
     ]);
 
     expect($promise)->toBeInstanceOf(Promise::class);
@@ -71,12 +74,12 @@ it('handles cancellation properly', function () {
     $promise->cancel();
 
     expect($promise->isCancelled())->toBeTrue();
-})->skipOnCI();
+});
 
 it('normalizes headers correctly', function () {
     $handler = new RequestExecutorHandler();
-    $promise = $handler->execute('https://jsonplaceholder.typicode.com/posts/1', [
-        CURLOPT_URL => 'https://jsonplaceholder.typicode.com/posts/1',
+    $promise = $handler->execute(HttpBin::url('/get'), [
+        CURLOPT_URL            => HttpBin::url('/get'),
         CURLOPT_RETURNTRANSFER => true,
     ]);
 
@@ -92,19 +95,18 @@ it('normalizes headers correctly', function () {
 
     expect($response)->toBeInstanceOf(Response::class);
     expect($response->getHeader('content-type'))->not->toBeNull();
-})->skipOnCI();
+});
 
 it('filters out curl-only options before execution', function () {
     $handler = new RequestExecutorHandler();
-
-    $promise = $handler->execute('https://jsonplaceholder.typicode.com/posts/1', [
-        CURLOPT_URL => 'https://jsonplaceholder.typicode.com/posts/1',
+    $promise = $handler->execute(HttpBin::url('/get'), [
+        CURLOPT_URL            => HttpBin::url('/get'),
         CURLOPT_RETURNTRANSFER => true,
-        '_cookie_jar' => 'should-be-filtered',
+        '_cookie_jar'          => 'should-be-filtered',
     ]);
 
     $response = null;
-    $error = null;
+    $error    = null;
     $promise->then(function ($res) use (&$response) {
         $response = $res;
         Loop::stop();
@@ -118,12 +120,12 @@ it('filters out curl-only options before execution', function () {
     expect($error)->toBeNull();
     expect($response)->toBeInstanceOf(Response::class);
     expect($response->status())->toBe(200);
-})->skipOnCI();
+});
 
 it('sets HTTP version on response when provided', function () {
     $handler = new RequestExecutorHandler();
-    $promise = $handler->execute('https://jsonplaceholder.typicode.com/posts/1', [
-        CURLOPT_URL => 'https://jsonplaceholder.typicode.com/posts/1',
+    $promise = $handler->execute(HttpBin::url('/get'), [
+        CURLOPT_URL            => HttpBin::url('/get'),
         CURLOPT_RETURNTRANSFER => true,
     ]);
 
@@ -139,12 +141,12 @@ it('sets HTTP version on response when provided', function () {
 
     expect($response)->toBeInstanceOf(Response::class);
     expect($response->getHttpVersion())->not->toBeNull();
-})->skipOnCI();
+});
 
 it('does not resolve cancelled promises', function () {
     $handler = new RequestExecutorHandler();
-    $promise = $handler->execute('https://jsonplaceholder.typicode.com/posts/1', [
-        CURLOPT_URL => 'https://jsonplaceholder.typicode.com/posts/1',
+    $promise = $handler->execute(HttpBin::url('/get'), [
+        CURLOPT_URL            => HttpBin::url('/get'),
         CURLOPT_RETURNTRANSFER => true,
     ]);
 
@@ -163,4 +165,4 @@ it('does not resolve cancelled promises', function () {
     Loop::run();
 
     expect($resolved)->toBeFalse();
-})->skipOnCI();
+});
