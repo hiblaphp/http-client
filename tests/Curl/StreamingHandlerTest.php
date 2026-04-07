@@ -29,7 +29,7 @@ describe('StreamingHandler', function () {
         it('resolves with a StreamingResponse and emits chunks', function () {
             $handler = new StreamingHandler();
             $chunks = '';
-            
+
             $promise = $handler->streamRequest(
                 HttpBin::url('/stream/3'),
                 [],
@@ -48,7 +48,7 @@ describe('StreamingHandler', function () {
 
             expect($response)->toBeInstanceOf(StreamingResponse::class);
             expect($response->status())->toBe(200);
-            
+
             $lines = array_filter(explode("\n", trim($chunks)));
             expect(count($lines))->toBe(3);
         });
@@ -56,12 +56,12 @@ describe('StreamingHandler', function () {
         it('persists Set-Cookie headers into the provided cookie jar', function () {
             $handler = new StreamingHandler();
             $jar = new CookieJar();
-            
+
             $url = HttpBin::url('/response-headers?Set-Cookie=stream_test%3Dactivated%3B+Path%3D%2F');
-            
+
             $promise = $handler->streamRequest($url, ['_cookie_jar' => $jar]);
 
-            $promise->then(fn() => Loop::stop());
+            $promise->then(fn () => Loop::stop());
             Loop::run();
 
             $allCookies = $jar->getAllCookies();
@@ -69,10 +69,11 @@ describe('StreamingHandler', function () {
             foreach ($allCookies as $cookie) {
                 if ($cookie->getName() === 'stream_test' && $cookie->getValue() === 'activated') {
                     $found = true;
+
                     break;
                 }
             }
-            
+
             expect($found)->toBeTrue();
         });
 
@@ -82,10 +83,10 @@ describe('StreamingHandler', function () {
             file_put_contents($tmpFile, 'cleanup test');
 
             $promise = $handler->streamRequest(HttpBin::url('/get'), [
-                '_tmp_files' => [$tmpFile]
+                '_tmp_files' => [$tmpFile],
             ]);
 
-            $promise->then(fn() => Loop::stop());
+            $promise->then(fn () => Loop::stop());
             Loop::run();
 
             expect(file_exists($tmpFile))->toBeFalse();
@@ -112,7 +113,7 @@ describe('StreamingHandler', function () {
         it('downloads a response to a file', function () {
             $handler = new StreamingHandler();
             $dest = tempnam(sys_get_temp_dir(), 'hibla_dl_');
-            
+
             $promise = $handler->downloadFile(HttpBin::url('/bytes/512'), $dest);
 
             $result = null;
@@ -136,9 +137,9 @@ describe('StreamingHandler', function () {
             $progressCalled = false;
 
             $promise = $handler->downloadFile(
-                HttpBin::url('/bytes/1024'), 
-                $dest, 
-                [], 
+                HttpBin::url('/bytes/1024'),
+                $dest,
+                [],
                 function ($progress) use (&$progressCalled) {
                     if ($progress instanceof DownloadProgress) {
                         $progressCalled = true;
@@ -146,7 +147,7 @@ describe('StreamingHandler', function () {
                 }
             );
 
-            $promise->then(fn() => Loop::stop());
+            $promise->then(fn () => Loop::stop());
             Loop::run();
 
             expect($progressCalled)->toBeTrue();
@@ -158,7 +159,7 @@ describe('StreamingHandler', function () {
             $dest = tempnam(sys_get_temp_dir(), 'hibla_dl_');
 
             $promise = $handler->downloadFile(HttpBin::url('/delay/2'), $dest);
-            
+
             Loop::addTimer(0.1, function () use ($promise) {
                 $promise->cancel();
                 Loop::stop();
@@ -209,7 +210,7 @@ describe('StreamingHandler', function () {
                 }
             );
 
-            $promise->then(fn() => Loop::stop());
+            $promise->then(fn () => Loop::stop());
             Loop::run();
 
             expect($progressCalled)->toBeTrue();
@@ -225,7 +226,7 @@ describe('StreamingHandler', function () {
                 $error = $err;
             });
 
-            Loop::addTimer(0.01, fn() => Loop::stop());
+            Loop::addTimer(0.01, fn () => Loop::stop());
             Loop::run();
 
             expect($error)->toBeInstanceOf(\Hibla\HttpClient\Exceptions\HttpStreamException::class);

@@ -10,16 +10,16 @@ use Tests\Fixtures\HttpBin;
 use function Hibla\await;
 
 describe('Uploads and Downloads', function () {
-    
+
     beforeEach(function () {
         HttpBin::skipIfUnreachable();
     });
 
     describe('Downloads', function () {
-        
+
         it('downloads a text response to a file successfully', function () {
             $dest = sys_get_temp_dir() . '/hibla_dl_text_' . uniqid() . '.txt';
-            
+
             try {
                 $result = await(
                     Http::request()->download(HttpBin::url('/base64/SGVsbG8gV29ybGQ='), $dest)
@@ -35,7 +35,7 @@ describe('Uploads and Downloads', function () {
 
         it('downloads a specific number of binary bytes to a file', function () {
             $dest = sys_get_temp_dir() . '/hibla_dl_bytes_' . uniqid() . '.bin';
-            
+
             try {
                 $result = await(
                     Http::request()->download(HttpBin::url('/bytes/1024'), $dest)
@@ -51,7 +51,7 @@ describe('Uploads and Downloads', function () {
 
         it('downloads an image successfully', function () {
             $dest = sys_get_temp_dir() . '/hibla_dl_image_' . uniqid() . '.png';
-            
+
             try {
                 $result = await(
                     Http::request()
@@ -70,11 +70,11 @@ describe('Uploads and Downloads', function () {
         it('tracks download progress correctly', function () {
             $dest = sys_get_temp_dir() . '/hibla_dl_prog_' . uniqid() . '.bin';
             $progressCalls = 0;
-            
+
             try {
                 $result = await(
                     Http::request()->download(
-                        HttpBin::url('/bytes/1048576'), 
+                        HttpBin::url('/bytes/1048576'),
                         $dest,
                         function ($progress) use (&$progressCalls) {
                             if ($progress instanceof DownloadProgress) {
@@ -95,7 +95,7 @@ describe('Uploads and Downloads', function () {
     });
 
     describe('Uploads', function () {
-        
+
         it('uploads a file as a raw data stream (PUT)', function () {
             $source = sys_get_temp_dir() . '/hibla_ul_raw_' . uniqid() . '.txt';
             $content = 'This is raw payload data sent via a stream.';
@@ -134,7 +134,7 @@ describe('Uploads and Downloads', function () {
         it('uploads multiple files simultaneously via multipart form data', function () {
             $file1 = sys_get_temp_dir() . '/hibla_multi_1_' . uniqid() . '.txt';
             $file2 = sys_get_temp_dir() . '/hibla_multi_2_' . uniqid() . '.txt';
-            
+
             file_put_contents($file1, 'Content for file 1');
             file_put_contents($file2, 'Content for file 2');
 
@@ -161,7 +161,7 @@ describe('Uploads and Downloads', function () {
 
         it('tracks upload progress during a raw file upload', function () {
             $source = sys_get_temp_dir() . '/hibla_ul_prog_' . uniqid() . '.bin';
-            
+
             file_put_contents($source, str_repeat('A', 1048576));
             $progressCalls = 0;
 
@@ -179,7 +179,7 @@ describe('Uploads and Downloads', function () {
                 );
 
                 expect($result['status'])->toBe(200);
-                
+
                 expect($progressCalls)->toBeGreaterThan(0);
             } finally {
                 @unlink($source);

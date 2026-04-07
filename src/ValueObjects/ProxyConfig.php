@@ -13,7 +13,8 @@ final readonly class ProxyConfig
         public ?string $password = null,
         public string $type = 'http', // 'http', 'socks4', 'socks5'
         public ?int $tunnelPort = null
-    ) {}
+    ) {
+    }
 
     public static function http(string $host, int $port, ?string $username = null, ?string $password = null): self
     {
@@ -49,7 +50,7 @@ final readonly class ProxyConfig
         return match ($this->type) {
             'socks4' => CURLPROXY_SOCKS4A,
             'socks5' => CURLPROXY_SOCKS5_HOSTNAME,
-            default  => CURLPROXY_HTTP,
+            default => CURLPROXY_HTTP,
         };
     }
 }

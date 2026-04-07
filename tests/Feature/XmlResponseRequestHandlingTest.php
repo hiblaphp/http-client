@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Hibla\HttpClient\Http;
 use Tests\Fixtures\HttpBin;
 
@@ -87,7 +89,7 @@ describe('XML Request and Response Handling', function () {
         it('xml() is idempotent — calling it twice returns equivalent trees', function () {
             $response = await(Http::request()->get(HttpBin::url('/xml')));
 
-            $first  = $response->xml();
+            $first = $response->xml();
             $second = $response->xml();
 
             expect($first->getName())->toBe($second->getName());

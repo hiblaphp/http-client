@@ -17,7 +17,8 @@ describe('Proxy security', function () {
                 ->and($config->type)->toBe('http')
                 ->and($config->username)->toBe('user')
                 ->and($config->host)->not->toContain('secret_password')
-                ->and($config->type)->not->toContain('secret_password');
+                ->and($config->type)->not->toContain('secret_password')
+            ;
         });
 
         it('SOCKS4 does not accept a password field', function () {
@@ -25,7 +26,8 @@ describe('Proxy security', function () {
 
             expect($config->password)->toBeNull()
                 ->and($config->getProxyUrl())->not->toContain(':@')
-                ->and($config->getProxyUrl())->toBe('socks4://user@proxy.local:1080');
+                ->and($config->getProxyUrl())->toBe('socks4://user@proxy.local:1080')
+            ;
         });
 
         it('proxy URL without credentials contains no auth separator', function () {
@@ -56,15 +58,15 @@ describe('Proxy security', function () {
                     ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
                     ->withHeader('X-Test', $injected)
                     ->get(HttpBin::proxyUrl('/headers'))
-                    ->wait();
+                    ->wait()
+                ;
 
                 expect(array_key_exists('X-Injected', $response->json('headers') ?? []))->toBeFalse();
-            } catch (\Throwable) {
+            } catch (Throwable) {
                 expect(true)->toBeTrue();
             }
         });
     });
-
 
     describe('noProxy() bypass verification', function () {
 
@@ -77,12 +79,14 @@ describe('Proxy security', function () {
                 ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort(), 'user', 'pass')
                 ->noProxy()
                 ->get(HttpBin::url('/headers'))
-                ->wait();
+                ->wait()
+            ;
 
             $headers = array_change_key_case($response->json('headers') ?? [], CASE_LOWER);
 
             expect($response->successful())->toBeTrue()
-                ->and(isset($headers['proxy-authorization']))->toBeFalse();
+                ->and(isset($headers['proxy-authorization']))->toBeFalse()
+            ;
         });
 
         it('noProxy() request contains no Via header injected by proxy', function () {
@@ -90,12 +94,14 @@ describe('Proxy security', function () {
                 ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
                 ->noProxy()
                 ->get(HttpBin::url('/headers'))
-                ->wait();
+                ->wait()
+            ;
 
             $headers = array_change_key_case($response->json('headers') ?? [], CASE_LOWER);
 
             expect($response->successful())->toBeTrue()
-                ->and(isset($headers['via']))->toBeFalse();
+                ->and(isset($headers['via']))->toBeFalse()
+            ;
         });
 
         it('proxied request through Squid reaches the target successfully', function () {
@@ -104,7 +110,8 @@ describe('Proxy security', function () {
             $response = ProxySetup::client()
                 ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
                 ->get(HttpBin::proxyUrl('/get'))
-                ->wait();
+                ->wait()
+            ;
 
             expect($response->successful())->toBeTrue()
                 ->and($response->json('url'))->toContain('hibla_httpbin');

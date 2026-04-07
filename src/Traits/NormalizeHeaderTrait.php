@@ -54,7 +54,7 @@ trait NormalizeHeaderTrait
         foreach ($rawHeaders as $line) {
             if (str_contains($line, ':')) {
                 [$name, $value] = explode(':', $line, 2);
-                $name  = strtolower(trim($name)); 
+                $name = strtolower(trim($name));
                 $value = trim($value);
 
                 $parsed[$name][] = $value;

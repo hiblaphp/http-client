@@ -10,20 +10,20 @@ use Tests\Fixtures\HttpBin;
 use function Hibla\await;
 
 describe('Streaming Integration (Push and Pull)', function () {
-    
+
     beforeEach(function () {
         HttpBin::skipIfUnreachable();
     });
 
     describe('Push Approach (Callbacks)', function () {
-        
+
         it('streams multiple JSON objects and triggers the chunk callback', function () {
             $chunksReceived = 0;
             $accumulatedData = '';
 
             $response = await(
                 Http::request()->stream(
-                    HttpBin::url('/stream/3'), 
+                    HttpBin::url('/stream/3'),
                     function (string $chunk) use (&$chunksReceived, &$accumulatedData) {
                         $chunksReceived++;
                         $accumulatedData .= $chunk;
@@ -35,10 +35,10 @@ describe('Streaming Integration (Push and Pull)', function () {
             expect($response->status())->toBe(200);
 
             $lines = array_filter(explode("\n", trim($accumulatedData)));
-            
+
             expect(count($lines))->toBe(3);
             expect($chunksReceived)->toBeGreaterThan(0);
-            
+
             $firstObject = json_decode($lines[0], true);
             expect($firstObject)->toHaveKey('id');
         });
@@ -48,7 +48,7 @@ describe('Streaming Integration (Push and Pull)', function () {
 
             $response = await(
                 Http::request()->stream(
-                    HttpBin::url('/stream-bytes/8192'), 
+                    HttpBin::url('/stream-bytes/8192'),
                     function (string $chunk) use (&$totalBytesReceived) {
                         $totalBytesReceived += strlen($chunk);
                     }
@@ -63,10 +63,10 @@ describe('Streaming Integration (Push and Pull)', function () {
             $response = await(Http::request()->stream(HttpBin::url('/stream/2')));
 
             expect($response)->toBeInstanceOf(StreamingResponse::class);
-            
+
             $body = $response->body();
             $lines = array_filter(explode("\n", trim($body)));
-            
+
             expect(count($lines))->toBe(2);
             expect($body)->toContain('"id"');
         });
@@ -79,7 +79,7 @@ describe('Streaming Integration (Push and Pull)', function () {
                     ->withJson(['streaming' => 'works'])
                     ->withMethod('POST')
                     ->stream(
-                        HttpBin::url('/post'), 
+                        HttpBin::url('/post'),
                         function (string $chunk) use (&$accumulatedData) {
                             $accumulatedData .= $chunk;
                         }
@@ -87,7 +87,7 @@ describe('Streaming Integration (Push and Pull)', function () {
             );
 
             expect($response->status())->toBe(200);
-            
+
             $decoded = json_decode($accumulatedData, true);
             expect($decoded['json']['streaming'])->toBe('works');
         });
@@ -96,16 +96,18 @@ describe('Streaming Integration (Push and Pull)', function () {
             $response = await(
                 Http::request()
                     ->withMethod('DELETE')
-                    ->stream(HttpBin::url('/delete'), function() {})
+                    ->stream(HttpBin::url('/delete'), function () {
+                    })
             );
-            
+
             expect($response->status())->toBe(200);
             expect($response->json('url'))->toContain('/delete');
         });
 
         it('handles non-200 status codes gracefully during streaming', function () {
             $response = await(
-                Http::request()->stream(HttpBin::url('/status/404'), function () {})
+                Http::request()->stream(HttpBin::url('/status/404'), function () {
+                })
             );
 
             expect($response->status())->toBe(404);
@@ -115,8 +117,9 @@ describe('Streaming Integration (Push and Pull)', function () {
 
         it('can be cancelled mid-stream', function () {
             $promise = Http::request()->stream(
-                HttpBin::url('/delay/3'), 
-                function (string $chunk) {}
+                HttpBin::url('/delay/3'),
+                function (string $chunk) {
+                }
             );
 
             Loop::addTimer(0.5, function () use ($promise) {
@@ -124,9 +127,10 @@ describe('Streaming Integration (Push and Pull)', function () {
             });
 
             $exceptionThrown = false;
+
             try {
-                $promise->wait(); 
-            } catch (\Throwable $e) {
+                $promise->wait();
+            } catch (Throwable $e) {
                 $exceptionThrown = true;
             }
 
@@ -138,19 +142,19 @@ describe('Streaming Integration (Push and Pull)', function () {
             $promise = Http::request()->stream(
                 HttpBin::url('/stream/3'),
                 function (string $chunk) {
-                    throw new \RuntimeException('User callback failed');
+                    throw new RuntimeException('User callback failed');
                 }
             );
 
-            expect(fn() => $promise->wait())->toThrow(\RuntimeException::class, 'User callback failed');
+            expect(fn () => $promise->wait())->toThrow(RuntimeException::class, 'User callback failed');
         });
     });
 
     describe('Pull Approach (Async Stream API)', function () {
-        
+
         it('pulls data chunk by chunk using readAsync()', function () {
             $response = await(Http::request()->stream(HttpBin::url('/stream-bytes/1024')));
-            
+
             expect($response)->toBeInstanceOf(StreamingResponse::class);
             expect($response->status())->toBe(200);
 
@@ -159,9 +163,9 @@ describe('Streaming Integration (Push and Pull)', function () {
 
             while (true) {
                 $chunk = await($response->readAsync(256));
-                
+
                 if ($chunk === null) {
-                    break; 
+                    break;
                 }
 
                 $totalBytes += strlen($chunk);
@@ -199,7 +203,7 @@ describe('Streaming Integration (Push and Pull)', function () {
             expect($firstChunkLength)->toBeLessThanOrEqual(100);
 
             $rest = await($response->readAllAsync());
-            
+
             $totalRead = $firstChunkLength + strlen($rest);
             expect($totalRead)->toBe(2048);
         });
@@ -251,7 +255,7 @@ describe('Streaming Integration (Push and Pull)', function () {
             $chunk = await($response->readAsync(1048576));
 
             expect(strlen($chunk))->toBeLessThanOrEqual(50);
-            
+
             $rest = await($response->readAllAsync());
             expect(strlen($chunk) + strlen($rest))->toBe(50);
         });

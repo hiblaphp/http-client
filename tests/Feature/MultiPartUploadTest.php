@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Hibla\HttpClient\Http;
 use Tests\Fixtures\HttpBin;
 
@@ -30,7 +32,8 @@ describe('Real Network Multipart Uploads', function () {
 
             expect($response->json('form.project.0'))->toBe('Hibla')
                 ->and($response->json('form.version.0'))->toBe('1.0.0')
-                ->and($response->json('files.document.0'))->toBe($fileContent);
+                ->and($response->json('files.document.0'))->toBe($fileContent)
+            ;
 
             @unlink($tempFile);
         });
@@ -92,7 +95,8 @@ describe('Real Network Multipart Uploads', function () {
 
             expect($response->successful())->toBeTrue();
             expect($response->json('form.field_a.0'))->toBe('value_a')
-                ->and($response->json('form.field_b.0'))->toBe('value_b');
+                ->and($response->json('form.field_b.0'))->toBe('value_b')
+            ;
         });
     });
 
@@ -169,14 +173,15 @@ describe('Real Network Multipart Uploads', function () {
                 Http::request()
                     ->withMultipart([
                         'description' => '日本語テスト',
-                        'emoji'       => '🚀🎉',
+                        'emoji' => '🚀🎉',
                     ])
                     ->post(HttpBin::url('/post'))
             );
 
             expect($response->successful())->toBeTrue();
             expect($response->json('form.description.0'))->toBe('日本語テスト')
-                ->and($response->json('form.emoji.0'))->toBe('🚀🎉');
+                ->and($response->json('form.emoji.0'))->toBe('🚀🎉')
+            ;
         });
     });
 
@@ -186,8 +191,8 @@ describe('Real Network Multipart Uploads', function () {
                 Http::request()
                     ->withMultipart([
                         'count' => '0',
-                        'flag'  => 'false',
-                        'pi'    => '3.14',
+                        'flag' => 'false',
+                        'pi' => '3.14',
                         'empty' => '',
                     ])
                     ->post(HttpBin::url('/post'))
@@ -197,7 +202,8 @@ describe('Real Network Multipart Uploads', function () {
             expect($response->json('form.count.0'))->toBe('0')
                 ->and($response->json('form.flag.0'))->toBe('false')
                 ->and($response->json('form.pi.0'))->toBe('3.14')
-                ->and($response->json('form.empty.0'))->toBe('');
+                ->and($response->json('form.empty.0'))->toBe('')
+            ;
         });
 
         it('uploads multipart with a very long field value', function () {
@@ -269,9 +275,9 @@ describe('Real Network Multipart Uploads', function () {
 
     describe('error and boundary conditions', function () {
         it('throws when given a non-existent file path', function () {
-            expect(fn() =>
-                Http::request()->withFile('ghost', '/tmp/does_not_exist_hibla.txt')
-            )->toThrow(\InvalidArgumentException::class);
+            expect(
+                fn () => Http::request()->withFile('ghost', '/tmp/does_not_exist_hibla.txt')
+            )->toThrow(InvalidArgumentException::class);
         });
 
         it('returns a non-2xx status for a bad endpoint gracefully', function () {
@@ -306,7 +312,8 @@ describe('Real Network Multipart Uploads', function () {
 
             expect($response->successful())->toBeTrue();
             expect($response->json('form.source.0'))->toBe('helper')
-                ->and($response->json('files.doc.0'))->toBe($content);
+                ->and($response->json('files.doc.0'))->toBe($content)
+            ;
 
             @unlink($tempFile);
         });

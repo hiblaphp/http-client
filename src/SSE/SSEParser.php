@@ -37,6 +37,8 @@ namespace Hibla\HttpClient\SSE;
  *   data   — appended to the data buffer; multiple lines are joined with LF.
  *   event  — sets the event type; last value wins for duplicates.
  *   id     — sets the event ID; last value wins for duplicates.
+ *             Per spec section 9.2.6, id values containing U+0000 NULL are ignored
+ *             entirely — the last valid (NULL-free) id value wins.
  *   retry  — sets the reconnection time in ms; value must be ASCII digits only
  *             (no floats, negatives, or hex) — non-conforming values are ignored.
  *
@@ -55,6 +57,12 @@ namespace Hibla\HttpClient\SSE;
  * at end of stream is discarded. Callers must not rely on the buffer being
  * flushed automatically; reset() clears it explicitly when reusing the parser
  * across reconnections.
+ *
+ * ── Last event ID persistence ─────────────────────────────────────────────────
+ * Per spec section 9.2.6, the last event ID buffer is not reset between events — if
+ * event A sets an id and event B has no id field, event B should still carry
+ * the last seen id. This persistence is the responsibility of the caller;
+ * SSEEvent::$id will be null when no valid id field was present in that block.
  */
 class SSEParser
 {
@@ -163,7 +171,13 @@ class SSEParser
         // Build the data string: join lines with LF, then strip one trailing LF per spec.
         $data = implode("\n", $dataLines);
 
-        $idValues = $fields['id'] ?? [];
+        // Per spec section 9.2.6: id field values containing U+0000 NULL must be ignored
+        // entirely. Filter them out first so the last *valid* id value wins.
+        $idValues = array_filter(
+            $fields['id'] ?? [],
+            fn (string $v) => ! str_contains($v, "\0")
+        );
+
         $eventValues = $fields['event'] ?? [];
         $retryValues = $fields['retry'] ?? [];
 

@@ -9,7 +9,7 @@ use Tests\Fixtures\HttpBin;
 
 use function Hibla\await;
 
-describe("Cookie Handling Integration Test", function () {
+describe('Cookie Handling Integration Test', function () {
 
     beforeEach(function () {
         HttpBin::skipIfUnreachable();
@@ -72,7 +72,7 @@ describe("Cookie Handling Integration Test", function () {
         });
 
         test('values containing special characters must be Base64-encoded before sending', function () {
-            $encoded  = base64_encode('hello world');
+            $encoded = base64_encode('hello world');
             $response = await(
                 (new HttpClient())
                     ->withCookie('data', $encoded)
@@ -84,7 +84,7 @@ describe("Cookie Handling Integration Test", function () {
 
         test('Base64-encoded value round-trips correctly through the server', function () {
             $original = 'user:password123!@#';
-            $encoded  = base64_encode($original);
+            $encoded = base64_encode($original);
 
             $response = await(
                 (new HttpClient())
@@ -121,7 +121,7 @@ describe("Cookie Handling Integration Test", function () {
 
         test('a large number of cookies are all sent correctly', function () {
             $client = new HttpClient();
-            $data   = [];
+            $data = [];
 
             for ($i = 1; $i <= 20; $i++) {
                 $data["cookie{$i}"] = "value{$i}";
@@ -140,38 +140,45 @@ describe("Cookie Handling Integration Test", function () {
     describe('Cookie validation enforcement', function () {
 
         test('withCookie rejects values containing spaces', function () {
-            expect(fn() => (new HttpClient())->withCookie('data', 'hello world'))
-                ->toThrow(\InvalidArgumentException::class, 'cookie-octet set');
+            expect(fn () => (new HttpClient())->withCookie('data', 'hello world'))
+                ->toThrow(InvalidArgumentException::class, 'cookie-octet set')
+            ;
         });
 
         test('withCookie rejects values containing semicolons', function () {
-            expect(fn() => (new HttpClient())->withCookie('data', 'a;b'))
-                ->toThrow(\InvalidArgumentException::class, 'cookie-octet set');
+            expect(fn () => (new HttpClient())->withCookie('data', 'a;b'))
+                ->toThrow(InvalidArgumentException::class, 'cookie-octet set')
+            ;
         });
 
         test('withCookie rejects values containing commas', function () {
-            expect(fn() => (new HttpClient())->withCookie('data', 'a,b'))
-                ->toThrow(\InvalidArgumentException::class, 'cookie-octet set');
+            expect(fn () => (new HttpClient())->withCookie('data', 'a,b'))
+                ->toThrow(InvalidArgumentException::class, 'cookie-octet set')
+            ;
         });
 
         test('withCookie rejects an empty cookie name', function () {
-            expect(fn() => (new HttpClient())->withCookie('', 'value'))
-                ->toThrow(\InvalidArgumentException::class, 'must not be empty');
+            expect(fn () => (new HttpClient())->withCookie('', 'value'))
+                ->toThrow(InvalidArgumentException::class, 'must not be empty')
+            ;
         });
 
         test('withCookie rejects a name containing separator characters', function () {
-            expect(fn() => (new HttpClient())->withCookie('bad name', 'value'))
-                ->toThrow(\InvalidArgumentException::class, 'not permitted in an HTTP token');
+            expect(fn () => (new HttpClient())->withCookie('bad name', 'value'))
+                ->toThrow(InvalidArgumentException::class, 'not permitted in an HTTP token')
+            ;
         });
 
         test('withCookie rejects a name containing control characters', function () {
-            expect(fn() => (new HttpClient())->withCookie("bad\x01name", 'value'))
-                ->toThrow(\InvalidArgumentException::class, 'not permitted in an HTTP token');
+            expect(fn () => (new HttpClient())->withCookie("bad\x01name", 'value'))
+                ->toThrow(InvalidArgumentException::class, 'not permitted in an HTTP token')
+            ;
         });
 
         test('withCookies propagates validation exceptions for invalid entries', function () {
-            expect(fn() => (new HttpClient())->withCookies(['valid' => 'ok', 'bad name' => 'value']))
-                ->toThrow(\InvalidArgumentException::class);
+            expect(fn () => (new HttpClient())->withCookies(['valid' => 'ok', 'bad name' => 'value']))
+                ->toThrow(InvalidArgumentException::class)
+            ;
         });
     });
 
@@ -190,13 +197,13 @@ describe("Cookie Handling Integration Test", function () {
             $cookies = array_values($jar->getCookies(HttpBin::host(), '/'));
 
             expect($cookies)->not->toBeEmpty();
-            $names = array_map(fn($c) => $c->getName(), $cookies);
+            $names = array_map(fn ($c) => $c->getName(), $cookies);
             expect($names)->toContain('token');
         });
 
         test('cookie stored in the jar is replayed on the next request to the same domain', function () {
             $http = new HttpClient();
-            $jar  = new CookieJar();
+            $jar = new CookieJar();
 
             await(
                 $http->useCookieJar($jar)
@@ -214,7 +221,7 @@ describe("Cookie Handling Integration Test", function () {
 
         test('multiple server-set cookies are all stored and replayed', function () {
             $http = new HttpClient();
-            $jar  = new CookieJar();
+            $jar = new CookieJar();
 
             await(
                 $http->useCookieJar($jar)
@@ -235,7 +242,7 @@ describe("Cookie Handling Integration Test", function () {
         });
 
         test('the same jar shared across two HttpClient instances shares cookies between them', function () {
-            $jar     = new CookieJar();
+            $jar = new CookieJar();
             $client1 = (new HttpClient())->useCookieJar($jar)->redirects(true);
             $client2 = (new HttpClient())->useCookieJar($jar);
 
@@ -266,7 +273,8 @@ describe("Cookie Handling Integration Test", function () {
         test('withCookieJar creates a fresh internal jar that is used automatically', function () {
             $http = (new HttpClient())
                 ->withCookieJar()
-                ->redirects(true);
+                ->redirects(true)
+            ;
 
             await($http->get(HttpBin::url('/cookies/set?auto=1')));
 
@@ -316,7 +324,7 @@ describe("Cookie Handling Integration Test", function () {
 
         test('server-deleted cookie is removed from the jar', function () {
             $http = new HttpClient();
-            $jar  = new CookieJar();
+            $jar = new CookieJar();
 
             await(
                 $http->useCookieJar($jar)
@@ -341,7 +349,7 @@ describe("Cookie Handling Integration Test", function () {
 
         test('deleting one cookie leaves other cookies in the jar intact', function () {
             $http = new HttpClient();
-            $jar  = new CookieJar();
+            $jar = new CookieJar();
 
             await(
                 $http->useCookieJar($jar)
@@ -529,7 +537,7 @@ describe("Cookie Handling Integration Test", function () {
                 (new HttpClient())
                     ->cookieWithAttributes('custom', 'value', [
                         'domain' => HttpBin::host(),
-                        'path'   => '/',
+                        'path' => '/',
                     ])
                     ->get(HttpBin::url('/cookies'))
             );
@@ -541,8 +549,8 @@ describe("Cookie Handling Integration Test", function () {
             $response = await(
                 (new HttpClient())
                     ->cookieWithAttributes('stale', 'gone', [
-                        'domain'  => HttpBin::host(),
-                        'path'    => '/',
+                        'domain' => HttpBin::host(),
+                        'path' => '/',
                         'expires' => time() - 3600,
                     ])
                     ->get(HttpBin::url('/cookies'))

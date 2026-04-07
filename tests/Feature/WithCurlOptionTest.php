@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Hibla\HttpClient\Http;
 use Tests\Fixtures\HttpBin;
 
@@ -56,8 +58,8 @@ describe('cURL Options', function () {
             $response = await(
                 Http::request()
                     ->withCurlOptions([
-                        CURLOPT_ENCODING    => 'gzip',
-                        CURLOPT_BUFFERSIZE  => 16384,
+                        CURLOPT_ENCODING => 'gzip',
+                        CURLOPT_BUFFERSIZE => 16384,
                     ])
                     ->get(HttpBin::url('/get'))
             );
@@ -70,7 +72,7 @@ describe('cURL Options', function () {
                 Http::request()
                     ->withCurlOptions([
                         CURLOPT_ENCODING => 'gzip',
-                        'invalid_key'    => 'should_be_ignored',
+                        'invalid_key' => 'should_be_ignored',
                     ])
                     ->get(HttpBin::url('/get'))
             );
@@ -230,7 +232,8 @@ describe('cURL Options', function () {
         it('does not drop fluent headers when CURLOPT_HTTPHEADER is set on a shared base client', function () {
             $base = Http::request()
                 ->withToken('my-token')
-                ->withHeader('X-Tenant', 'acme');
+                ->withHeader('X-Tenant', 'acme')
+            ;
 
             $response = await(
                 $base
@@ -253,7 +256,7 @@ describe('cURL Options', function () {
             );
 
             expect($response->successful())->toBeTrue();
-    
+
             $header = $response->json('headers.X-Custom-Header.0');
             expect($header)->toBeIn(['from-fluent', 'from-curl']);
         });

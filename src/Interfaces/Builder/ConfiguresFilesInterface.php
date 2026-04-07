@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Interfaces\Builder;
 
-use Psr\Http\Message\UploadedFileInterface;
 use Psr\Http\Message\StreamInterface;
+use Psr\Http\Message\UploadedFileInterface;
 
 /**
  * Fluent interface for attaching files to a multipart request.

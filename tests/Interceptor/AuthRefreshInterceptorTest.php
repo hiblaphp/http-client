@@ -28,7 +28,7 @@ describe('Real-world: Token Refresh Interceptor', function () {
         $client = Http::request()
             ->intercept(function (RequestInterface $request, callable $next) use (&$refreshCount) {
                 return $next($request)->then(function (ResponseInterface $response) use ($request, $next, &$refreshCount) {
-                    
+
                     if ($response->status() === 401) {
                         $refreshCount++;
 
@@ -40,14 +40,16 @@ describe('Real-world: Token Refresh Interceptor', function () {
 
                     return $response;
                 });
-            });
+            })
+        ;
 
         $response = $client->get(HttpBin::url('/bearer'))->wait();
 
         expect($response->status())->toBe(200)
             ->and($response->json('authenticated'))->toBeTrue()
             ->and($response->json('token'))->toBe('fresh-token-1')
-            ->and($refreshCount)->toBe(1);
+            ->and($refreshCount)->toBe(1)
+        ;
 
         Http::assertRequestCount(2);
     });
@@ -55,13 +57,15 @@ describe('Real-world: Token Refresh Interceptor', function () {
     it('can globally sign every outgoing request asynchronously', function () {
         $client = Http::request()
             ->interceptRequest(function (RequestInterface $request) {
-                return delay(0.01)->then(fn() => $request->withHeader('X-Signature', 'hash-' . md5($request->getUri()->getPath())));
-            });
+                return delay(0.01)->then(fn () => $request->withHeader('X-Signature', 'hash-' . md5($request->getUri()->getPath())));
+            })
+        ;
 
         $res1 = $client->get(HttpBin::url('/get'))->wait();
         $res2 = $client->get(HttpBin::url('/headers'))->wait();
 
         expect($res1->json('headers.X-Signature.0'))->toBe('hash-' . md5('/get'))
-            ->and($res2->json('headers.X-Signature.0'))->toBe('hash-' . md5('/headers'));
+            ->and($res2->json('headers.X-Signature.0'))->toBe('hash-' . md5('/headers'))
+        ;
     });
 });

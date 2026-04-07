@@ -33,12 +33,14 @@ final class ProxySetup
     public static function socks5User(): ?string
     {
         $v = env('SOCKS5_USER');
+
         return ($v !== null && $v !== '') ? (string) $v : null;
     }
 
     public static function socks5Pass(): ?string
     {
         $v = env('SOCKS5_PASS');
+
         return ($v !== null && $v !== '') ? (string) $v : null;
     }
 

@@ -25,7 +25,7 @@ class CurlOptionsBuilder implements TransportOptionsBuilderInterface
     {
         $curlOptions = [
             CURLOPT_URL => $options->url,
-            CURLOPT_CUSTOMREQUEST  => $options->method,
+            CURLOPT_CUSTOMREQUEST => $options->method,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => $options->timeout,
             CURLOPT_CONNECTTIMEOUT => $options->connectTimeout,
@@ -59,7 +59,7 @@ class CurlOptionsBuilder implements TransportOptionsBuilderInterface
 
         $stringKeyOptions = array_filter(
             $options->additionalOptions,
-            fn($key) => \is_string($key),
+            fn ($key) => \is_string($key),
             ARRAY_FILTER_USE_KEY
         );
 

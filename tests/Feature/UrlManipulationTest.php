@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Hibla\HttpClient\Http;
 use Tests\Fixtures\HttpBin;
 
@@ -98,7 +100,7 @@ describe('URL Parameter Expansion', function () {
                 Http::request()
                     ->withUrlParameters([
                         'resource' => 'anything',
-                        'id'       => '42',
+                        'id' => '42',
                     ])
                     ->get(HttpBin::url('/{resource}/{id}'))
             );
@@ -145,7 +147,7 @@ describe('URL Parameter Expansion', function () {
                 Http::request()
                     ->withUrlParameters([
                         'resource' => 'anything',
-                        'tag'      => 'foo bar',
+                        'tag' => 'foo bar',
                     ])
                     ->get(HttpBin::url('/{resource}?tag={tag}'))
             );

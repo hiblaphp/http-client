@@ -335,7 +335,7 @@ class Request extends Message implements RequestInterface
         $new = clone $this;
         $new->auth = ['digest', $username, $password];
 
-        return $new->withoutHeader('Authorization'); 
+        return $new->withoutHeader('Authorization');
     }
 
     /**
@@ -404,7 +404,7 @@ class Request extends Message implements RequestInterface
      * commas), encode first using Base64 as recommended by RFC 6265 section 4.1.1:
      *   withCookie('data', base64_encode($arbitraryValue))
      *
-     * @throws \InvalidArgumentException If the name or value contains
+     * @throws InvalidArgumentException If the name or value contains
      *         characters that would produce a malformed Cookie header.
      */
     public function withCookie(string $name, string $value): static
@@ -412,7 +412,7 @@ class Request extends Message implements RequestInterface
         Cookie::assertValidName($name);
         Cookie::assertValidValue($value);
 
-        $existing  = $this->getHeaderLine('Cookie');
+        $existing = $this->getHeaderLine('Cookie');
         $newCookie = $name . '=' . $value;
 
         return $this->withHeader(

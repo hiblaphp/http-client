@@ -8,7 +8,7 @@ describe('Cookie accessors', function () {
 
     test('it can be created and all accessors return the correct values', function () {
         $expires = time() + 3600;
-        $cookie  = new Cookie(
+        $cookie = new Cookie(
             'name',
             'value',
             $expires,
@@ -108,38 +108,42 @@ describe('Cookie::isValidValue', function () {
 describe('Cookie::assertValidName', function () {
 
     test('does not throw for a valid name', function () {
-        expect(fn() => Cookie::assertValidName('session'))->not->toThrow(\InvalidArgumentException::class);
+        expect(fn () => Cookie::assertValidName('session'))->not->toThrow(InvalidArgumentException::class);
     });
 
     test('throws with an empty-name message for an empty string', function () {
-        expect(fn() => Cookie::assertValidName(''))
-            ->toThrow(\InvalidArgumentException::class, 'must not be empty');
+        expect(fn () => Cookie::assertValidName(''))
+            ->toThrow(InvalidArgumentException::class, 'must not be empty')
+        ;
     });
 
     test('throws with an invalid-token message for a name with separator characters', function () {
-        expect(fn() => Cookie::assertValidName('bad name'))
-            ->toThrow(\InvalidArgumentException::class, 'not permitted in an HTTP token');
+        expect(fn () => Cookie::assertValidName('bad name'))
+            ->toThrow(InvalidArgumentException::class, 'not permitted in an HTTP token')
+        ;
     });
 });
 
 describe('Cookie::assertValidValue', function () {
 
     test('does not throw for a valid cookie-octet value', function () {
-        expect(fn() => Cookie::assertValidValue('abc123'))->not->toThrow(\InvalidArgumentException::class);
+        expect(fn () => Cookie::assertValidValue('abc123'))->not->toThrow(InvalidArgumentException::class);
     });
 
     test('does not throw for an empty value', function () {
-        expect(fn() => Cookie::assertValidValue(''))->not->toThrow(\InvalidArgumentException::class);
+        expect(fn () => Cookie::assertValidValue(''))->not->toThrow(InvalidArgumentException::class);
     });
 
     test('throws for a value containing characters outside the cookie-octet set', function () {
-        expect(fn() => Cookie::assertValidValue('bad value'))
-            ->toThrow(\InvalidArgumentException::class, 'cookie-octet set');
+        expect(fn () => Cookie::assertValidValue('bad value'))
+            ->toThrow(InvalidArgumentException::class, 'cookie-octet set')
+        ;
     });
 
     test('throws and suggests Base64 encoding for arbitrary data', function () {
-        expect(fn() => Cookie::assertValidValue('hello world'))
-            ->toThrow(\InvalidArgumentException::class, 'base64_encode');
+        expect(fn () => Cookie::assertValidValue('hello world'))
+            ->toThrow(InvalidArgumentException::class, 'base64_encode')
+        ;
     });
 });
 
@@ -147,8 +151,8 @@ describe('Cookie expiration', function () {
 
     test('RFC 6265 section 4.1.2.1 - isExpired correctly checks expiration via Expires attribute', function () {
         $notExpired = new Cookie('valid', 'data', time() + 3600);
-        $expired    = new Cookie('expired', 'data', time() - 3600);
-        $session    = new Cookie('session', 'data');
+        $expired = new Cookie('expired', 'data', time() - 3600);
+        $session = new Cookie('session', 'data');
 
         expect($notExpired->isExpired())->toBeFalse();
         expect($expired->isExpired())->toBeTrue();
@@ -156,8 +160,8 @@ describe('Cookie expiration', function () {
     });
 
     test('RFC 6265 section 4.1.2.2 - isExpired treats max-age as a relative duration in seconds from time of receipt', function () {
-        $notExpired      = new Cookie('valid', 'data', null, null, null, false, false, 3600);
-        $expiredZero     = new Cookie('expired-zero', 'data', null, null, null, false, false, 0);
+        $notExpired = new Cookie('valid', 'data', null, null, null, false, false, 3600);
+        $expiredZero = new Cookie('expired-zero', 'data', null, null, null, false, false, 0);
         $expiredNegative = new Cookie('expired-neg', 'data', null, null, null, false, false, -100);
 
         expect($notExpired->isExpired())->toBeFalse();
@@ -271,8 +275,8 @@ describe('Cookie serialization', function () {
 
     test('RFC 6265 section 4.1.1 - toSetCookieHeader serializes all attributes in the correct format', function () {
         $expires = mktime(7, 28, 0, 10, 21, 2025);
-        $cookie  = new Cookie('SID', 'xyz', $expires, '.example.com', '/', true, true, null, 'Lax');
-        $header  = $cookie->toSetCookieHeader();
+        $cookie = new Cookie('SID', 'xyz', $expires, '.example.com', '/', true, true, null, 'Lax');
+        $header = $cookie->toSetCookieHeader();
 
         expect($header)->toStartWith('SID=');
         expect($header)->toContain('Domain=.example.com');
@@ -324,28 +328,17 @@ describe('Cookie::matches', function () {
     });
 
     dataset('domain_matching', [
-        'RFC 6265 section 5.1.3 - leading dot enables subdomain matching'
-        => ['.example.com', 'www.example.com', true],
-        'RFC 6265 section 5.1.3 - leading dot also matches the bare domain exactly'
-        => ['.example.com', 'example.com', true],
-        'RFC 6265 section 5.1.3 - exact match without leading dot'
-        => ['example.com', 'example.com', true],
-        'RFC 6265 section 5.1.3 - no subdomain matching when domain has no leading dot'
-        => ['example.com', 'www.example.com', false],
-        'RFC 6265 section 5.1.3 - shorter request domain must not match longer cookie domain'
-        => ['www.example.com', 'example.com', false],
-        'RFC 6265 section 5.1.3 - completely different domain does not match'
-        => ['.test.com', 'example.com', false],
-        'RFC 6265 section 5.1.3 - domain comparison is case-insensitive uppercase cookie domain'
-        => ['.EXAMPLE.COM', 'www.example.com', true],
-        'RFC 6265 section 5.1.3 - domain comparison is case-insensitive mixed-case request domain'
-        => ['Example.Com', 'example.com', true],
-        'RFC 6265 section 5.1.3 - suffix match does not apply to raw IPv4 addresses'
-        => ['.1.1', '192.168.1.1', false],
-        'RFC 6265 section 5.1.3 - suffix match does not apply to raw IPv6 addresses'
-        => ['.1', '::1', false],
-        'RFC 6265 section 5.1.3 - partial string match without a dot boundary is rejected'
-        => ['.example.com', 'notexample.com', false],
+        'RFC 6265 section 5.1.3 - leading dot enables subdomain matching' => ['.example.com', 'www.example.com', true],
+        'RFC 6265 section 5.1.3 - leading dot also matches the bare domain exactly' => ['.example.com', 'example.com', true],
+        'RFC 6265 section 5.1.3 - exact match without leading dot' => ['example.com', 'example.com', true],
+        'RFC 6265 section 5.1.3 - no subdomain matching when domain has no leading dot' => ['example.com', 'www.example.com', false],
+        'RFC 6265 section 5.1.3 - shorter request domain must not match longer cookie domain' => ['www.example.com', 'example.com', false],
+        'RFC 6265 section 5.1.3 - completely different domain does not match' => ['.test.com', 'example.com', false],
+        'RFC 6265 section 5.1.3 - domain comparison is case-insensitive uppercase cookie domain' => ['.EXAMPLE.COM', 'www.example.com', true],
+        'RFC 6265 section 5.1.3 - domain comparison is case-insensitive mixed-case request domain' => ['Example.Com', 'example.com', true],
+        'RFC 6265 section 5.1.3 - suffix match does not apply to raw IPv4 addresses' => ['.1.1', '192.168.1.1', false],
+        'RFC 6265 section 5.1.3 - suffix match does not apply to raw IPv6 addresses' => ['.1', '::1', false],
+        'RFC 6265 section 5.1.3 - partial string match without a dot boundary is rejected' => ['.example.com', 'notexample.com', false],
     ]);
 
     test('it matches domains correctly', function ($cookieDomain, $requestDomain, $shouldMatch) {
@@ -354,22 +347,14 @@ describe('Cookie::matches', function () {
     })->with('domain_matching');
 
     dataset('path_matching', [
-        'RFC 6265 section 5.1.4 - root path matches any request path'
-        => ['/', '/any/path', true],
-        'RFC 6265 section 5.1.4 - exact path match'
-        => ['/api', '/api', true],
-        'RFC 6265 section 5.1.4 - cookie path is a prefix of the request path separated by a slash'
-        => ['/api', '/api/v1', true],
-        'RFC 6265 section 5.1.4 - cookie path prefix match when request path has trailing slash'
-        => ['/api', '/api/', true],
-        'RFC 6265 section 5.1.4 - cookie path with trailing slash matches subdirectory'
-        => ['/api/', '/api/v1', true],
-        'RFC 6265 section 5.1.4 - prefix match requires a slash boundary not just a string prefix'
-        => ['/api', '/apiv1', false],
-        'RFC 6265 section 5.1.4 - deeper cookie path does not match shorter request path'
-        => ['/api', '/', false],
-        'RFC 6265 section 5.1.4 - cookie path does not match a completely different path'
-        => ['/api', '/web', false],
+        'RFC 6265 section 5.1.4 - root path matches any request path' => ['/', '/any/path', true],
+        'RFC 6265 section 5.1.4 - exact path match' => ['/api', '/api', true],
+        'RFC 6265 section 5.1.4 - cookie path is a prefix of the request path separated by a slash' => ['/api', '/api/v1', true],
+        'RFC 6265 section 5.1.4 - cookie path prefix match when request path has trailing slash' => ['/api', '/api/', true],
+        'RFC 6265 section 5.1.4 - cookie path with trailing slash matches subdirectory' => ['/api/', '/api/v1', true],
+        'RFC 6265 section 5.1.4 - prefix match requires a slash boundary not just a string prefix' => ['/api', '/apiv1', false],
+        'RFC 6265 section 5.1.4 - deeper cookie path does not match shorter request path' => ['/api', '/', false],
+        'RFC 6265 section 5.1.4 - cookie path does not match a completely different path' => ['/api', '/web', false],
     ]);
 
     test('it matches paths correctly', function ($cookiePath, $requestPath, $shouldMatch) {

@@ -52,7 +52,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
             );
 
             $cookies = array_values($jar->getCookies(HttpBin::host(), '/'));
-            $names   = array_map(fn(Cookie $c) => $c->getName(), $cookies);
+            $names = array_map(fn (Cookie $c) => $c->getName(), $cookies);
 
             expect($names)->toContain('stream_inbound');
         });
@@ -121,7 +121,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
                     })
             );
 
-            $data    = json_decode($chunks, true);
+            $data = json_decode($chunks, true);
             $cookies = $data['cookies'];
 
             expect($cookies)->toHaveKey('jar_stream');
@@ -183,7 +183,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
         });
 
         test('Set-Cookie header from a download response is stored in the jar', function () {
-            $jar         = new CookieJar();
+            $jar = new CookieJar();
             $destination = tempnam(sys_get_temp_dir(), 'hibla_dl_');
 
             try {
@@ -199,7 +199,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 );
 
                 $cookies = array_values($jar->getCookies(HttpBin::host(), '/'));
-                $names   = array_map(fn(Cookie $c) => $c->getName(), $cookies);
+                $names = array_map(fn (Cookie $c) => $c->getName(), $cookies);
 
                 expect($names)->toContain('download_inbound');
             } finally {
@@ -210,7 +210,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
         });
 
         test('cookie stored from a download response is replayed on the next regular request', function () {
-            $jar         = new CookieJar();
+            $jar = new CookieJar();
             $destination = tempnam(sys_get_temp_dir(), 'hibla_dl_');
 
             try {
@@ -240,7 +240,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
         });
 
         test('cookie stored from a download response is replayed on the next download request', function () {
-            $jar          = new CookieJar();
+            $jar = new CookieJar();
             $destination1 = tempnam(sys_get_temp_dir(), 'hibla_dl_');
             $destination2 = tempnam(sys_get_temp_dir(), 'hibla_dl_');
 
@@ -316,7 +316,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
                         ->download(HttpBin::url('/cookies'), $destination)
                 );
 
-                $data    = json_decode(file_get_contents($destination), true);
+                $data = json_decode(file_get_contents($destination), true);
                 $cookies = $data['cookies'];
 
                 expect($cookies['dl_a'])->toBe('1');
@@ -353,7 +353,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
 
                 expect($result['status'])->toBe(200);
                 $cookies = array_values($jar->getCookies(HttpBin::host(), '/'));
-                $names   = array_map(fn(Cookie $c) => $c->getName(), $cookies);
+                $names = array_map(fn (Cookie $c) => $c->getName(), $cookies);
                 expect($names)->toContain('upload_token');
             } finally {
                 if (file_exists($source)) {
@@ -363,7 +363,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
         });
 
         test('Set-Cookie header from an upload response is stored in the jar', function () {
-            $jar    = new CookieJar();
+            $jar = new CookieJar();
             $source = tempnam(sys_get_temp_dir(), 'hibla_ul_');
             file_put_contents($source, 'test upload content');
 
@@ -381,7 +381,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 );
 
                 $cookies = array_values($jar->getCookies(HttpBin::host(), '/'));
-                $names   = array_map(fn(Cookie $c) => $c->getName(), $cookies);
+                $names = array_map(fn (Cookie $c) => $c->getName(), $cookies);
 
                 expect($names)->toContain('upload_inbound');
             } finally {
@@ -392,7 +392,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
         });
 
         test('cookie stored from an upload response is replayed on the next regular request', function () {
-            $jar    = new CookieJar();
+            $jar = new CookieJar();
             $source = tempnam(sys_get_temp_dir(), 'hibla_ul_');
             file_put_contents($source, 'test upload content');
 
@@ -472,7 +472,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 );
 
                 $cookies = array_values($jar->getCookies(HttpBin::host(), '/'));
-                $names   = array_map(fn(Cookie $c) => $c->getName(), $cookies);
+                $names = array_map(fn (Cookie $c) => $c->getName(), $cookies);
 
                 expect($names)->toContain('persistent');
             } finally {
@@ -502,7 +502,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
             );
 
             $cookies = array_values($jar->getCookies(HttpBin::host(), '/'));
-            $names   = array_map(fn(Cookie $c) => $c->getName(), $cookies);
+            $names = array_map(fn (Cookie $c) => $c->getName(), $cookies);
 
             expect($names)->toContain('sse_token');
         });
@@ -520,7 +520,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
             );
 
             $cookies = array_values($jar->getCookies(HttpBin::host(), '/'));
-            $names   = array_map(fn(Cookie $c) => $c->getName(), $cookies);
+            $names = array_map(fn (Cookie $c) => $c->getName(), $cookies);
 
             expect($names)->toContain('sse_inbound');
         });
@@ -583,7 +583,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
             );
 
             $cookies = array_values($jar->getCookies(HttpBin::host(), '/'));
-            $names   = array_map(fn(Cookie $c) => $c->getName(), $cookies);
+            $names = array_map(fn (Cookie $c) => $c->getName(), $cookies);
 
             expect($names)->toContain('persistent_sse');
         });

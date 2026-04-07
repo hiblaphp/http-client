@@ -25,13 +25,14 @@ describe('HttpBin Integration Tests', function () {
     test('sends a POST request with JSON body', function () {
         $payload = [
             'title' => 'Integration Test Post',
-            'body'  => 'This is a test post from our integration tests',
+            'body' => 'This is a test post from our integration tests',
             'userId' => 1,
         ];
 
         $response = Http::withJson($payload)
             ->post(HttpBin::url('/post'))
-            ->wait();
+            ->wait()
+        ;
 
         expect($response->status())->toBe(200)
             ->and($response->json('json.title'))->toBe('Integration Test Post')
@@ -43,12 +44,13 @@ describe('HttpBin Integration Tests', function () {
     test('sends a PUT request with JSON body', function () {
         $payload = [
             'title' => 'Updated Title',
-            'body'  => 'Updated body content',
+            'body' => 'Updated body content',
         ];
 
         $response = Http::withJson($payload)
             ->put(HttpBin::url('/put'))
-            ->wait();
+            ->wait()
+        ;
 
         expect($response->status())->toBe(200)
             ->and($response->json('json.title'))->toBe('Updated Title')
@@ -59,7 +61,8 @@ describe('HttpBin Integration Tests', function () {
     test('sends a PATCH request with JSON body', function () {
         $response = Http::withJson(['title' => 'Patched Title'])
             ->patch(HttpBin::url('/patch'))
-            ->wait();
+            ->wait()
+        ;
 
         expect($response->status())->toBe(200)
             ->and($response->json('json.title'))->toBe('Patched Title')
@@ -121,8 +124,8 @@ describe('HttpBin Integration Tests', function () {
     });
 
     test('handles multiple sequential requests', function () {
-        $getResponse    = Http::get(HttpBin::url('/get'))->wait();
-        $postResponse   = Http::withJson(['key' => 'value'])->post(HttpBin::url('/post'))->wait();
+        $getResponse = Http::get(HttpBin::url('/get'))->wait();
+        $postResponse = Http::withJson(['key' => 'value'])->post(HttpBin::url('/post'))->wait();
         $deleteResponse = Http::delete(HttpBin::url('/delete'))->wait();
 
         expect($getResponse->status())->toBe(200)
@@ -134,10 +137,11 @@ describe('HttpBin Integration Tests', function () {
     test('sends custom headers and server echoes them back', function () {
         $response = Http::withHeaders([
             'X-Custom-Header' => 'test-value',
-            'Accept'          => 'application/json',
+            'Accept' => 'application/json',
         ])
             ->get(HttpBin::url('/headers'))
-            ->wait();
+            ->wait()
+        ;
 
         expect($response->status())->toBe(200)
             ->and($response->json('headers.X-Custom-Header.0'))->toBe('test-value')
@@ -148,7 +152,8 @@ describe('HttpBin Integration Tests', function () {
         $response = Http::timeout(30)
             ->connectTimeout(10)
             ->get(HttpBin::url('/get'))
-            ->wait();
+            ->wait()
+        ;
 
         expect($response->status())->toBe(200);
     });
@@ -176,12 +181,13 @@ describe('HttpBin Integration Tests', function () {
     test('posts form data', function () {
         $response = Http::asForm()
             ->withForm([
-                'title'  => 'Form Data Post',
-                'body'   => 'Posted via form data',
+                'title' => 'Form Data Post',
+                'body' => 'Posted via form data',
                 'userId' => '1',
             ])
             ->post(HttpBin::url('/post'))
-            ->wait();
+            ->wait()
+        ;
 
         expect($response->status())->toBe(200)
             ->and($response->json('form.title.0'))->toBe('Form Data Post')
@@ -190,7 +196,7 @@ describe('HttpBin Integration Tests', function () {
     });
 
     test('handles delayed response', function () {
-        $start    = microtime(true);
+        $start = microtime(true);
         $response = Http::get(HttpBin::url('/delay/1'))->wait();
         $duration = microtime(true) - $start;
 
@@ -210,7 +216,8 @@ describe('HttpBin Integration Tests', function () {
     test('follows redirects', function () {
         $response = Http::redirects(true, 5)
             ->get(HttpBin::url('/absolute-redirect/2'))
-            ->wait();
+            ->wait()
+        ;
 
         expect($response->status())->toBe(200)
             ->and($response->successful())->toBeTrue()
@@ -220,7 +227,8 @@ describe('HttpBin Integration Tests', function () {
     test('does not follow redirects when disabled', function () {
         $response = Http::redirects(false)
             ->get(HttpBin::url('/absolute-redirect/1'))
-            ->wait();
+            ->wait()
+        ;
 
         expect($response->status())->toBe(302);
     });
@@ -234,7 +242,7 @@ describe('Mock Handler Integration Tests', function () {
         $handler->mock('GET')
             ->url(HttpBin::url('/get'))
             ->respondJson([
-                'url'     => HttpBin::url('/get'),
+                'url' => HttpBin::url('/get'),
                 'headers' => ['Host' => HttpBin::host()],
             ])
             ->register()
@@ -243,7 +251,8 @@ describe('Mock Handler Integration Tests', function () {
         $response = (new HttpClient())
             ->setHandler($handler)
             ->get(HttpBin::url('/get'))
-            ->wait();
+            ->wait()
+        ;
 
         expect($response->status())->toBe(200)
             ->and($response->json('url'))->toBe(HttpBin::url('/get'))
@@ -265,7 +274,8 @@ describe('Mock Handler Integration Tests', function () {
         $response = (new HttpClient())
             ->setHandler($handler)
             ->get(HttpBin::url('/delay/1'))
-            ->wait();
+            ->wait()
+        ;
 
         $duration = microtime(true) - $start;
 
@@ -288,7 +298,8 @@ describe('Mock Handler Integration Tests', function () {
             ->retry(5, 0.01)
             ->withJson(['title' => 'Test', 'body' => 'Test', 'userId' => 1])
             ->post(HttpBin::url('/post'))
-            ->wait();
+            ->wait()
+        ;
 
         expect($response->status())->toBe(200)
             ->and($response->json())->toHaveKey('success', true)
@@ -308,7 +319,8 @@ describe('Mock Handler Integration Tests', function () {
             ->setHandler($handler)
             ->retry(5, 0.01)
             ->get(HttpBin::url('/get'))
-            ->wait();
+            ->wait()
+        ;
 
         expect($response->status())->toBe(200)
             ->and($response->json())->toHaveKey('success', true)

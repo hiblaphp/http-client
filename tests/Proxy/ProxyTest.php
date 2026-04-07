@@ -16,7 +16,8 @@ describe('Proxy', function () {
             expect($config->getProxyUrl())->toBe('http://proxy.local:8080')
                 ->and($config->type)->toBe('http')
                 ->and($config->username)->toBeNull()
-                ->and($config->password)->toBeNull();
+                ->and($config->password)->toBeNull()
+            ;
         });
 
         it('builds an HTTP proxy URL with credentials', function () {
@@ -29,7 +30,8 @@ describe('Proxy', function () {
             $config = ProxyConfig::socks4('10.0.0.1', 1080, 'user');
 
             expect($config->getProxyUrl())->toBe('socks4://user@10.0.0.1:1080')
-                ->and($config->password)->toBeNull();
+                ->and($config->password)->toBeNull()
+            ;
         });
 
         it('builds a SOCKS5 proxy URL with credentials', function () {
@@ -43,13 +45,15 @@ describe('Proxy', function () {
 
             expect($config->getProxyUrl())->toBe('socks5://10.0.0.1:1080')
                 ->and($config->username)->toBeNull()
-                ->and($config->password)->toBeNull();
+                ->and($config->password)->toBeNull()
+            ;
         });
 
         it('returns correct cURL proxy type constants', function () {
             expect(ProxyConfig::http('h', 1)->getCurlProxyType())->toBe(CURLPROXY_HTTP)
                 ->and(ProxyConfig::socks4('h', 1)->getCurlProxyType())->toBe(CURLPROXY_SOCKS4A)
-                ->and(ProxyConfig::socks5('h', 1)->getCurlProxyType())->toBe(CURLPROXY_SOCKS5_HOSTNAME);
+                ->and(ProxyConfig::socks5('h', 1)->getCurlProxyType())->toBe(CURLPROXY_SOCKS5_HOSTNAME)
+            ;
         });
     });
 
@@ -65,7 +69,8 @@ describe('Proxy', function () {
         it('noProxy() strips a previously configured proxy', function () {
             $stripped = ProxySetup::client()
                 ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
-                ->noProxy();
+                ->noProxy()
+            ;
 
             expect(ProxySetup::readPrivate($stripped, 'proxyConfig'))->toBeNull();
         });
@@ -86,13 +91,14 @@ describe('Proxy', function () {
         });
 
         it('does not mutate the base instance when branching', function () {
-            $base      = ProxySetup::client()->withToken('tok')->asJson();
-            $proxied   = $base->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort());
+            $base = ProxySetup::client()->withToken('tok')->asJson();
+            $proxied = $base->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort());
             $unproxied = $base->noProxy();
 
             expect(ProxySetup::readPrivate($proxied, 'proxyConfig'))->not->toBeNull()
                 ->and(ProxySetup::readPrivate($unproxied, 'proxyConfig'))->toBeNull()
-                ->and(ProxySetup::readPrivate($base, 'proxyConfig'))->toBeNull();
+                ->and(ProxySetup::readPrivate($base, 'proxyConfig'))->toBeNull()
+            ;
         });
 
         it('the last withProxy() call wins', function () {
@@ -104,7 +110,8 @@ describe('Proxy', function () {
             );
 
             expect($config->host)->toBe('second.proxy')
-                ->and($config->port)->toBe(9090);
+                ->and($config->port)->toBe(9090)
+            ;
         });
 
         it('switching proxy type mid-chain stores the latest type', function () {
@@ -116,7 +123,8 @@ describe('Proxy', function () {
             );
 
             expect($config->type)->toBe('socks5')
-                ->and($config->host)->toBe('socks.proxy');
+                ->and($config->host)->toBe('socks.proxy')
+            ;
         });
     });
 
@@ -131,10 +139,12 @@ describe('Proxy', function () {
             $response = ProxySetup::client()
                 ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
                 ->get(HttpBin::proxyUrl('/get'))
-                ->wait();
+                ->wait()
+            ;
 
             expect($response->successful())->toBeTrue()
-                ->and($response->json('url'))->not->toBeEmpty();
+                ->and($response->json('url'))->not->toBeEmpty()
+            ;
         });
 
         it('forwards custom headers through the proxy', function () {
@@ -142,38 +152,45 @@ describe('Proxy', function () {
                 ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
                 ->withHeader('X-Proxy-Test', 'squid')
                 ->get(HttpBin::proxyUrl('/headers'))
-                ->wait();
+                ->wait()
+            ;
 
             expect($response->successful())->toBeTrue()
-                ->and($response->json('headers.X-Proxy-Test.0'))->toBe('squid');
+                ->and($response->json('headers.X-Proxy-Test.0'))->toBe('squid')
+            ;
         });
 
         it('POSTs JSON through the HTTP proxy', function () {
             $response = ProxySetup::client()
                 ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
                 ->post(HttpBin::proxyUrl('/post'), ['proxy' => 'http', 'framework' => 'pest'])
-                ->wait();
+                ->wait()
+            ;
 
             expect($response->successful())->toBeTrue()
                 ->and($response->json('json.proxy'))->toBe('http')
-                ->and($response->json('json.framework'))->toBe('pest');
+                ->and($response->json('json.framework'))->toBe('pest')
+            ;
         });
 
         it('PUTs JSON through the HTTP proxy', function () {
             $response = ProxySetup::client()
                 ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
                 ->put(HttpBin::proxyUrl('/put'), ['action' => 'update'])
-                ->wait();
+                ->wait()
+            ;
 
             expect($response->successful())->toBeTrue()
-                ->and($response->json('json.action'))->toBe('update');
+                ->and($response->json('json.action'))->toBe('update')
+            ;
         });
 
         it('DELETEs through the HTTP proxy', function () {
             $response = ProxySetup::client()
                 ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
                 ->delete(HttpBin::proxyUrl('/delete'))
-                ->wait();
+                ->wait()
+            ;
 
             expect($response->successful())->toBeTrue();
         });
@@ -183,7 +200,8 @@ describe('Proxy', function () {
                 ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
                 ->noProxy()
                 ->get(HttpBin::url('/get'))
-                ->wait();
+                ->wait()
+            ;
 
             expect($response->successful())->toBeTrue();
         });
@@ -193,7 +211,8 @@ describe('Proxy', function () {
                 ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
                 ->redirects(true, 5)
                 ->get(HttpBin::proxyUrl('/absolute-redirect/2'))
-                ->wait();
+                ->wait()
+            ;
 
             expect($response->successful())->toBeTrue();
         });
@@ -203,7 +222,8 @@ describe('Proxy', function () {
                 ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
                 ->redirects(false)
                 ->get(HttpBin::proxyUrl('/absolute-redirect/1'))
-                ->wait();
+                ->wait()
+            ;
 
             expect($response->status())->toBe(302);
         });
@@ -212,31 +232,37 @@ describe('Proxy', function () {
             $response = ProxySetup::client()
                 ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
                 ->post(HttpBin::proxyUrl('/post'), ['data' => str_repeat('x', 10_000)])
-                ->wait();
+                ->wait()
+            ;
 
             expect($response->successful())->toBeTrue()
-                ->and(strlen($response->json('json.data')))->toBe(10_000);
+                ->and(strlen($response->json('json.data')))->toBe(10_000)
+            ;
         });
 
         it('preserves query parameters', function () {
             $response = ProxySetup::client()
                 ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
                 ->get(HttpBin::proxyUrl('/get') . '?foo=bar&baz=qux')
-                ->wait();
+                ->wait()
+            ;
 
             expect($response->successful())->toBeTrue()
                 ->and($response->json('args.foo.0'))->toBe('bar')
-                ->and($response->json('args.baz.0'))->toBe('qux');
+                ->and($response->json('args.baz.0'))->toBe('qux')
+            ;
         });
 
         it('handles 204 No Content', function () {
             $response = ProxySetup::client()
                 ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
                 ->get(HttpBin::proxyUrl('/status/204'))
-                ->wait();
+                ->wait()
+            ;
 
             expect($response->status())->toBe(204)
-                ->and($response->body())->toBe('');
+                ->and($response->body())->toBe('')
+            ;
         });
     });
 
@@ -251,20 +277,24 @@ describe('Proxy', function () {
             $response = ProxySetup::client()
                 ->withSocks5Proxy(ProxySetup::socks5Host(), ProxySetup::socks5Port(), ProxySetup::socks5User(), ProxySetup::socks5Pass())
                 ->get(HttpBin::socksProxyUrl('/get'))
-                ->wait();
+                ->wait()
+            ;
 
             expect($response->successful())->toBeTrue()
-                ->and($response->json('url'))->not->toBeEmpty();
+                ->and($response->json('url'))->not->toBeEmpty()
+            ;
         });
 
         it('POSTs JSON through SOCKS5', function () {
             $response = ProxySetup::client()
                 ->withSocks5Proxy(ProxySetup::socks5Host(), ProxySetup::socks5Port(), ProxySetup::socks5User(), ProxySetup::socks5Pass())
                 ->post(HttpBin::socksProxyUrl('/post'), ['via' => 'socks5'])
-                ->wait();
+                ->wait()
+            ;
 
             expect($response->successful())->toBeTrue()
-                ->and($response->json('json.via'))->toBe('socks5');
+                ->and($response->json('json.via'))->toBe('socks5')
+            ;
         });
 
         it('forwards custom headers through SOCKS5', function () {
@@ -272,10 +302,12 @@ describe('Proxy', function () {
                 ->withSocks5Proxy(ProxySetup::socks5Host(), ProxySetup::socks5Port(), ProxySetup::socks5User(), ProxySetup::socks5Pass())
                 ->withHeader('X-Proxy-Test', 'socks5')
                 ->get(HttpBin::socksProxyUrl('/headers'))
-                ->wait();
+                ->wait()
+            ;
 
             expect($response->successful())->toBeTrue()
-                ->and($response->json('headers.X-Proxy-Test.0'))->toBe('socks5');
+                ->and($response->json('headers.X-Proxy-Test.0'))->toBe('socks5')
+            ;
         });
 
         it('authenticates with SOCKS5 when credentials are set', function () {
@@ -289,7 +321,8 @@ describe('Proxy', function () {
             $response = ProxySetup::client()
                 ->withSocks5Proxy(ProxySetup::socks5Host(), ProxySetup::socks5Port(), $user, $pass)
                 ->get(HttpBin::socksProxyUrl('/get'))
-                ->wait();
+                ->wait()
+            ;
 
             expect($response->successful())->toBeTrue();
         });
@@ -299,7 +332,8 @@ describe('Proxy', function () {
                 ->withSocks5Proxy(ProxySetup::socks5Host(), ProxySetup::socks5Port(), ProxySetup::socks5User(), ProxySetup::socks5Pass())
                 ->redirects(true, 5)
                 ->get(HttpBin::socksProxyUrl('/absolute-redirect/2'))
-                ->wait();
+                ->wait()
+            ;
 
             expect($response->successful())->toBeTrue();
         });
@@ -308,31 +342,37 @@ describe('Proxy', function () {
             $response = ProxySetup::client()
                 ->withSocks5Proxy(ProxySetup::socks5Host(), ProxySetup::socks5Port(), ProxySetup::socks5User(), ProxySetup::socks5Pass())
                 ->post(HttpBin::socksProxyUrl('/post'), ['data' => str_repeat('y', 10_000)])
-                ->wait();
+                ->wait()
+            ;
 
             expect($response->successful())->toBeTrue()
-                ->and(strlen($response->json('json.data')))->toBe(10_000);
+                ->and(strlen($response->json('json.data')))->toBe(10_000)
+            ;
         });
 
         it('preserves query parameters through SOCKS5', function () {
             $response = ProxySetup::client()
                 ->withSocks5Proxy(ProxySetup::socks5Host(), ProxySetup::socks5Port(), ProxySetup::socks5User(), ProxySetup::socks5Pass())
                 ->get(HttpBin::socksProxyUrl('/get') . '?via=socks5&test=1')
-                ->wait();
+                ->wait()
+            ;
 
             expect($response->successful())->toBeTrue()
                 ->and($response->json('args.via.0'))->toBe('socks5')
-                ->and($response->json('args.test.0'))->toBe('1');
+                ->and($response->json('args.test.0'))->toBe('1')
+            ;
         });
 
         it('handles 204 No Content through SOCKS5', function () {
             $response = ProxySetup::client()
                 ->withSocks5Proxy(ProxySetup::socks5Host(), ProxySetup::socks5Port(), ProxySetup::socks5User(), ProxySetup::socks5Pass())
                 ->get(HttpBin::socksProxyUrl('/status/204'))
-                ->wait();
+                ->wait()
+            ;
 
             expect($response->status())->toBe(204)
-                ->and($response->body())->toBe('');
+                ->and($response->body())->toBe('')
+            ;
         });
     });
 
@@ -347,20 +387,24 @@ describe('Proxy', function () {
             $response = ProxySetup::client()
                 ->withSocks4Proxy(ProxySetup::socks4Host(), ProxySetup::socks4Port())
                 ->get(HttpBin::socksProxyUrl('/get'))
-                ->wait();
+                ->wait()
+            ;
 
             expect($response->successful())->toBeTrue()
-                ->and($response->json('url'))->not->toBeEmpty();
+                ->and($response->json('url'))->not->toBeEmpty()
+            ;
         });
 
         it('POSTs JSON through SOCKS4', function () {
             $response = ProxySetup::client()
                 ->withSocks4Proxy(ProxySetup::socks4Host(), ProxySetup::socks4Port())
                 ->post(HttpBin::socksProxyUrl('/post'), ['via' => 'socks4'])
-                ->wait();
+                ->wait()
+            ;
 
             expect($response->successful())->toBeTrue()
-                ->and($response->json('json.via'))->toBe('socks4');
+                ->and($response->json('json.via'))->toBe('socks4')
+            ;
         });
 
         it('follows redirects through SOCKS4', function () {
@@ -368,7 +412,8 @@ describe('Proxy', function () {
                 ->withSocks4Proxy(ProxySetup::socks4Host(), ProxySetup::socks4Port())
                 ->redirects(true, 5)
                 ->get(HttpBin::socksProxyUrl('/absolute-redirect/2'))
-                ->wait();
+                ->wait()
+            ;
 
             expect($response->successful())->toBeTrue();
         });
@@ -377,21 +422,25 @@ describe('Proxy', function () {
             $response = ProxySetup::client()
                 ->withSocks4Proxy(ProxySetup::socks4Host(), ProxySetup::socks4Port())
                 ->post(HttpBin::socksProxyUrl('/post'), ['data' => str_repeat('z', 10_000)])
-                ->wait();
+                ->wait()
+            ;
 
             expect($response->successful())->toBeTrue()
-                ->and(strlen($response->json('json.data')))->toBe(10_000);
+                ->and(strlen($response->json('json.data')))->toBe(10_000)
+            ;
         });
 
         it('preserves query parameters through SOCKS4', function () {
             $response = ProxySetup::client()
                 ->withSocks4Proxy(ProxySetup::socks4Host(), ProxySetup::socks4Port())
                 ->get(HttpBin::socksProxyUrl('/get') . '?via=socks4&test=1')
-                ->wait();
+                ->wait()
+            ;
 
             expect($response->successful())->toBeTrue()
                 ->and($response->json('args.via.0'))->toBe('socks4')
-                ->and($response->json('args.test.0'))->toBe('1');
+                ->and($response->json('args.test.0'))->toBe('1')
+            ;
         });
     });
 
@@ -409,15 +458,18 @@ describe('Proxy', function () {
             $viaHttp = $base
                 ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
                 ->get(HttpBin::proxyUrl('/get'))
-                ->wait();
+                ->wait()
+            ;
 
             $viaSocks5 = $base
                 ->withSocks5Proxy(ProxySetup::socks5Host(), ProxySetup::socks5Port(), ProxySetup::socks5User(), ProxySetup::socks5Pass())
                 ->get(HttpBin::socksProxyUrl('/get'))
-                ->wait();
+                ->wait()
+            ;
 
             expect($viaHttp->successful())->toBeTrue()
-                ->and($viaSocks5->successful())->toBeTrue();
+                ->and($viaSocks5->successful())->toBeTrue()
+            ;
         });
 
         it('base client is unaffected after branching', function () {
@@ -425,7 +477,8 @@ describe('Proxy', function () {
 
             $base->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
                 ->get(HttpBin::proxyUrl('/get'))
-                ->wait();
+                ->wait()
+            ;
 
             expect(ProxySetup::readPrivate($base, 'proxyConfig'))->toBeNull();
         });
@@ -439,7 +492,7 @@ describe('Proxy', function () {
 
         it('throws on unreachable HTTP proxy', function () {
             expect(
-                fn() => ProxySetup::client(timeout: 3)
+                fn () => ProxySetup::client(timeout: 3)
                     ->withProxy('127.0.0.1', 19999)
                     ->get(HttpBin::url('/get'))
                     ->wait()
@@ -448,7 +501,7 @@ describe('Proxy', function () {
 
         it('throws on unreachable SOCKS5 proxy', function () {
             expect(
-                fn() => ProxySetup::client(timeout: 3)
+                fn () => ProxySetup::client(timeout: 3)
                     ->withSocks5Proxy('127.0.0.1', 19998)
                     ->get(HttpBin::socksProxyUrl('/get'))
                     ->wait()
@@ -457,7 +510,7 @@ describe('Proxy', function () {
 
         it('throws on unreachable SOCKS4 proxy', function () {
             expect(
-                fn() => ProxySetup::client(timeout: 3)
+                fn () => ProxySetup::client(timeout: 3)
                     ->withSocks4Proxy('127.0.0.1', 19997)
                     ->get(HttpBin::socksProxyUrl('/get'))
                     ->wait()
@@ -472,7 +525,7 @@ describe('Proxy', function () {
             }
 
             expect(
-                fn() => ProxySetup::client(timeout: 3)
+                fn () => ProxySetup::client(timeout: 3)
                     ->withSocks5Proxy(ProxySetup::socks5Host(), ProxySetup::socks5Port(), 'wrong_user', 'wrong_pass')
                     ->get(HttpBin::socksProxyUrl('/get'))
                     ->wait()
@@ -492,7 +545,8 @@ describe('Proxy', function () {
             $response = ProxySetup::client()
                 ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
                 ->get(HttpBin::proxyUrl('/stream/5'))
-                ->wait();
+                ->wait()
+            ;
 
             expect($response->successful())->toBeTrue();
 
@@ -502,7 +556,8 @@ describe('Proxy', function () {
             foreach ($lines as $line) {
                 $decoded = json_decode($line, true);
                 expect($decoded)->toBeArray()
-                    ->and(array_key_exists('id', $decoded))->toBeTrue();
+                    ->and(array_key_exists('id', $decoded))->toBeTrue()
+                ;
             }
         });
 
@@ -512,7 +567,8 @@ describe('Proxy', function () {
             $response = ProxySetup::client()
                 ->withSocks5Proxy(ProxySetup::socks5Host(), ProxySetup::socks5Port(), ProxySetup::socks5User(), ProxySetup::socks5Pass())
                 ->get(HttpBin::socksProxyUrl('/stream/5'))
-                ->wait();
+                ->wait()
+            ;
 
             expect($response->successful())->toBeTrue();
 
@@ -522,7 +578,8 @@ describe('Proxy', function () {
             foreach ($lines as $line) {
                 $decoded = json_decode($line, true);
                 expect($decoded)->toBeArray()
-                    ->and(array_key_exists('id', $decoded))->toBeTrue();
+                    ->and(array_key_exists('id', $decoded))->toBeTrue()
+                ;
             }
         });
 
@@ -532,7 +589,8 @@ describe('Proxy', function () {
             $response = ProxySetup::client()
                 ->withSocks4Proxy(ProxySetup::socks4Host(), ProxySetup::socks4Port())
                 ->get(HttpBin::socksProxyUrl('/stream/5'))
-                ->wait();
+                ->wait()
+            ;
 
             expect($response->successful())->toBeTrue();
 
@@ -542,7 +600,8 @@ describe('Proxy', function () {
             foreach ($lines as $line) {
                 $decoded = json_decode($line, true);
                 expect($decoded)->toBeArray()
-                    ->and(array_key_exists('id', $decoded))->toBeTrue();
+                    ->and(array_key_exists('id', $decoded))->toBeTrue()
+                ;
             }
         });
 
@@ -552,10 +611,12 @@ describe('Proxy', function () {
             $response = ProxySetup::client()
                 ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
                 ->get(HttpBin::proxyUrl('/stream-bytes/1024'))
-                ->wait();
+                ->wait()
+            ;
 
             expect($response->successful())->toBeTrue()
-                ->and(strlen($response->body()))->toBe(1024);
+                ->and(strlen($response->body()))->toBe(1024)
+            ;
         });
 
         it('streams raw bytes through SOCKS5', function () {
@@ -564,10 +625,12 @@ describe('Proxy', function () {
             $response = ProxySetup::client()
                 ->withSocks5Proxy(ProxySetup::socks5Host(), ProxySetup::socks5Port(), ProxySetup::socks5User(), ProxySetup::socks5Pass())
                 ->get(HttpBin::socksProxyUrl('/stream-bytes/1024'))
-                ->wait();
+                ->wait()
+            ;
 
             expect($response->successful())->toBeTrue()
-                ->and(strlen($response->body()))->toBe(1024);
+                ->and(strlen($response->body()))->toBe(1024)
+            ;
         });
 
         it('streams raw bytes through SOCKS4', function () {
@@ -576,10 +639,12 @@ describe('Proxy', function () {
             $response = ProxySetup::client()
                 ->withSocks4Proxy(ProxySetup::socks4Host(), ProxySetup::socks4Port())
                 ->get(HttpBin::socksProxyUrl('/stream-bytes/1024'))
-                ->wait();
+                ->wait()
+            ;
 
             expect($response->successful())->toBeTrue()
-                ->and(strlen($response->body()))->toBe(1024);
+                ->and(strlen($response->body()))->toBe(1024)
+            ;
         });
     });
 
@@ -595,10 +660,12 @@ describe('Proxy', function () {
             $response = ProxySetup::client()
                 ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
                 ->get(HttpBin::proxyUrl('/bytes/2048'))
-                ->wait();
+                ->wait()
+            ;
 
             expect($response->successful())->toBeTrue()
-                ->and(strlen($response->body()))->toBe(2048);
+                ->and(strlen($response->body()))->toBe(2048)
+            ;
         });
 
         it('downloads binary bytes through SOCKS5', function () {
@@ -607,10 +674,12 @@ describe('Proxy', function () {
             $response = ProxySetup::client()
                 ->withSocks5Proxy(ProxySetup::socks5Host(), ProxySetup::socks5Port(), ProxySetup::socks5User(), ProxySetup::socks5Pass())
                 ->get(HttpBin::socksProxyUrl('/bytes/2048'))
-                ->wait();
+                ->wait()
+            ;
 
             expect($response->successful())->toBeTrue()
-                ->and(strlen($response->body()))->toBe(2048);
+                ->and(strlen($response->body()))->toBe(2048)
+            ;
         });
 
         it('downloads binary bytes through SOCKS4', function () {
@@ -619,10 +688,12 @@ describe('Proxy', function () {
             $response = ProxySetup::client()
                 ->withSocks4Proxy(ProxySetup::socks4Host(), ProxySetup::socks4Port())
                 ->get(HttpBin::socksProxyUrl('/bytes/2048'))
-                ->wait();
+                ->wait()
+            ;
 
             expect($response->successful())->toBeTrue()
-                ->and(strlen($response->body()))->toBe(2048);
+                ->and(strlen($response->body()))->toBe(2048)
+            ;
         });
 
         it('downloads a PNG image through HTTP proxy', function () {
@@ -632,11 +703,13 @@ describe('Proxy', function () {
                 ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
                 ->withHeader('Accept', 'image/png')
                 ->get(HttpBin::proxyUrl('/image/png'))
-                ->wait();
+                ->wait()
+            ;
 
             expect($response->successful())->toBeTrue()
                 ->and($response->header('Content-Type'))->toContain('image/png')
-                ->and(strlen($response->body()))->toBeGreaterThan(0);
+                ->and(strlen($response->body()))->toBeGreaterThan(0)
+            ;
         });
 
         it('downloads a PNG image through SOCKS5', function () {
@@ -646,11 +719,13 @@ describe('Proxy', function () {
                 ->withSocks5Proxy(ProxySetup::socks5Host(), ProxySetup::socks5Port(), ProxySetup::socks5User(), ProxySetup::socks5Pass())
                 ->withHeader('Accept', 'image/png')
                 ->get(HttpBin::socksProxyUrl('/image/png'))
-                ->wait();
+                ->wait()
+            ;
 
             expect($response->successful())->toBeTrue()
                 ->and($response->header('Content-Type'))->toContain('image/png')
-                ->and(strlen($response->body()))->toBeGreaterThan(0);
+                ->and(strlen($response->body()))->toBeGreaterThan(0)
+            ;
         });
 
         it('downloads a PNG image through SOCKS4', function () {
@@ -660,11 +735,13 @@ describe('Proxy', function () {
                 ->withSocks4Proxy(ProxySetup::socks4Host(), ProxySetup::socks4Port())
                 ->withHeader('Accept', 'image/png')
                 ->get(HttpBin::socksProxyUrl('/image/png'))
-                ->wait();
+                ->wait()
+            ;
 
             expect($response->successful())->toBeTrue()
                 ->and($response->header('Content-Type'))->toContain('image/png')
-                ->and(strlen($response->body()))->toBeGreaterThan(0);
+                ->and(strlen($response->body()))->toBeGreaterThan(0)
+            ;
         });
     });
 
@@ -677,8 +754,8 @@ describe('Proxy', function () {
         it('uploads a file via multipart form through HTTP proxy', function () {
             ProxySetup::skipIfUnreachable(ProxySetup::httpHost(), ProxySetup::httpPort());
 
-            $content  = str_repeat('proxy-upload-test', 100);
-            $tmpFile  = tempnam(sys_get_temp_dir(), 'proxy_upload_');
+            $content = str_repeat('proxy-upload-test', 100);
+            $tmpFile = tempnam(sys_get_temp_dir(), 'proxy_upload_');
             file_put_contents($tmpFile, $content);
 
             try {
@@ -686,10 +763,12 @@ describe('Proxy', function () {
                     ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
                     ->withFile('file', $tmpFile, 'test.txt')
                     ->post(HttpBin::proxyUrl('/post'))
-                    ->wait();
+                    ->wait()
+                ;
 
                 expect($response->successful())->toBeTrue()
-                    ->and($response->json('files.file'))->not->toBeEmpty();
+                    ->and($response->json('files.file'))->not->toBeEmpty()
+                ;
             } finally {
                 @unlink($tmpFile);
             }
@@ -698,8 +777,8 @@ describe('Proxy', function () {
         it('uploads a file via multipart form through SOCKS5', function () {
             ProxySetup::skipIfUnreachable(ProxySetup::socks5Host(), ProxySetup::socks5Port());
 
-            $content  = str_repeat('socks5-upload-test', 100);
-            $tmpFile  = tempnam(sys_get_temp_dir(), 'proxy_upload_');
+            $content = str_repeat('socks5-upload-test', 100);
+            $tmpFile = tempnam(sys_get_temp_dir(), 'proxy_upload_');
             file_put_contents($tmpFile, $content);
 
             try {
@@ -707,10 +786,12 @@ describe('Proxy', function () {
                     ->withSocks5Proxy(ProxySetup::socks5Host(), ProxySetup::socks5Port(), ProxySetup::socks5User(), ProxySetup::socks5Pass())
                     ->withFile('file', $tmpFile, 'test.txt')
                     ->post(HttpBin::socksProxyUrl('/post'))
-                    ->wait();
+                    ->wait()
+                ;
 
                 expect($response->successful())->toBeTrue()
-                    ->and($response->json('files.file'))->not->toBeEmpty();
+                    ->and($response->json('files.file'))->not->toBeEmpty()
+                ;
             } finally {
                 @unlink($tmpFile);
             }
@@ -719,8 +800,8 @@ describe('Proxy', function () {
         it('uploads a file via multipart form through SOCKS4', function () {
             ProxySetup::skipIfUnreachable(ProxySetup::socks4Host(), ProxySetup::socks4Port());
 
-            $content  = str_repeat('socks4-upload-test', 100);
-            $tmpFile  = tempnam(sys_get_temp_dir(), 'proxy_upload_');
+            $content = str_repeat('socks4-upload-test', 100);
+            $tmpFile = tempnam(sys_get_temp_dir(), 'proxy_upload_');
             file_put_contents($tmpFile, $content);
 
             try {
@@ -728,10 +809,12 @@ describe('Proxy', function () {
                     ->withSocks4Proxy(ProxySetup::socks4Host(), ProxySetup::socks4Port())
                     ->withFile('file', $tmpFile, 'test.txt')
                     ->post(HttpBin::socksProxyUrl('/post'))
-                    ->wait();
+                    ->wait()
+                ;
 
                 expect($response->successful())->toBeTrue()
-                    ->and($response->json('files.file'))->not->toBeEmpty();
+                    ->and($response->json('files.file'))->not->toBeEmpty()
+                ;
             } finally {
                 @unlink($tmpFile);
             }
@@ -747,12 +830,13 @@ describe('Proxy', function () {
                 ->contentType('application/octet-stream')
                 ->body($binary)
                 ->post(HttpBin::proxyUrl('/post'))
-                ->wait();
+                ->wait()
+            ;
 
             expect($response->successful())->toBeTrue()
-                ->and($response->json('data'))->not->toBeEmpty();
+                ->and($response->json('data'))->not->toBeEmpty()
+            ;
         });
-
 
         it('uploads raw binary body through SOCKS5', function () {
             ProxySetup::skipIfUnreachable(ProxySetup::socks5Host(), ProxySetup::socks5Port());
@@ -764,10 +848,12 @@ describe('Proxy', function () {
                 ->contentType('application/octet-stream')
                 ->body($binary)
                 ->post(HttpBin::socksProxyUrl('/post'))
-                ->wait();
+                ->wait()
+            ;
 
             expect($response->successful())->toBeTrue()
-                ->and($response->json('data'))->not->toBeEmpty();
+                ->and($response->json('data'))->not->toBeEmpty()
+            ;
         });
 
         it('uploads raw binary body through SOCKS4', function () {
@@ -780,10 +866,12 @@ describe('Proxy', function () {
                 ->contentType('application/octet-stream')
                 ->body($binary)
                 ->post(HttpBin::socksProxyUrl('/post'))
-                ->wait();
+                ->wait()
+            ;
 
             expect($response->successful())->toBeTrue()
-                ->and($response->json('data'))->not->toBeEmpty();
+                ->and($response->json('data'))->not->toBeEmpty()
+            ;
         });
     });
 
@@ -800,7 +888,8 @@ describe('Proxy', function () {
                 ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
                 ->sse(HttpBin::proxyUrl('/get'))
                 ->connect()
-                ->wait();
+                ->wait()
+            ;
 
             expect(true)->toBeTrue();
         });
@@ -812,7 +901,8 @@ describe('Proxy', function () {
                 ->withSocks5Proxy(ProxySetup::socks5Host(), ProxySetup::socks5Port(), ProxySetup::socks5User(), ProxySetup::socks5Pass())
                 ->sse(HttpBin::socksProxyUrl('/get'))
                 ->connect()
-                ->wait();
+                ->wait()
+            ;
 
             expect(true)->toBeTrue();
         });
@@ -824,7 +914,8 @@ describe('Proxy', function () {
                 ->withSocks4Proxy(ProxySetup::socks4Host(), ProxySetup::socks4Port())
                 ->sse(HttpBin::socksProxyUrl('/get'))
                 ->connect()
-                ->wait();
+                ->wait()
+            ;
 
             expect(true)->toBeTrue();
         });
@@ -837,14 +928,15 @@ describe('Proxy', function () {
                 ->withHeader('X-SSE-Proxy', 'http')
                 ->sse(HttpBin::proxyUrl('/headers'))
                 ->connect()
-                ->wait();
+                ->wait()
+            ;
 
             expect(true)->toBeTrue();
         });
 
         it('SSE handshake through unreachable HTTP proxy throws', function () {
             expect(
-                fn() => ProxySetup::client(timeout: 3)
+                fn () => ProxySetup::client(timeout: 3)
                     ->withProxy('127.0.0.1', 19996)
                     ->sse(HttpBin::proxyUrl('/get'))
                     ->connect()
@@ -854,7 +946,7 @@ describe('Proxy', function () {
 
         it('SSE handshake through unreachable SOCKS5 proxy throws', function () {
             expect(
-                fn() => ProxySetup::client(timeout: 3)
+                fn () => ProxySetup::client(timeout: 3)
                     ->withSocks5Proxy('127.0.0.1', 19995)
                     ->sse(HttpBin::socksProxyUrl('/get'))
                     ->connect()
@@ -864,7 +956,7 @@ describe('Proxy', function () {
 
         it('SSE handshake through unreachable SOCKS4 proxy throws', function () {
             expect(
-                fn() => ProxySetup::client(timeout: 3)
+                fn () => ProxySetup::client(timeout: 3)
                     ->withSocks4Proxy('127.0.0.1', 19994)
                     ->sse(HttpBin::socksProxyUrl('/get'))
                     ->connect()

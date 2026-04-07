@@ -1,7 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
 $output = [];
-$code   = 0;
+$code = 0;
 
 exec('docker network inspect hibla_shared 2>&1', $output, $code);
 

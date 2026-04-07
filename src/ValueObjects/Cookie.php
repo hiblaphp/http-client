@@ -24,7 +24,7 @@ class Cookie
         ?int $createdAt = null,
     ) {
         $this->receivedAt = time();
-        $this->createdAt  = $createdAt ?? time();
+        $this->createdAt = $createdAt ?? time();
     }
 
     /**
@@ -247,7 +247,7 @@ class Cookie
         // This state should not occur in practice; fromSetCookieHeader always
         // sets hostOnly=true when no Domain attribute is present and originHost is given.
         if ($this->domain === null) {
-            return false; 
+            return false;
         }
 
         $cookieDomain = strtolower(ltrim($this->domain, '.'));
@@ -362,13 +362,13 @@ class Cookie
         }
 
         $nameValuePair = array_shift($parts);
-        $equalPos      = strpos($nameValuePair, '=');
+        $equalPos = strpos($nameValuePair, '=');
 
         if ($equalPos === false) {
             return null;
         }
 
-        $name     = trim(substr($nameValuePair, 0, $equalPos));
+        $name = trim(substr($nameValuePair, 0, $equalPos));
         $rawValue = substr($nameValuePair, $equalPos + 1);
 
         // Validate before decoding — percent-encoded values like 'hello%20world'
@@ -377,12 +377,12 @@ class Cookie
             return null;
         }
 
-        $value    = urldecode($rawValue);
-        $expires  = null;
-        $maxAge   = null;
-        $domain   = null;
-        $path     = null;
-        $secure   = false;
+        $value = urldecode($rawValue);
+        $expires = null;
+        $maxAge = null;
+        $domain = null;
+        $path = null;
+        $secure = false;
         $httpOnly = false;
         $sameSite = null;
 
@@ -397,7 +397,7 @@ class Cookie
                 switch (strtolower($attrName)) {
                     case 'expires':
                         $timestamp = strtotime($attrValue);
-                        $expires   = $timestamp !== false ? $timestamp : null;
+                        $expires = $timestamp !== false ? $timestamp : null;
 
                         break;
                     case 'max-age':
@@ -425,7 +425,7 @@ class Cookie
         // use the canonicalized request-host as the cookie's domain so that
         // the cookie is only sent back to the exact origin host.
         if ($domain === null && $originHost !== null) {
-            $domain   = strtolower($originHost);
+            $domain = strtolower($originHost);
             $hostOnly = true;
         } else {
             $hostOnly = false;

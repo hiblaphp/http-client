@@ -5,6 +5,48 @@ declare(strict_types=1);
 use Hibla\HttpClient\SSE\SSEEvent;
 use Hibla\HttpClient\SSE\SSEParser;
 
+it('ignores id values containing NULL and falls back to the last valid id', function () {
+    $parser = new SSEParser();
+
+    $events = iterator_to_array($parser->parse("id: valid-id\nid: bad\x00id\ndata: Test\n\n"));
+
+    expect($events[0]->id)->toBe('valid-id');
+});
+
+it('returns null id when all id values contain NULL', function () {
+    $parser = new SSEParser();
+
+    $events = iterator_to_array($parser->parse("id: \x00\nid: also\x00bad\ndata: Test\n\n"));
+
+    expect($events[0]->id)->toBeNull();
+});
+
+it('ignores id with NULL even when it appears before a valid id', function () {
+    $parser = new SSEParser();
+
+    $events = iterator_to_array($parser->parse("id: bad\x00id\nid: valid-id\ndata: Test\n\n"));
+
+    expect($events[0]->id)->toBe('valid-id');
+});
+
+it('treats an id of only NULL as absent', function () {
+    $parser = new SSEParser();
+
+    $events = iterator_to_array($parser->parse("id: \x00\ndata: Test\n\n"));
+
+    expect($events[0]->id)->toBeNull();
+});
+
+it('preserves a valid id when NULL-containing ids are interspersed', function () {
+    $parser = new SSEParser();
+
+    $events = iterator_to_array($parser->parse(
+        "id: first-valid\nid: bad\x00one\nid: second-valid\nid: bad\x00two\ndata: Test\n\n"
+    ));
+
+    expect($events[0]->id)->toBe('second-valid');
+});
+
 it('parses a single event', function () {
     $parser = new SSEParser();
 
@@ -107,8 +149,6 @@ it('parses retry field alongside data', function () {
 });
 
 it('does not dispatch event when block has only a retry field and no data', function () {
-    // Per spec: if the data buffer is empty the event must not be dispatched,
-    // but the retry value is still processed by the consuming layer.
     $parser = new SSEParser();
 
     $events = iterator_to_array($parser->parse("retry: 5000\n\n"));
@@ -125,7 +165,6 @@ it('treats non-numeric retry as null', function () {
 });
 
 it('treats float retry as null', function () {
-    // Per spec, retry must be digits-only — floats are not valid.
     $parser = new SSEParser();
 
     $events = iterator_to_array($parser->parse("retry: 3.5\ndata: Test\n\n"));
@@ -134,7 +173,6 @@ it('treats float retry as null', function () {
 });
 
 it('treats negative retry as null', function () {
-    // Per spec, retry must be digits-only — negative numbers are not valid.
     $parser = new SSEParser();
 
     $events = iterator_to_array($parser->parse("retry: -1000\ndata: Test\n\n"));
@@ -269,7 +307,6 @@ it('strips only the first leading space from field value', function () {
 
     $events = iterator_to_array($parser->parse("data:  Value with spaces  \n\n"));
 
-    // One leading space is stripped; the second space remains.
     expect($events[0]->data)->toBe(' Value with spaces  ');
 });
 

@@ -26,8 +26,9 @@ describe('Specialized Transport Interception', function () {
     describe('Streaming', function () {
         it('modifies headers of a streaming request', function () {
             $promise = Http::request()
-                ->interceptRequest(fn(RequestInterface $r) => $r->withHeader('X-Stream-Test', 'active'))
-                ->stream(HttpBin::url('/stream/1'));
+                ->interceptRequest(fn (RequestInterface $r) => $r->withHeader('X-Stream-Test', 'active'))
+                ->stream(HttpBin::url('/stream/1'))
+            ;
 
             $response = $promise->wait();
 
@@ -37,8 +38,9 @@ describe('Specialized Transport Interception', function () {
 
         it('allows interceptResponse to modify a StreamingResponse', function () {
             $promise = Http::request()
-                ->interceptResponse(fn(ResponseInterface $res) => $res->withHeader('X-Stream-Processed', 'true'))
-                ->stream(HttpBin::url('/stream/1'));
+                ->interceptResponse(fn (ResponseInterface $res) => $res->withHeader('X-Stream-Processed', 'true'))
+                ->stream(HttpBin::url('/stream/1'))
+            ;
             $response = $promise->wait();
 
             expect($response->header('X-Stream-Processed'))->toBe('true');
@@ -50,8 +52,9 @@ describe('Specialized Transport Interception', function () {
             $dest = Http::getTestingHandler()->createTempFile('download.png');
 
             $promise = Http::request()
-                ->interceptRequest(fn(RequestInterface $r) => $r->withHeader('X-Download-Token', 'abc-123'))
-                ->download(HttpBin::url('/image/png'), $dest);
+                ->interceptRequest(fn (RequestInterface $r) => $r->withHeader('X-Download-Token', 'abc-123'))
+                ->download(HttpBin::url('/image/png'), $dest)
+            ;
 
             $result = $promise->wait();
 
@@ -66,38 +69,43 @@ describe('Specialized Transport Interception', function () {
             $promise = Http::request()
                 ->intercept(function (RequestInterface $request, callable $next) use (&$log) {
                     $log[] = 'starting-download';
-                    
+
                     return $next($request)->then(function (array $metadata) use (&$log) {
                         $log[] = 'finished-download';
                         $metadata['interceptor_note'] = 'verified';
+
                         return $metadata;
                     });
                 })
-                ->download(HttpBin::url('/bytes/10'), $dest);
+                ->download(HttpBin::url('/bytes/10'), $dest)
+            ;
 
             $result = $promise->wait();
 
             expect($log)->toBe(['starting-download', 'finished-download'])
                 ->and($result['interceptor_note'])->toBe('verified')
-                ->and($result['size'])->toBe(10);
+                ->and($result['size'])->toBe(10)
+            ;
         });
     });
 
     describe('Uploads', function () {
         it('modifies request headers and URL for an upload', function () {
             $source = Http::getTestingHandler()->createTempFile('upload.txt', 'upload-payload');
-            
+
             $promise = Http::request()
                 ->interceptRequest(function (RequestInterface $request) {
                     return $request->withUri($request->getUri()->withPath('/put'))
-                                   ->withHeader('X-Upload-ID', 'up-99');
+                                   ->withHeader('X-Upload-ID', 'up-99')
+                    ;
                 })
-                ->upload(HttpBin::url('/anything'), $source);
+                ->upload(HttpBin::url('/anything'), $source)
+            ;
 
             $result = $promise->wait();
 
             expect($result['status'])->toBe(200);
-            
+
             Http::assertRequestMatchingUrl('PUT', HttpBin::url('/put'));
             Http::assertHeaderSent('X-Upload-ID', 'up-99');
         });
@@ -107,8 +115,9 @@ describe('Specialized Transport Interception', function () {
 
             $startTime = microtime(true);
             $promise = Http::request()
-                ->interceptRequest(fn($r) => delay(0.1)->then(fn() => $r->withHeader('X-Waited', 'true')))
-                ->upload(HttpBin::url('/put'), $source);
+                ->interceptRequest(fn ($r) => delay(0.1)->then(fn () => $r->withHeader('X-Waited', 'true')))
+                ->upload(HttpBin::url('/put'), $source)
+            ;
 
             $promise->wait();
             $duration = microtime(true) - $startTime;

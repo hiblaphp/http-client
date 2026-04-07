@@ -20,7 +20,8 @@ describe('Request Interceptor Integration (HttpBin)', function () {
         $response = Http::request()
             ->interceptRequest(fn (RequestInterface $r) => $r->withHeader('X-Integration-Test', 'hibla-v1'))
             ->get(HttpBin::url('/headers'))
-            ->wait();
+            ->wait()
+        ;
 
         expect($response->json('headers.X-Integration-Test.0'))->toBe('hibla-v1');
     });
@@ -32,10 +33,12 @@ describe('Request Interceptor Integration (HttpBin)', function () {
                 if ($uri->getPath() === '/anything') {
                     return $request->withUri($uri->withPath('/get'));
                 }
+
                 return $request;
             })
             ->get(HttpBin::url('/anything'))
-            ->wait();
+            ->wait()
+        ;
 
         expect($response->json('url'))->toEndWith('/get');
     });
@@ -43,25 +46,29 @@ describe('Request Interceptor Integration (HttpBin)', function () {
     it('injects dynamic authentication tokens asynchronously via Promise', function () {
         $response = Http::request()
             ->interceptRequest(function (RequestInterface $request) {
-                return delay(0.05)->then(fn() => $request->withToken('real-network-token-123'));
+                return delay(0.05)->then(fn () => $request->withToken('real-network-token-123'));
             })
             ->get(HttpBin::url('/bearer'))
-            ->wait();
+            ->wait()
+        ;
 
         expect($response->status())->toBe(200)
             ->and($response->json('authenticated'))->toBeTrue()
-            ->and($response->json('token'))->toBe('real-network-token-123');
+            ->and($response->json('token'))->toBe('real-network-token-123')
+        ;
     });
 
     it('modifies the request body for POST requests', function () {
         $response = Http::request()
             ->interceptRequest(function (RequestInterface $request) {
                 $content = $request->getBody()->getContents();
+
                 return $request->body($content . '-modified-by-interceptor');
             })
             ->body('original-data')
             ->post(HttpBin::url('/post'))
-            ->wait();
+            ->wait()
+        ;
 
         expect($response->json('data'))->toBe('original-data-modified-by-interceptor');
     });
@@ -72,22 +79,26 @@ describe('Request Interceptor Integration (HttpBin)', function () {
                 $uri = $request->getUri();
                 $query = $uri->getQuery();
                 $separator = $query ? '&' : '';
+
                 return $request->withUri($uri->withQuery($query . $separator . 'api_key=secret_value'));
             })
             ->get(HttpBin::url('/get'), ['search' => 'hibla'])
-            ->wait();
+            ->wait()
+        ;
 
         expect($response->json('args.search.0'))->toBe('hibla')
-            ->and($response->json('args.api_key.0'))->toBe('secret_value');
+            ->and($response->json('args.api_key.0'))->toBe('secret_value')
+        ;
     });
 
     it('accumulates changes through a chain of multiple interceptors', function () {
         $response = Http::request()
-            ->interceptRequest(fn($r) => $r->withHeader('X-Order', '1'))
-            ->interceptRequest(fn($r) => $r->withHeader('X-Order', $r->getHeaderLine('X-Order') . '2'))
-            ->interceptRequest(fn($r) => $r->withHeader('X-Order', $r->getHeaderLine('X-Order') . '3'))
+            ->interceptRequest(fn ($r) => $r->withHeader('X-Order', '1'))
+            ->interceptRequest(fn ($r) => $r->withHeader('X-Order', $r->getHeaderLine('X-Order') . '2'))
+            ->interceptRequest(fn ($r) => $r->withHeader('X-Order', $r->getHeaderLine('X-Order') . '3'))
             ->get(HttpBin::url('/headers'))
-            ->wait();
+            ->wait()
+        ;
 
         expect($response->json('headers.X-Order.0'))->toBe('123');
     });
@@ -98,8 +109,10 @@ describe('Request Interceptor Integration (HttpBin)', function () {
                 if ($request->getMethod() === 'DELETE') {
                     return $request->withHeader('X-Confirm-Delete', 'true');
                 }
+
                 return $request;
-            });
+            })
+        ;
 
         $resDelete = $client->delete(HttpBin::url('/delete'))->wait();
         expect($resDelete->json('headers.X-Confirm-Delete.0'))->toBe('true');

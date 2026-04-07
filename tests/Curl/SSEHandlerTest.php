@@ -66,7 +66,7 @@ describe('SSEHandler', function () {
 
             $promise = $handler->connect($url, ['_cookie_jar' => $jar]);
 
-            $promise->then(fn() => Loop::stop());
+            $promise->then(fn () => Loop::stop());
             Loop::run();
 
             $allCookies = $jar->getAllCookies();
@@ -74,6 +74,7 @@ describe('SSEHandler', function () {
             foreach ($allCookies as $cookie) {
                 if ($cookie->getName() === 'sse_test' && $cookie->getValue() === 'handshake') {
                     $found = true;
+
                     break;
                 }
             }

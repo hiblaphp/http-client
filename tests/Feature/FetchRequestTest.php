@@ -29,12 +29,13 @@ describe('FetchRequest Lifecycle Integration (HttpBin)', function () {
         $response = await(fetch(HttpBin::url('/put'), [
             'method' => 'PUT',
             'json' => $payload,
-            'headers' => ['X-Client-Id' => 'Hibla-Fetch']
+            'headers' => ['X-Client-Id' => 'Hibla-Fetch'],
         ]));
 
         expect($response->status())->toBe(200)
             ->and($response->json('json'))->toBe($payload)
-            ->and(extractHttpBinValue($response->json('headers.X-Client-Id')))->toBe('Hibla-Fetch');
+            ->and(extractHttpBinValue($response->json('headers.X-Client-Id')))->toBe('Hibla-Fetch')
+        ;
     });
 
     test('it handles multipart form data with files in the options array', function () {
@@ -45,26 +46,28 @@ describe('FetchRequest Lifecycle Integration (HttpBin)', function () {
                 'file_upload' => [
                     'contents' => 'fake file content',
                     'filename' => 'test.txt',
-                    'Content-Type' => 'text/plain'
-                ]
-            ]
+                    'Content-Type' => 'text/plain',
+                ],
+            ],
         ]));
 
         expect($response->status())->toBe(200)
             ->and(extractHttpBinValue($response->json('form.field1')))->toBe('value1')
-            ->and(extractHttpBinValue($response->json('files.file_upload')))->toBe('fake file content');
+            ->and(extractHttpBinValue($response->json('files.file_upload')))->toBe('fake file content')
+        ;
     });
 
     test('it handles various authentication schemes in a single options tree', function (array $auth, string $path, string $checkKey) {
         $response = await(fetch(HttpBin::url($path), [
-            'auth' => $auth
+            'auth' => $auth,
         ]));
 
         expect($response->status())->toBe(200)
-            ->and($response->json($checkKey))->toBe(true);
+            ->and($response->json($checkKey))->toBe(true)
+        ;
     })->with([
         'bearer' => [['bearer' => 'token123'], '/bearer', 'authenticated'],
-        'basic'  => [['basic' => ['username' => 'u', 'password' => 'p']], '/basic-auth/u/p', 'authenticated'],
+        'basic' => [['basic' => ['username' => 'u', 'password' => 'p']], '/basic-auth/u/p', 'authenticated'],
     ]);
 
     test('lifecycle: interceptRequest can modify the outgoing request asynchronously', function () {
@@ -72,8 +75,9 @@ describe('FetchRequest Lifecycle Integration (HttpBin)', function () {
             'interceptRequest' => function (RequestInterface $request) {
                 $promise = new Promise();
                 $promise->resolve($request->withHeader('X-Async-Token', 'Resolved-123'));
+
                 return $promise;
-            }
+            },
         ]));
 
         expect(extractHttpBinValue($response->json('headers.X-Async-Token')))->toBe('Resolved-123');
@@ -84,8 +88,9 @@ describe('FetchRequest Lifecycle Integration (HttpBin)', function () {
             'interceptResponse' => function (ResponseInterface $response) {
                 $body = $response->json();
                 $body['injected_by_interceptor'] = true;
+
                 return new Response(json_encode($body), $response->status(), $response->getHeaders());
-            }
+            },
         ]));
 
         expect($response->json('injected_by_interceptor'))->toBeTrue();
@@ -95,11 +100,12 @@ describe('FetchRequest Lifecycle Integration (HttpBin)', function () {
         $response = await(fetch(HttpBin::url('/get'), [
             'intercept' => function (RequestInterface $request, callable $next) {
                 return new Response('{"mock": true}', 201, ['Content-Type' => 'application/json']);
-            }
+            },
         ]));
 
         expect($response->status())->toBe(201)
-            ->and($response->json('mock'))->toBeTrue();
+            ->and($response->json('mock'))->toBeTrue()
+        ;
     });
 
     test('it integrates with shared CookieJars for session persistence', function () {
@@ -108,7 +114,7 @@ describe('FetchRequest Lifecycle Integration (HttpBin)', function () {
 
         await(fetch($url, [
             'cookie_jar' => $jar,
-            'follow_redirects' => true
+            'follow_redirects' => true,
         ]));
 
         $response = await(fetch(HttpBin::url('/cookies'), ['cookie_jar' => $jar]));
@@ -120,24 +126,26 @@ describe('FetchRequest Lifecycle Integration (HttpBin)', function () {
         $response = await(fetch(HttpBin::url('/redirect/3'), [
             'follow_redirects' => true,
             'max_redirects' => 5,
-            'http_version' => '1.1'
+            'http_version' => '1.1',
         ]));
 
         expect($response->status())->toBe(200)
-            ->and($response->getProtocolVersion())->toBe('1.1');
+            ->and($response->getProtocolVersion())->toBe('1.1')
+        ;
     });
 
     test('it throws proper TimeoutException for transport-level failures', function () {
         $delayUrl = HttpBin::url('/delay/3');
 
-        expect(fn() => await(fetch($delayUrl, ['timeout' => 1])))
-            ->toThrow(TimeoutException::class);
+        expect(fn () => await(fetch($delayUrl, ['timeout' => 1])))
+            ->toThrow(TimeoutException::class)
+        ;
     });
 
     test('it passes through raw cURL options via integer keys', function () {
         $response = await(fetch(HttpBin::url('/headers'), [
             CURLOPT_USERAGENT => 'Agent-X',
-            CURLOPT_REFERER => 'https://hibla.dev'
+            CURLOPT_REFERER => 'https://hibla.dev',
         ]));
 
         $headers = $response->json('headers');

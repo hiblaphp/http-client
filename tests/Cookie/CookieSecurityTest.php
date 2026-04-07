@@ -18,139 +18,146 @@ describe('Cookie Security Test', function () {
     describe('Header injection prevention', function () {
 
         test('a cookie name containing CRLF is rejected before any network call is made', function () {
-            expect(fn() => (new HttpClient())->withCookie("inject\r\nX-Injected: evil", 'value'))
-                ->toThrow(\InvalidArgumentException::class, 'not permitted in an HTTP token');
+            expect(fn () => (new HttpClient())->withCookie("inject\r\nX-Injected: evil", 'value'))
+                ->toThrow(InvalidArgumentException::class, 'not permitted in an HTTP token')
+            ;
         });
 
         test('a cookie name containing a lone CR is rejected before any network call is made', function () {
-            expect(fn() => (new HttpClient())->withCookie("inject\rX-Injected: evil", 'value'))
-                ->toThrow(\InvalidArgumentException::class, 'not permitted in an HTTP token');
+            expect(fn () => (new HttpClient())->withCookie("inject\rX-Injected: evil", 'value'))
+                ->toThrow(InvalidArgumentException::class, 'not permitted in an HTTP token')
+            ;
         });
 
         test('a cookie name containing a lone LF is rejected before any network call is made', function () {
-            expect(fn() => (new HttpClient())->withCookie("inject\nX-Injected: evil", 'value'))
-                ->toThrow(\InvalidArgumentException::class, 'not permitted in an HTTP token');
+            expect(fn () => (new HttpClient())->withCookie("inject\nX-Injected: evil", 'value'))
+                ->toThrow(InvalidArgumentException::class, 'not permitted in an HTTP token')
+            ;
         });
 
         test('a cookie value containing CRLF is rejected before any network call is made', function () {
-            expect(fn() => (new HttpClient())->withCookie('name', "value\r\nX-Injected: evil"))
-                ->toThrow(\InvalidArgumentException::class, 'cookie-octet set');
+            expect(fn () => (new HttpClient())->withCookie('name', "value\r\nX-Injected: evil"))
+                ->toThrow(InvalidArgumentException::class, 'cookie-octet set')
+            ;
         });
 
         test('a cookie value containing a semicolon cannot break out of the cookie field', function () {
-            expect(fn() => (new HttpClient())->withCookie('name', 'value; X-Injected: evil'))
-                ->toThrow(\InvalidArgumentException::class, 'cookie-octet set');
+            expect(fn () => (new HttpClient())->withCookie('name', 'value; X-Injected: evil'))
+                ->toThrow(InvalidArgumentException::class, 'cookie-octet set')
+            ;
         });
 
         test('a cookie name containing null bytes is rejected', function () {
-            expect(fn() => (new HttpClient())->withCookie("name\x00evil", 'value'))
-                ->toThrow(\InvalidArgumentException::class, 'not permitted in an HTTP token');
+            expect(fn () => (new HttpClient())->withCookie("name\x00evil", 'value'))
+                ->toThrow(InvalidArgumentException::class, 'not permitted in an HTTP token')
+            ;
         });
 
         test('a cookie value containing null bytes is rejected', function () {
-            expect(fn() => (new HttpClient())->withCookie('name', "value\x00evil"))
-                ->toThrow(\InvalidArgumentException::class, 'cookie-octet set');
+            expect(fn () => (new HttpClient())->withCookie('name', "value\x00evil"))
+                ->toThrow(InvalidArgumentException::class, 'cookie-octet set')
+            ;
         });
 
         test('a streaming cookie name containing CRLF is rejected before any network call', function () {
             expect(
-                fn() => (new HttpClient())
+                fn () => (new HttpClient())
                     ->withCookie("bad\r\nname", 'value')
                     ->stream(HttpBin::url('/stream/1'))
-            )->toThrow(\InvalidArgumentException::class);
+            )->toThrow(InvalidArgumentException::class);
         });
 
         test('a streaming cookie name containing a lone LF is rejected before any network call', function () {
             expect(
-                fn() => (new HttpClient())
+                fn () => (new HttpClient())
                     ->withCookie("bad\nname", 'value')
                     ->stream(HttpBin::url('/stream/1'))
-            )->toThrow(\InvalidArgumentException::class);
+            )->toThrow(InvalidArgumentException::class);
         });
 
         test('a streaming cookie name containing a lone CR is rejected before any network call', function () {
             expect(
-                fn() => (new HttpClient())
+                fn () => (new HttpClient())
                     ->withCookie("bad\rname", 'value')
                     ->stream(HttpBin::url('/stream/1'))
-            )->toThrow(\InvalidArgumentException::class);
+            )->toThrow(InvalidArgumentException::class);
         });
 
         test('a streaming cookie value containing CRLF is rejected before any network call', function () {
             expect(
-                fn() => (new HttpClient())
+                fn () => (new HttpClient())
                     ->withCookie('name', "bad\r\nvalue")
                     ->stream(HttpBin::url('/stream/1'))
-            )->toThrow(\InvalidArgumentException::class);
+            )->toThrow(InvalidArgumentException::class);
         });
 
         test('a streaming cookie name containing null bytes is rejected before any network call', function () {
             expect(
-                fn() => (new HttpClient())
+                fn () => (new HttpClient())
                     ->withCookie("name\x00evil", 'value')
                     ->stream(HttpBin::url('/stream/1'))
-            )->toThrow(\InvalidArgumentException::class);
+            )->toThrow(InvalidArgumentException::class);
         });
 
         test('a streaming cookie value containing null bytes is rejected before any network call', function () {
             expect(
-                fn() => (new HttpClient())
+                fn () => (new HttpClient())
                     ->withCookie('name', "value\x00evil")
                     ->stream(HttpBin::url('/stream/1'))
-            )->toThrow(\InvalidArgumentException::class);
+            )->toThrow(InvalidArgumentException::class);
         });
 
         test('a streaming cookie value containing a semicolon is rejected before any network call', function () {
             expect(
-                fn() => (new HttpClient())
+                fn () => (new HttpClient())
                     ->withCookie('legit', 'val; injected=bad')
                     ->stream(HttpBin::url('/cookies'))
-            )->toThrow(\InvalidArgumentException::class);
+            )->toThrow(InvalidArgumentException::class);
         });
 
         test('an SSE cookie name containing CRLF is rejected before any network call', function () {
             expect(
-                fn() => (new HttpClient())
+                fn () => (new HttpClient())
                     ->withCookie("bad\r\nname", 'value')
                     ->sse(HttpBin::url('/response-headers'))
                     ->connect()
-            )->toThrow(\InvalidArgumentException::class);
+            )->toThrow(InvalidArgumentException::class);
         });
 
         test('an SSE cookie name containing a lone LF is rejected before any network call', function () {
             expect(
-                fn() => (new HttpClient())
+                fn () => (new HttpClient())
                     ->withCookie("bad\nname", 'value')
                     ->sse(HttpBin::url('/response-headers'))
                     ->connect()
-            )->toThrow(\InvalidArgumentException::class);
+            )->toThrow(InvalidArgumentException::class);
         });
 
         test('an SSE cookie value containing CRLF is rejected before any network call', function () {
             expect(
-                fn() => (new HttpClient())
+                fn () => (new HttpClient())
                     ->withCookie('name', "bad\r\nvalue")
                     ->sse(HttpBin::url('/response-headers'))
                     ->connect()
-            )->toThrow(\InvalidArgumentException::class);
+            )->toThrow(InvalidArgumentException::class);
         });
 
         test('an SSE cookie name containing null bytes is rejected before any network call', function () {
             expect(
-                fn() => (new HttpClient())
+                fn () => (new HttpClient())
                     ->withCookie("name\x00evil", 'value')
                     ->sse(HttpBin::url('/response-headers'))
                     ->connect()
-            )->toThrow(\InvalidArgumentException::class);
+            )->toThrow(InvalidArgumentException::class);
         });
 
         test('an SSE cookie value containing null bytes is rejected before any network call', function () {
             expect(
-                fn() => (new HttpClient())
+                fn () => (new HttpClient())
                     ->withCookie('name', "value\x00evil")
                     ->sse(HttpBin::url('/response-headers'))
                     ->connect()
-            )->toThrow(\InvalidArgumentException::class);
+            )->toThrow(InvalidArgumentException::class);
         });
 
         test('a download cookie name containing CRLF is rejected before any network call', function () {
@@ -158,10 +165,10 @@ describe('Cookie Security Test', function () {
 
             try {
                 expect(
-                    fn() => (new HttpClient())
+                    fn () => (new HttpClient())
                         ->withCookie("bad\r\nname", 'value')
                         ->download(HttpBin::url('/get'), $destination)
-                )->toThrow(\InvalidArgumentException::class);
+                )->toThrow(InvalidArgumentException::class);
             } finally {
                 if (file_exists($destination)) {
                     unlink($destination);
@@ -174,10 +181,10 @@ describe('Cookie Security Test', function () {
 
             try {
                 expect(
-                    fn() => (new HttpClient())
+                    fn () => (new HttpClient())
                         ->withCookie('name', "bad\r\nvalue")
                         ->download(HttpBin::url('/get'), $destination)
-                )->toThrow(\InvalidArgumentException::class);
+                )->toThrow(InvalidArgumentException::class);
             } finally {
                 if (file_exists($destination)) {
                     unlink($destination);
@@ -191,10 +198,10 @@ describe('Cookie Security Test', function () {
 
             try {
                 expect(
-                    fn() => (new HttpClient())
+                    fn () => (new HttpClient())
                         ->withCookie("bad\r\nname", 'value')
                         ->upload(HttpBin::url('/put'), $source)
-                )->toThrow(\InvalidArgumentException::class);
+                )->toThrow(InvalidArgumentException::class);
             } finally {
                 if (file_exists($source)) {
                     unlink($source);
@@ -208,10 +215,10 @@ describe('Cookie Security Test', function () {
 
             try {
                 expect(
-                    fn() => (new HttpClient())
+                    fn () => (new HttpClient())
                         ->withCookie('name', "bad\r\nvalue")
                         ->upload(HttpBin::url('/put'), $source)
-                )->toThrow(\InvalidArgumentException::class);
+                )->toThrow(InvalidArgumentException::class);
             } finally {
                 if (file_exists($source)) {
                     unlink($source);
@@ -278,7 +285,7 @@ describe('Cookie Security Test', function () {
             );
 
             $cookies = array_values($jar->getCookies(HttpBin::host(), '/'));
-            $names   = array_map(fn(Cookie $c) => $c->getName(), $cookies);
+            $names = array_map(fn (Cookie $c) => $c->getName(), $cookies);
             expect($names)->toContain('stream_secret');
 
             $leaked = array_values($jar->getCookies('evil.com', '/'));
@@ -311,7 +318,7 @@ describe('Cookie Security Test', function () {
             );
 
             $cookies = array_values($jar->getCookies(HttpBin::host(), '/'));
-            $names   = array_map(fn(Cookie $c) => $c->getName(), $cookies);
+            $names = array_map(fn (Cookie $c) => $c->getName(), $cookies);
             expect($names)->toContain('sse_secret');
 
             $leaked = array_values($jar->getCookies('attacker.com', '/'));
@@ -332,7 +339,7 @@ describe('Cookie Security Test', function () {
         });
 
         test('a cookie stored from a download response is not accessible to a different domain', function () {
-            $jar         = new CookieJar();
+            $jar = new CookieJar();
             $destination = tempnam(sys_get_temp_dir(), 'hibla_dl_');
 
             try {
@@ -348,7 +355,7 @@ describe('Cookie Security Test', function () {
                 );
 
                 $cookies = array_values($jar->getCookies(HttpBin::host(), '/'));
-                $names   = array_map(fn(Cookie $c) => $c->getName(), $cookies);
+                $names = array_map(fn (Cookie $c) => $c->getName(), $cookies);
                 expect($names)->toContain('dl_secret');
 
                 $leaked = array_values($jar->getCookies('evil.com', '/'));
@@ -411,7 +418,7 @@ describe('Cookie Security Test', function () {
             ));
 
             $cookies = array_values($jar->getCookies(HttpBin::host(), '/', false));
-            $names   = array_map(fn(Cookie $c) => $c->getName(), $cookies);
+            $names = array_map(fn (Cookie $c) => $c->getName(), $cookies);
             expect($names)->toContain('plain_stream');
         });
 
@@ -554,7 +561,7 @@ describe('Cookie Security Test', function () {
     describe('Response body is not parsed for Set-Cookie headers', function () {
 
         test('a Set-Cookie header embedded in a streaming response body is not stored in the jar', function () {
-            $jar    = new CookieJar();
+            $jar = new CookieJar();
             $chunks = '';
 
             await(

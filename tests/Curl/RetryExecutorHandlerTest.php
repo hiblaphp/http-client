@@ -30,7 +30,7 @@ it('resolves with a Response on a successful request', function () {
     );
 
     $response = null;
-    $error    = null;
+    $error = null;
 
     $promise->then(function ($res) use (&$response) {
         $response = $res;
@@ -110,15 +110,15 @@ it('strips internal _cookie_jar key before executing', function () {
     $promise = $handler->execute(
         HttpBin::url('/get'),
         [
-            CURLOPT_URL            => HttpBin::url('/get'),
+            CURLOPT_URL => HttpBin::url('/get'),
             CURLOPT_RETURNTRANSFER => true,
-            '_cookie_jar'          => 'should-be-stripped',
+            '_cookie_jar' => 'should-be-stripped',
         ],
         new RetryConfig()
     );
 
     $response = null;
-    $error    = null;
+    $error = null;
 
     $promise->then(function ($res) use (&$response) {
         $response = $res;
@@ -140,15 +140,15 @@ it('strips internal _tmp_files key before executing', function () {
     $promise = $handler->execute(
         HttpBin::url('/get'),
         [
-            CURLOPT_URL            => HttpBin::url('/get'),
+            CURLOPT_URL => HttpBin::url('/get'),
             CURLOPT_RETURNTRANSFER => true,
-            '_tmp_files'           => ['/tmp/should-be-stripped'],
+            '_tmp_files' => ['/tmp/should-be-stripped'],
         ],
         new RetryConfig()
     );
 
     $response = null;
-    $error    = null;
+    $error = null;
 
     $promise->then(function ($res) use (&$response) {
         $response = $res;

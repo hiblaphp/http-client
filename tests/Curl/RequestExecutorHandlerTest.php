@@ -21,13 +21,13 @@ afterEach(function () {
 it('executes a basic HTTP request successfully', function () {
     $handler = new RequestExecutorHandler();
     $promise = $handler->execute(HttpBin::url('/get'), [
-        CURLOPT_URL            => HttpBin::url('/get'),
+        CURLOPT_URL => HttpBin::url('/get'),
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_FOLLOWLOCATION => true,
     ]);
 
     $response = null;
-    $error    = null;
+    $error = null;
 
     $promise->then(function ($res) use (&$response) {
         $response = $res;
@@ -48,7 +48,7 @@ it('executes a basic HTTP request successfully', function () {
 it('rejects promise on network error', function () {
     $handler = new RequestExecutorHandler();
     $promise = $handler->execute('http://127.0.0.1:19999', [
-        CURLOPT_URL            => 'http://127.0.0.1:19999',
+        CURLOPT_URL => 'http://127.0.0.1:19999',
         CURLOPT_CONNECTTIMEOUT => 2,
     ]);
 
@@ -79,7 +79,7 @@ it('handles cancellation properly', function () {
 it('normalizes headers correctly', function () {
     $handler = new RequestExecutorHandler();
     $promise = $handler->execute(HttpBin::url('/get'), [
-        CURLOPT_URL            => HttpBin::url('/get'),
+        CURLOPT_URL => HttpBin::url('/get'),
         CURLOPT_RETURNTRANSFER => true,
     ]);
 
@@ -100,13 +100,13 @@ it('normalizes headers correctly', function () {
 it('filters out curl-only options before execution', function () {
     $handler = new RequestExecutorHandler();
     $promise = $handler->execute(HttpBin::url('/get'), [
-        CURLOPT_URL            => HttpBin::url('/get'),
+        CURLOPT_URL => HttpBin::url('/get'),
         CURLOPT_RETURNTRANSFER => true,
-        '_cookie_jar'          => 'should-be-filtered',
+        '_cookie_jar' => 'should-be-filtered',
     ]);
 
     $response = null;
-    $error    = null;
+    $error = null;
     $promise->then(function ($res) use (&$response) {
         $response = $res;
         Loop::stop();
@@ -125,7 +125,7 @@ it('filters out curl-only options before execution', function () {
 it('sets HTTP version on response when provided', function () {
     $handler = new RequestExecutorHandler();
     $promise = $handler->execute(HttpBin::url('/get'), [
-        CURLOPT_URL            => HttpBin::url('/get'),
+        CURLOPT_URL => HttpBin::url('/get'),
         CURLOPT_RETURNTRANSFER => true,
     ]);
 
@@ -146,7 +146,7 @@ it('sets HTTP version on response when provided', function () {
 it('does not resolve cancelled promises', function () {
     $handler = new RequestExecutorHandler();
     $promise = $handler->execute(HttpBin::url('/get'), [
-        CURLOPT_URL            => HttpBin::url('/get'),
+        CURLOPT_URL => HttpBin::url('/get'),
         CURLOPT_RETURNTRANSFER => true,
     ]);
 
