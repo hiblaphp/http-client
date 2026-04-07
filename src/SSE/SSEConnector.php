@@ -48,10 +48,14 @@ final class SSEConnector
         ?callable $onError,
         ?SSEReconnectConfig $reconnectConfig
     ): PromiseInterface {
+        /** @var array<callable(RequestInterface, callable): mixed> $interceptors */
+        $interceptors = $this->interceptors;
+
+        /** @var PromiseInterface<SSEResponseInterface> $pipelinePromise */
         $pipelinePromise = $this->interceptorHandler->process(
             $this->request,
-            $this->interceptors,
-            function (RequestInterface $processed) use ($onEvent, $onError, $reconnectConfig) {
+            $interceptors,
+            function (RequestInterface $processed) use ($onEvent, $onError, $reconnectConfig): PromiseInterface {
                 $finalOptions = ($this->optionsBuilder)($processed);
 
                 return $this->httpHandler->sse(

@@ -7,6 +7,7 @@ namespace Hibla\HttpClient\ValueObjects;
 class Cookie
 {
     private int $receivedAt;
+
     private int $createdAt;
 
     public function __construct(
@@ -35,7 +36,7 @@ class Cookie
     public static function isValidName(string $name): bool
     {
         return $name !== ''
-            && ! preg_match('/[\x00-\x1F\x7F-\xFF()<>@,;:\\\\"\/\[\]?={} \t]/', $name);
+            && preg_match('/[\x00-\x1F\x7F-\xFF()<>@,;:\\\\"\/\[\]?={} \t]/', $name) === 0;
     }
 
     /**
@@ -53,7 +54,7 @@ class Cookie
             : $value;
 
         return $inner === ''
-            || ! preg_match('/[^\x21\x23-\x2B\x2D-\x3A\x3C-\x5B\x5D-\x7E]/', $inner);
+            || preg_match('/[^\x21\x23-\x2B\x2D-\x3A\x3C-\x5B\x5D-\x7E]/', $inner) === 0;
     }
 
     /**
@@ -256,7 +257,8 @@ class Cookie
             return true;
         }
 
-        if (str_starts_with($this->domain, '.') && ! filter_var($requestDomain, FILTER_VALIDATE_IP)) {
+        // Fixed: filter_var returns the value or false. Explicitly compare against false.
+        if (str_starts_with($this->domain, '.') && filter_var($requestDomain, FILTER_VALIDATE_IP) === false) {
             return str_ends_with($requestDomain, '.' . $cookieDomain);
         }
 
@@ -347,11 +349,8 @@ class Cookie
      */
     public static function fromSetCookieHeader(string $setCookieHeader, ?string $originHost = null): ?self
     {
-        // Defensively reject CTL characters (excluding HTAB) to prevent malformed
-        // input from producing unpredictable behaviour. This aligns with the direction
-        // of draft-ietf-httpbis-rfc6265bis but is applied here as an implementation
-        // hardening measure, not as a finalized RFC requirement.
-        if (preg_match('/[\x00-\x08\x0A-\x1F\x7F]/', $setCookieHeader)) {
+        // Fixed: Explicitly compare preg_match against 1 (match found)
+        if (preg_match('/[\x00-\x08\x0A-\x1F\x7F]/', $setCookieHeader) === 1) {
             return null;
         }
 

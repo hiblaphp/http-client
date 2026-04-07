@@ -201,9 +201,12 @@ class SSEHandler implements SSEHandlerInterface
         $stream = null;
         $headersProcessed = false;
         $rawHeaders = [];
-        $requestId = null;
+        
+        $state = new \stdClass();
+        $state->requestId = null;
 
-        $tmpFiles = $options['_tmp_files'] ?? [];
+        /** @var string[] $tmpFiles */
+        $tmpFiles = (array) ($options['_tmp_files'] ?? []);
         unset($options['_tmp_files']);
 
         $cookieJar = $options['_cookie_jar'] ?? null;
@@ -236,7 +239,7 @@ class SSEHandler implements SSEHandlerInterface
 
                 return \strlen($data);
             },
-            CURLOPT_HEADERFUNCTION => function ($ch, string $header) use ($url, $promise, &$sseResponse, &$headersProcessed, &$rawHeaders, &$requestId, &$stream, $cookieJar) {
+            CURLOPT_HEADERFUNCTION => function ($ch, string $header) use ($url, $promise, &$sseResponse, &$headersProcessed, &$rawHeaders, $state, &$stream, $cookieJar) {
                 if ($promise->isSettled()) {
                     return \strlen($header);
                 }
@@ -250,7 +253,7 @@ class SSEHandler implements SSEHandlerInterface
                     $rawHeaders[] = $header;
                 }
 
-                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
                 if (! $headersProcessed && $httpCode > 0 && $trimmedHeader === '') {
                     if ($httpCode >= 200 && $httpCode < 300) {
@@ -259,12 +262,10 @@ class SSEHandler implements SSEHandlerInterface
                         $stream = new Stream();
                         $sseResponse = new SSEResponse($stream, $httpCode, $parsedHeaders);
 
-                        if ($requestId !== null) {
-                            $sseResponse->setRequestId($requestId);
+                        if (\is_string($state->requestId)) {
+                            $sseResponse->setRequestId($state->requestId);
                         }
 
-                        // Persist any Set-Cookie headers from the SSE handshake response into
-                        // the jar so subsequent requests on the same jar replay them correctly.
                         if ($cookieJar instanceof CookieJarInterface) {
                             $originHost = (new Uri($url))->getHost();
                             $setCookieValues = $parsedHeaders['set-cookie'] ?? [];
@@ -272,7 +273,7 @@ class SSEHandler implements SSEHandlerInterface
                                 $setCookieValues = [$setCookieValues];
                             }
                             foreach ($setCookieValues as $setCookie) {
-                                $cookie = Cookie::fromSetCookieHeader($setCookie, $originHost ?: null);
+                                $cookie = Cookie::fromSetCookieHeader($setCookie, $originHost !== '' ? $originHost : null);
                                 if ($cookie !== null) {
                                     $cookieJar->setCookie($cookie);
                                 }
@@ -292,10 +293,10 @@ class SSEHandler implements SSEHandlerInterface
             },
         ]);
 
-        $requestId = Loop::addCurlRequest(
+        $state->requestId = Loop::addCurlRequest(
             $url,
             $sseOptions,
-            function (?string $error, ?string $response, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $promise, $onError, &$sseResponse, $tmpFiles, &$stream) {
+            function (?string $error, ?string $response, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $promise, $onError, $tmpFiles, &$stream, &$sseResponse) {
 
                 foreach ($tmpFiles as $file) {
                     if (file_exists($file)) {
@@ -337,13 +338,13 @@ class SSEHandler implements SSEHandlerInterface
             }
         );
 
-        if ($sseResponse !== null && $requestId !== null) {
-            $sseResponse->setRequestId($requestId);
+        if ($sseResponse !== null && \is_string($state->requestId)) {
+            $sseResponse->setRequestId($state->requestId);
         }
 
-        $promise->onCancel(function () use (&$requestId, &$sseResponse, $tmpFiles): void {
-            if ($requestId !== null) {
-                Loop::cancelCurlRequest($requestId);
+        $promise->onCancel(function () use ($state, &$sseResponse, $tmpFiles): void {
+            if (\is_string($state->requestId)) {
+                Loop::cancelCurlRequest($state->requestId);
             }
 
             $sseResponse?->close();

@@ -6,13 +6,13 @@ namespace Hibla\HttpClient\SSE;
 
 use Exception;
 use Hibla\EventLoop\Loop;
-use Hibla\HttpClient\StreamingResponse;
+use Hibla\HttpClient\Response;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
 /**
  * Manages the state of an SSE connection including reconnection attempts.
  *
- * @template TResponse of StreamingResponse
+ * @template TResponse of Response
  */
 class SSEConnectionState
 {

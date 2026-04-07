@@ -71,8 +71,8 @@ class StreamingHandler implements StreamingHandlerInterface
                     $rawHeaders[] = $header;
                 }
 
-                if (! $headersProcessed && $trimmed === '') {
-                    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                if (! $headersProcessed && $trimmed === '' && $ch instanceof \CurlHandle) {
+                    $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
                     if ($httpCode > 0) {
                         $parsedHeaders = $this->parseRawHeaders($rawHeaders);
@@ -83,18 +83,17 @@ class StreamingHandler implements StreamingHandlerInterface
                             $streamingResponse->setRequestId($requestId);
                         }
 
-                        // Persist any Set-Cookie headers from the streaming response into
-                        // the jar so subsequent requests on the same jar replay them correctly.
                         if ($cookieJar instanceof CookieJarInterface) {
                             $originHost = (new Uri($url))->getHost();
                             $setCookieValues = $parsedHeaders['set-cookie'] ?? [];
-                            if (\is_string($setCookieValues)) {
-                                $setCookieValues = [$setCookieValues];
-                            }
-                            foreach ($setCookieValues as $setCookie) {
-                                $cookie = Cookie::fromSetCookieHeader($setCookie, $originHost ?: null);
-                                if ($cookie !== null) {
-                                    $cookieJar->setCookie($cookie);
+                            $cookieArray = \is_array($setCookieValues) ? $setCookieValues : [$setCookieValues];
+
+                            foreach ($cookieArray as $setCookie) {
+                                if (\is_string($setCookie)) {
+                                    $cookie = Cookie::fromSetCookieHeader($setCookie, $originHost !== '' ? $originHost : null);
+                                    if ($cookie !== null) {
+                                        $cookieJar->setCookie($cookie);
+                                    }
                                 }
                             }
                         }
@@ -135,9 +134,8 @@ class StreamingHandler implements StreamingHandlerInterface
         }
 
         $promise->onCancel(function () use (&$requestId, $stream, $tmpFiles): void {
-            if ($requestId !== null) {
-                Loop::cancelCurlRequest($requestId);
-            }
+            Loop::cancelCurlRequest($requestId);
+
             $stream->close();
 
             foreach ($tmpFiles as $file) {
@@ -162,8 +160,6 @@ class StreamingHandler implements StreamingHandlerInterface
         /** @var Promise<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}> $promise */
         $promise = new Promise();
 
-        // Extract the cookie jar before array_filter strips string keys — without this
-        // the jar reference is silently discarded and response cookies are never stored.
         $cookieJar = $options['_cookie_jar'] ?? null;
         unset($options['_cookie_jar']);
 
@@ -230,19 +226,17 @@ class StreamingHandler implements StreamingHandlerInterface
                         $error
                     ));
                 } else {
-                    // CurlRequest normalizes captured header names to lowercase, so
-                    // Set-Cookie arrives as 'set-cookie'. The value may be a plain string
-                    // when only one header was received, or an array when multiple were sent.
                     if ($cookieJar instanceof CookieJarInterface) {
                         $originHost = (new Uri($url))->getHost();
                         $setCookieHeaders = $headers['set-cookie'] ?? [];
-                        if (\is_string($setCookieHeaders)) {
-                            $setCookieHeaders = [$setCookieHeaders];
-                        }
-                        foreach ($setCookieHeaders as $setCookie) {
-                            $cookie = Cookie::fromSetCookieHeader($setCookie, $originHost ?: null);
-                            if ($cookie !== null) {
-                                $cookieJar->setCookie($cookie);
+                        $cookieArray = \is_array($setCookieHeaders) ? $setCookieHeaders : [$setCookieHeaders];
+
+                        foreach ($cookieArray as $setCookie) {
+                            if (\is_string($setCookie)) {
+                                $cookie = Cookie::fromSetCookieHeader($setCookie, $originHost !== '' ? $originHost : null);
+                                if ($cookie !== null) {
+                                    $cookieJar->setCookie($cookie);
+                                }
                             }
                         }
                     }
@@ -285,8 +279,6 @@ class StreamingHandler implements StreamingHandlerInterface
         /** @var Promise<array{url: string, status: int, headers: array<mixed>, protocol_version: string|null}> $promise */
         $promise = new Promise();
 
-        // Extract the cookie jar before array_filter strips string keys — without this
-        // the jar reference is silently discarded and response cookies are never stored.
         $cookieJar = $options['_cookie_jar'] ?? null;
         unset($options['_cookie_jar']);
 
@@ -322,7 +314,7 @@ class StreamingHandler implements StreamingHandlerInterface
             CURLOPT_UPLOAD => true,
             CURLOPT_INFILESIZE => $fileSize,
             CURLOPT_READFUNCTION => function ($ch, $fd, int $length) use ($file): string {
-                return (string) fread($file, $length);
+                return (string) fread($file, max(1, $length));
             },
             CURLOPT_NOPROGRESS => false,
             CURLOPT_PROGRESSFUNCTION => function (
@@ -363,19 +355,17 @@ class StreamingHandler implements StreamingHandlerInterface
                         $error
                     ));
                 } else {
-                    // CurlRequest normalizes captured header names to lowercase, so
-                    // Set-Cookie arrives as 'set-cookie'. The value may be a plain string
-                    // when only one header was received, or an array when multiple were sent.
                     if ($cookieJar instanceof CookieJarInterface) {
                         $originHost = (new Uri($url))->getHost();
                         $setCookieHeaders = $headers['set-cookie'] ?? [];
-                        if (\is_string($setCookieHeaders)) {
-                            $setCookieHeaders = [$setCookieHeaders];
-                        }
-                        foreach ($setCookieHeaders as $setCookie) {
-                            $cookie = Cookie::fromSetCookieHeader($setCookie, $originHost ?: null);
-                            if ($cookie !== null) {
-                                $cookieJar->setCookie($cookie);
+                        $cookieArray = \is_array($setCookieHeaders) ? $setCookieHeaders : [$setCookieHeaders];
+
+                        foreach ($cookieArray as $setCookie) {
+                            if (\is_string($setCookie)) {
+                                $cookie = Cookie::fromSetCookieHeader($setCookie, $originHost !== '' ? $originHost : null);
+                                if ($cookie !== null) {
+                                    $cookieJar->setCookie($cookie);
+                                }
                             }
                         }
                     }

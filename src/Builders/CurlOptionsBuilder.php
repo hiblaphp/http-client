@@ -75,9 +75,6 @@ class CurlOptionsBuilder implements TransportOptionsBuilderInterface
                 continue;
             }
 
-            // CURLOPT_HTTPHEADER is a special case — merge with fluent headers
-            // rather than replacing them, otherwise withCurlOption(CURLOPT_HTTPHEADER, [...])
-            // would silently drop all headers set via withHeader/withToken/withBasicAuth etc.
             if ($key === CURLOPT_HTTPHEADER) {
                 $existing = $curlOptions[CURLOPT_HTTPHEADER] ?? [];
                 if (! \is_array($existing)) {
@@ -194,7 +191,8 @@ class CurlOptionsBuilder implements TransportOptionsBuilderInterface
         $lowerHeaders = array_change_key_case($headers, CASE_LOWER);
 
         if (isset($lowerHeaders['cookie'])) {
-            $existingCookie = implode('; ', $lowerHeaders['cookie']);
+            $cookieValues = $lowerHeaders['cookie'];
+            $existingCookie = implode('; ', \is_array($cookieValues) ? $cookieValues : (array) $cookieValues);
             foreach ($headers as $name => $value) {
                 if (strtolower($name) === 'cookie') {
                     unset($headers[$name]);
@@ -257,12 +255,13 @@ class CurlOptionsBuilder implements TransportOptionsBuilderInterface
      */
     private function addBodyOptions(array &$options, StreamInterface $body, array $additionalOptions): void
     {
-        if (isset($additionalOptions['multipart'])) {
+        if (isset($additionalOptions['multipart']) && \is_array($additionalOptions['multipart'])) {
             $postFields = [];
             $tmpFiles = [];
 
             foreach ($additionalOptions['multipart'] as $key => $value) {
                 if (\is_array($value) && (isset($value['filepath']) || isset($value['contents']))) {
+                    /** @var array<string, mixed> $value */
                     $postFields[$key] = $this->createCurlFile($value, $tmpFiles);
                 } else {
                     $postFields[$key] = \is_scalar($value) ? (string) $value : json_encode($value);
@@ -279,17 +278,25 @@ class CurlOptionsBuilder implements TransportOptionsBuilderInterface
         }
     }
 
+    /**
+     * @param array<string, mixed> $entry
+     * @param string[] $tmpFiles
+     */
     private function createCurlFile(array $entry, array &$tmpFiles): \CURLFile
     {
-        $filename = $entry['filename'] ?? 'file';
-        $mimeType = $entry['Content-Type'] ?? 'application/octet-stream';
+        $filename = \is_string($entry['filename'] ?? null) ? $entry['filename'] : 'file';
+        $mimeType = \is_string($entry['Content-Type'] ?? null) ? $entry['Content-Type'] : 'application/octet-stream';
 
-        if (isset($entry['filepath'])) {
+        if (isset($entry['filepath']) && \is_string($entry['filepath'])) {
             return new \CURLFile($entry['filepath'], $mimeType, $filename);
         }
 
         $tmpPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'hibla_upload_' . uniqid('', true) . '.tmp';
         $dest = fopen($tmpPath, 'wb');
+
+        if (! \is_resource($dest)) {
+            throw new \RuntimeException("Failed to create temporary file for upload at: {$tmpPath}");
+        }
 
         if (isset($entry['contents'])) {
             $contents = $entry['contents'];

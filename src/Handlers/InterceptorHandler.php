@@ -20,9 +20,9 @@ class InterceptorHandler
     /**
      * @param  RequestInterface $request
      * @param  array<callable(RequestInterface, callable): mixed> $interceptors
-     * @param  callable(RequestInterface): PromiseInterface $executor
+     * @param  callable(RequestInterface): PromiseInterface<Response|array<mixed>> $executor 
      * @param  bool $requireResponse Whether to strictly enforce the result is a Response object.
-     * @return PromiseInterface
+     * @return PromiseInterface<Response|array<mixed>>                                        
      */
     public function process(
         RequestInterface $request,
@@ -61,8 +61,9 @@ class InterceptorHandler
                         ));
                     }
 
+                    /** @var PromiseInterface<Response|array<mixed>> $mapped */
                     $mapped = $result->then(
-                        static fn (mixed $resolved): mixed => self::resolveResult($resolved, $requireResponse)
+                        static fn($resolved): mixed => self::resolveResult($resolved, $requireResponse)
                     );
 
                     $mapped->onCancel($result->cancelChain(...));
@@ -73,22 +74,25 @@ class InterceptorHandler
             $executor,
         );
 
-        $state = new \stdClass();
-        $state->innerPromise = null;
+        $state = new class {
+            /** @var PromiseInterface<Response|array<mixed>>|null */
+            public PromiseInterface|null $innerPromise = null;
+        };
 
         $outerPromise = async(static function () use ($pipeline, $request, $state): mixed {
-            $state->innerPromise = $pipeline($request);
+            $innerPromise = $pipeline($request);
+            $state->innerPromise = $innerPromise;
 
-            return await($state->innerPromise);
+            $result = await($state->innerPromise);
+
+            return $result;
         });
 
-        if ($outerPromise instanceof PromiseInterface) {
-            $outerPromise->onCancel(function () use ($state) {
-                if ($state->innerPromise instanceof PromiseInterface && ! $state->innerPromise->isSettled()) {
-                    $state->innerPromise->cancelChain();
-                }
-            });
-        }
+        $outerPromise->onCancel(function () use ($state) {
+            if ($state->innerPromise instanceof PromiseInterface && ! $state->innerPromise->isSettled()) {
+                $state->innerPromise->cancelChain();
+            }
+        });
 
         return $outerPromise;
     }

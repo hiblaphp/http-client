@@ -36,8 +36,12 @@ class HttpStreamStateHandler
 
     private int $readPosition = 0;
 
+    /**
+     * @param mixed $resource
+     */
     public function __construct(&$resource)
     {
+        /** @var resource|null $resource */
         $this->resource = &$resource;
     }
 
@@ -60,6 +64,9 @@ class HttpStreamStateHandler
         $this->pump();
     }
 
+    /**
+     * @param Promise<string|null> $promise
+     */
     public function dequeueRead(Promise $promise): void
     {
         foreach ($this->readQueue as $index => $item) {
@@ -79,6 +86,8 @@ class HttpStreamStateHandler
         }
 
         $current = ftell($this->resource);
+        $current = $current === false ? 0 : $current;
+
         fseek($this->resource, 0, SEEK_END);
         fwrite($this->resource, $data);
         fseek($this->resource, $current, SEEK_SET);
@@ -94,7 +103,8 @@ class HttpStreamStateHandler
 
     public function clearBuffers(): void
     {
-        $this->readPosition = $this->resource !== null ? ftell($this->resource) : 0;
+        $pos = $this->resource !== null ? ftell($this->resource) : 0;
+        $this->readPosition = $pos === false ? 0 : $pos;
         $this->prependBuffer = '';
     }
 
@@ -133,6 +143,11 @@ class HttpStreamStateHandler
         $current = ftell($this->resource);
         fseek($this->resource, 0, SEEK_END);
         $end = ftell($this->resource);
+
+        if ($current === false || $end === false) {
+            return;
+        }
+
         fseek($this->resource, $current, SEEK_SET);
 
         $available = $end - $current;
@@ -146,6 +161,9 @@ class HttpStreamStateHandler
             }
 
             $req = array_shift($this->readQueue);
+            if ($req === null) {
+                return;
+            }
 
             if ($req['promise']->isCancelled()) {
                 Loop::microTask($this->pump(...));

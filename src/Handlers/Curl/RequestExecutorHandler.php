@@ -79,7 +79,8 @@ class RequestExecutorHandler implements RequestExecutorHandlerInterface
 
                     if ($cookieJar instanceof CookieJarInterface) {
                         $originHost = (new Uri($url))->getHost();
-                        $responseObj->applyCookiesToJar($cookieJar, $originHost ?: null);
+                        
+                        $responseObj->applyCookiesToJar($cookieJar, $originHost !== '' ? $originHost : null);
                     }
 
                     $promise->resolve($responseObj);
