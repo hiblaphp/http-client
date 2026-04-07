@@ -25,7 +25,7 @@ class CurlOptionsBuilder implements TransportOptionsBuilderInterface
     {
         $curlOptions = [
             CURLOPT_URL => $options->url,
-            CURLOPT_CUSTOMREQUEST => $options->method,
+            CURLOPT_CUSTOMREQUEST  => $options->method,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => $options->timeout,
             CURLOPT_CONNECTTIMEOUT => $options->connectTimeout,
@@ -71,9 +71,25 @@ class CurlOptionsBuilder implements TransportOptionsBuilderInterface
         }
 
         foreach ($options->additionalOptions as $key => $value) {
-            if (\is_int($key)) {
-                $curlOptions[$key] = $value;
+            if (! \is_int($key)) {
+                continue;
             }
+
+            // CURLOPT_HTTPHEADER is a special case — merge with fluent headers
+            // rather than replacing them, otherwise withCurlOption(CURLOPT_HTTPHEADER, [...])
+            // would silently drop all headers set via withHeader/withToken/withBasicAuth etc.
+            if ($key === CURLOPT_HTTPHEADER) {
+                $existing = $curlOptions[CURLOPT_HTTPHEADER] ?? [];
+                if (! \is_array($existing)) {
+                    $existing = [];
+                }
+                $incoming = \is_array($value) ? $value : [];
+                $curlOptions[CURLOPT_HTTPHEADER] = array_merge($existing, $incoming);
+
+                continue;
+            }
+
+            $curlOptions[$key] = $value;
         }
 
         return $curlOptions;
