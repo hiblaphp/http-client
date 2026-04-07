@@ -12,17 +12,7 @@ use Hibla\Promise\Interfaces\PromiseInterface;
  * Immutable fluent builder for SSE connections.
  *
  * Every configuration method returns a new instance, making it safe
- * to derive multiple connections from a shared base configuration:
- *
- *   $base = Http::request()
- *       ->withToken($token)
- *       ->sse('https://api.example.com/stream')
- *       ->dataFormat(SSEDataFormat::DecodedJson)
- *       ->reconnect(maxAttempts: 5);
- *
- *   // Safe — each derives from $base without mutating it
- *   $streamA = $base->onEvent(fn($data) => handleA($data))->connect();
- *   $streamB = $base->onEvent(fn($data) => handleB($data))->connect();
+ * to derive multiple connections from a shared base configuration.
  */
 class SSEBuilder implements SSEBuilderInterface
 {
@@ -47,11 +37,11 @@ class SSEBuilder implements SSEBuilderInterface
 
     /**
      * @param string $url The target SSE endpoint.
-     * @param mixed $connector A closure provided by the client to execute the connection attempt.
+     * @param SSEConnector $connector The invokable bridge to the interceptor pipeline.
      */
     public function __construct(
         private readonly string $url,
-        private readonly mixed $connector,
+        private readonly SSEConnector $connector,
     ) {
     }
 
@@ -151,6 +141,7 @@ class SSEBuilder implements SSEBuilderInterface
     {
         $control = new SSEControl();
 
+        /** @var PromiseInterface<SSEResponse> $promise */
         $promise = ($this->connector)(
             $this->url,
             $this->buildEventCallback($control),

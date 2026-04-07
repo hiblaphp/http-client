@@ -22,7 +22,7 @@ final class SSEConnector
     /**
      * @param InterceptorHandler $interceptorHandler The interceptor handler to use for the request pipeline
      * @param HttpHandler $httpHandler The HTTP handler to use for the request
-     * @param array<HttpInterceptorInterface> $interceptors The interceptors to use for the request pipeline
+     * @param array<callable(RequestInterface, callable): mixed> $interceptors The interceptors to use for the request pipeline
      * @param Request $request The initial request to use for the connection attempt
      * @param \Closure(RequestInterface): array<int|string, mixed> $optionsBuilder
      */
@@ -47,7 +47,7 @@ final class SSEConnector
         ?callable $onError,
         ?SSEReconnectConfig $reconnectConfig
     ): PromiseInterface {
-        /** @var PromiseInterface<SSEResponseInterface> $pipelinePromise */
+        /** @var PromiseInterface<SSEResponse> $pipelinePromise */
         $pipelinePromise = $this->interceptorHandler->process(
             $this->request,
             $this->interceptors,

@@ -49,6 +49,16 @@ class SSEReconnectConfig
     public readonly array $retryableStatusCodes;
 
     /**
+     * @var (callable(int, float, string|Exception): void)|null
+     */
+    public readonly mixed $onReconnect;
+
+    /**
+     * @var (callable(Exception): bool)|null
+     */
+    public readonly mixed $shouldReconnect;
+
+    /**
      * Constructs the reconnection configuration.
      *
      * @param bool $enabled Toggles reconnection on or off.
@@ -73,9 +83,12 @@ class SSEReconnectConfig
         public readonly bool $jitter = true,
         array $retryableErrors = [],
         array $retryableStatusCodes = [],
-        public readonly mixed $onReconnect = null,
-        public readonly mixed $shouldReconnect = null,
+        mixed $onReconnect = null,
+        mixed $shouldReconnect = null,
     ) {
+        $this->onReconnect = $onReconnect;
+        $this->shouldReconnect = $shouldReconnect;
+
         $this->retryableErrors = \array_values(\array_unique([
             ...self::DEFAULT_RETRYABLE_ERRORS,
             ...$retryableErrors,
@@ -139,7 +152,7 @@ class SSEReconnectConfig
 
         if (method_exists($error, 'getStatusCode')) {
             $code = $error->getStatusCode();
-            if ($code !== null && $this->isRetryableStatus((int)$code)) {
+            if (\is_int($code) && $this->isRetryableStatus($code)) {
                 return true;
             }
         }
