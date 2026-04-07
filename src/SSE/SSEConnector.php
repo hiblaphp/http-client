@@ -32,8 +32,7 @@ final class SSEConnector
         private readonly array $interceptors,
         private readonly Request $request,
         private readonly \Closure $optionsBuilder,
-    ) {
-    }
+    ) {}
 
     /**
      * @param string $url The URL to connect to
@@ -48,13 +47,10 @@ final class SSEConnector
         ?callable $onError,
         ?SSEReconnectConfig $reconnectConfig
     ): PromiseInterface {
-        /** @var array<callable(RequestInterface, callable): mixed> $interceptors */
-        $interceptors = $this->interceptors;
-
         /** @var PromiseInterface<SSEResponseInterface> $pipelinePromise */
         $pipelinePromise = $this->interceptorHandler->process(
             $this->request,
-            $interceptors,
+            $this->interceptors,
             function (RequestInterface $processed) use ($onEvent, $onError, $reconnectConfig): PromiseInterface {
                 $finalOptions = ($this->optionsBuilder)($processed);
 

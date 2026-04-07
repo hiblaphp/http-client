@@ -18,11 +18,13 @@ use function Hibla\await;
 class InterceptorHandler
 {
     /**
+     * @template TResult
+     *
      * @param  RequestInterface $request
      * @param  array<callable(RequestInterface, callable): mixed> $interceptors
-     * @param  callable(RequestInterface): PromiseInterface<Response|array<mixed>> $executor 
-     * @param  bool $requireResponse Whether to strictly enforce the result is a Response object.
-     * @return PromiseInterface<Response|array<mixed>>                                        
+     * @param  callable(RequestInterface): PromiseInterface<TResult> $executor
+     * @param  bool $requireResponse
+     * @return PromiseInterface<TResult>
      */
     public function process(
         RequestInterface $request,
@@ -61,9 +63,8 @@ class InterceptorHandler
                         ));
                     }
 
-                    /** @var PromiseInterface<Response|array<mixed>> $mapped */
                     $mapped = $result->then(
-                        static fn($resolved): mixed => self::resolveResult($resolved, $requireResponse)
+                        static fn($resolved): Response|array => self::resolveResult($resolved, $requireResponse)
                     );
 
                     $mapped->onCancel($result->cancelChain(...));
@@ -75,17 +76,16 @@ class InterceptorHandler
         );
 
         $state = new class {
-            /** @var PromiseInterface<Response|array<mixed>>|null */
+            /** @var PromiseInterface<mixed>|null */
             public PromiseInterface|null $innerPromise = null;
         };
 
+        /** @var PromiseInterface<TResult> $outerPromise */
         $outerPromise = async(static function () use ($pipeline, $request, $state): mixed {
             $innerPromise = $pipeline($request);
             $state->innerPromise = $innerPromise;
 
-            $result = await($state->innerPromise);
-
-            return $result;
+            return await($state->innerPromise);
         });
 
         $outerPromise->onCancel(function () use ($state) {
@@ -99,8 +99,10 @@ class InterceptorHandler
 
     /**
      * Assert the resolved pipeline value matches the expected type.
+     *
+     * @return Response|array<mixed>
      */
-    private static function resolveResult(mixed $value, bool $requireResponse): mixed
+    private static function resolveResult(mixed $value, bool $requireResponse): Response|array
     {
         if ($requireResponse) {
             if ($value === null) {
