@@ -310,7 +310,10 @@ class Request extends Message implements RequestInterface
     {
         $token = $this->normalizeToken($token, $type);
 
-        return $this->withHeader('Authorization', "{$type} {$token}");
+        $new = clone $this;
+        $new->auth = null;
+
+        return $new->withHeader('Authorization', "{$type} {$token}");
     }
 
     /**
@@ -321,7 +324,7 @@ class Request extends Message implements RequestInterface
         $new = clone $this;
         $new->auth = ['basic', $username, $password];
 
-        return $new;
+        return $new->withoutHeader('Authorization');
     }
 
     /**
@@ -332,7 +335,7 @@ class Request extends Message implements RequestInterface
         $new = clone $this;
         $new->auth = ['digest', $username, $password];
 
-        return $new;
+        return $new->withoutHeader('Authorization'); 
     }
 
     /**

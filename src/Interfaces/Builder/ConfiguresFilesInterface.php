@@ -55,4 +55,14 @@ interface ConfiguresFilesInterface
      * @param array<string, string|resource|UploadedFileInterface|StreamInterface|array{path: string, name?: string, type?: string}> $files
      */
     public function withFiles(array $files): static;
+
+    /**
+     * Convenience method to set multipart fields and attach files in one call.
+     *
+     * Equivalent to calling withMultipart($data)->withFiles($files).
+     *
+     * @param array<string, mixed> $data   Form fields to include in the multipart body.
+     * @param array<string, string|resource|UploadedFileInterface|StreamInterface|array{path: string, name?: string, type?: string}> $files
+     */
+    public function multipartWithFiles(array $data = [], array $files = []): static;
 }
