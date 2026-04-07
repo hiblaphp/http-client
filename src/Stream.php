@@ -36,17 +36,20 @@ class Stream implements StreamInterface
      */
     public function __construct($resource = null)
     {
-        $this->resource = $resource ?? fopen('php://temp', 'w+b');
+        $opened = $resource ?? fopen('php://temp', 'w+b');
 
-        if ($this->resource === false || ! \is_resource($this->resource)) {
+        if ($opened === false || ! \is_resource($opened)) {
             throw new HttpStreamException('Unable to create or use temporary stream');
         }
 
+        $this->resource = $opened;
+
+        //@phpstan-ignore-next-line this is a resource!!
         $this->handler = new HttpStreamStateHandler($this->resource);
 
         $this->lineHandler = new ReadLineHandler(
             $this->readAsync(...),
-            fn (string $data) => $this->handler->setPrependBuffer($data . $this->handler->getPrependBuffer())
+            fn(string $data) => $this->handler->setPrependBuffer($data . $this->handler->getPrependBuffer())
         );
 
         $this->allHandler = new ReadAllHandler(
@@ -347,12 +350,12 @@ class Stream implements StreamInterface
     public function getMetadata(?string $key = null)
     {
         if ($this->resource === null) {
-            return $key ? null : [];
+            return $key !== null ? null : [];
         }
 
         $meta = stream_get_meta_data($this->resource);
 
-        return $key ? ($meta[$key] ?? null) : $meta;
+        return $key !== null ? ($meta[$key] ?? null) : $meta;
     }
 
     /**

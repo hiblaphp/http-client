@@ -137,9 +137,6 @@ class SSEHandler implements SSEHandlerInterface
                 }
                 $connectionState->onConnected();
             },
-            /**
-             * @param  mixed  $error
-             */
             function (\Throwable $error) use ($mainPromise, $connectionState, $onEvent, $onError): void {
                 if ($connectionState->isCancelled()) {
                     if (! $mainPromise->isSettled()) {
@@ -169,7 +166,8 @@ class SSEHandler implements SSEHandlerInterface
 
                 $onReconnect = $connectionState->getConfig()->onReconnect;
                 if ($onReconnect !== null) {
-                    $onReconnect($connectionState->getAttemptCount(), $delay, $error);
+                    $errorException = $error instanceof \Exception ? $error : new \Exception($error->getMessage(), (int) $error->getCode(), $error);
+                    $onReconnect($connectionState->getAttemptCount(), $delay, $errorException);
                 }
 
                 $timerId = Loop::addTimer($delay, function () use ($connectionState, $onEvent, $onError, $mainPromise) {
@@ -201,7 +199,7 @@ class SSEHandler implements SSEHandlerInterface
         $stream = null;
         $headersProcessed = false;
         $rawHeaders = [];
-        
+
         $state = new \stdClass();
         $state->requestId = null;
 

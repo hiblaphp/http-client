@@ -34,6 +34,8 @@ interface ConfiguresCookiesInterface
      * Add multiple cookies to the Cookie request header.
      *
      * Equivalent to calling withCookie() for each entry.
+     *
+     * @param array<string, string> $cookies
      */
     public function withCookies(array $cookies): static;
 

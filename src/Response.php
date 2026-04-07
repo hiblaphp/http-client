@@ -97,7 +97,7 @@ class Response extends Message implements ResponseInterface
             if ($resource === false) {
                 throw new \RuntimeException('Unable to create temporary stream');
             }
-            if (\is_string($body) && $body !== '') {
+            if ($body !== '') {
                 $writeResult = fwrite($resource, $body);
                 if ($writeResult === false) {
                     fclose($resource);

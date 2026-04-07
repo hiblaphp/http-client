@@ -156,7 +156,11 @@ class Request extends Message implements RequestInterface
     public function withXml(string|\SimpleXMLElement $xml): static
     {
         if ($xml instanceof \SimpleXMLElement) {
-            $xml = $xml->asXML();
+            $result = $xml->asXML();
+            if ($result === false) {
+                throw new InvalidArgumentException('Failed to convert SimpleXMLElement to XML string.');
+            }
+            $xml = $result;
         }
 
         return $this->body($xml)->contentType('application/xml');

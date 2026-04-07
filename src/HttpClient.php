@@ -1125,43 +1125,6 @@ class HttpClient implements HttpClientInterface
     }
 
     /**
-     * Build a ClientOptions VO from current builder state.
-     *
-     * Used by streaming, download, and SSE terminal methods where the full
-     * interceptor pipeline does not run.
-     *
-     * @param  StreamInterface|null  $bodyOverride  Replaces the request body when provided.
-     */
-    private function buildClientOptions(
-        string $method,
-        string $url,
-        ?StreamInterface $bodyOverride = null,
-        ?int $timeout = null,
-    ): ClientOptions {
-        /** @var array<string, array<string>> $headers */
-        $headers = $this->request->getHeaders();
-
-        return new ClientOptions(
-            method: $method,
-            url: $url,
-            headers: $headers,
-            body: $bodyOverride ?? $this->request->getBody(),
-            timeout: $timeout ?? $this->timeout,
-            connectTimeout: $this->connectTimeout,
-            followRedirects: $this->followRedirects,
-            maxRedirects: $this->maxRedirects,
-            verifySSL: $this->verifySSL,
-            userAgent: $this->request->getUserAgent(),
-            protocol: $this->protocol,
-            cookieJar: $this->request->getCookieJar(),
-            proxyConfig: $this->proxyConfig,
-            auth: $this->request->getAuth(),
-            additionalOptions: $this->request->getOptions() + $this->curlOptions,
-            retryConfig: $this->retryConfig,
-        );
-    }
-
-    /**
      * Return a clone of this client with the embedded Request replaced
      * by the result of $fn.
      *
