@@ -803,15 +803,10 @@ class HttpClient implements HttpClientInterface
     {
         return $this->intercept(
             static function (RequestInterface $request, callable $next) use ($callback): PromiseInterface {
-                /** @var PromiseInterface $nextPromise */
                 $nextPromise = $next($request);
 
                 return $nextPromise->then(
-                    static function (mixed $response) use ($callback): mixed {
-                        if (! $response instanceof ResponseInterface) {
-                            return $response;
-                        }
-
+                    static function (ResponseInterface $response) use ($callback): mixed {
                         $result = $callback($response);
 
                         if ($result instanceof PromiseInterface) {
@@ -1009,7 +1004,8 @@ class HttpClient implements HttpClientInterface
             ->withUri(new Uri($expandedUrl))
         ;
 
-        return $this->interceptorHandler->process(
+        /** @var PromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}> $promise */
+        $promise = $this->interceptorHandler->process(
             request: $initialRequest,
             interceptors: $this->interceptors,
             executor: function (RequestInterface $processed) use ($destination, $onProgress) {
@@ -1026,6 +1022,8 @@ class HttpClient implements HttpClientInterface
             },
             requireResponse: false
         );
+
+        return $promise;
     }
 
     /**

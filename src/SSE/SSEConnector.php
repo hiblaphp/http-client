@@ -6,7 +6,6 @@ namespace Hibla\HttpClient\SSE;
 
 use Hibla\HttpClient\Handlers\HttpHandler;
 use Hibla\HttpClient\Handlers\InterceptorHandler;
-use Hibla\HttpClient\Interfaces\Execution\HttpInterceptorInterface;
 use Hibla\HttpClient\Interfaces\RequestInterface;
 use Hibla\HttpClient\Interfaces\SSEResponseInterface;
 use Hibla\HttpClient\Request;
@@ -32,7 +31,8 @@ final class SSEConnector
         private readonly array $interceptors,
         private readonly Request $request,
         private readonly \Closure $optionsBuilder,
-    ) {}
+    ) {
+    }
 
     /**
      * @param string $url The URL to connect to

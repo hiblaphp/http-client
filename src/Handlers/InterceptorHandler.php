@@ -64,7 +64,7 @@ class InterceptorHandler
                     }
 
                     $mapped = $result->then(
-                        static fn($resolved): Response|array => self::resolveResult($resolved, $requireResponse)
+                        static fn ($resolved): Response|array => self::resolveResult($resolved, $requireResponse)
                     );
 
                     $mapped->onCancel($result->cancelChain(...));
@@ -75,22 +75,19 @@ class InterceptorHandler
             $executor,
         );
 
-        $state = new class {
-            /** @var PromiseInterface<mixed>|null */
-            public PromiseInterface|null $innerPromise = null;
-        };
+        /** @var PromiseInterface<mixed>|null $innerPromise */
+        $innerPromise = null;
 
         /** @var PromiseInterface<TResult> $outerPromise */
-        $outerPromise = async(static function () use ($pipeline, $request, $state): mixed {
+        $outerPromise = async(static function () use ($pipeline, $request, &$innerPromise): mixed {
             $innerPromise = $pipeline($request);
-            $state->innerPromise = $innerPromise;
 
-            return await($state->innerPromise);
+            return await($innerPromise);
         });
 
-        $outerPromise->onCancel(function () use ($state) {
-            if ($state->innerPromise instanceof PromiseInterface && ! $state->innerPromise->isSettled()) {
-                $state->innerPromise->cancelChain();
+        $outerPromise->onCancel(static function () use (&$innerPromise) {
+            if ($innerPromise instanceof PromiseInterface && ! $innerPromise->isSettled()) {
+                $innerPromise->cancelChain();
             }
         });
 

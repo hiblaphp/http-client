@@ -91,7 +91,6 @@ describe('Interceptor Pipeline', function () {
             ->intercept(function (RequestInterface $request, callable $next) use (&$log) {
                 $log[] = 'before';
 
-                /** @var Hibla\Promise\Interfaces\PromiseInterface $promise */
                 $promise = $next($request);
 
                 return $promise->then(function (ResponseInterface $response) use (&$log) {

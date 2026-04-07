@@ -49,7 +49,7 @@ class Stream implements StreamInterface
 
         $this->lineHandler = new ReadLineHandler(
             $this->readAsync(...),
-            fn(string $data) => $this->handler->setPrependBuffer($data . $this->handler->getPrependBuffer())
+            fn (string $data) => $this->handler->setPrependBuffer($data . $this->handler->getPrependBuffer())
         );
 
         $this->allHandler = new ReadAllHandler(

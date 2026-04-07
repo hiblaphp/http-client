@@ -7,12 +7,14 @@ namespace Hibla\HttpClient;
 use Hibla\HttpClient\Handlers\HttpHandler;
 use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
 use Hibla\HttpClient\Interfaces\HttpClientInterface;
+use Hibla\HttpClient\Interfaces\RequestInterface;
 use Hibla\HttpClient\Interfaces\ResponseInterface;
 use Hibla\HttpClient\Interfaces\SSE\SSEBuilderInterface;
 use Hibla\HttpClient\Interfaces\StreamingResponseInterface;
 use Hibla\HttpClient\Testing\MockRequestBuilder;
 use Hibla\HttpClient\Testing\TestingHttpHandler;
 use Hibla\HttpClient\Testing\Utilities\RecordedRequest;
+use Hibla\HttpClient\ValueObjects\ProxyConfig;
 use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Psr\Http\Message\UploadedFileInterface;
@@ -149,7 +151,7 @@ use Psr\Http\Message\UploadedFileInterface;
  * @method static HttpClientInterface withUrlParameters(array<string, mixed> $parameters) Set multiple URL parameters for URI template substitution.
  *
  * Interceptor methods (HttpInterceptorInterface):
- * @method static HttpClientInterface intercept(callable(RequestInterface, callable): PromiseInterface<ResponseInterface> $middleware) Add a full pipeline interceptor.
+ * @method static HttpClientInterface intercept(callable(RequestInterface, callable(RequestInterface): PromiseInterface<ResponseInterface>): PromiseInterface<ResponseInterface> $middleware) Add a full pipeline interceptor.
  * @method static HttpClientInterface interceptRequest(callable(RequestInterface): (RequestInterface|PromiseInterface<RequestInterface>) $callback) Start building a request with a request interceptor.
  * @method static HttpClientInterface interceptResponse(callable(ResponseInterface): (ResponseInterface|PromiseInterface<ResponseInterface>) $callback) Start building a request with a response interceptor.
  *

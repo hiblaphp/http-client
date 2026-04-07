@@ -8,6 +8,7 @@ use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
 use Hibla\HttpClient\Interfaces\HttpClientInterface;
 use Hibla\HttpClient\Interfaces\ResponseInterface;
 use Hibla\HttpClient\ValueObjects\ProxyConfig;
+use Hibla\HttpClient\ValueObjects\RetryConfig; // Added missing import
 use Hibla\Promise\Interfaces\PromiseInterface;
 
 /**
@@ -49,9 +50,9 @@ final class FetchRequest
     /**
      * Translate $options onto $client and dispatch to the standard builder send().
      *
-     * @param  HttpClientInterface        $client   A pre-configured builder instance.
-     * @param  string                     $url
-     * @param  array<int|string, mixed>   $options
+     * @param  HttpClientInterface $client A pre-configured builder instance.
+     * @param  string $url
+     * @param  array<int|string, mixed> $options
      * @return PromiseInterface<ResponseInterface>
      */
     public function send(
@@ -61,11 +62,17 @@ final class FetchRequest
     ): PromiseInterface {
         $client = $this->applyOptions($client, $options);
 
-        return $client->send(strtoupper($options['method'] ?? 'GET'), $url);
+        $method = isset($options['method']) && \is_string($options['method'])
+            ? strtoupper($options['method'])
+            : 'GET';
+
+        return $client->send($method, $url);
     }
 
     /**
      * Map all recognised string-keyed options onto the fluent builder.
+     *
+     * @param array<int|string, mixed> $options
      */
     private function applyOptions(
         HttpClientInterface $client,
@@ -84,6 +91,9 @@ final class FetchRequest
         return $client;
     }
 
+    /**
+     * @param array<int|string, mixed> $options
+     */
     private function applyHeaders(
         HttpClientInterface $client,
         array $options
@@ -97,20 +107,32 @@ final class FetchRequest
         return $client;
     }
 
+    /**
+     * @param array<int|string, mixed> $options
+     */
     private function applyBody(
         HttpClientInterface $client,
         array $options
     ): HttpClientInterface {
         if (isset($options['json']) && \is_array($options['json'])) {
-            return $client->withJson($options['json']);
+            /** @var array<string, mixed> $json */
+            $json = $options['json'];
+
+            return $client->withJson($json);
         }
 
         if (isset($options['form']) && \is_array($options['form'])) {
-            return $client->withForm($options['form']);
+            /** @var array<string, mixed> $form */
+            $form = $options['form'];
+
+            return $client->withForm($form);
         }
 
         if (isset($options['multipart']) && \is_array($options['multipart'])) {
-            return $client->withMultipart($options['multipart']);
+            /** @var array<string, mixed> $multipart */
+            $multipart = $options['multipart'];
+
+            return $client->withMultipart($multipart);
         }
 
         if (isset($options['body']) && \is_string($options['body'])) {
@@ -120,6 +142,9 @@ final class FetchRequest
         return $client;
     }
 
+    /**
+     * @param array<int|string, mixed> $options
+     */
     private function applyAuth(
         HttpClientInterface $client,
         array $options
@@ -151,6 +176,9 @@ final class FetchRequest
         return $client;
     }
 
+    /**
+     * @param array<int|string, mixed> $options
+     */
     private function applyTransport(
         HttpClientInterface $client,
         array $options
@@ -165,8 +193,8 @@ final class FetchRequest
 
         if (isset($options['follow_redirects'])) {
             $max = isset($options['max_redirects']) && \is_numeric($options['max_redirects'])
-                        ? (int) $options['max_redirects']
-                        : 5;
+                ? (int) $options['max_redirects']
+                : 5;
             $client = $client->redirects((bool) $options['follow_redirects'], $max);
         }
 
@@ -186,6 +214,9 @@ final class FetchRequest
         return $client;
     }
 
+    /**
+     * @param array<int|string, mixed> $options
+     */
     private function applyRetry(
         HttpClientInterface $client,
         array $options
@@ -206,15 +237,18 @@ final class FetchRequest
 
         if (\is_array($retry)) {
             return $client->retry(
-                maxRetries:        isset($retry['max_retries']) ? (int)   $retry['max_retries'] : 3,
-                baseDelay:         isset($retry['base_delay']) ? (float) $retry['base_delay'] : 1.0,
-                backoffMultiplier: isset($retry['backoff_multiplier']) ? (float) $retry['backoff_multiplier'] : 2.0,
+                maxRetries: isset($retry['max_retries']) && \is_numeric($retry['max_retries']) ? (int) $retry['max_retries'] : 3,
+                baseDelay: isset($retry['base_delay']) && \is_numeric($retry['base_delay']) ? (float) $retry['base_delay'] : 1.0,
+                backoffMultiplier: isset($retry['backoff_multiplier']) && \is_numeric($retry['backoff_multiplier']) ? (float) $retry['backoff_multiplier'] : 2.0,
             );
         }
 
         return $client;
     }
 
+    /**
+     * @param array<int|string, mixed> $options
+     */
     private function applyProxy(
         HttpClientInterface $client,
         array $options
@@ -244,6 +278,9 @@ final class FetchRequest
         return $client;
     }
 
+    /**
+     * @param array<int|string, mixed> $options
+     */
     private function applyCookies(
         HttpClientInterface $client,
         array $options
@@ -261,6 +298,9 @@ final class FetchRequest
         return $client;
     }
 
+    /**
+     * @param array<int|string, mixed> $options
+     */
     private function applyInterceptors(
         HttpClientInterface $client,
         array $options
@@ -295,6 +335,9 @@ final class FetchRequest
         return $client;
     }
 
+    /**
+     * @param array<int|string, mixed> $options
+     */
     private function applyRawCurlOptions(
         HttpClientInterface $client,
         array $options
@@ -325,6 +368,9 @@ final class FetchRequest
         );
     }
 
+    /**
+     * @param array<int|string, mixed> $proxy
+     */
     private function parseProxyArray(array $proxy): ?ProxyConfig
     {
         $host = $proxy['host'] ?? $proxy['server'] ?? '';
