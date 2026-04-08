@@ -149,6 +149,7 @@ describe('Advanced Response Interception', function () {
         ;
 
         expect($response->status())->toBe(302)
-            ->and($redirectUrl)->toContain('/get');
+            ->and($redirectUrl)->toContain('/get')
+        ;
     });
 });

@@ -24,8 +24,8 @@ use Psr\Http\Message\UriInterface;
  * Each builder method returns a cloned instance so chains can branch freely
  * without side effects.
  *
- * @see RequestInterface  The narrow contract exposed to interceptors.
- * @see HttpClient               Owns transport config and dispatches requests.
+ * @see RequestInterface The narrow contract exposed to interceptors.
+ * @see HttpClient Owns transport config and dispatches requests.
  */
 class Request extends Message implements RequestInterface
 {
@@ -73,6 +73,11 @@ class Request extends Message implements RequestInterface
      * User-Agent string, or null to fall back to the globally configured agent.
      */
     private ?string $userAgent = null;
+
+    /**
+     * Tracks whether the developer explicitly set a body for this request.
+     */
+    private bool $bodyExplicitlySet = false;
 
     /**
      * Initialise a blank pending request.
@@ -138,6 +143,7 @@ class Request extends Message implements RequestInterface
     {
         /** @var static $new */
         $new = parent::withBody($body);
+        $new->bodyExplicitlySet = true;
 
         return $new;
     }
@@ -384,6 +390,7 @@ class Request extends Message implements RequestInterface
     {
         $new = clone $this;
         $new->body = $this->createTempStream();
+        $new->bodyExplicitlySet = true;
 
         if (isset($new->options['multipart']) && \is_array($new->options['multipart'])) {
             $new->options['multipart'] = array_merge($new->options['multipart'], $data);
@@ -392,6 +399,16 @@ class Request extends Message implements RequestInterface
         }
 
         return $new->withoutHeader('Content-Type');
+    }
+
+    /**
+     * Check if the user has explicitly defined a body for this request.
+     *
+     * @internal use by HttpClient
+     */
+    public function hasExplicitBody(): bool
+    {
+        return $this->bodyExplicitlySet;
     }
 
     /**

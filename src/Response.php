@@ -256,7 +256,7 @@ class Response extends Message implements ResponseInterface
      */
     public function failed(): bool
     {
-        return ! $this->successful();
+        return $this->clientError() || $this->serverError();
     }
 
     /**
