@@ -115,6 +115,10 @@ A high-performance HTTP client with a clean chainable API, first-class streaming
   - [`CookieJarInterface`](#cookiejarinterface)
 - [Exceptions](#exceptions)
 
+**Meta**
+- [Development](#development)
+- [Credits](#credits)
+- [License](#license)
 ---
 
 ## Installation
