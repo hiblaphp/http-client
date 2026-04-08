@@ -11,7 +11,7 @@ use Hibla\HttpClient\ValueObjects\ProxyConfig;
  *
  * The four strategies (HTTP, SOCKS4, SOCKS5, value object) are
  * mutually exclusive — setting one replaces any previously configured
- * proxy on the instance. Use noProxy() to explicitly bypass any
+ * proxy on the instance. Use withoutProxy() to explicitly bypass any
  * globally configured proxy for a specific request.
  */
 interface ConfiguresProxyInterface
@@ -61,7 +61,7 @@ interface ConfiguresProxyInterface
      * Useful when proxy settings are constructed dynamically or
      * shared across multiple requests.
      */
-    public function proxyWith(ProxyConfig $config): static;
+    public function withProxyConfig(ProxyConfig $config): static;
 
     /**
      * Disable proxy routing for this request.
@@ -69,5 +69,5 @@ interface ConfiguresProxyInterface
      * Explicitly bypasses any globally configured proxy, ensuring
      * this request connects directly regardless of environment settings.
      */
-    public function noProxy(): static;
+    public function withoutProxy(): static;
 }

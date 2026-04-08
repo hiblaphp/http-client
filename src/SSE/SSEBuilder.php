@@ -70,7 +70,7 @@ class SSEBuilder implements SSEBuilderInterface
     /**
      *  @inheritDoc
      */
-    public function dataFormat(SSEDataFormat $format): static
+    public function withDataFormat(SSEDataFormat $format): static
     {
         $new = clone $this;
         $new->dataFormat = $format;
@@ -115,7 +115,7 @@ class SSEBuilder implements SSEBuilderInterface
     /**
      *  @inheritDoc
      */
-    public function reconnectWith(SSEReconnectConfig $config): static
+    public function withReconnectConfig(SSEReconnectConfig $config): static
     {
         $new = clone $this;
         $new->reconnectConfig = $config;
@@ -126,7 +126,7 @@ class SSEBuilder implements SSEBuilderInterface
     /**
      *  @inheritDoc
      */
-    public function noReconnect(): static
+    public function withoutReconnection(): static
     {
         $new = clone $this;
         $new->reconnectConfig = new SSEReconnectConfig(enabled: false);

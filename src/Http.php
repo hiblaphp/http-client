@@ -131,15 +131,15 @@ use Psr\Http\Message\UploadedFileInterface;
  *
  * Retry configuration methods (ConfiguresRetryInterface):
  * @method static HttpClientInterface retry(int $maxRetries = 3, float $baseDelay = 1.0, float $backoffMultiplier = 2.0) Start building a request with retry logic.
- * @method static HttpClientInterface retryWith(RetryConfig $config) Start building a request with custom retry configuration.
- * @method static HttpClientInterface noRetry() Start building a request with retries disabled.
+ * @method static HttpClientInterface withRetryConfig(RetryConfig $config) Start building a request with custom retry configuration.
+ * @method static HttpClientInterface withoutRetries() Start building a request with retries disabled.
  *
  * Proxy configuration methods (ConfiguresProxyInterface):
  * @method static HttpClientInterface withProxy(string $host, int $port, ?string $username = null, ?string $password = null) Start building a request with HTTP proxy configuration.
  * @method static HttpClientInterface withSocks4Proxy(string $host, int $port, ?string $username = null) Start building a request with SOCKS4 proxy configuration.
  * @method static HttpClientInterface withSocks5Proxy(string $host, int $port, ?string $username = null, ?string $password = null) Start building a request with SOCKS5 proxy configuration.
- * @method static HttpClientInterface proxyWith(ProxyConfig $config) Start building a request with custom proxy configuration.
- * @method static HttpClientInterface noProxy() Start building a request with proxy disabled.
+ * @method static HttpClientInterface withProxyConfig(ProxyConfig $config) Start building a request with custom proxy configuration.
+ * @method static HttpClientInterface withoutProxy() Start building a request with proxy disabled.
  *
  * File attachment methods (ConfiguresFilesInterface):
  * @method static HttpClientInterface withFile(string $name, string|UploadedFileInterface|resource $file, ?string $filename = null, ?string $contentType = null) Start building a request with a file attachment.

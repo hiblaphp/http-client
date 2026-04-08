@@ -66,16 +66,16 @@ describe('Proxy', function () {
             expect($b)->not->toBe($a);
         });
 
-        it('noProxy() strips a previously configured proxy', function () {
+        it('withoutProxy() strips a previously configured proxy', function () {
             $stripped = ProxySetup::client()
                 ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
-                ->noProxy()
+                ->withoutProxy()
             ;
 
             expect(ProxySetup::readPrivate($stripped, 'proxyConfig'))->toBeNull();
         });
 
-        it('proxyWith() stores a hand-crafted ProxyConfig', function () {
+        it('withProxyConfig() stores a hand-crafted ProxyConfig', function () {
             $config = new ProxyConfig(
                 host: 'custom.proxy',
                 port: 9090,
@@ -85,7 +85,7 @@ describe('Proxy', function () {
             );
 
             expect(ProxySetup::readPrivate(
-                ProxySetup::client()->proxyWith($config),
+                ProxySetup::client()->withProxyConfig($config),
                 'proxyConfig'
             ))->toBe($config);
         });
@@ -93,7 +93,7 @@ describe('Proxy', function () {
         it('does not mutate the base instance when branching', function () {
             $base = ProxySetup::client()->withToken('tok')->asJson();
             $proxied = $base->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort());
-            $unproxied = $base->noProxy();
+            $unproxied = $base->withoutProxy();
 
             expect(ProxySetup::readPrivate($proxied, 'proxyConfig'))->not->toBeNull()
                 ->and(ProxySetup::readPrivate($unproxied, 'proxyConfig'))->toBeNull()
@@ -195,10 +195,10 @@ describe('Proxy', function () {
             expect($response->successful())->toBeTrue();
         });
 
-        it('noProxy() branch bypasses the proxy on the same chain', function () {
+        it('withoutProxy() branch bypasses the proxy on the same chain', function () {
             $response = ProxySetup::client()
                 ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
-                ->noProxy()
+                ->withoutProxy()
                 ->get(HttpBin::url('/get'))
                 ->wait()
             ;

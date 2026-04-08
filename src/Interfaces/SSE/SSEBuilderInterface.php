@@ -20,7 +20,7 @@ use Hibla\Promise\Interfaces\PromiseInterface;
  *   $base = Http::request()
  *       ->withToken($token)
  *       ->sse('https://api.example.com/stream')
- *       ->dataFormat(SSEDataFormat::DecodedJson)
+ *       ->withDataFormat(SSEDataFormat::DecodedJson)
  *       ->reconnect(maxAttempts: 5);
  *
  *   // Safe — each derives from $base without mutating it
@@ -56,7 +56,7 @@ interface SSEBuilderInterface
     /**
      * Configure the format of data passed to the onEvent callback.
      */
-    public function dataFormat(SSEDataFormat $format): static;
+    public function withDataFormat(SSEDataFormat $format): static;
 
     /**
      * Apply a transformation to each event value after dataFormat is applied
@@ -86,12 +86,12 @@ interface SSEBuilderInterface
     /**
      * Provide a fully custom reconnection configuration.
      */
-    public function reconnectWith(SSEReconnectConfig $config): static;
+    public function withReconnectConfig(SSEReconnectConfig $config): static;
 
     /**
      * Explicitly disable reconnection (overrides any previously set config).
      */
-    public function noReconnect(): static;
+    public function withoutReconnection(): static;
 
     /**
      * Open the SSE connection with the current configuration.

@@ -264,7 +264,7 @@ describe('Mock Handler Integration Tests', function () {
 
         $handler->mock('GET')
             ->url(HttpBin::url('/delay/1'))
-            ->delay(0.5)
+            ->latency(0.5)
             ->respondJson(['url' => HttpBin::url('/delay/1')])
             ->register()
         ;

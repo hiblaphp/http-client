@@ -228,7 +228,7 @@ final class FetchRequest
         $retry = $options['retry'];
 
         if ($retry instanceof RetryConfig) {
-            return $client->retryWith($retry);
+            return $client->withRetryConfig($retry);
         }
 
         if ($retry === true) {
@@ -260,19 +260,19 @@ final class FetchRequest
         $proxy = $options['proxy'];
 
         if ($proxy instanceof ProxyConfig) {
-            return $client->proxyWith($proxy);
+            return $client->withProxyConfig($proxy);
         }
 
         if (\is_string($proxy)) {
             $config = $this->parseProxyUrl($proxy);
 
-            return $config !== null ? $client->proxyWith($config) : $client;
+            return $config !== null ? $client->withProxyConfig($config) : $client;
         }
 
         if (\is_array($proxy)) {
             $config = $this->parseProxyArray($proxy);
 
-            return $config !== null ? $client->proxyWith($config) : $client;
+            return $config !== null ? $client->withProxyConfig($config) : $client;
         }
 
         return $client;

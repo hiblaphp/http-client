@@ -566,7 +566,7 @@ class HttpClient implements HttpClientInterface
     /**
      * @inheritDoc
      */
-    public function retryWith(RetryConfig $config): static
+    public function withRetryConfig(RetryConfig $config): static
     {
         $new = clone $this;
         $new->retryConfig = $config;
@@ -577,7 +577,7 @@ class HttpClient implements HttpClientInterface
     /**
      * @inheritDoc
      */
-    public function noRetry(): static
+    public function withoutRetries(): static
     {
         $new = clone $this;
         $new->retryConfig = null;
@@ -621,7 +621,7 @@ class HttpClient implements HttpClientInterface
     /**
      * @inheritDoc
      */
-    public function proxyWith(ProxyConfig $config): static
+    public function withProxyConfig(ProxyConfig $config): static
     {
         $new = clone $this;
         $new->proxyConfig = $config;
@@ -632,7 +632,7 @@ class HttpClient implements HttpClientInterface
     /**
      * @inheritDoc
      */
-    public function noProxy(): static
+    public function withoutProxy(): static
     {
         $new = clone $this;
         $new->proxyConfig = null;

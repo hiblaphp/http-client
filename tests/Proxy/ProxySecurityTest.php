@@ -68,16 +68,16 @@ describe('Proxy security', function () {
         });
     });
 
-    describe('noProxy() bypass verification', function () {
+    describe('withoutProxy() bypass verification', function () {
 
         beforeEach(function () {
             HttpBin::skipIfUnreachable();
         });
 
-        it('noProxy() request contains no Proxy-Authorization header', function () {
+        it('withoutProxy() request contains no Proxy-Authorization header', function () {
             $response = ProxySetup::client()
                 ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort(), 'user', 'pass')
-                ->noProxy()
+                ->withoutProxy()
                 ->get(HttpBin::url('/headers'))
                 ->wait()
             ;
@@ -89,10 +89,10 @@ describe('Proxy security', function () {
             ;
         });
 
-        it('noProxy() request contains no Via header injected by proxy', function () {
+        it('withoutProxy() request contains no Via header injected by proxy', function () {
             $response = ProxySetup::client()
                 ->withProxy(ProxySetup::httpHost(), ProxySetup::httpPort())
-                ->noProxy()
+                ->withoutProxy()
                 ->get(HttpBin::url('/headers'))
                 ->wait()
             ;

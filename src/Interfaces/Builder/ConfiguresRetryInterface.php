@@ -36,7 +36,7 @@ interface ConfiguresRetryInterface
      * Prefer this over retry() when you need fine-grained control over
      * retryable status codes, error patterns, or jitter strategy.
      */
-    public function retryWith(RetryConfig $config): static;
+    public function withRetryConfig(RetryConfig $config): static;
 
     /**
      * Disable automatic retries for this request.
@@ -44,5 +44,5 @@ interface ConfiguresRetryInterface
      * Useful for explicitly opting out when a global retry policy
      * has been configured at the handler level.
      */
-    public function noRetry(): static;
+    public function withoutRetries(): static;
 }

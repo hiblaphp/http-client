@@ -43,7 +43,7 @@ describe('Comprehensive SSE: Realistic Retries & Real Network Passthrough', func
             $events = [];
             await(
                 Http::request()->sse($url)
-                    ->reconnectWith($reconnectConfig)
+                    ->withReconnectConfig($reconnectConfig)
                     ->onEvent(function (SSEEvent $event) use (&$events) {
                         $events[] = $event;
                     })
@@ -71,7 +71,7 @@ describe('Comprehensive SSE: Realistic Retries & Real Network Passthrough', func
             $received = false;
             await(
                 Http::request()->sse($url)
-                    ->reconnectWith($reconnectConfig)
+                    ->withReconnectConfig($reconnectConfig)
                     ->onEvent(function () use (&$received) {
                         $received = true;
                     })
@@ -108,7 +108,7 @@ describe('Comprehensive SSE: Realistic Retries & Real Network Passthrough', func
 
             await(
                 Http::request()->sse($url)
-                    ->reconnectWith($reconnectConfig)
+                    ->withReconnectConfig($reconnectConfig)
                     ->onEvent(function (SSEEvent $event) use (&$ids, $completed) {
                         $ids[] = $event->id;
                         if (count($ids) === 3) {
