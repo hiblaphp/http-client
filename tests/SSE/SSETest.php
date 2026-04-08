@@ -195,7 +195,7 @@ describe('Comprehensive SSE: Realistic Retries & Real Network Passthrough', func
 
             $response = await(
                 Http::request()->sse(HttpBin::url("/base64/{$base64Sse}"))
-                    ->onEvent(fn() => null)
+                    ->onEvent(fn () => null)
                     ->connect()
             );
 
@@ -262,7 +262,7 @@ describe('Comprehensive SSE: Realistic Retries & Real Network Passthrough', func
 
             Http::mock('GET')
                 ->url($url)
-                ->sseWithLimitedEvents(2, fn($i) => ['data' => "chunk {$i}"])
+                ->sseWithLimitedEvents(2, fn ($i) => ['data' => "chunk {$i}"])
                 ->dataStreamTransferLatency(0.2)
                 ->register()
             ;
@@ -307,7 +307,7 @@ describe('Comprehensive SSE: Realistic Retries & Real Network Passthrough', func
             enabled: true,
             maxAttempts: 2,
             initialDelay: 0.01,
-            onReconnect: function (int $attempt, float $delay, \Exception|string $error) use (&$reconnectAttempts) {
+            onReconnect: function (int $attempt, float $delay, Exception|string $error) use (&$reconnectAttempts) {
                 $reconnectAttempts++;
             }
         );
@@ -316,7 +316,7 @@ describe('Comprehensive SSE: Realistic Retries & Real Network Passthrough', func
             await(
                 Http::request()->sse($url)
                     ->withReconnectConfig($config)
-                    ->onError(function (\Throwable $error) use (&$errorCaught) {
+                    ->onError(function (Throwable $error) use (&$errorCaught) {
                         $errorCaught = $error->getMessage();
                     })
                     ->connect()
@@ -349,7 +349,7 @@ describe('Comprehensive SSE: Realistic Retries & Real Network Passthrough', func
         await(
             Http::request()->sse($url)
                 ->withoutReconnection()
-                ->onError(function (\Throwable $error) use (&$errorCaught, $completed) {
+                ->onError(function (Throwable $error) use (&$errorCaught, $completed) {
                     $errorCaught = $error->getMessage();
                     $completed->resolve(true);
                 })
@@ -369,7 +369,7 @@ describe('Comprehensive SSE: Realistic Retries & Real Network Passthrough', func
         it('receives full SSEEvent objects when using SSEDataFormat::Event (Default)', function () {
             $url = 'https://api.example.com/object-format';
             Http::mock('GET')->url($url)->respondWithSSE([
-                ['id' => 'evt-1', 'event' => 'update', 'data' => 'hello']
+                ['id' => 'evt-1', 'event' => 'update', 'data' => 'hello'],
             ])->register();
 
             $received = null;
@@ -391,7 +391,7 @@ describe('Comprehensive SSE: Realistic Retries & Real Network Passthrough', func
         it('receives a plain array with auto-decoded JSON data when using SSEDataFormat::Array', function () {
             $url = 'https://api.example.com/array-format';
             Http::mock('GET')->url($url)->respondWithSSE([
-                ['id' => '55', 'data' => json_encode(['user' => 'reymart'])]
+                ['id' => '55', 'data' => json_encode(['user' => 'reymart'])],
             ])->register();
 
             $received = null;
@@ -414,7 +414,7 @@ describe('Comprehensive SSE: Realistic Retries & Real Network Passthrough', func
             $jsonString = '{"status":"ok"}';
 
             Http::mock('GET')->url($url)->respondWithSSE([
-                ['data' => $jsonString]
+                ['data' => $jsonString],
             ])->register();
 
             $received = null;
@@ -497,7 +497,8 @@ describe('Comprehensive SSE: Realistic Retries & Real Network Passthrough', func
 
             Http::mock('GET')->url($url)
                 ->sseFailUntilAttempt(3, [['data' => 'finally']])
-                ->register();
+                ->register()
+            ;
 
             await(
                 Http::request()->sse($url)
@@ -515,7 +516,8 @@ describe('Comprehensive SSE: Realistic Retries & Real Network Passthrough', func
                 ->networkError('timeout')
                 ->respondWithSSE([])
                 ->persistent()
-                ->register();
+                ->register()
+            ;
 
             try {
                 await(
@@ -523,7 +525,7 @@ describe('Comprehensive SSE: Realistic Retries & Real Network Passthrough', func
                         ->reconnect(maxAttempts: 5, initialDelay: 0.01)
                         ->connect()
                 );
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 // Expected exhaustion
             }
 
@@ -537,7 +539,8 @@ describe('Comprehensive SSE: Realistic Retries & Real Network Passthrough', func
                 ->networkError('connection')
                 ->respondWithSSE([])
                 ->persistent()
-                ->register();
+                ->register()
+            ;
 
             try {
                 await(
@@ -546,7 +549,7 @@ describe('Comprehensive SSE: Realistic Retries & Real Network Passthrough', func
                         ->withoutReconnection()
                         ->connect()
                 );
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 // Expected immediate failure
             }
 

@@ -114,7 +114,8 @@ describe('Proxy security', function () {
             ;
 
             expect($response->successful())->toBeTrue()
-                ->and($response->json('url'))->toContain('hibla_httpbin');
+                ->and($response->json('url'))->toContain('hibla_httpbin')
+            ;
         });
     });
 });

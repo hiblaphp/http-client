@@ -187,4 +187,61 @@ describe('Uploads and Downloads', function () {
         });
     });
 
+    describe('Upload Memory Profile', function () {
+
+        it('uploads a file without loading it into memory (Streaming PUT)', function () {
+            $source = sys_get_temp_dir() . '/hibla_mem_test_' . uniqid() . '.bin';
+            $size = 2 * 1024 * 1024;
+            file_put_contents($source, str_repeat('A', $size));
+
+            gc_collect_cycles();
+            $memoryBefore = memory_get_usage();
+
+            $result = await(
+                Http::request()
+                    ->withHeader('Expect', '')
+                    ->upload(HttpBin::url('/status/204'), $source)
+            );
+
+            gc_collect_cycles();
+            $memoryAfter = memory_get_usage();
+            $memoryDiff = $memoryAfter - $memoryBefore;
+
+            try {
+                expect($result['status'])->toBe(204);
+
+                expect($memoryDiff)->toBeLessThan(200 * 1024);
+            } finally {
+                @unlink($source);
+            }
+        });
+
+        it('remains memory efficient during multipart uploads using CURLFile', function () {
+            $source = sys_get_temp_dir() . '/hibla_multi_mem_' . uniqid() . '.bin';
+            $size = 2 * 1024 * 1024;
+            file_put_contents($source, str_repeat('B', $size));
+
+            gc_collect_cycles();
+            $memoryBefore = memory_get_usage();
+
+            $response = await(
+                Http::request()
+                    ->withHeader('Expect', '')
+                    ->withFile('heavy_file', $source)
+                    ->post(HttpBin::url('/status/201'))
+            );
+
+            gc_collect_cycles();
+            $memoryAfter = memory_get_usage();
+            $memoryDiff = $memoryAfter - $memoryBefore;
+
+            try {
+                expect($response->status())->toBe(201);
+
+                expect($memoryDiff)->toBeLessThan(200 * 1024);
+            } finally {
+                @unlink($source);
+            }
+        });
+    });
 });
