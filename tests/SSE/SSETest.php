@@ -44,7 +44,7 @@ describe('Comprehensive SSE: Realistic Retries & Real Network Passthrough', func
 
             $events = [];
             await(
-                Http::request()->sse($url)
+                Http::client()->sse($url)
                     ->withReconnectConfig($reconnectConfig)
                     ->onEvent(function (SSEEvent $event) use (&$events) {
                         $events[] = $event;
@@ -72,7 +72,7 @@ describe('Comprehensive SSE: Realistic Retries & Real Network Passthrough', func
 
             $received = false;
             await(
-                Http::request()->sse($url)
+                Http::client()->sse($url)
                     ->withReconnectConfig($reconnectConfig)
                     ->onEvent(function () use (&$received) {
                         $received = true;
@@ -109,7 +109,7 @@ describe('Comprehensive SSE: Realistic Retries & Real Network Passthrough', func
             $completed = new Promise();
 
             await(
-                Http::request()->sse($url)
+                Http::client()->sse($url)
                     ->withReconnectConfig($reconnectConfig)
                     ->onEvent(function (SSEEvent $event) use (&$ids, $completed) {
                         $ids[] = $event->id;
@@ -136,7 +136,7 @@ describe('Comprehensive SSE: Realistic Retries & Real Network Passthrough', func
 
             $capturedEvent = null;
             await(
-                Http::request()
+                Http::client()
                     ->withHeader('X-Test-ID', 'Hibla-Passthrough')
                     ->sse($url)
                     ->onEvent(function (SSEEvent $event) use (&$capturedEvent) {
@@ -158,7 +158,7 @@ describe('Comprehensive SSE: Realistic Retries & Real Network Passthrough', func
 
             $events = [];
             $response = await(
-                Http::request()->sse(HttpBin::url("/base64/{$base64Sse}"))
+                Http::client()->sse(HttpBin::url("/base64/{$base64Sse}"))
                     ->onEvent(function (SSEEvent $event) use (&$events) {
                         $events[] = $event;
                     })
@@ -177,7 +177,7 @@ describe('Comprehensive SSE: Realistic Retries & Real Network Passthrough', func
 
             $capturedEvent = null;
             await(
-                Http::request()->sse(HttpBin::url("/base64/{$base64Sse}"))
+                Http::client()->sse(HttpBin::url("/base64/{$base64Sse}"))
                     ->onEvent(function (SSEEvent $event) use (&$capturedEvent) {
                         $capturedEvent = $event;
                     })
@@ -194,7 +194,7 @@ describe('Comprehensive SSE: Realistic Retries & Real Network Passthrough', func
             $base64Sse = base64_encode($payload);
 
             $response = await(
-                Http::request()->sse(HttpBin::url("/base64/{$base64Sse}"))
+                Http::client()->sse(HttpBin::url("/base64/{$base64Sse}"))
                     ->onEvent(fn () => null)
                     ->connect()
             );
@@ -208,7 +208,7 @@ describe('Comprehensive SSE: Realistic Retries & Real Network Passthrough', func
 
             $capturedData = null;
             await(
-                Http::request()->sse(HttpBin::url("/base64/{$base64Sse}"))
+                Http::client()->sse(HttpBin::url("/base64/{$base64Sse}"))
                     ->onEvent(function (SSEEvent $event) use (&$capturedData) {
                         $capturedData = $event->data;
                     })
@@ -224,7 +224,7 @@ describe('Comprehensive SSE: Realistic Retries & Real Network Passthrough', func
 
             $events = [];
             await(
-                Http::request()->sse(HttpBin::url("/base64/{$base64Sse}"))
+                Http::client()->sse(HttpBin::url("/base64/{$base64Sse}"))
                     ->onEvent(function (SSEEvent $event) use (&$events) {
                         $events[] = $event;
                     })
@@ -241,7 +241,7 @@ describe('Comprehensive SSE: Realistic Retries & Real Network Passthrough', func
 
             $alerts = [];
             await(
-                Http::request()->sse(HttpBin::url("/base64/{$base64Sse}"))
+                Http::client()->sse(HttpBin::url("/base64/{$base64Sse}"))
                     ->onEvent(function (SSEEvent $event) use (&$alerts) {
                         if ($event->event === 'alert') {
                             $alerts[] = $event;
@@ -272,7 +272,7 @@ describe('Comprehensive SSE: Realistic Retries & Real Network Passthrough', func
             $startTime = microtime(true);
 
             await(
-                Http::request()->sse($url)
+                Http::client()->sse($url)
                     ->onEvent(function () use (&$eventCount, $completed) {
                         $eventCount++;
                         if ($eventCount === 2) {
@@ -314,7 +314,7 @@ describe('Comprehensive SSE: Realistic Retries & Real Network Passthrough', func
 
         try {
             await(
-                Http::request()->sse($url)
+                Http::client()->sse($url)
                     ->withReconnectConfig($config)
                     ->onError(function (Throwable $error) use (&$errorCaught) {
                         $errorCaught = $error->getMessage();
@@ -347,7 +347,7 @@ describe('Comprehensive SSE: Realistic Retries & Real Network Passthrough', func
         $completed = new Promise();
 
         await(
-            Http::request()->sse($url)
+            Http::client()->sse($url)
                 ->withoutReconnection()
                 ->onError(function (Throwable $error) use (&$errorCaught, $completed) {
                     $errorCaught = $error->getMessage();
@@ -374,7 +374,7 @@ describe('Comprehensive SSE: Realistic Retries & Real Network Passthrough', func
 
             $received = null;
             await(
-                Http::request()->sse($url)
+                Http::client()->sse($url)
                     ->withDataFormat(SSEDataFormat::Event)
                     ->onEvent(function (SSEEvent $event) use (&$received) {
                         $received = $event;
@@ -396,7 +396,7 @@ describe('Comprehensive SSE: Realistic Retries & Real Network Passthrough', func
 
             $received = null;
             await(
-                Http::request()->sse($url)
+                Http::client()->sse($url)
                     ->withDataFormat(SSEDataFormat::Array)
                     ->onEvent(function (array $eventArray) use (&$received) {
                         $received = $eventArray;
@@ -419,7 +419,7 @@ describe('Comprehensive SSE: Realistic Retries & Real Network Passthrough', func
 
             $received = null;
             await(
-                Http::request()->sse($url)
+                Http::client()->sse($url)
                     ->withDataFormat(SSEDataFormat::Raw)
                     ->onEvent(function (string $rawData) use (&$received) {
                         $received = $rawData;
@@ -445,7 +445,7 @@ describe('Comprehensive SSE: Realistic Retries & Real Network Passthrough', func
             $receivedPrices = [];
 
             await(
-                Http::request()->sse($url)
+                Http::client()->sse($url)
                     ->withDataFormat(SSEDataFormat::DecodedJson)
 
                     ->map(function (array $data) {
@@ -477,7 +477,7 @@ describe('Comprehensive SSE: Realistic Retries & Real Network Passthrough', func
             $receivedData = [];
 
             await(
-                Http::request()->sse($url)
+                Http::client()->sse($url)
                     ->withDataFormat(SSEDataFormat::DecodedJson)
                     ->onEvent(function (mixed $data) use (&$receivedData) {
                         $receivedData[] = $data;
@@ -501,7 +501,7 @@ describe('Comprehensive SSE: Realistic Retries & Real Network Passthrough', func
             ;
 
             await(
-                Http::request()->sse($url)
+                Http::client()->sse($url)
                     ->reconnect(initialDelay: 0.01)
                     ->connect()
             );
@@ -521,7 +521,7 @@ describe('Comprehensive SSE: Realistic Retries & Real Network Passthrough', func
 
             try {
                 await(
-                    Http::request()->sse($url)
+                    Http::client()->sse($url)
                         ->reconnect(maxAttempts: 5, initialDelay: 0.01)
                         ->connect()
                 );
@@ -544,7 +544,7 @@ describe('Comprehensive SSE: Realistic Retries & Real Network Passthrough', func
 
             try {
                 await(
-                    Http::request()->sse($url)
+                    Http::client()->sse($url)
                         ->reconnect(maxAttempts: 10)
                         ->withoutReconnection()
                         ->connect()

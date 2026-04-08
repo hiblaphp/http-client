@@ -25,7 +25,7 @@ describe('Real-world: Token Refresh Interceptor', function () {
     it('pauses and refreshes an expired token seamlessly', function () {
         $refreshCount = 0;
 
-        $client = Http::request()
+        $client = Http::client()
             ->intercept(function (RequestInterface $request, callable $next) use (&$refreshCount) {
                 return $next($request)->then(function (ResponseInterface $response) use ($request, $next, &$refreshCount) {
 
@@ -55,7 +55,7 @@ describe('Real-world: Token Refresh Interceptor', function () {
     });
 
     it('can globally sign every outgoing request asynchronously', function () {
-        $client = Http::request()
+        $client = Http::client()
             ->interceptRequest(function (RequestInterface $request) {
                 return delay(0.01)->then(fn () => $request->withHeader('X-Signature', 'hash-' . md5($request->getUri()->getPath())));
             })

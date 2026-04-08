@@ -15,7 +15,7 @@ describe('URL Parameter Expansion', function () {
     describe('withUrlParameter', function () {
         it('expands a single simple parameter', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withUrlParameter('path', 'my-resource')
                     ->get(HttpBin::url('/anything/{path}'))
             );
@@ -26,7 +26,7 @@ describe('URL Parameter Expansion', function () {
 
         it('percent-encodes special characters in simple expansion', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withUrlParameter('q', 'hello world')
                     ->get(HttpBin::url('/get?q={q}'))
             );
@@ -37,7 +37,7 @@ describe('URL Parameter Expansion', function () {
 
         it('preserves special characters with reserved expansion {+param}', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withUrlParameter('path', 'foo/bar/baz')
                     ->get(HttpBin::url('/anything/{+path}'))
             );
@@ -48,7 +48,7 @@ describe('URL Parameter Expansion', function () {
 
         it('leaves unmatched placeholders untouched', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withUrlParameter('known', 'get')
                     ->get(HttpBin::url('/{known}?x={unknown}'))
             );
@@ -59,7 +59,7 @@ describe('URL Parameter Expansion', function () {
 
         it('overrides a parameter when called multiple times', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withUrlParameter('path', 'anything')
                     ->withUrlParameter('path', 'get')
                     ->get(HttpBin::url('/{path}'))
@@ -73,7 +73,7 @@ describe('URL Parameter Expansion', function () {
             file_put_contents($tempFile, 'data');
 
             $postResponse = await(
-                Http::request()
+                Http::client()
                     ->withUrlParameter('path', 'post')
                     ->post(HttpBin::url('/{path}'))
             );
@@ -82,7 +82,7 @@ describe('URL Parameter Expansion', function () {
             expect($postResponse->json('url'))->toContain('/post');
 
             $deleteResponse = await(
-                Http::request()
+                Http::client()
                     ->withUrlParameter('path', 'delete')
                     ->delete(HttpBin::url('/{path}'))
             );
@@ -97,7 +97,7 @@ describe('URL Parameter Expansion', function () {
     describe('withUrlParameters', function () {
         it('expands multiple parameters at once', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withUrlParameters([
                         'resource' => 'anything',
                         'id' => '42',
@@ -111,7 +111,7 @@ describe('URL Parameter Expansion', function () {
 
         it('merges parameters across multiple withUrlParameters calls', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withUrlParameters(['resource' => 'anything'])
                     ->withUrlParameters(['id' => '99'])
                     ->get(HttpBin::url('/{resource}/{id}'))
@@ -123,7 +123,7 @@ describe('URL Parameter Expansion', function () {
 
         it('later call overwrites a previously set parameter', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withUrlParameters(['id' => 'first'])
                     ->withUrlParameters(['id' => 'second'])
                     ->get(HttpBin::url('/anything/{id}'))
@@ -134,7 +134,7 @@ describe('URL Parameter Expansion', function () {
 
         it('handles an empty parameters array without error', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withUrlParameters([])
                     ->get(HttpBin::url('/get'))
             );
@@ -144,7 +144,7 @@ describe('URL Parameter Expansion', function () {
 
         it('percent-encodes values in simple placeholders', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withUrlParameters([
                         'resource' => 'anything',
                         'tag' => 'foo bar',
@@ -158,7 +158,7 @@ describe('URL Parameter Expansion', function () {
 
         it('preserves slashes with reserved expansion across multiple params', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withUrlParameters([
                         'base' => 'anything',
                         'path' => 'foo/bar',
@@ -174,7 +174,7 @@ describe('URL Parameter Expansion', function () {
     describe('mixing withUrlParameter and withUrlParameters', function () {
         it('correctly merges singular and plural calls', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withUrlParameter('resource', 'anything')
                     ->withUrlParameters(['id' => '7', 'extra' => 'test'])
                     ->get(HttpBin::url('/{resource}/{id}/{extra}'))

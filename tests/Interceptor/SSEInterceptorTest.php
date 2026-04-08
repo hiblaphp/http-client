@@ -24,7 +24,7 @@ afterEach(function () {
 describe('SSE Interceptor Integration (Real Network + Assertions)', function () {
 
     it('allows interceptRequest to add headers to a real SSE connection', function () {
-        $promise = Http::request()
+        $promise = Http::client()
             ->interceptRequest(function (RequestInterface $request) {
                 return $request->withHeader('X-Real-SSE-Auth', 'passthrough-key-456');
             })
@@ -43,7 +43,7 @@ describe('SSE Interceptor Integration (Real Network + Assertions)', function () 
     it('allows interceptResponse to inspect real headers from HttpBin', function () {
         $capturedHeader = null;
 
-        $promise = Http::request()
+        $promise = Http::client()
             ->interceptResponse(function (ResponseInterface $response) use (&$capturedHeader) {
                 $capturedHeader = $response->header('Content-Type');
 
@@ -63,7 +63,7 @@ describe('SSE Interceptor Integration (Real Network + Assertions)', function () 
     it('handles asynchronous interceptors before establishing real SSE connection', function () {
         $startTime = microtime(true);
 
-        $promise = Http::request()
+        $promise = Http::client()
             ->interceptRequest(function (RequestInterface $request) {
                 return delay(0.1)->then(fn () => $request->withHeader('X-Async-Passthrough', 'true'));
             })
@@ -82,7 +82,7 @@ describe('SSE Interceptor Integration (Real Network + Assertions)', function () 
     it('successfully processes full pipeline interceptors with real traffic', function () {
         $steps = [];
 
-        $promise = Http::request()
+        $promise = Http::client()
             ->intercept(function (RequestInterface $request, callable $next) use (&$steps) {
                 $steps[] = 'before-network';
 

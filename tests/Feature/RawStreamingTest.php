@@ -22,7 +22,7 @@ describe('Streaming Integration (Push and Pull)', function () {
             $accumulatedData = '';
 
             $response = await(
-                Http::request()->stream(
+                Http::client()->stream(
                     HttpBin::url('/stream/3'),
                     function (string $chunk) use (&$chunksReceived, &$accumulatedData) {
                         $chunksReceived++;
@@ -47,7 +47,7 @@ describe('Streaming Integration (Push and Pull)', function () {
             $totalBytesReceived = 0;
 
             $response = await(
-                Http::request()->stream(
+                Http::client()->stream(
                     HttpBin::url('/stream-bytes/8192'),
                     function (string $chunk) use (&$totalBytesReceived) {
                         $totalBytesReceived += strlen($chunk);
@@ -60,7 +60,7 @@ describe('Streaming Integration (Push and Pull)', function () {
         });
 
         it('allows reading the full body from the StreamingResponse if no callback is provided', function () {
-            $response = await(Http::request()->stream(HttpBin::url('/stream/2')));
+            $response = await(Http::client()->stream(HttpBin::url('/stream/2')));
 
             expect($response)->toBeInstanceOf(StreamingResponse::class);
 
@@ -75,7 +75,7 @@ describe('Streaming Integration (Push and Pull)', function () {
             $accumulatedData = '';
 
             $response = await(
-                Http::request()
+                Http::client()
                     ->withJson(['streaming' => 'works'])
                     ->withMethod('POST')
                     ->stream(
@@ -94,7 +94,7 @@ describe('Streaming Integration (Push and Pull)', function () {
 
         it('streams the response of a DELETE request', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withMethod('DELETE')
                     ->stream(HttpBin::url('/delete'), function () {
                     })
@@ -106,7 +106,7 @@ describe('Streaming Integration (Push and Pull)', function () {
 
         it('handles non-200 status codes gracefully during streaming', function () {
             $response = await(
-                Http::request()->stream(HttpBin::url('/status/404'), function () {
+                Http::client()->stream(HttpBin::url('/status/404'), function () {
                 })
             );
 
@@ -116,7 +116,7 @@ describe('Streaming Integration (Push and Pull)', function () {
         });
 
         it('can be cancelled mid-stream', function () {
-            $promise = Http::request()->stream(
+            $promise = Http::client()->stream(
                 HttpBin::url('/delay/3'),
                 function (string $chunk) {
                 }
@@ -139,7 +139,7 @@ describe('Streaming Integration (Push and Pull)', function () {
         });
 
         it('bubbles up exceptions thrown inside the chunk callback and aborts the request', function () {
-            $promise = Http::request()->stream(
+            $promise = Http::client()->stream(
                 HttpBin::url('/stream/3'),
                 function (string $chunk) {
                     throw new RuntimeException('User callback failed');
@@ -153,7 +153,7 @@ describe('Streaming Integration (Push and Pull)', function () {
     describe('Pull Approach (Async Stream API)', function () {
 
         it('pulls data chunk by chunk using readAsync()', function () {
-            $response = await(Http::request()->stream(HttpBin::url('/stream-bytes/1024')));
+            $response = await(Http::client()->stream(HttpBin::url('/stream-bytes/1024')));
 
             expect($response)->toBeInstanceOf(StreamingResponse::class);
             expect($response->status())->toBe(200);
@@ -177,7 +177,7 @@ describe('Streaming Integration (Push and Pull)', function () {
         });
 
         it('pulls data line by line using readLineAsync()', function () {
-            $response = await(Http::request()->stream(HttpBin::url('/stream/3')));
+            $response = await(Http::client()->stream(HttpBin::url('/stream/3')));
 
             $line1 = await($response->readLineAsync());
             expect($line1)->not->toBeNull();
@@ -196,7 +196,7 @@ describe('Streaming Integration (Push and Pull)', function () {
         });
 
         it('can mix readAsync() and readAllAsync()', function () {
-            $response = await(Http::request()->stream(HttpBin::url('/bytes/2048')));
+            $response = await(Http::client()->stream(HttpBin::url('/bytes/2048')));
 
             $firstChunk = await($response->readAsync(100));
             $firstChunkLength = strlen($firstChunk);
@@ -209,14 +209,14 @@ describe('Streaming Integration (Push and Pull)', function () {
         });
 
         it('safely handles readAllAsync() on a large payload', function () {
-            $response = await(Http::request()->stream(HttpBin::url('/bytes/1048576'))); // 1MB
+            $response = await(Http::client()->stream(HttpBin::url('/bytes/1048576'))); // 1MB
 
             $data = await($response->readAllAsync());
             expect(strlen($data))->toBe(1048576);
         });
 
         it('returns null immediately when pulling from an empty response (204 No Content)', function () {
-            $response = await(Http::request()->stream(HttpBin::url('/status/204')));
+            $response = await(Http::client()->stream(HttpBin::url('/status/204')));
 
             expect($response->status())->toBe(204);
             expect(await($response->readAsync()))->toBeNull();
@@ -224,14 +224,14 @@ describe('Streaming Integration (Push and Pull)', function () {
         });
 
         it('returns an empty string when requesting 0 bytes via readAsync', function () {
-            $response = await(Http::request()->stream(HttpBin::url('/bytes/100')));
+            $response = await(Http::client()->stream(HttpBin::url('/bytes/100')));
 
             $chunk = await($response->readAsync(0));
             expect($chunk)->toBe('');
         });
 
         it('returns the full string if readLineAsync is called on data without newlines', function () {
-            $response = await(Http::request()->stream(HttpBin::url('/base64/SGVsbG8gV29ybGQ=')));
+            $response = await(Http::client()->stream(HttpBin::url('/base64/SGVsbG8gV29ybGQ=')));
 
             $line1 = await($response->readLineAsync());
             expect($line1)->toBe('Hello World');
@@ -241,7 +241,7 @@ describe('Streaming Integration (Push and Pull)', function () {
         });
 
         it('consistently returns null when reading after EOF is reached', function () {
-            $response = await(Http::request()->stream(HttpBin::url('/bytes/10')));
+            $response = await(Http::client()->stream(HttpBin::url('/bytes/10')));
             await($response->readAllAsync());
 
             expect(await($response->readAsync(10)))->toBeNull();
@@ -250,7 +250,7 @@ describe('Streaming Integration (Push and Pull)', function () {
         });
 
         it('returns only the available bytes when requesting more than the stream contains', function () {
-            $response = await(Http::request()->stream(HttpBin::url('/bytes/50')));
+            $response = await(Http::client()->stream(HttpBin::url('/bytes/50')));
 
             $chunk = await($response->readAsync(1048576));
 

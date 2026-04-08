@@ -15,7 +15,7 @@ describe('Authentication', function () {
     describe('Bearer token', function () {
         it('sends a bearer token in the Authorization header', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withToken('my-secret-token')
                     ->get(HttpBin::url('/get'))
             );
@@ -26,7 +26,7 @@ describe('Authentication', function () {
 
         it('sends a custom token type', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withToken('my-api-key', 'Token')
                     ->get(HttpBin::url('/get'))
             );
@@ -37,7 +37,7 @@ describe('Authentication', function () {
 
         it('overwrites a previously set token', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withToken('old-token')
                     ->withToken('new-token')
                     ->get(HttpBin::url('/get'))
@@ -49,7 +49,7 @@ describe('Authentication', function () {
 
         it('sends a bearer token alongside other headers', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withToken('my-secret-token')
                     ->withHeader('X-Request-ID', 'abc-123')
                     ->get(HttpBin::url('/get'))
@@ -62,7 +62,7 @@ describe('Authentication', function () {
 
         it('authenticates against a protected bearer endpoint', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withToken('valid-token')
                     ->get(HttpBin::url('/bearer'))
             );
@@ -76,7 +76,7 @@ describe('Authentication', function () {
     describe('Basic auth', function () {
         it('sends basic auth credentials', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withBasicAuth('user', 'pass')
                     ->get(HttpBin::url('/get'))
             );
@@ -87,7 +87,7 @@ describe('Authentication', function () {
 
         it('encodes credentials correctly', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withBasicAuth('user', 'pass')
                     ->get(HttpBin::url('/get'))
             );
@@ -102,7 +102,7 @@ describe('Authentication', function () {
 
         it('authenticates against a protected basic auth endpoint', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withBasicAuth('myuser', 'mypassword')
                     ->get(HttpBin::url('/basic-auth/myuser/mypassword'))
             );
@@ -114,7 +114,7 @@ describe('Authentication', function () {
 
         it('returns 401 when basic auth credentials are wrong', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withBasicAuth('user', 'wrongpassword')
                     ->get(HttpBin::url('/basic-auth/user/correctpassword'))
             );
@@ -126,7 +126,7 @@ describe('Authentication', function () {
 
         it('handles special characters in credentials', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withBasicAuth('user@domain.com', 'p@$$w0rd!')
                     ->get(HttpBin::url('/get'))
             );
@@ -141,7 +141,7 @@ describe('Authentication', function () {
 
         it('overwrites previously set basic auth', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withBasicAuth('first', 'credentials')
                     ->withBasicAuth('myuser', 'mypassword')
                     ->get(HttpBin::url('/basic-auth/myuser/mypassword'))
@@ -155,7 +155,7 @@ describe('Authentication', function () {
     describe('Digest auth', function () {
         it('sends digest auth credentials in the Authorization header', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withDigestAuth('user', 'pass')
                     ->get(HttpBin::url('/get'))
             );
@@ -165,7 +165,7 @@ describe('Authentication', function () {
 
         it('authenticates against a protected digest auth endpoint', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withDigestAuth('myuser', 'mypassword')
                     ->get(HttpBin::url('/digest-auth/auth/myuser/mypassword'))
             );
@@ -177,7 +177,7 @@ describe('Authentication', function () {
 
         it('returns 401 when digest auth credentials are wrong', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withDigestAuth('user', 'wrongpassword')
                     ->get(HttpBin::url('/digest-auth/auth/user/correctpassword'))
             );
@@ -191,7 +191,7 @@ describe('Authentication', function () {
     describe('auth precedence and isolation', function () {
         it('last auth method wins when chaining different auth types', function () {
             $basicLast = await(
-                Http::request()
+                Http::client()
                     ->withToken('some-token')
                     ->withBasicAuth('myuser', 'mypassword')
                     ->get(HttpBin::url('/get'))
@@ -201,7 +201,7 @@ describe('Authentication', function () {
             expect($basicLast->json('headers.Authorization.0'))->not->toStartWith('Bearer ');
 
             $tokenLast = await(
-                Http::request()
+                Http::client()
                     ->withBasicAuth('myuser', 'mypassword')
                     ->withToken('some-token')
                     ->get(HttpBin::url('/get'))
@@ -212,13 +212,13 @@ describe('Authentication', function () {
 
         it('does not leak auth between independent requests', function () {
             $authed = await(
-                Http::request()
+                Http::client()
                     ->withToken('secret')
                     ->get(HttpBin::url('/get'))
             );
 
             $unauthed = await(
-                Http::request()
+                Http::client()
                     ->get(HttpBin::url('/get'))
             );
 
@@ -227,10 +227,10 @@ describe('Authentication', function () {
         });
 
         it('does not leak auth when branching from a shared base client', function () {
-            $base = Http::request()->withToken('base-token');
+            $base = Http::client()->withToken('base-token');
 
             $withAuth = await($base->get(HttpBin::url('/get')));
-            $withoutAuth = await(Http::request()->get(HttpBin::url('/get')));
+            $withoutAuth = await(Http::client()->get(HttpBin::url('/get')));
 
             expect($withAuth->json('headers.Authorization.0'))->toBe('Bearer base-token');
             expect($withoutAuth->json('headers.Authorization.0'))->toBeNull();

@@ -22,7 +22,7 @@ describe('Uploads and Downloads', function () {
 
             try {
                 $result = await(
-                    Http::request()->download(HttpBin::url('/base64/SGVsbG8gV29ybGQ='), $dest)
+                    Http::client()->download(HttpBin::url('/base64/SGVsbG8gV29ybGQ='), $dest)
                 );
 
                 expect($result['status'])->toBe(200);
@@ -38,7 +38,7 @@ describe('Uploads and Downloads', function () {
 
             try {
                 $result = await(
-                    Http::request()->download(HttpBin::url('/bytes/1024'), $dest)
+                    Http::client()->download(HttpBin::url('/bytes/1024'), $dest)
                 );
 
                 expect($result['status'])->toBe(200);
@@ -54,7 +54,7 @@ describe('Uploads and Downloads', function () {
 
             try {
                 $result = await(
-                    Http::request()
+                    Http::client()
                         ->withHeader('Accept', 'image/png')
                         ->download(HttpBin::url('/image/png'), $dest)
                 );
@@ -73,7 +73,7 @@ describe('Uploads and Downloads', function () {
 
             try {
                 $result = await(
-                    Http::request()->download(
+                    Http::client()->download(
                         HttpBin::url('/bytes/1048576'),
                         $dest,
                         function ($progress) use (&$progressCalls) {
@@ -103,7 +103,7 @@ describe('Uploads and Downloads', function () {
 
             try {
                 $result = await(
-                    Http::request()->upload(HttpBin::url('/put'), $source)
+                    Http::client()->upload(HttpBin::url('/put'), $source)
                 );
 
                 expect($result['status'])->toBe(200);
@@ -119,7 +119,7 @@ describe('Uploads and Downloads', function () {
 
             try {
                 $response = await(
-                    Http::request()
+                    Http::client()
                         ->withFile('upload_field', $source, 'custom_name.txt')
                         ->post(HttpBin::url('/post'))
                 );
@@ -140,7 +140,7 @@ describe('Uploads and Downloads', function () {
 
             try {
                 $response = await(
-                    Http::request()
+                    Http::client()
                         ->withFiles([
                             'doc_one' => $file1,
                             'doc_two' => $file2,
@@ -167,7 +167,7 @@ describe('Uploads and Downloads', function () {
 
             try {
                 $result = await(
-                    Http::request()->upload(
+                    Http::client()->upload(
                         HttpBin::url('/put'),
                         $source,
                         function ($progress) use (&$progressCalls) {
@@ -198,7 +198,7 @@ describe('Uploads and Downloads', function () {
             $memoryBefore = memory_get_usage();
 
             $result = await(
-                Http::request()
+                Http::client()
                     ->withHeader('Expect', '')
                     ->upload(HttpBin::url('/status/204'), $source)
             );
@@ -225,7 +225,7 @@ describe('Uploads and Downloads', function () {
             $memoryBefore = memory_get_usage();
 
             $response = await(
-                Http::request()
+                Http::client()
                     ->withHeader('Expect', '')
                     ->withFile('heavy_file', $source)
                     ->post(HttpBin::url('/status/201'))

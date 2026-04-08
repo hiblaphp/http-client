@@ -25,7 +25,7 @@ describe('Specialized Transport Interception', function () {
 
     describe('Streaming', function () {
         it('modifies headers of a streaming request', function () {
-            $promise = Http::request()
+            $promise = Http::client()
                 ->interceptRequest(fn (RequestInterface $r) => $r->withHeader('X-Stream-Test', 'active'))
                 ->stream(HttpBin::url('/stream/1'))
             ;
@@ -37,7 +37,7 @@ describe('Specialized Transport Interception', function () {
         });
 
         it('allows interceptResponse to modify a StreamingResponse', function () {
-            $promise = Http::request()
+            $promise = Http::client()
                 ->interceptResponse(fn (ResponseInterface $res) => $res->withHeader('X-Stream-Processed', 'true'))
                 ->stream(HttpBin::url('/stream/1'))
             ;
@@ -51,7 +51,7 @@ describe('Specialized Transport Interception', function () {
         it('modifies request headers for a download', function () {
             $dest = Http::getTestingHandler()->createTempFile('download.png');
 
-            $promise = Http::request()
+            $promise = Http::client()
                 ->interceptRequest(fn (RequestInterface $r) => $r->withHeader('X-Download-Token', 'abc-123'))
                 ->download(HttpBin::url('/image/png'), $dest)
             ;
@@ -66,7 +66,7 @@ describe('Specialized Transport Interception', function () {
             $log = [];
             $dest = Http::getTestingHandler()->createTempFile('download.txt');
 
-            $promise = Http::request()
+            $promise = Http::client()
                 ->intercept(function (RequestInterface $request, callable $next) use (&$log) {
                     $log[] = 'starting-download';
 
@@ -93,7 +93,7 @@ describe('Specialized Transport Interception', function () {
         it('modifies request headers and URL for an upload', function () {
             $source = Http::getTestingHandler()->createTempFile('upload.txt', 'upload-payload');
 
-            $promise = Http::request()
+            $promise = Http::client()
                 ->interceptRequest(function (RequestInterface $request) {
                     return $request->withUri($request->getUri()->withPath('/put'))
                                    ->withHeader('X-Upload-ID', 'up-99')
@@ -114,7 +114,7 @@ describe('Specialized Transport Interception', function () {
             $source = Http::getTestingHandler()->createTempFile('upload.txt', 'payload');
 
             $startTime = microtime(true);
-            $promise = Http::request()
+            $promise = Http::client()
                 ->interceptRequest(fn ($r) => delay(0.1)->then(fn () => $r->withHeader('X-Waited', 'true')))
                 ->upload(HttpBin::url('/put'), $source)
             ;

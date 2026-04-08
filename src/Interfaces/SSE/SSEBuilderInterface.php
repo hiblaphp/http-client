@@ -17,7 +17,7 @@ use Hibla\Promise\Interfaces\PromiseInterface;
  * shared base configuration can safely derive multiple independent
  * connections without side effects.
  *
- *   $base = Http::request()
+ *   $base = Http::client()
  *       ->withToken($token)
  *       ->sse('https://api.example.com/stream')
  *       ->withDataFormat(SSEDataFormat::DecodedJson)

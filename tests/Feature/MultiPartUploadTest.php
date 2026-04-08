@@ -19,7 +19,7 @@ describe('Real Network Multipart Uploads', function () {
             file_put_contents($tempFile, $fileContent);
 
             $response = await(
-                Http::request()
+                Http::client()
                     ->withMultipart([
                         'project' => 'Hibla',
                         'version' => '1.0.0',
@@ -50,7 +50,7 @@ describe('Real Network Multipart Uploads', function () {
             }
 
             $response = await(
-                Http::request()
+                Http::client()
                     ->withMultipart(['batch' => 'true'])
                     ->withFiles($files)
                     ->post(HttpBin::url('/post'))
@@ -72,7 +72,7 @@ describe('Real Network Multipart Uploads', function () {
             file_put_contents($tempFile, 'binary-ish content');
 
             $response = await(
-                Http::request()
+                Http::client()
                     ->withFile('asset', $tempFile, 'renamed.txt', 'text/plain')
                     ->post(HttpBin::url('/post'))
             );
@@ -85,7 +85,7 @@ describe('Real Network Multipart Uploads', function () {
 
         it('uploads only form fields with no file', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withMultipart([
                         'field_a' => 'value_a',
                         'field_b' => 'value_b',
@@ -106,7 +106,7 @@ describe('Real Network Multipart Uploads', function () {
             file_put_contents($tempFile, '');
 
             $response = await(
-                Http::request()
+                Http::client()
                     ->withFile('empty', $tempFile)
                     ->post(HttpBin::url('/post'))
             );
@@ -123,7 +123,7 @@ describe('Real Network Multipart Uploads', function () {
             file_put_contents($tempFile, $content);
 
             $response = await(
-                Http::request()
+                Http::client()
                     ->withFile('unicode_file', $tempFile)
                     ->post(HttpBin::url('/post'))
             );
@@ -140,7 +140,7 @@ describe('Real Network Multipart Uploads', function () {
             file_put_contents($tempFile, $content);
 
             $response = await(
-                Http::request()
+                Http::client()
                     ->timeout(60)
                     ->withFile('large', $tempFile)
                     ->post(HttpBin::url('/post'))
@@ -158,7 +158,7 @@ describe('Real Network Multipart Uploads', function () {
             file_put_contents($tempFile, $content);
 
             $response = await(
-                Http::request()
+                Http::client()
                     ->withFile('special', $tempFile)
                     ->post(HttpBin::url('/post'))
             );
@@ -170,7 +170,7 @@ describe('Real Network Multipart Uploads', function () {
 
         it('uploads multipart with unicode field values', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withMultipart([
                         'description' => '日本語テスト',
                         'emoji' => '🚀🎉',
@@ -188,7 +188,7 @@ describe('Real Network Multipart Uploads', function () {
     describe('field value edge cases', function () {
         it('uploads multipart with numeric and boolean-like string field values', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withMultipart([
                         'count' => '0',
                         'flag' => 'false',
@@ -210,7 +210,7 @@ describe('Real Network Multipart Uploads', function () {
             $longValue = str_repeat('x', 10_000);
 
             $response = await(
-                Http::request()
+                Http::client()
                     ->withMultipart(['long_field' => $longValue])
                     ->post(HttpBin::url('/post'))
             );
@@ -226,7 +226,7 @@ describe('Real Network Multipart Uploads', function () {
             file_put_contents($tempFile, 'header test');
 
             $response = await(
-                Http::request()
+                Http::client()
                     ->withHeader('X-Custom-Header', 'hibla-test')
                     ->withFile('doc', $tempFile)
                     ->post(HttpBin::url('/post'))
@@ -243,7 +243,7 @@ describe('Real Network Multipart Uploads', function () {
             file_put_contents($tempFile, 'auth test content');
 
             $response = await(
-                Http::request()
+                Http::client()
                     ->withToken('super-secret-token')
                     ->withFile('doc', $tempFile)
                     ->post(HttpBin::url('/post'))
@@ -260,7 +260,7 @@ describe('Real Network Multipart Uploads', function () {
             file_put_contents($tempFile, 'basic auth test');
 
             $response = await(
-                Http::request()
+                Http::client()
                     ->withBasicAuth('user', 'pass')
                     ->withFile('doc', $tempFile)
                     ->post(HttpBin::url('/post'))
@@ -276,7 +276,7 @@ describe('Real Network Multipart Uploads', function () {
     describe('error and boundary conditions', function () {
         it('throws when given a non-existent file path', function () {
             expect(
-                fn () => Http::request()->withFile('ghost', '/tmp/does_not_exist_hibla.txt')
+                fn () => Http::client()->withFile('ghost', '/tmp/does_not_exist_hibla.txt')
             )->toThrow(InvalidArgumentException::class);
         });
 
@@ -285,7 +285,7 @@ describe('Real Network Multipart Uploads', function () {
             file_put_contents($tempFile, 'data');
 
             $response = await(
-                Http::request()
+                Http::client()
                     ->withFile('doc', $tempFile)
                     ->post(HttpBin::url('/status/422'))
             );
@@ -302,7 +302,7 @@ describe('Real Network Multipart Uploads', function () {
             file_put_contents($tempFile, $content);
 
             $response = await(
-                Http::request()
+                Http::client()
                     ->multipartWithFiles(
                         data: ['source' => 'helper'],
                         files: ['doc' => $tempFile],

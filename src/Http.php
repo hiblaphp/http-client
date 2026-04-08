@@ -40,7 +40,7 @@ use Psr\Http\Message\UploadedFileInterface;
  * $response = await Http::post('https://api.example.com/users', ['name' => 'Alice']);
  *
  * // Fluent builder
- * $response = await Http::request()
+ * $response = await Http::client()
  *     ->withToken($token)
  *     ->withUserAgent('MyApp/1.0')
  *     ->timeout(15)
@@ -61,7 +61,7 @@ use Psr\Http\Message\UploadedFileInterface;
  * the base instance is never mutated by individual requests:
  *
  * ```php
- * $client = Http::request()
+ * $client = Http::client()
  *     ->withToken($token)
  *     ->withUserAgent('MyApp/1.0')
  *     ->intercept($loggingMiddleware)
@@ -324,7 +324,7 @@ class Http
      * through this client are intercepted, recorded, and matchable against
      * mocked responses. Application code requires no changes between modes.
      */
-    public static function request(): HttpClientInterface
+    public static function client(): HttpClientInterface
     {
         $client = new HttpClient();
 
@@ -341,7 +341,7 @@ class Http
      *
      * All option mapping is handled by {@see FetchRequest}, keeping this
      * facade method as a thin delegation point. Because this calls
-     * self::request() internally, testing mode is honoured automatically —
+     * self::client() internally, testing mode is honoured automatically —
      * no special casing required.
      *
      * Supported options: method, headers, json, form, body, auth, timeout,
@@ -357,14 +357,14 @@ class Http
      */
     public static function fetch(string $url, array $options = []): PromiseInterface
     {
-        return (new FetchRequest())->send(self::request(), $url, $options);
+        return (new FetchRequest())->send(self::client(), $url, $options);
     }
 
     /**
      * Enable testing mode.
      *
      * Switches the facade to use a TestingHttpHandler instead of the real
-     * cURL-backed handler. All subsequent calls to request() and fetch()
+     * cURL-backed handler. All subsequent calls to client() and fetch()
      * will route through the testing handler until stopTesting() is called.
      *
      * Application code requires zero changes between production and testing —
@@ -448,7 +448,7 @@ class Http
      * Disable testing mode and return to normal HTTP operations.
      *
      * Clears the testing handler and all recorded requests and mocked
-     * responses. Subsequent calls to request() and fetch() will use real
+     * responses. Subsequent calls to client() and fetch() will use real
      * HTTP execution again.
      *
      * Should be called in tearDown() after each test to prevent state
@@ -467,7 +467,7 @@ class Http
      * 1. Assertion and testing-helper methods → TestingHttpHandler.
      *    Throws if called outside testing mode.
      *
-     * 2. Everything else → a fresh HttpClient builder instance via request().
+     * 2. Everything else → a fresh HttpClient builder instance via client().
      *    This covers all fluent builder methods (withToken, timeout, etc.)
      *    as well as terminal methods (get, post, stream, download, sse, send).
      *
@@ -614,8 +614,8 @@ class Http
         }
 
         // Delegate all fluent builder and terminal methods to a fresh
-        // HttpClient instance. request() handles testing mode injection.
-        $client = self::request();
+        // HttpClient instance. client() handles testing mode injection.
+        $client = self::client();
 
         if (method_exists($client, $method)) {
             /** @phpstan-ignore-next-line */

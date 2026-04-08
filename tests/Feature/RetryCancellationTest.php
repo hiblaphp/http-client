@@ -9,7 +9,7 @@ use Tests\Fixtures\HttpBin;
 test('it cancels a real network request during retries', function () {
     HttpBin::skipIfUnreachable();
 
-    $promise = Http::request()
+    $promise = Http::client()
         ->retry(maxRetries: 5, baseDelay: 1.0)
         ->get(HttpBin::url('/status/503'))
     ;

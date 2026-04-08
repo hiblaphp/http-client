@@ -24,7 +24,7 @@ beforeEach(function () {
 describe('Interceptor Pipeline', function () {
 
     it('can modify request headers via interceptRequest', function () {
-        $response = Http::request()
+        $response = Http::client()
             ->interceptRequest(fn (RequestInterface $r) => $r->withHeader('X-Custom-Req', 'hibla-power'))
             ->get(HttpBin::url('/headers'))
             ->wait()
@@ -34,7 +34,7 @@ describe('Interceptor Pipeline', function () {
     });
 
     it('can modify response via interceptResponse', function () {
-        $response = Http::request()
+        $response = Http::client()
             ->interceptResponse(fn (ResponseInterface $res) => $res->withHeader('X-Intercepted-By', 'unit-test'))
             ->get(HttpBin::url('/get'))
             ->wait()
@@ -44,7 +44,7 @@ describe('Interceptor Pipeline', function () {
     });
 
     it('supports asynchronous request interceptors (e.g. Token Refresh)', function () {
-        $response = Http::request()
+        $response = Http::client()
             ->interceptRequest(function (RequestInterface $r) {
                 return delay(0.05)->then(fn () => $r->withHeader('Authorization', 'Bearer async-token-123'));
             })
@@ -58,7 +58,7 @@ describe('Interceptor Pipeline', function () {
     it('executes multiple interceptors in the order they were registered', function () {
         $history = [];
 
-        Http::request()
+        Http::client()
             ->interceptRequest(function ($r) use (&$history) {
                 $history[] = 'first';
 
@@ -77,7 +77,7 @@ describe('Interceptor Pipeline', function () {
     });
 
     it('can short-circuit the connection using full pipeline intercept', function () {
-        $response = Http::request()
+        $response = Http::client()
             ->intercept(function (RequestInterface $request, callable $next) {
                 return new Response('Blocked by interceptor', 403);
             })
@@ -93,7 +93,7 @@ describe('Interceptor Pipeline', function () {
     it('can perform actions before and after the request using full pipeline intercept', function () {
         $log = [];
 
-        $response = Http::request()
+        $response = Http::client()
             ->intercept(function (RequestInterface $request, callable $next) use (&$log) {
                 $log[] = 'before';
 
@@ -115,7 +115,7 @@ describe('Interceptor Pipeline', function () {
     });
 
     it('allows using await() directly inside interceptors', function () {
-        $response = Http::request()
+        $response = Http::client()
             ->intercept(function (RequestInterface $request, callable $next) {
                 await(delay(0.02));
                 $request = $request->withHeader('X-Await-Checked', 'yes');
@@ -130,7 +130,7 @@ describe('Interceptor Pipeline', function () {
     });
 
     it('preserves immutability of the client when adding interceptors', function () {
-        $client = Http::request()->withHeader('X-Base', 'true');
+        $client = Http::client()->withHeader('X-Base', 'true');
 
         $interceptedClient = $client->interceptRequest(fn ($r) => $r->withHeader('X-Intercept', 'true'));
 
@@ -144,7 +144,7 @@ describe('Interceptor Pipeline', function () {
     });
 
     it('handles exceptions thrown inside interceptors correctly', function () {
-        $promise = Http::request()
+        $promise = Http::client()
             ->interceptRequest(function ($r) {
                 throw new RuntimeException('Interceptor failure');
             })
@@ -155,7 +155,7 @@ describe('Interceptor Pipeline', function () {
     });
 
     it('can wrap response body using a response interceptor', function () {
-        $response = Http::request()
+        $response = Http::client()
             ->interceptResponse(function (ResponseInterface $res) {
                 $body = $res->body();
 
@@ -169,7 +169,7 @@ describe('Interceptor Pipeline', function () {
     });
 
     it('supports invokable classes as request interceptors', function () {
-        $response = Http::request()
+        $response = Http::client()
             ->interceptRequest(new AddAuthHeaderInterceptor())
             ->get(HttpBin::url('/headers'))
             ->wait()
@@ -181,7 +181,7 @@ describe('Interceptor Pipeline', function () {
     it('supports invokable classes as full pipeline interceptors', function () {
         $logger = new PipelineLoggerInterceptor();
 
-        Http::request()
+        Http::client()
             ->intercept($logger)
             ->get(HttpBin::url('/get'))
             ->wait()
@@ -193,7 +193,7 @@ describe('Interceptor Pipeline', function () {
     it('supports object method references as response interceptors', function () {
         $service = new ResponseTaggingService();
 
-        $response = Http::request()
+        $response = Http::client()
             ->interceptResponse([$service, 'tagResponse'])
             ->get(HttpBin::url('/get'))
             ->wait()
@@ -213,7 +213,7 @@ describe('Interceptor Pipeline', function () {
             }
         };
 
-        $response = Http::request()
+        $response = Http::client()
             ->intercept($asyncInterceptor)
             ->get(HttpBin::url('/headers'))
             ->wait()
@@ -228,7 +228,7 @@ describe('Interceptor Pipeline', function () {
         $url = HttpBin::url('/get');
         $requestStarted = false;
 
-        $promise = Http::request()
+        $promise = Http::client()
             ->intercept(function (RequestInterface $request, callable $next) use (&$requestStarted) {
                 await(delay(0.5));
                 $requestStarted = true;

@@ -15,7 +15,7 @@ beforeEach(function () {
 describe('Advanced Response Interception', function () {
 
     it('can transform a 404 Not Found into a successful default response', function () {
-        $response = Http::request()
+        $response = Http::client()
             ->interceptResponse(function (ResponseInterface $res) {
                 if ($res->status() === 404) {
                     return new Response(
@@ -38,7 +38,7 @@ describe('Advanced Response Interception', function () {
     });
 
     it('can throw custom exceptions based on status codes', function () {
-        $client = Http::request()
+        $client = Http::client()
             ->interceptResponse(function (ResponseInterface $res) {
                 if ($res->status() === 418) {
                     throw new RuntimeException('I refuse to make coffee: I am a teapot.');
@@ -56,7 +56,7 @@ describe('Advanced Response Interception', function () {
     it('can implement a manual retry on 401 Unauthorized using the full pipeline', function () {
         $attempts = 0;
 
-        $response = Http::request()
+        $response = Http::client()
             ->intercept(function (RequestInterface $request, callable $next) use (&$attempts) {
                 $attempts++;
 
@@ -81,7 +81,7 @@ describe('Advanced Response Interception', function () {
     });
 
     it('can standardize error structures from different status codes', function () {
-        $client = Http::request()
+        $client = Http::client()
             ->interceptResponse(function (ResponseInterface $res) {
                 if ($res->failed()) {
                     $originalBody = $res->json();
@@ -115,7 +115,7 @@ describe('Advanced Response Interception', function () {
     it('can log or track metrics based on successful responses', function () {
         $metrics = ['success_count' => 0];
 
-        $client = Http::request()
+        $client = Http::client()
             ->interceptResponse(function (ResponseInterface $res) use (&$metrics) {
                 if ($res->successful()) {
                     $metrics['success_count']++;
@@ -135,7 +135,7 @@ describe('Advanced Response Interception', function () {
     it('handles redirects manually by intercepting 3xx status codes', function () {
         $redirectUrl = null;
 
-        $response = Http::request()
+        $response = Http::client()
             ->redirects(false)
             ->interceptResponse(function (ResponseInterface $res) use (&$redirectUrl) {
                 if ($res->status() >= 300 && $res->status() < 400) {

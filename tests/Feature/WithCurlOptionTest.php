@@ -19,7 +19,7 @@ describe('cURL Options', function () {
     describe('withCurlOption', function () {
         it('sets a single curl option without breaking the request', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withCurlOption(CURLOPT_ENCODING, 'gzip')
                     ->get(HttpBin::url('/get'))
             );
@@ -29,7 +29,7 @@ describe('cURL Options', function () {
 
         it('sets CURLOPT_ENCODING to request compressed responses', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withCurlOption(CURLOPT_ENCODING, 'gzip')
                     ->get(HttpBin::url('/gzip'))
             );
@@ -39,10 +39,10 @@ describe('cURL Options', function () {
         });
 
         it('does not affect an independent request chain', function () {
-            $base = Http::request()->withCurlOption(CURLOPT_ENCODING, 'gzip');
+            $base = Http::client()->withCurlOption(CURLOPT_ENCODING, 'gzip');
 
             $withOption = await($base->get(HttpBin::url('/gzip')));
-            $withoutOption = await(Http::request()->get(HttpBin::url('/get')));
+            $withoutOption = await(Http::client()->get(HttpBin::url('/get')));
 
             expect($withOption->successful())->toBeTrue();
             expect($withoutOption->successful())->toBeTrue();
@@ -56,7 +56,7 @@ describe('cURL Options', function () {
     describe('withCurlOptions', function () {
         it('sets multiple curl options at once without breaking the request', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withCurlOptions([
                         CURLOPT_ENCODING => 'gzip',
                         CURLOPT_BUFFERSIZE => 16384,
@@ -69,7 +69,7 @@ describe('cURL Options', function () {
 
         it('ignores non-integer keys in the options array', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withCurlOptions([
                         CURLOPT_ENCODING => 'gzip',
                         'invalid_key' => 'should_be_ignored',
@@ -82,7 +82,7 @@ describe('cURL Options', function () {
 
         it('merges options across multiple withCurlOptions calls', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withCurlOptions([CURLOPT_ENCODING => 'gzip'])
                     ->withCurlOptions([CURLOPT_BUFFERSIZE => 16384])
                     ->get(HttpBin::url('/gzip'))
@@ -96,7 +96,7 @@ describe('cURL Options', function () {
     describe('interaction with the fluent chain', function () {
         it('works alongside withToken', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withToken('my-token')
                     ->withCurlOption(CURLOPT_ENCODING, 'gzip')
                     ->get(HttpBin::url('/get'))
@@ -108,7 +108,7 @@ describe('cURL Options', function () {
 
         it('works alongside withBasicAuth', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withBasicAuth('myuser', 'mypassword')
                     ->withCurlOption(CURLOPT_ENCODING, 'gzip')
                     ->get(HttpBin::url('/basic-auth/myuser/mypassword'))
@@ -120,7 +120,7 @@ describe('cURL Options', function () {
 
         it('works alongside timeout', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->timeout(10)
                     ->withCurlOption(CURLOPT_ENCODING, 'gzip')
                     ->get(HttpBin::url('/get'))
@@ -131,7 +131,7 @@ describe('cURL Options', function () {
 
         it('works alongside custom headers', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withHeader('X-Custom-Header', 'curl-test')
                     ->withCurlOption(CURLOPT_ENCODING, 'gzip')
                     ->get(HttpBin::url('/get'))
@@ -143,7 +143,7 @@ describe('cURL Options', function () {
 
         it('works alongside withCurlOptions in the same chain', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withCurlOption(CURLOPT_ENCODING, 'gzip')
                     ->withCurlOptions([CURLOPT_BUFFERSIZE => 16384])
                     ->get(HttpBin::url('/gzip'))
@@ -155,7 +155,7 @@ describe('cURL Options', function () {
 
         it('works alongside a POST with json body', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withCurlOption(CURLOPT_ENCODING, 'gzip')
                     ->withJson(['key' => 'value'])
                     ->post(HttpBin::url('/post'))
@@ -167,7 +167,7 @@ describe('cURL Options', function () {
 
         it('works alongside retry configuration', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->retry(2)
                     ->withCurlOption(CURLOPT_ENCODING, 'gzip')
                     ->get(HttpBin::url('/get'))
@@ -177,9 +177,9 @@ describe('cURL Options', function () {
         });
 
         it('curl options do not leak into a branched client', function () {
-            $base = Http::request()->withCurlOption(CURLOPT_ENCODING, 'gzip');
+            $base = Http::client()->withCurlOption(CURLOPT_ENCODING, 'gzip');
 
-            $branch = Http::request()->get(HttpBin::url('/get'));
+            $branch = Http::client()->get(HttpBin::url('/get'));
 
             $baseResponse = await($base->get(HttpBin::url('/gzip')));
             $branchResponse = await($branch);
@@ -192,7 +192,7 @@ describe('cURL Options', function () {
     describe('cURL header options vs fluent header methods', function () {
         it('CURLOPT_HTTPHEADER merges with fluent headers when set after', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withHeader('X-Custom-Header', 'from-fluent')
                     ->withCurlOption(CURLOPT_HTTPHEADER, ['X-Extra: from-curl'])
                     ->get(HttpBin::url('/get'))
@@ -205,7 +205,7 @@ describe('cURL Options', function () {
 
         it('CURLOPT_HTTPHEADER merges with fluent headers when set before', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withCurlOption(CURLOPT_HTTPHEADER, ['X-Extra: from-curl'])
                     ->withHeader('X-Custom-Header', 'from-fluent')
                     ->get(HttpBin::url('/get'))
@@ -218,7 +218,7 @@ describe('cURL Options', function () {
 
         it('does not drop Authorization when CURLOPT_HTTPHEADER adds an unrelated header', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withToken('my-token')
                     ->withCurlOption(CURLOPT_HTTPHEADER, ['X-Debug: true'])
                     ->get(HttpBin::url('/get'))
@@ -230,7 +230,7 @@ describe('cURL Options', function () {
         });
 
         it('does not drop fluent headers when CURLOPT_HTTPHEADER is set on a shared base client', function () {
-            $base = Http::request()
+            $base = Http::client()
                 ->withToken('my-token')
                 ->withHeader('X-Tenant', 'acme')
             ;
@@ -249,7 +249,7 @@ describe('cURL Options', function () {
 
         it('CURLOPT_HTTPHEADER value wins when it targets the same header as a fluent method', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withHeader('X-Custom-Header', 'from-fluent')
                     ->withCurlOption(CURLOPT_HTTPHEADER, ['X-Custom-Header: from-curl'])
                     ->get(HttpBin::url('/get'))
@@ -263,7 +263,7 @@ describe('cURL Options', function () {
 
         it('does not lose Content-Type when CURLOPT_HTTPHEADER adds an unrelated header', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->asJson()
                     ->withCurlOption(CURLOPT_HTTPHEADER, ['X-Debug: true'])
                     ->post(HttpBin::url('/post'))
@@ -276,7 +276,7 @@ describe('cURL Options', function () {
 
         it('does not lose fluent headers when withCurlOption targets a non-header option', function () {
             $response = await(
-                Http::request()
+                Http::client()
                     ->withHeader('X-Fluent-Header', 'fluent-value')
                     ->withToken('my-token')
                     ->withCurlOption(CURLOPT_BUFFERSIZE, 16384)
