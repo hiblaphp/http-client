@@ -197,7 +197,7 @@ class StreamingResponse extends Response implements StreamingResponseInterface
      */
     public function close(): void
     {
-        if ($this->requestId !== null) {
+        if ($this->requestId !== null && extension_loaded('curl')) {
             Loop::cancelCurlRequest($this->requestId);
             $this->requestId = null;
         }
