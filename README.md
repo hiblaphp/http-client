@@ -2006,3 +2006,29 @@ try {
     echo "Network error ({$e->getErrorType()}): {$e->getMessage()}\n";
 }
 ```
+---
+
+## Development
+```bash
+git clone https://github.com/hiblaphp/promise.git
+cd promise
+composer install
+```
+```bash
+./vendor/bin/pest
+```
+```bash
+./vendor/bin/phpstan analyse
+```
+
+---
+
+## Credits
+
+- **API Design:** Heavily inspired by Laravel HTTP Client Api and JavaScript `fetch` API with emphasis on cancellation, async-first design, and first-class sse streaming.
+
+---
+
+## License
+
+MIT License. See [LICENSE](./LICENSE) for more information.
