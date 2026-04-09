@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient;
 
+use Hibla\HttpClient\Validators\HeaderValidator;
 use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\StreamInterface;
 
@@ -14,7 +15,15 @@ use Psr\Http\Message\StreamInterface;
  * for handling protocol versions, headers, and message bodies, which is then
  * extended by the concrete `Request` and `Response` classes.
  *
+ * Header names and values are validated against RFC 9110 (HTTP Semantics) and
+ * RFC 9112 (HTTP/1.1), which obsolete RFC 7230 as of June 2022. Validation is
+ * delegated to {@see HeaderValidator} so that the rules are testable in isolation
+ * and reusable across the entire HTTP client pipeline.
+ *
  * @see MessageInterface
+ * @see HeaderValidator
+ * @see https://www.rfc-editor.org/rfc/rfc9110#section-5
+ * @see https://www.rfc-editor.org/rfc/rfc9112
  */
 abstract class Message implements MessageInterface
 {
@@ -24,20 +33,25 @@ abstract class Message implements MessageInterface
     protected string $protocol = '1.1';
 
     /**
-     * An associative array of HTTP headers.
+     * An associative array of HTTP headers, keyed by original header name casing.
      *
      * @var array<string, string[]>
      */
     protected array $headers = [];
 
     /**
-     * A map of lowercase header names to their original case.
+     * A map of lowercase header names to their original-case equivalents.
+     *
+     * Maintained in parallel with {@see $headers} to provide case-insensitive
+     * header lookup while preserving the casing supplied by the caller.
      *
      * @var array<string, string>
      */
     protected array $headerNames = [];
 
-    /** @var StreamInterface The message body. */
+    /**
+     * The message body.
+     */
     protected StreamInterface $body;
 
     /**
@@ -84,14 +98,13 @@ abstract class Message implements MessageInterface
      */
     public function getHeader(string $name): array
     {
-        $header = strtolower($name);
-        if (! isset($this->headerNames[$header])) {
+        $normalized = strtolower($name);
+
+        if (! isset($this->headerNames[$normalized])) {
             return [];
         }
 
-        $header = $this->headerNames[$header];
-
-        return $this->headers[$header];
+        return $this->headers[$this->headerNames[$normalized]];
     }
 
     /**
@@ -104,16 +117,24 @@ abstract class Message implements MessageInterface
 
     /**
      * {@inheritdoc}
+     *
+     * @throws \InvalidArgumentException If the header name or any value violates RFC 9110.
      */
     public function withHeader(string $name, $value): MessageInterface
     {
+        HeaderValidator::assertValidName($name);
+
         $value = $this->normalizeHeaderValue($value);
         $normalized = strtolower($name);
 
         $new = clone $this;
+
+        // Remove any previously registered header that maps to the same
+        // case-insensitive key so the new casing takes precedence.
         if (isset($new->headerNames[$normalized])) {
             unset($new->headers[$new->headerNames[$normalized]]);
         }
+
         $new->headerNames[$normalized] = $name;
         $new->headers[$name] = $value;
 
@@ -122,33 +143,46 @@ abstract class Message implements MessageInterface
 
     /**
      * {@inheritdoc}
+     *
+     * @throws \InvalidArgumentException If the header name or any value violates RFC 9110.
      */
     public function withAddedHeader(string $name, $value): MessageInterface
     {
+        HeaderValidator::assertValidName($name);
+
         if (! $this->hasHeader($name)) {
             return $this->withHeader($name, $value);
         }
 
-        $header = $this->headerNames[strtolower($name)];
+        $value = $this->normalizeHeaderValue($value);
+        $normalized = strtolower($name);
+        $existing = $this->headerNames[$normalized];
+
         $new = clone $this;
-        $new->headers[$header] = array_merge($this->headers[$header], $this->normalizeHeaderValue($value));
+        $new->headers[$existing] = array_merge($this->headers[$existing], $value);
 
         return $new;
     }
 
     /**
      * {@inheritdoc}
+     *
+     * @throws \InvalidArgumentException If the header name violates RFC 9110.
      */
     public function withoutHeader(string $name): MessageInterface
     {
+        HeaderValidator::assertValidName($name);
+
         $normalized = strtolower($name);
+
         if (! isset($this->headerNames[$normalized])) {
             return $this;
         }
 
-        $header = $this->headerNames[$normalized];
+        $existing = $this->headerNames[$normalized];
+
         $new = clone $this;
-        unset($new->headers[$header], $new->headerNames[$normalized]);
+        unset($new->headers[$existing], $new->headerNames[$normalized]);
 
         return $new;
     }
@@ -177,73 +211,107 @@ abstract class Message implements MessageInterface
     }
 
     /**
+     * Replace all headers with a new set from an associative array.
      *
-     * @internal
+     * Validates every name and value pair against RFC 9110 before storing,
+     * handles case-insensitive deduplication, and preserves the original
+     * casing of the names provided by the caller.
      *
-     * Replaces all headers with a new set from an associative array.
+     * When duplicate case-insensitive names are encountered their values are
+     * merged in the order they appear, matching the behaviour of
+     * {@see withAddedHeader()}.
      *
-     * This method correctly handles case-insensitivity and preserves the original
-     * casing of the header names provided.
+     * @internal Called by the concrete subclass constructors and transport layer.
      *
-     * @param  array<string, string|string[]>  $headers  An associative array of headers to set.
+     * @param  array<string, string|string[]>  $headers
+     *
+     * @throws \InvalidArgumentException If any name or value violates RFC 9110.
      */
-    public function setHeaders(array $headers): void
+    protected function setHeaders(array $headers): void
     {
         $this->headerNames = [];
         $this->headers = [];
 
-        foreach ($headers as $header => $value) {
-            if (\is_int($header)) {
-                $header = (string) $header;
+        foreach ($headers as $name => $value) {
+            // PHP silently coerces integer array keys — restore the string form.
+            if (\is_int($name)) {
+                $name = (string) $name;
             }
+
+            HeaderValidator::assertValidName($name);
+
             $value = $this->normalizeHeaderValue($value);
-            $normalized = strtolower($header);
+            $normalized = strtolower($name);
+
             if (isset($this->headerNames[$normalized])) {
-                $header = $this->headerNames[$normalized];
-                $this->headers[$header] = \array_merge($this->headers[$header], $value);
+                // Duplicate case-insensitive key — merge values under the
+                // casing that was registered first.
+                $existing = $this->headerNames[$normalized];
+                $this->headers[$existing] = array_merge($this->headers[$existing], $value);
             } else {
-                $this->headerNames[$normalized] = $header;
-                $this->headers[$header] = $value;
+                $this->headerNames[$normalized] = $name;
+                $this->headers[$name] = $value;
             }
         }
     }
 
     /**
-     * Normalizes a header value to ensure it is an array of strings.
+     * Coerce a raw header value into a validated, trimmed array of strings.
      *
-     * @param  mixed  $value  The header value to normalize.
-     * @return string[] The normalized header value as an array of strings.
+     * Accepts scalars, null, objects with {@see __toString()}, and non-empty
+     * arrays of the above. Every individual string produced is validated by
+     * {@see HeaderValidator::assertValidValue()} before it is returned, so
+     * callers can trust that the resulting array is RFC 9110 §5.5 compliant.
      *
-     * @throws \InvalidArgumentException If the value is an empty array.
+     * @param  mixed  $value
+     * @return string[]
+     *
+     * @throws \InvalidArgumentException If the value is an empty array or any
+     *         individual string violates RFC 9110 §5.5.
      */
-    private function normalizeHeaderValue($value): array
+    private function normalizeHeaderValue(mixed $value): array
     {
         if (! \is_array($value)) {
-            if (\is_object($value) && method_exists($value, '__toString')) {
-                return [trim((string) $value)];
-            }
+            $str = $this->coerceToString($value);
+            HeaderValidator::assertValidValue($str);
 
-            if (\is_scalar($value) || $value === null) {
-                return [trim((string) $value)];
-            }
-
-            return [trim(var_export($value, true))];
+            return [$str];
         }
 
         if (\count($value) === 0) {
-            throw new \InvalidArgumentException('Header value must be a string or a non-empty array of strings.');
+            throw new \InvalidArgumentException(
+                'Header value must be a string or a non-empty array of strings.',
+            );
         }
 
-        return array_map(function ($v) {
-            if (\is_object($v) && method_exists($v, '__toString')) {
-                return trim((string) $v);
-            }
+        return array_map(function (mixed $item): string {
+            $str = $this->coerceToString($item);
+            HeaderValidator::assertValidValue($str);
 
-            if (\is_scalar($v) || $v === null) {
-                return trim((string) $v);
-            }
-
-            return trim(var_export($v, true));
+            return $str;
         }, array_values($value));
+    }
+
+    /**
+     * Coerce a single scalar-like value to its string representation.
+     *
+     * Intentionally does NOT call {@see trim()} — leading and trailing
+     * whitespace is rejected by {@see HeaderValidator::assertValidValue()}
+     * per RFC 9110 §5.5, and silently stripping it would mask malformed
+     * input rather than surface it early.
+     *
+     * @param  mixed  $value
+     */
+    private function coerceToString(mixed $value): string
+    {
+        if (\is_object($value) && method_exists($value, '__toString')) {
+            return (string) $value;
+        }
+
+        if (\is_scalar($value) || $value === null) {
+            return (string) $value;
+        }
+
+        return var_export($value, true);
     }
 }

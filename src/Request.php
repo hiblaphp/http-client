@@ -7,6 +7,7 @@ namespace Hibla\HttpClient;
 use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
 use Hibla\HttpClient\Interfaces\RequestInterface;
 use Hibla\HttpClient\Traits\StreamTrait;
+use Hibla\HttpClient\Validators\HeaderValidator;
 use Hibla\HttpClient\ValueObjects\Cookie;
 use InvalidArgumentException;
 use Psr\Http\Message\StreamInterface;
@@ -24,8 +25,13 @@ use Psr\Http\Message\UriInterface;
  * Each builder method returns a cloned instance so chains can branch freely
  * without side effects.
  *
+ * Header names and values are validated against RFC 9110 (HTTP Semantics) and
+ * RFC 9112 (HTTP/1.1) via {@see HeaderValidator}. HTTP method tokens are
+ * likewise validated against the RFC 9110 §9.1 token grammar.
+ *
  * @see RequestInterface The narrow contract exposed to interceptors.
- * @see HttpClient Owns transport config and dispatches requests.
+ * @see HttpClient       Owns transport config and dispatches requests.
+ * @see HeaderValidator  Centralised RFC 9110/9112 header and method validation.
  */
 class Request extends Message implements RequestInterface
 {
@@ -51,6 +57,9 @@ class Request extends Message implements RequestInterface
 
     /**
      * HTTP method in upper-case (GET, POST, …).
+     *
+     * Defaults to GET. Any method set via {@see withMethod()} is validated
+     * as an RFC 9110 §9.1 token and stored in upper-case.
      */
     private string $method = 'GET';
 
@@ -82,9 +91,9 @@ class Request extends Message implements RequestInterface
     /**
      * Initialise a blank pending request.
      *
-     * Prefer the HttpClient fluent API over constructing Request
-     * directly. HttpClient seeds the initial User-Agent from GlobalConfig
-     * before handing the instance to the interceptor pipeline.
+     * Prefer the HttpClient fluent API over constructing Request directly.
+     * HttpClient seeds the initial User-Agent from GlobalConfig before
+     * handing the instance to the interceptor pipeline.
      */
     public function __construct()
     {
@@ -151,30 +160,6 @@ class Request extends Message implements RequestInterface
     /**
      * @inheritDoc
      */
-    public function asXml(): static
-    {
-        return $this->contentType('application/xml');
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function withXml(string|\SimpleXMLElement $xml): static
-    {
-        if ($xml instanceof \SimpleXMLElement) {
-            $result = $xml->asXML();
-            if ($result === false) {
-                throw new InvalidArgumentException('Failed to convert SimpleXMLElement to XML string.');
-            }
-            $xml = $result;
-        }
-
-        return $this->body($xml)->contentType('application/xml');
-    }
-
-    /**
-     * @inheritDoc
-     */
     public function getRequestTarget(): string
     {
         if ($this->requestTarget !== null) {
@@ -215,11 +200,29 @@ class Request extends Message implements RequestInterface
     }
 
     /**
+     * Return a clone with the given HTTP method.
+     *
+     * The method is upper-cased before validation so that callers may pass
+     * lower- or mixed-case strings (e.g. "get", "Post") without error. The
+     * stored value is always the canonical upper-case form.
+     *
+     * Validation follows RFC 9110 §9.1:
+     *   method = token
+     *   token  = 1*tchar
+     *
+     * Any string that is not a valid token — including empty strings, strings
+     * with spaces, or strings containing CR/LF — will throw.
+     *
+     * @throws InvalidArgumentException If the method is not a valid RFC 9110 token.
+     *
      * @inheritDoc
      */
     public function withMethod(string $method): static
     {
         $method = strtoupper($method);
+
+        HeaderValidator::assertValidMethod($method);
+
         if ($this->method === $method) {
             return $this;
         }
@@ -292,6 +295,14 @@ class Request extends Message implements RequestInterface
     /**
      * @inheritDoc
      */
+    public function asXml(): static
+    {
+        return $this->contentType('application/xml');
+    }
+
+    /**
+     * @inheritDoc
+     */
     public function withUserAgent(string $userAgent): static
     {
         $new = clone $this;
@@ -314,10 +325,27 @@ class Request extends Message implements RequestInterface
     }
 
     /**
+     * Return a clone with a Bearer (or custom-scheme) Authorization header.
+     *
+     * The token type is validated as an RFC 9110 token before being placed
+     * into the header value, preventing a malformed type string from
+     * producing an invalid Authorization header.
+     *
+     * If the caller already prefixed the token string with the type
+     * (e.g. passing "Bearer abc" to withToken("abc", "Bearer")), the
+     * duplicate prefix is stripped before the header is set.
+     *
+     * @throws InvalidArgumentException If $type is not a valid RFC 9110 token.
+     *
      * @inheritDoc
      */
     public function withToken(string $token, string $type = 'Bearer'): static
     {
+        // Validate the token type as an RFC 9110 token — it ends up inline
+        // in the Authorization header value and must not contain spaces,
+        // control characters, or other non-tchar bytes.
+        HeaderValidator::assertValidMethod($type);
+
         $token = $this->normalizeToken($token, $type);
 
         $new = clone $this;
@@ -376,6 +404,22 @@ class Request extends Message implements RequestInterface
     /**
      * @inheritDoc
      */
+    public function withXml(string|\SimpleXMLElement $xml): static
+    {
+        if ($xml instanceof \SimpleXMLElement) {
+            $result = $xml->asXML();
+            if ($result === false) {
+                throw new InvalidArgumentException('Failed to convert SimpleXMLElement to XML string.');
+            }
+            $xml = $result;
+        }
+
+        return $this->body($xml)->contentType('application/xml');
+    }
+
+    /**
+     * @inheritDoc
+     */
     public function withForm(array $data): static
     {
         return $this->body(http_build_query($data))
@@ -402,31 +446,21 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * Check if the user has explicitly defined a body for this request.
+     * Return a clone with a single cookie appended to the Cookie header.
      *
-     * @internal use by HttpClient
-     */
-    public function hasExplicitBody(): bool
-    {
-        return $this->bodyExplicitlySet;
-    }
-
-    /**
-     * @inheritDoc
-     *
-     * The name must be a valid RFC 2616 token (no separators or control chars).
+     * The name must be a valid RFC 9110 token (no separators or control chars).
      * The value must conform to the cookie-octet character set defined in
-     * RFC 6265 section 4.1.1, which this client enforces as a client-side
-     * policy to prevent malformed Cookie headers. This is stricter than
-     * what the RFC strictly requires of clients, but it prevents header
-     * corruption from characters like ';' which would break attribute parsing.
+     * RFC 6265 §4.1.1, enforced here as a client-side policy to prevent header
+     * corruption from characters such as ';' which would break attribute parsing.
      *
-     * For values containing characters outside the allowed set (e.g. spaces,
-     * commas), encode first using Base64 as recommended by RFC 6265 section 4.1.1:
+     * For values containing characters outside the allowed set (e.g. spaces or
+     * commas), encode first using Base64 as recommended by RFC 6265 §4.1.1:
      *   withCookie('data', base64_encode($arbitraryValue))
      *
-     * @throws InvalidArgumentException If the name or value contains
-     *         characters that would produce a malformed Cookie header.
+     * @throws InvalidArgumentException If the name or value would produce a
+     *         malformed Cookie header.
+     *
+     * @inheritDoc
      */
     public function withCookie(string $name, string $value): static
     {
@@ -505,23 +539,33 @@ class Request extends Message implements RequestInterface
         }
 
         $new->cookieJar->setCookie(new Cookie(
-            name: $name,
-            value: $value,
-            expires: isset($attributes['expires']) && is_numeric($attributes['expires'])
-                ? (int) $attributes['expires'] : null,
-            domain: isset($attributes['domain']) && \is_string($attributes['domain'])
-                ? $attributes['domain'] : null,
-            path: isset($attributes['path']) && \is_string($attributes['path'])
-                ? $attributes['path'] : null,
-            secure: isset($attributes['secure']) && (bool) $attributes['secure'],
+            name:     $name,
+            value:    $value,
+            expires:  isset($attributes['expires']) && is_numeric($attributes['expires'])
+                          ? (int) $attributes['expires'] : null,
+            domain:   isset($attributes['domain']) && \is_string($attributes['domain'])
+                          ? $attributes['domain'] : null,
+            path:     isset($attributes['path']) && \is_string($attributes['path'])
+                          ? $attributes['path'] : null,
+            secure:   isset($attributes['secure']) && (bool) $attributes['secure'],
             httpOnly: isset($attributes['httpOnly']) && (bool) $attributes['httpOnly'],
-            maxAge: isset($attributes['maxAge']) && \is_numeric($attributes['maxAge'])
-                ? (int) $attributes['maxAge'] : null,
+            maxAge:   isset($attributes['maxAge']) && \is_numeric($attributes['maxAge'])
+                          ? (int) $attributes['maxAge'] : null,
             sameSite: isset($attributes['sameSite']) && \is_string($attributes['sameSite'])
-                ? $attributes['sameSite'] : null,
+                          ? $attributes['sameSite'] : null,
         ));
 
         return $new;
+    }
+
+    /**
+     * Check if the user has explicitly defined a body for this request.
+     *
+     * @internal Used by HttpClient.
+     */
+    public function hasExplicitBody(): bool
+    {
+        return $this->bodyExplicitlySet;
     }
 
     /**
@@ -589,10 +633,14 @@ class Request extends Message implements RequestInterface
 
     /**
      * Sync the Host header from the current URI.
+     *
+     * Called automatically by {@see withUri()} unless the caller has opted to
+     * preserve the existing Host header via the $preserveHost flag.
      */
     private function updateHostFromUri(): static
     {
         $host = $this->uri->getHost();
+
         if ($host === '') {
             return $this;
         }
@@ -605,10 +653,11 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * Strip a duplicate token type prefix if the caller already included it.
+     * Strip a duplicate token-type prefix if the caller already included it.
      *
-     * Prevents double-prefixing when a token like "Bearer abc" is passed
-     * to withToken() with type "Bearer".
+     * Prevents double-prefixing when a token like "Bearer abc" is passed to
+     * {@see withToken()} with type "Bearer", producing "Bearer Bearer abc".
+     * The comparison is case-insensitive to handle mixed-case type strings.
      */
     private function normalizeToken(string $token, string $type): string
     {

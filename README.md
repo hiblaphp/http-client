@@ -29,6 +29,7 @@ A high-performance HTTP client with a clean chainable API, first-class streaming
   - [Query parameters](#query-parameters)
 - [The `fetch()` API](#the-fetch-api)
 - [Headers](#headers)
+- [Header validation](#header-validation)
 - [Authentication](#authentication)
 - [HTTP Version & Negotiation](#http-version--negotiation)
   - [Silent Fallback logic](#silent-fallback-logic)
@@ -413,6 +414,34 @@ Http::client()->withUserAgent('MyApp/1.0');
 
 // Remove a header
 Http::client()->withoutHeader('X-Unwanted');
+```
+
+#### Header Validation
+
+All header names and values are validated against [RFC 9110](https://www.rfc-editor.org/rfc/rfc9110#section-5) before a request is sent. An `InvalidArgumentException` is thrown immediately on any violation, so injection attempts are caught at call time rather than silently forwarded.
+
+**Header names** must be valid RFC 9110 tokens — one or more `tchar` characters (`A–Z`, `a–z`, `0–9`, and `!#$%&'*+-.^_`|~`). Spaces, colons, control characters, and non-ASCII bytes are all rejected.
+
+```php
+Http::client()->withHeader('Bad Header', 'value');      // throws — space in name
+Http::client()->withHeader("X-Foo\r\nX-Bar", 'value'); // throws — CRLF injection
+Http::client()->withHeader('X-Héader', 'value');        // throws — non-ASCII byte
+```
+
+**Header values** must conform to RFC 9110 §5.5. The following are enforced:
+
+- CR (`\r`), LF (`\n`), and NUL (`\0`) are unconditionally rejected — these are the primary vectors for HTTP response-splitting and header injection attacks.
+- All other control characters except HTAB (`\t`) are rejected.
+- DEL (0x7F) is rejected.
+- Leading or trailing whitespace (SP or HTAB) is rejected.
+- `obs-text` bytes (0x80–0xFF) are permitted for legacy interoperability.
+
+```php
+Http::client()->withHeader('X-Id', "abc\r\nX-Evil: injected"); // throws — CRLF injection
+Http::client()->withHeader('X-Id', " abc");                    // throws — leading space
+Http::client()->withHeader('X-Id', "abc\x00");                 // throws — NUL byte
+Http::client()->withHeader('X-Id', "abc");                     // ok
+Http::client()->withHeader('X-Id', '');                        // ok — empty value is valid per RFC 9110
 ```
 
 ### Authentication
@@ -1252,6 +1281,8 @@ try {
 
 This means you can inspect the status code and headers before committing to reading the body, and abort early by simply not reading further:
 
+> Note the streaming response dont fully use the Full Stream Api of `hibla/stream` due to compatibility reasons with loop drivers like on ext-uv which are not compatible with php file and temp stream and it uses custom implementation that implement `PromiseReadableInterface` without reimplementing the full stream api.
+
 ```php
 $response = await(Http::stream('https://api.example.com/large-export'));
 
@@ -1273,6 +1304,7 @@ In the pull model your code drives the read loop by awaiting each chunk explicit
 
 Use the pull model when you need to process data conditionally, enforce memory limits, or react to the content of each chunk:
 
+> You can check out [Promise readable Api](https://github.com/hiblaphp/stream?tab=readme-ov-file#reading-data)
 ```php
 $response = await(Http::stream('https://api.example.com/large-export'));
 
