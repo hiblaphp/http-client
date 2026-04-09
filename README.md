@@ -103,6 +103,18 @@ A high-performance HTTP client with a clean chainable API, first-class streaming
 - [URI template parameters](#uri-template-parameters)
 - [User agent](#user-agent)
 
+**Advanced usage**
+- [Concurrent execution (all)](#concurrent-execution-all)
+- [Sliding window concurrency (concurrent)](#sliding-window-concurrency-concurrent)
+- [Block-based execution (batch)](#block-based-execution-batch)
+- [Resilient execution (settled variants)](#resilient-execution-settled-variants)
+- [High-performance mapping (map)](#high-performance-mapping-map)
+- [Competitive requests (any/race)](#competitive-requests-anyrace)
+- [Side effects (forEach)](#side-effects-foreach)
+- [Sequential reduction (reduce)](#sequential-reduction-reduce)
+- [Custom transport handlers (withHandler)](#custom-transport-handlers)
+- [Custom transport options (withTransportOptionsBuilder)](#custom-transport-options)
+
 **Testing**
 - [Testing](#testing)
 
@@ -1770,6 +1782,149 @@ Or set it once on a shared base client so all derived requests inherit it:
 
 ```php
 $client = Http::client()->withUserAgent('MyApp/1.0');
+```
+
+---
+
+## Advanced usage
+
+### Promise combinators & Structured Concurrency
+
+Every request made with Hibla returns a `PromiseInterface`. This allows you to use the static methods on `Hibla\Promise\Promise` to manage complex request groups. Hibla enforces **Structured Concurrency**: when a collection of requests is cancelled or one fails, the library automatically and synchronously cancels all pending sibling requests to prevent resource leaks.
+
+#### Concurrent execution with `all()`
+Executes multiple requests concurrently. Resolves only when all requests succeed. If any single request fails, all other in-flight requests are **automatically cancelled** synchronously.
+
+```php
+use Hibla\Promise\Promise;
+use function Hibla\await;
+
+$promises = [
+    'user'    => Http::get('https://api.example.com/user/1'),
+    'posts'   => Http::get('https://api.example.com/user/1/posts'),
+];
+
+// Resolves with an associative array of Response objects
+$results = await(Promise::all($promises));
+```
+
+#### Sliding window concurrency with `concurrent()`
+Maintains a fixed number of active requests. If you have 100 tasks and set concurrency to 5, it will keep exactly 5 requests in-flight at all times until the queue is empty.
+
+> **Tasks must be callables.**
+> Items in the collection must be factory callables that return a promise (e.g., `fn() => Http::get(...)`). This allows the library to control exactly when each request starts. Passing pre-instantiated promises will result in a `RuntimeException`, as those requests would already be running outside of the concurrency control.
+
+```php
+$tasks = [
+    fn() => Http::get('https://api.example.com/job/1'),
+    fn() => Http::get('https://api.example.com/job/2'),
+];
+
+// Process the whole list but only 5 at a time
+$results = await(Promise::concurrent($tasks, concurrency: 5));
+```
+
+#### Block-based execution with `batch()`
+Processes tasks in sequential "blocks." The entire first batch must complete before the second batch starts. This is useful for rate-limited APIs where you need a clean break between groups of requests. 
+
+> Like `concurrent()`, items passed to `batch()` must be callables that return a promise.
+
+```php
+// Processes in blocks of 10. Wait for all 10 to finish, then start the next 10.
+$results = await(Promise::batch($tasks, batchSize: 10));
+```
+
+#### Resilient execution with `allSettled()`, `concurrentSettled()`, and `batchSettled()`
+These variants wait for every request to complete regardless of success or failure. They return `SettledResult` objects containing either the `Response` or the `Exception`.
+
+```php
+$results = await(Promise::concurrentSettled($tasks, concurrency: 5));
+
+foreach ($results as $result) {
+    if ($result->isFulfilled()) {
+        echo "Success: " . $result->value->status();
+    } elseif ($result->isRejected()) {
+        echo "Error: " . $result->reason->getMessage();
+    }
+}
+```
+
+#### High-performance concurrent mapping with `map()`
+The `map()` utility is the most efficient way to transform an iterable (like a Generator) into API responses. It pulls items lazily and processes them concurrently up to the specified limit.
+
+```php
+$urls = [/* thousands of URLs */];
+
+$responses = await(Promise::map($urls, function (string $url) {
+    return Http::get($url);
+}, concurrency: 10));
+```
+
+#### First-to-finish with `any()` and `race()`
+*   **`any()`**: Resolves as soon as the **first** request succeeds. Remaining pending requests are cancelled immediately.
+*   **`race()`**: Settles as soon as the **first** request settles (fulfills or rejects). Remaining requests are cancelled.
+
+#### Memory-safe side effects with `forEach()`
+Ideal for triggering massive amounts of work (like webhooks) where you do not need to capture response bodies. It discards results immediately to keep memory usage flat (O(concurrency)).
+
+```php
+$webhooks = getWebhookGenerator(); 
+
+// Trigger 10,000 webhooks, 50 at a time, with flat RAM usage
+await(Promise::forEach($webhooks, function ($url) {
+    return Http::post($url, ['event' => 'ping']);
+}, concurrency: 50));
+```
+
+#### Sequential dependency with `reduce()`
+Use `reduce()` when requests must be made in a strict sequential order, where each request depends on the result of the previous one.
+
+### Custom transport handlers
+
+Hibla defaults to a cURL-backed handler, but you can swap the entire execution engine by providing an implementation of `HttpHandlerInterface`. This allows you to use alternative transports like native sockets, Swoole, or custom mocking engines.
+
+```php
+use Hibla\HttpClient\Interfaces\Handler\HttpHandlerInterface;
+use Hibla\HttpClient\Http;
+
+class MyCustomHandler implements HttpHandlerInterface 
+{
+    // Implement sendRequest, stream, download, upload, and sse
+}
+
+// Inject the custom engine into the client
+$client = Http::client()->withHandler(new MyCustomHandler());
+
+// All requests through this $client now use MyCustomHandler
+$response = await($client->get('https://example.com'));
+```
+
+### Custom transport options
+
+The library uses a "Builder" to translate high-level client settings into low-level transport data. By default, it uses `CurlOptionsBuilder` to create cURL arrays. If you are using a custom `HttpHandler`, you can provide a custom builder to change how requests are constructed.
+
+```php
+use Hibla\HttpClient\Interfaces\Handler\TransportOptionsBuilderInterface;
+use Hibla\HttpClient\ValueObjects\ClientOptions;
+
+class MyCustomBuilder implements TransportOptionsBuilderInterface
+{
+    public function build(ClientOptions $options): mixed
+    {
+        // Translate Hibla's ClientOptions into your custom engine's format
+        return [
+            'method' => $options->method,
+            'url'    => $options->url,
+            // ...
+        ];
+    }
+    
+    // Implement buildForStreaming, buildForDownload, etc.
+}
+
+$client = Http::client()
+    ->withHandler(new MyCustomHandler())
+    ->withTransportOptionsBuilder(new MyCustomBuilder());
 ```
 
 ---

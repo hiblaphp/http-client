@@ -56,7 +56,9 @@ final class ProxySetup
 
     public static function skipIfUnreachable(string $host, int $port): void
     {
-        $sock = @fsockopen($host, $port, $errno, $errstr, 1);
+        set_error_handler(static fn () => true);
+        $sock = fsockopen($host, $port, $errno, $errstr, 1);
+        restore_error_handler();
 
         if ($sock === false) {
             test()->markTestSkipped("Proxy unreachable at {$host}:{$port} — run: composer proxy:up");

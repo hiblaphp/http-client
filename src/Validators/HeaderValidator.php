@@ -56,7 +56,9 @@ final class HeaderValidator
     /**
      * Prevent instantiation — this class is a pure static utility.
      */
-    private function __construct() {}
+    private function __construct()
+    {
+    }
 
     /**
      * Assert that a header field name is a valid RFC 9110 token.

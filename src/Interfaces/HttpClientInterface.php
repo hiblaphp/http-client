@@ -14,6 +14,7 @@ use Hibla\HttpClient\Interfaces\Execution\ExecutesRequestsInterface;
 use Hibla\HttpClient\Interfaces\Execution\ExecutesStreamingInterface;
 use Hibla\HttpClient\Interfaces\Execution\HttpInterceptorInterface;
 use Hibla\HttpClient\Interfaces\Handler\HttpHandlerInterface;
+use Hibla\HttpClient\Interfaces\Handler\TransportOptionsBuilderInterface;
 
 /**
  * Marker interface declared by Request.
@@ -48,9 +49,23 @@ interface HttpClientInterface extends
 {
     /**
      * Return a new instance using the given underlying HTTP handler.
-     * 
-     * Useful for swapping the default cURL transport for a different 
+     *
+     * Useful for swapping the default cURL transport for a different
      * implementation (e.g., native sockets, or a custom mock).
+     *
+     * Note: This is an extemely advanced feature, use with caution.
      */
     public function withHandler(HttpHandlerInterface $handler): static;
+
+    /**
+     * Return a new instance using the given transport options builder.
+     *
+     * Allows swapping the default cURL-specific builder for a custom implementation
+     * (e.g., for generating stream contexts or specific config for non-cURL transports).
+     *
+     * Note: This is an extemely advanced feature, use with caution.
+     *
+     * @param  TransportOptionsBuilderInterface<array<int|string, mixed>>  $builder
+     */
+    public function withTransportOptionsBuilder(TransportOptionsBuilderInterface $builder): static;
 }

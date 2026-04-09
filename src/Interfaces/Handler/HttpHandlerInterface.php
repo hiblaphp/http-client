@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Interfaces\Handler;
 
-use Hibla\HttpClient\SSE\SSEReconnectConfig;
-use Hibla\HttpClient\SSE\SSEEvent;
-use Hibla\HttpClient\ValueObjects\RetryConfig;
-use Hibla\HttpClient\ValueObjects\UploadProgress;
+use Hibla\HttpClient\Interfaces\ResponseInterface;
 use Hibla\HttpClient\Interfaces\SSEResponseInterface;
 use Hibla\HttpClient\Interfaces\StreamingResponseInterface;
+use Hibla\HttpClient\SSE\SSEEvent;
+use Hibla\HttpClient\SSE\SSEReconnectConfig;
 use Hibla\HttpClient\ValueObjects\DownloadProgress;
-use Hibla\HttpClient\Interfaces\ResponseInterface;
-
+use Hibla\HttpClient\ValueObjects\RetryConfig;
+use Hibla\HttpClient\ValueObjects\UploadProgress;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
 /**
@@ -20,15 +19,15 @@ use Hibla\Promise\Interfaces\PromiseInterface;
  */
 interface HttpHandlerInterface
 {
-     /**
-     * The main entry point for sending a request from the Request builder.
-     * It intelligently applies caching and retry logic before dispatching the request.
-     *
-     * @param  string  $url  The target URL.
-     * @param  array<int|string, mixed>  $curlOptions  cURL options for the request.
-     * @param  RetryConfig|null  $retryConfig  Optional retry configuration.
-     * @return PromiseInterface<ResponseInterface>
-     */
+    /**
+    * The main entry point for sending a request from the Request builder.
+    * It intelligently applies caching and retry logic before dispatching the request.
+    *
+    * @param  string  $url  The target URL.
+    * @param  array<int|string, mixed>  $curlOptions  cURL options for the request.
+    * @param  RetryConfig|null  $retryConfig  Optional retry configuration.
+    * @return PromiseInterface<ResponseInterface>
+    */
     public function sendRequest(string $url, array $curlOptions, ?RetryConfig $retryConfig = null): PromiseInterface;
 
     /**
@@ -62,7 +61,7 @@ interface HttpHandlerInterface
      * @return PromiseInterface<StreamingResponseInterface>
      */
     public function stream(string $url, array $options = [], ?callable $onChunk = null): PromiseInterface;
-  
+
     /**
      * Asynchronously downloads a file from a URL to a specified destination.
      *
@@ -70,7 +69,7 @@ interface HttpHandlerInterface
      * @param  string  $destination  The local path to save the file.
      * @param  array<int|string, mixed>  $options  Request options for internal use and testing extensions.
      * @param  (callable(DownloadProgress): void)|null $onProgress
-     * 
+     *
      * @return PromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}>
      */
     public function download(string $url, string $destination, array $options = [], ?callable $onProgress = null): PromiseInterface;

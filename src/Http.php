@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient;
 
+use Hibla\HttpClient\Fetch\CurlFetchRequest;
 use Hibla\HttpClient\Handlers\HttpHandler;
 use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
-use Hibla\HttpClient\Interfaces\Execution\FetchRequestInterface;
 use Hibla\HttpClient\Interfaces\HttpClientInterface;
 use Hibla\HttpClient\Interfaces\RequestInterface;
 use Hibla\HttpClient\Interfaces\ResponseInterface;
@@ -340,7 +340,7 @@ class Http
      * Fetch-style entry point — translates a flat options array into fluent
      * builder calls then dispatches through the interceptor pipeline.
      *
-     * All option mapping is handled by {@see FetchRequest}, keeping this
+     * All option mapping is handled by {@see CurlFetchRequest}, keeping this
      * facade method as a thin delegation point. Because this calls
      * self::client() internally, testing mode is honoured automatically —
      * no special casing required.
@@ -358,7 +358,7 @@ class Http
      */
     public static function fetch(string $url, array $options = []): PromiseInterface
     {
-        return (new FetchRequest())->send(self::client(), $url, $options);
+        return (new CurlFetchRequest())->send(self::client(), $url, $options);
     }
 
     /**

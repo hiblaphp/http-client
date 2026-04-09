@@ -22,7 +22,7 @@ beforeAll(function () {
     HttpBin::skipIfUnreachable();
 });
 
-describe('FetchRequest Lifecycle Integration (HttpBin)', function () {
+describe('CurlFetchRequest Lifecycle Integration (HttpBin)', function () {
     test('it correctly maps complex JSON payloads and HTTP methods', function () {
         $payload = ['id' => 123, 'meta' => ['foo' => 'bar']];
 
@@ -151,6 +151,7 @@ describe('FetchRequest Lifecycle Integration (HttpBin)', function () {
         $headers = $response->json('headers');
 
         expect(extractHttpBinValue($headers['User-Agent']))->toBe('Agent-X')
-            ->and(rtrim(extractHttpBinValue($headers['Referer'] ?? ''), '/'))->toBe('https://hibla.dev');
+            ->and(rtrim(extractHttpBinValue($headers['Referer'] ?? ''), '/'))->toBe('https://hibla.dev')
+        ;
     });
 });

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\SSE;
 
-use Hibla\HttpClient\Handlers\HttpHandler;
 use Hibla\HttpClient\Handlers\InterceptorHandler;
 use Hibla\HttpClient\Interfaces\Handler\HttpHandlerInterface;
 use Hibla\HttpClient\Interfaces\RequestInterface;

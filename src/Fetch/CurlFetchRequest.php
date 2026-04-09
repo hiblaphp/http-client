@@ -2,14 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Hibla\HttpClient;
+namespace Hibla\HttpClient\Fetch;
 
 use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
 use Hibla\HttpClient\Interfaces\Execution\FetchRequestInterface;
 use Hibla\HttpClient\Interfaces\HttpClientInterface;
-use Hibla\HttpClient\Interfaces\ResponseInterface;
 use Hibla\HttpClient\ValueObjects\ProxyConfig;
-use Hibla\HttpClient\ValueObjects\RetryConfig; 
+use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
 /**
@@ -46,7 +45,7 @@ use Hibla\Promise\Interfaces\PromiseInterface;
  *   interceptResponse     callable | callable[]
  *   <int>                 mixed    raw cURL option key
  */
-final class FetchRequest implements FetchRequestInterface
+final class CurlFetchRequest implements FetchRequestInterface
 {
     /**
      * @inheritDoc

@@ -70,12 +70,29 @@ final class HttpBin
 
     public static function skipIfUnreachable(): void
     {
-        $sock = @fsockopen(self::host(), self::port(), $errno, $errstr, 1);
+        set_error_handler(static fn () => true); // block PHPUnit's error handler
+        $sock = fsockopen(self::host(), self::port(), $errno, $errstr, 1);
+        restore_error_handler();
 
         if ($sock === false) {
             test()->markTestSkipped('httpbin unreachable at ' . self::baseUrl() . ' — run: composer httpbin:up');
         }
 
         fclose($sock);
+    }
+
+    public static function isReachable(): bool
+    {
+        set_error_handler(static fn () => true); // block PHPUnit's error handler
+        $sock = fsockopen(self::host(), self::port(), $errno, $errstr, 1);
+        restore_error_handler();
+
+        if ($sock === false) {
+            return false;
+        }
+
+        fclose($sock);
+
+        return true;
     }
 }
