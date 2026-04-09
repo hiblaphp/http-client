@@ -6,6 +6,7 @@ namespace Hibla\HttpClient;
 
 use Hibla\HttpClient\Handlers\HttpHandler;
 use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
+use Hibla\HttpClient\Interfaces\Execution\FetchRequestInterface;
 use Hibla\HttpClient\Interfaces\HttpClientInterface;
 use Hibla\HttpClient\Interfaces\RequestInterface;
 use Hibla\HttpClient\Interfaces\ResponseInterface;
@@ -329,7 +330,7 @@ class Http
         $client = new HttpClient();
 
         if (self::$testingInstance !== null) {
-            $client = $client->setHandler(self::$testingInstance);
+            $client = $client->withHandler(self::$testingInstance);
         }
 
         return $client;

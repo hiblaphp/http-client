@@ -6,6 +6,7 @@ namespace Hibla\HttpClient\SSE;
 
 use Hibla\HttpClient\Handlers\HttpHandler;
 use Hibla\HttpClient\Handlers\InterceptorHandler;
+use Hibla\HttpClient\Interfaces\Handler\HttpHandlerInterface;
 use Hibla\HttpClient\Interfaces\RequestInterface;
 use Hibla\HttpClient\Interfaces\SSEResponseInterface;
 use Hibla\HttpClient\Request;
@@ -20,14 +21,14 @@ final class SSEConnector
 {
     /**
      * @param InterceptorHandler $interceptorHandler The interceptor handler to use for the request pipeline
-     * @param HttpHandler $httpHandler The HTTP handler to use for the request
+     * @param HttpHandlerInterface $httpHandler The HTTP handler to use for the request
      * @param array<callable(RequestInterface, callable): mixed> $interceptors The interceptors to use for the request pipeline
      * @param Request $request The initial request to use for the connection attempt
      * @param \Closure(RequestInterface): array<int|string, mixed> $optionsBuilder
      */
     public function __construct(
         private readonly InterceptorHandler $interceptorHandler,
-        private readonly HttpHandler $httpHandler,
+        private readonly HttpHandlerInterface $httpHandler,
         private readonly array $interceptors,
         private readonly Request $request,
         private readonly \Closure $optionsBuilder,

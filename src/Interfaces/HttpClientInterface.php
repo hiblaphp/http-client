@@ -13,6 +13,7 @@ use Hibla\HttpClient\Interfaces\Builder\ConfiguresUrlInterface;
 use Hibla\HttpClient\Interfaces\Execution\ExecutesRequestsInterface;
 use Hibla\HttpClient\Interfaces\Execution\ExecutesStreamingInterface;
 use Hibla\HttpClient\Interfaces\Execution\HttpInterceptorInterface;
+use Hibla\HttpClient\Interfaces\Handler\HttpHandlerInterface;
 
 /**
  * Marker interface declared by Request.
@@ -29,7 +30,7 @@ use Hibla\HttpClient\Interfaces\Execution\HttpInterceptorInterface;
  *     It will not gain new methods without a major version bump.
  *
  *   - CompleteHttpClientInterface may grow internal-only methods
- *     over time (e.g. setHandler(), setTransportOptionsBuilder())
+ *     over time (e.g. withHandler(), setTransportOptionsBuilder())
  *     that are not part of the public API surface and should not
  *     be visible to userland callers.
  */
@@ -45,4 +46,11 @@ interface HttpClientInterface extends
     ExecutesRequestsInterface,
     ExecutesStreamingInterface
 {
+    /**
+     * Return a new instance using the given underlying HTTP handler.
+     * 
+     * Useful for swapping the default cURL transport for a different 
+     * implementation (e.g., native sockets, or a custom mock).
+     */
+    public function withHandler(HttpHandlerInterface $handler): static;
 }
