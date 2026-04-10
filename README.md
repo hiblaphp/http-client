@@ -7,6 +7,8 @@ A high-performance HTTP client with a clean chainable API, first-class streaming
 > **Transport:** This library currently uses cURL (`ext-curl`) as its HTTP transport layer. Alternative transports, including a native socket-based transport via `hiblaphp/socket`, are planned for a future release.
 
 [![Latest Release](https://img.shields.io/github/release/hiblaphp/http-client.svg?style=flat-square)](https://github.com/hiblaphp/http-client/releases)
+[![Tests](https://github.com/hiblaphp/http-client/actions/workflows/test.yml/badge.svg)](https://github.com/hiblaphp/http-client/actions/workflows/test.yml)
+[![Total Downloads](https://img.shields.io/packagist/dt/hiblaphp/http-client.svg?style=flat-square)](https://packagist.org/packages/hiblaphp/http-client)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](./LICENSE)
 
 ---
