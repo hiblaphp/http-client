@@ -176,7 +176,7 @@ $response = await(
 );
 
 // fetch()-style
-$response = await(Http::fetch('https://api.example.com/users', [
+$response = await(fetch('https://api.example.com/users', [
     'method' => 'POST',
     'json'   => ['name' => 'Alice'],
 ]));
