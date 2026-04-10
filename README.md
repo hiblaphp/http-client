@@ -196,7 +196,7 @@ Http::get('https://api.example.com/users')
 ```
 
 > **`await()` vs `.then()` chaining:** Both are fully supported. `await()` suspends
-> the current fiber and gives you a flat, linear coding style — it is the recommended
+> the current fiber and gives you a flat, linear coding style and it is the recommended
 > approach for most code. `.then()` chaining is useful when you want to compose
 > request pipelines without entering a fiber, or when integrating with code that
 > already works with raw promises. See [Hibla Promise](https://github.com/hiblaphp/promise)
