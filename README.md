@@ -162,8 +162,8 @@ echo $response->body();
 
 // POST with JSON
 $response = await(Http::post('https://api.example.com/users', [
-    'name'  => 'Alice',
-    'email' => 'alice@example.com',
+    'name'  => 'Reymart Calicdan',
+    'email' => 'reymartcalicdan@example.com',
 ]));
 echo $response->status(); // 201
 
@@ -180,7 +180,27 @@ $response = await(Http::fetch('https://api.example.com/users', [
     'method' => 'POST',
     'json'   => ['name' => 'Alice'],
 ]));
+
+// Promise chaining with then()
+Http::get('https://api.example.com/users')
+    ->then(function ($response) {
+        echo $response->body();
+        return Http::get('https://api.example.com/orders');
+    })
+    ->then(function ($response) {
+        echo $response->body();
+    })
+    ->catch(function (\Throwable $e) {
+        echo "Error: " . $e->getMessage();
+    });
 ```
+
+> **`await()` vs `.then()` chaining:** Both are fully supported. `await()` suspends
+> the current fiber and gives you a flat, linear coding style — it is the recommended
+> approach for most code. `.then()` chaining is useful when you want to compose
+> request pipelines without entering a fiber, or when integrating with code that
+> already works with raw promises. See [Hibla Promise](https://github.com/hiblaphp/promise)
+> for the full promise API.
 
 ---
 
