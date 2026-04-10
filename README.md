@@ -2,7 +2,7 @@
 
 **A fluent, immutable, async-first HTTP client for PHP built on the Hibla Event Loop.**
 
-A high-performance HTTP client with a clean chainable API, first-class streaming, Server-Sent Events, file upload/download, cookie management, retry logic, proxy support, and a full interceptor pipeline. Everything is built on top of [Hibla Promise](https://github.com/hiblaphp/promise) and [Hibla Event Loop](https://github.com/hiblaphp/event-loop).
+A high-performance Psr7 Async Compatible HTTP client with a clean chainable API, first-class streaming, Server-Sent Events, file upload/download, cookie management, retry logic, proxy support, and a full interceptor pipeline. Everything is built on top of [Hibla Promise](https://github.com/hiblaphp/promise) and [Hibla Event Loop](https://github.com/hiblaphp/event-loop).
 
 > **Transport:** This library currently uses cURL (`ext-curl`) as its HTTP transport layer. Alternative transports, including a native socket-based transport via `hiblaphp/socket`, are planned for a future release.
 
