@@ -24,11 +24,12 @@
         }
     ],
     "require": {
-        "php": "^8.3",
-        "hiblaphp/event-loop": "dev-main",
-        "hiblaphp/promise": "dev-main",
-        "hiblaphp/async": "dev-main",
-        "hiblaphp/stream": "dev-main",
+        "php": "^8.4",
+        "hiblaphp/event-loop":"^1.0@alpha",
+        "hiblaphp/promise": "^1.0@alpha",
+        "hiblaphp/async": "^1.0@alpha",
+        "hiblaphp/cancellation": "^1.0@alpha",
+        "hiblaphp/stream": "^1.0@alpha",
         "psr/http-message": "^2.0"
     },
     "require-dev": {
