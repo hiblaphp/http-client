@@ -226,7 +226,7 @@ use Hibla\Promise\Promise;
 ]));
 ```
 
-> **New to promises and fibers?** The concurrency model used throughout this library — `await()`, `Promise::all()`, `async()`, and fiber-based suspension — is provided by two companion packages. See [Hibla Promise](https://github.com/hiblaphp/promise) for the promise API and [Hibla Async](https://github.com/hiblaphp/async) for the fiber primitives. Both packages include their own documentation and examples if you want to understand how non-blocking execution works under the hood.
+> **New to promises and fibers?** The concurrency model used throughout this library. The `await()`, `Promise::all()`, `async()`, and fiber-based suspension are provided by two companion packages. See [Hibla Promise](https://github.com/hiblaphp/promise) for the promise API and [Hibla Async](https://github.com/hiblaphp/async) for the fiber primitives. Both packages include their own documentation and examples if you want to understand how non-blocking execution works under the hood.
 
 ---
 
@@ -462,7 +462,7 @@ Http::client()->withHeader("X-Foo\r\nX-Bar", 'value'); // throws — CRLF inject
 Http::client()->withHeader('X-Héader', 'value');        // throws — non-ASCII byte
 ```
 
-**Header values** must conform to RFC 9110 §5.5. The following are enforced:
+**Header values** must conform to RFC 9110 section 5.5. The following are enforced:
 
 - CR (`\r`), LF (`\n`), and NUL (`\0`) are unconditionally rejected — these are the primary vectors for HTTP response-splitting and header injection attacks.
 - All other control characters except HTAB (`\t`) are rejected.
