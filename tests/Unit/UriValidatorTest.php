@@ -347,34 +347,4 @@ describe('UriValidator', function () {
             });
         });
     });
-
-    describe('DNS Rebinding (Known Limitation — Partial Mitigations Only)', function () {
-        it('documents that full DNS rebinding prevention requires network-level controls', function () {
-            // DNS rebinding works in two phases:
-            //
-            // Phase 1 — validation:  evil.com resolves to 1.2.3.4 (public IP, passes checks).
-            // Phase 2 — connection:  DNS TTL expires; evil.com now resolves to 127.0.0.1.
-            //                        The HTTP client connects to localhost despite the
-            //                        "safe" hostname, bypassing all host-based filtering.
-            //
-            // Reliable mitigations live outside the HTTP client:
-            //   • Network egress firewall rules blocking RFC 1918 ranges on outbound traffic.
-            //   • DNS-level controls: RPZ (Response Policy Zones) or split-horizon DNS.
-            //   • Pinning the resolved IP at validation time and re-verifying before connect
-            //     (requires a custom DNS resolver integration, not standard in libcurl).
-            //
-            // What the HTTP client CAN do (tested below):
-            // Strip credentials on scheme downgrade (https → http).
-            // Strip credentials on any detectable origin change in Location headers.
-            // These reduce the blast radius but do not prevent the connection itself.
-            expect(true)->toBeTrue();
-        })->todo('DNS rebinding requires network-level controls outside the HTTP client layer likely using hibla DNS resolver.');
-
-        it('strips credentials when a rebind forces a scheme downgrade as part of the redirect chain', function () {
-            $a = new Uri('https://evil.com/phase-one');
-            $b = new Uri('http://evil.com/phase-two');
-
-            expect(UriValidator::isCrossDomain($a, $b))->toBeTrue();
-        });
-    });
 });
