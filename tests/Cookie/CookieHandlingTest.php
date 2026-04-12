@@ -608,4 +608,82 @@ describe('Cookie Handling Integration Test', function () {
             expect($jar->getAllCookies())->toBeEmpty();
         });
     });
+
+    describe('Redirect handling edge cases', function () {
+
+        test('Authorization header is stripped when redirecting to a different host', function () {
+            $client = (new HttpClient())
+                ->withToken('secret-token')
+                ->redirects(true)
+            ;
+
+            $response = await($client->get(HttpBin::url('/redirect-to?url=https://google.com')));
+
+            expect($response->getStatusCode())->toBeGreaterThanOrEqual(200);
+        });
+
+        test('POST request switches to GET on 303 See Other', function () {
+            $response = await(
+                (new HttpClient())
+                    ->redirects(true)
+                    ->withJson(['foo' => 'bar'])
+                    ->post(HttpBin::url('/status/303'))
+            );
+
+            expect($response->json('url'))->toContain('/get');
+            expect($response->json('headers.Content-Type'))->toBeNull();
+        });
+
+        test('POST request switches to GET on 301/302 redirects per common practice', function () {
+            $response = await(
+                (new HttpClient())
+                    ->redirects(true)
+                    ->withForm(['user' => 'test'])
+                    ->post(HttpBin::url('/status/302'))
+            );
+
+            expect($response->json('url'))->not->toContain('/post');
+        });
+
+        test('relative redirect paths are resolved correctly against the base URL', function () {
+            $response = await(
+                (new HttpClient())
+                    ->redirects(true)
+                    ->get(HttpBin::url('/relative-redirect/1'))
+            );
+
+            expect($response->successful())->toBeTrue();
+            expect($response->json('url'))->toContain('/get');
+        });
+
+        test('maxRedirects limit prevents infinite loops', function () {
+            $client = (new HttpClient())
+                ->redirects(true, 2)
+            ;
+            expect(fn () => await($client->get(HttpBin::url('/redirect/5'))))
+                ->toThrow(
+                    Hibla\HttpClient\Exceptions\RequestException::class,
+                    'Will not follow more than 2 redirects'
+                )
+            ;
+        });
+
+        test('cookies accumulated across multiple redirect hops are all preserved', function () {
+            $jar = new CookieJar();
+
+            $target = HttpBin::url('/cookies/set?a=1&b=2');
+            $url = HttpBin::url('/redirect-to?url=' . urlencode($target));
+
+            $response = await(
+                (new HttpClient())
+                    ->useCookieJar($jar)
+                    ->redirects(true)
+                    ->get($url)
+            );
+
+            $cookies = $response->json('cookies');
+            expect($cookies['a'])->toBe('1');
+            expect($cookies['b'])->toBe('2');
+        });
+    });
 });

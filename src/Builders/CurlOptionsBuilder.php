@@ -29,8 +29,8 @@ class CurlOptionsBuilder implements TransportOptionsBuilderInterface
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => $options->timeout,
             CURLOPT_CONNECTTIMEOUT => $options->connectTimeout,
-            CURLOPT_FOLLOWLOCATION => $options->followRedirects,
-            CURLOPT_MAXREDIRS => $options->maxRedirects,
+            CURLOPT_FOLLOWLOCATION => false, // Handled in User-land PHP
+            CURLOPT_MAXREDIRS => 0, // Handled in User-land PHP
             CURLOPT_SSL_VERIFYPEER => $options->verifySSL,
             CURLOPT_SSL_VERIFYHOST => $options->verifySSL ? 2 : 0,
             CURLOPT_USERAGENT => $options->userAgent,
