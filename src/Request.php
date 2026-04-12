@@ -89,16 +89,62 @@ class Request extends Message implements RequestInterface
     private bool $bodyExplicitlySet = false;
 
     /**
-     * Initialise a blank pending request.
+     * Initialise a request, optionally seeding all PSR-7 fields up front.
      *
-     * Prefer the HttpClient fluent API over constructing Request directly.
-     * HttpClient seeds the initial User-Agent from GlobalConfig before
-     * handing the instance to the interceptor pipeline.
+     * All arguments are optional so that the zero-argument form used by
+     * HttpClient's fluent API continues to work unchanged. When arguments
+     * are supplied every value is routed through the same validated setter
+     * that the builder methods use, so construction can never produce an
+     * instance that would be rejected mid-chain.
+     *
+     * Prefer {@see self::create()} when constructing requests inline — the
+     * named-constructor form avoids positional-argument awkwardness when only
+     * a subset of fields need to be seeded.
+     *
+     * @param  string                          $method   HTTP method token (case-insensitive, stored upper-case).
+     * @param  string|UriInterface             $uri      Request URI or a raw URL string.
+     * @param  array<string, string|string[]>  $headers  Header map applied via {@see withHeaders()}.
+     * @param  string|StreamInterface|null     $body     Raw body string or an existing stream.
+     * @param  string                          $version  HTTP protocol version (e.g. "1.1", "2").
+     *
+     * @throws InvalidArgumentException If the method token, any header name/value, or protocol
+     *                                  version fails RFC 9110 / 9112 validation.
      */
-    public function __construct()
-    {
+    public function __construct(
+        string $method = 'GET',
+        string|UriInterface $uri = '',
+        array $headers = [],
+        string|StreamInterface|null $body = null,
+        string $version = '2.0',
+    ) {
         $this->uri = new Uri('');
         $this->body = $this->createTempStream();
+
+        if ($method !== 'GET') {
+            $this->applyFrom($this->withMethod($method));
+        }
+
+        if ($uri !== '') {
+            $this->applyFrom(
+                $this->withUri($uri instanceof UriInterface ? $uri : new Uri($uri)),
+            );
+        }
+
+        if ($headers !== []) {
+            $this->applyFrom($this->withHeaders($headers));
+        }
+
+        if ($body !== null) {
+            $this->applyFrom(
+                $body instanceof StreamInterface
+                    ? $this->withBody($body)
+                    : $this->body($body),
+            );
+        }
+
+        if ($version !== '2.0') {
+            $this->applyFrom($this->withProtocolVersion($version));
+        }
     }
 
     /**
@@ -539,20 +585,20 @@ class Request extends Message implements RequestInterface
         }
 
         $new->cookieJar->setCookie(new Cookie(
-            name:     $name,
-            value:    $value,
-            expires:  isset($attributes['expires']) && is_numeric($attributes['expires'])
-                          ? (int) $attributes['expires'] : null,
-            domain:   isset($attributes['domain']) && \is_string($attributes['domain'])
-                          ? $attributes['domain'] : null,
-            path:     isset($attributes['path']) && \is_string($attributes['path'])
-                          ? $attributes['path'] : null,
-            secure:   isset($attributes['secure']) && (bool) $attributes['secure'],
+            name: $name,
+            value: $value,
+            expires: isset($attributes['expires']) && is_numeric($attributes['expires'])
+                ? (int) $attributes['expires'] : null,
+            domain: isset($attributes['domain']) && \is_string($attributes['domain'])
+                ? $attributes['domain'] : null,
+            path: isset($attributes['path']) && \is_string($attributes['path'])
+                ? $attributes['path'] : null,
+            secure: isset($attributes['secure']) && (bool) $attributes['secure'],
             httpOnly: isset($attributes['httpOnly']) && (bool) $attributes['httpOnly'],
-            maxAge:   isset($attributes['maxAge']) && \is_numeric($attributes['maxAge'])
-                          ? (int) $attributes['maxAge'] : null,
+            maxAge: isset($attributes['maxAge']) && \is_numeric($attributes['maxAge'])
+                ? (int) $attributes['maxAge'] : null,
             sameSite: isset($attributes['sameSite']) && \is_string($attributes['sameSite'])
-                          ? $attributes['sameSite'] : null,
+                ? $attributes['sameSite'] : null,
         ));
 
         return $new;
@@ -668,5 +714,34 @@ class Request extends Message implements RequestInterface
         }
 
         return $token;
+    }
+
+    /**
+     * Absorb all mutable state from a clone produced by a builder method.
+     *
+     * Builder methods (withMethod, withUri, …) return clones rather than
+     * mutating $this, which is correct for immutable value objects at runtime
+     * but inconvenient during construction — PHP does not allow reassigning
+     * $this. This method bridges that gap by copying every property from the
+     * post-builder clone back into the instance under construction.
+     *
+     * Safe to call only from {@see __construct()} before the instance has
+     * escaped to user code. Calling it on a live object would silently break
+     * immutability guarantees.
+     */
+    private function applyFrom(self $source): void
+    {
+        $this->protocol = $source->protocol;
+        $this->headers = $source->headers;
+        $this->headerNames = $source->headerNames;
+        $this->body = $source->body;
+        $this->method = $source->method;
+        $this->uri = $source->uri;
+        $this->requestTarget = $source->requestTarget;
+        $this->auth = $source->auth;
+        $this->options = $source->options;
+        $this->userAgent = $source->userAgent;
+        $this->bodyExplicitlySet = $source->bodyExplicitlySet;
+        $this->cookieJar = $source->cookieJar;
     }
 }
