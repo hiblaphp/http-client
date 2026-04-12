@@ -1160,7 +1160,7 @@ class HttpClient implements HttpClientInterface
 
                 $param = $this->urlParameters[$key];
 
-                if (! is_scalar($param) && ! ($param instanceof \Stringable)) {
+                if (! \is_scalar($param) && ! ($param instanceof \Stringable)) {
                     return $matches[0];
                 }
 
@@ -1182,7 +1182,7 @@ class HttpClient implements HttpClientInterface
     private static function resolveRequest(mixed $value, bool $fromPromise): RequestInterface
     {
         if ($value === null) {
-            throw new \LogicException(sprintf(
+            throw new \LogicException(\sprintf(
                 '%s passed to interceptRequest() must %s a %s instance, got null/void.',
                 $fromPromise ? 'The ' . PromiseInterface::class : 'Callback',
                 $fromPromise ? 'resolve to' : 'return',
