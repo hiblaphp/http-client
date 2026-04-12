@@ -10,13 +10,18 @@ use Hibla\HttpClient\Interfaces\ResponseInterface;
 use Hibla\HttpClient\Interfaces\SSEResponseInterface;
 use Hibla\HttpClient\Interfaces\StreamingResponseInterface;
 use Hibla\HttpClient\Utils\RedirectUriResolver;
+use Hibla\HttpClient\Validators\UriValidator;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
 use function Hibla\async;
 use function Hibla\await;
 
 /**
- * Handles HTTP redirects using a non-blocking iterative loop.
+ * Handles HTTP redirects recursively using a non-blocking fiber loop.
+ *
+ * This handler wraps the execution pipeline and inspects the resolved responses.
+ * If a 3xx redirect is detected, it builds a new request, strips sensitive headers
+ * (if crossing domains), and feeds the request back through the interceptor pipeline.
  *
  * @internal
  */
@@ -34,7 +39,7 @@ final readonly class RedirectHandler
     }
 
     /**
-     * Dispatches the request and follows redirects up to the configured limit.
+     * Dispatches the request and automatically follows redirects up to the configured limit.
      *
      * @template TResult
      *
@@ -57,7 +62,6 @@ final readonly class RedirectHandler
             $currentRequest = $request;
 
             while (true) {
-                // Store the current inner promise so it can be cancelled from the outside
                 $currentPromise = $this->interceptorHandler->process(
                     request: $currentRequest,
                     interceptors: $this->interceptors,
@@ -67,7 +71,6 @@ final readonly class RedirectHandler
 
                 /** @var TResult $response */
                 $response = await($currentPromise);
-                
                 $currentPromise = null;
 
                 $statusCode = 0;
@@ -97,9 +100,12 @@ final readonly class RedirectHandler
                     return $response;
                 }
 
+                // Determine if the response should follow the redirect
                 if (! $this->followRedirects || $statusCode < 300 || $statusCode >= 400 || $location === null || $location === '') {
                     return $response;
                 }
+
+                UriValidator::assertNoControlCharacters($location);
 
                 if ($redirectCount >= $this->maxRedirects) {
                     throw new RequestException(
@@ -118,18 +124,19 @@ final readonly class RedirectHandler
 
                 $newUri = RedirectUriResolver::resolve($currentRequest->getUri(), $location);
 
-                $isCrossDomain = \strtolower($currentRequest->getUri()->getHost()) !== \strtolower($newUri->getHost())
-                    || $currentRequest->getUri()->getPort() !== $newUri->getPort()
-                    || $currentRequest->getUri()->getScheme() !== $newUri->getScheme();
+                UriValidator::assertAllowedScheme($newUri);
+                $isCrossDomain = UriValidator::isCrossDomain($currentRequest->getUri(), $newUri);
 
                 $currentRequest = clone $currentRequest;
                 $currentRequest = $currentRequest->withUri($newUri);
 
+                // RFC 7231 Redirect method downgrade handling (e.g. POST to GET)
                 if ($statusCode === 303 || ($statusCode <= 302 && \in_array(\strtoupper($currentRequest->getMethod()), ['POST', 'PUT', 'DELETE'], true))) {
                     $currentRequest = $currentRequest->withMethod('GET')->body('');
                     $currentRequest = $currentRequest->withoutHeader('Content-Type')->withoutHeader('Content-Length');
                 }
 
+                // Security: Strip credentials on cross-origin redirects
                 if ($isCrossDomain) {
                     $currentRequest = $currentRequest->withoutHeader('Authorization')->withoutHeader('Cookie');
                 }
@@ -138,7 +145,7 @@ final readonly class RedirectHandler
             }
         });
 
-        $outerPromise->onCancel(function () use (&$currentPromise) {
+        $outerPromise->onCancel(function () use (&$currentPromise): void {
             if ($currentPromise instanceof PromiseInterface && ! $currentPromise->isSettled()) {
                 $currentPromise->cancelChain();
             }

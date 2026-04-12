@@ -14,7 +14,7 @@ use function Hibla\await;
 
 /**
  * Handles the unified interceptor pipeline.
- * 
+ *
  * @internal
  */
 class InterceptorHandler

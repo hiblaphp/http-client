@@ -32,7 +32,8 @@ final class RedirectUriResolver
         }
 
         $newUri = $base->withQuery($locationUri->getQuery())
-            ->withFragment($locationUri->getFragment());
+            ->withFragment($locationUri->getFragment())
+        ;
 
         if ($locationUri->getPath() === '') {
             return $newUri;

@@ -56,7 +56,7 @@ final class SSEConnector
             );
         };
 
-        /** @var PromiseInterface<\Hibla\HttpClient\SSE\SSEResponse> $pipelinePromise */
+        /** @var PromiseInterface<SSEResponse> $pipelinePromise */
         $pipelinePromise = ($this->dispatcher)($this->request, $executor, true);
 
         return new CancelableSSEPromise($pipelinePromise);
