@@ -16,14 +16,14 @@ use function Hibla\async;
 use function Hibla\await;
 
 /**
- * Handles HTTP redirects recursively using a non-blocking fiber loop.
+ * Handles HTTP redirects using a non-blocking iterative loop.
  *
  * @internal
  */
 final readonly class RedirectHandler
 {
     /**
-     * @param array<callable> $interceptors
+     * @param array<callable(RequestInterface, callable): mixed> $interceptors
      */
     public function __construct(
         private InterceptorHandler $interceptorHandler,
@@ -34,7 +34,7 @@ final readonly class RedirectHandler
     }
 
     /**
-     * Dispatches the request and automatically follows redirects up to the configured limit.
+     * Dispatches the request and follows redirects up to the configured limit.
      *
      * @template TResult
      *
@@ -48,19 +48,27 @@ final readonly class RedirectHandler
         callable $executor,
         bool $requireResponse
     ): PromiseInterface {
-        /** @var PromiseInterface<TResult> */
-        return async(function () use ($request, $executor, $requireResponse) {
+        /** @var PromiseInterface<TResult>|null $currentPromise */
+        $currentPromise = null;
+
+        /** @var PromiseInterface<TResult> $outerPromise */
+        $outerPromise = async(function () use ($request, $executor, $requireResponse, &$currentPromise) {
             $redirectCount = 0;
             $currentRequest = $request;
 
             while (true) {
+                // Store the current inner promise so it can be cancelled from the outside
+                $currentPromise = $this->interceptorHandler->process(
+                    request: $currentRequest,
+                    interceptors: $this->interceptors,
+                    executor: $executor,
+                    requireResponse: $requireResponse
+                );
+
                 /** @var TResult $response */
-                $response = await($this->interceptorHandler->process(
-                    $currentRequest,
-                    $this->interceptors,
-                    $executor,
-                    $requireResponse
-                ));
+                $response = await($currentPromise);
+                
+                $currentPromise = null;
 
                 $statusCode = 0;
                 /** @var string|null $location */
@@ -129,5 +137,13 @@ final readonly class RedirectHandler
                 $redirectCount++;
             }
         });
+
+        $outerPromise->onCancel(function () use (&$currentPromise) {
+            if ($currentPromise instanceof PromiseInterface && ! $currentPromise->isSettled()) {
+                $currentPromise->cancelChain();
+            }
+        });
+
+        return $outerPromise;
     }
 }
