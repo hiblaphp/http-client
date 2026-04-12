@@ -30,7 +30,7 @@ abstract class Message implements MessageInterface
     /**
      * The HTTP protocol version.
      */
-    protected string $protocol = '1.1';
+    protected string $protocol = '2.0';
 
     /**
      * An associative array of HTTP headers, keyed by original header name casing.

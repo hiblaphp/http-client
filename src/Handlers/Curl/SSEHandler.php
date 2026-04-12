@@ -254,7 +254,7 @@ class SSEHandler implements SSEHandlerInterface
                 $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
                 if (! $headersProcessed && $httpCode > 0 && $trimmedHeader === '') {
-                    if ($httpCode >= 200 && $httpCode < 300) {
+                    if (($httpCode >= 200 && $httpCode < 300) || ($httpCode >= 300 && $httpCode < 400)) {
                         $parsedHeaders = $this->parseRawHeaders($rawHeaders);
 
                         $stream = new Stream();

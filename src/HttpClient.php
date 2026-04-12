@@ -8,6 +8,7 @@ use Composer\InstalledVersions;
 use Hibla\HttpClient\Builders\CurlOptionsBuilder;
 use Hibla\HttpClient\Handlers\HttpHandler;
 use Hibla\HttpClient\Handlers\InterceptorHandler;
+use Hibla\HttpClient\Handlers\RedirectHandler;
 use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
 use Hibla\HttpClient\Interfaces\Handler\HttpHandlerInterface;
 use Hibla\HttpClient\Interfaces\Handler\TransportOptionsBuilderInterface;
@@ -15,9 +16,11 @@ use Hibla\HttpClient\Interfaces\HttpClientInterface;
 use Hibla\HttpClient\Interfaces\RequestInterface;
 use Hibla\HttpClient\Interfaces\ResponseInterface;
 use Hibla\HttpClient\Interfaces\SSE\SSEBuilderInterface;
+use Hibla\HttpClient\Interfaces\StreamingResponseInterface;
 use Hibla\HttpClient\SSE\SSEBuilder;
 use Hibla\HttpClient\SSE\SSEConnector;
 use Hibla\HttpClient\Traits\StreamTrait;
+use Hibla\HttpClient\Validators\UriValidator;
 use Hibla\HttpClient\ValueObjects\ClientOptions;
 use Hibla\HttpClient\ValueObjects\ProxyConfig;
 use Hibla\HttpClient\ValueObjects\RetryConfig;
@@ -919,17 +922,11 @@ class HttpClient implements HttpClientInterface
      */
     public function send(string $method, string $url): PromiseInterface
     {
-        $expandedUrl = $this->expandUriTemplate($url);
-        $initialRequest = $this->request
-            ->withMethod($method)
-            ->withUri(new Uri($expandedUrl))
-        ;
+        $uri = $this->createValidatedUri($url);
+        $initialRequest = $this->request->withMethod($method)->withUri($uri);
 
-        return $this->interceptorHandler->process(
-            request: $initialRequest,
-            interceptors: $this->interceptors,
-            executor: $this->executeRequest(...),
-        );
+        /** @var PromiseInterface<ResponseInterface> */
+        return $this->dispatchWithRedirects($initialRequest, fn (RequestInterface $req): PromiseInterface => $this->executeRequest($req), true);
     }
 
     /**
@@ -937,24 +934,17 @@ class HttpClient implements HttpClientInterface
      */
     public function stream(string $url, ?callable $onChunk = null): PromiseInterface
     {
-        $expandedUrl = $this->expandUriTemplate($url);
-        $initialRequest = $this->request
-            ->withMethod($this->getMethod())
-            ->withUri(new Uri($expandedUrl))
-        ;
+        $uri = $this->createValidatedUri($url);
+        $initialRequest = $this->request->withMethod($this->getMethod())->withUri($uri);
 
-        return $this->interceptorHandler->process(
-            request: $initialRequest,
-            interceptors: $this->interceptors,
-            executor: function (RequestInterface $processed) use ($onChunk) {
-                $effectiveTimeout = $this->timeoutExplicitlySet ? $this->timeout : 0;
+        /** @var PromiseInterface<StreamingResponseInterface> */
+        return $this->dispatchWithRedirects($initialRequest, function (RequestInterface $processed) use ($onChunk): PromiseInterface {
+            $effectiveTimeout = $this->timeoutExplicitlySet ? $this->timeout : 0;
+            $clientOptions = $this->buildClientOptionsFromProcessed($processed, timeout: $effectiveTimeout);
+            $options = $this->resolveTransportOptionsBuilder()->buildForStreaming($clientOptions);
 
-                $clientOptions = $this->buildClientOptionsFromProcessed($processed, timeout: $effectiveTimeout);
-                $options = $this->resolveTransportOptionsBuilder()->buildForStreaming($clientOptions);
-
-                return $this->resolveHandler()->stream((string) $processed->getUri(), $options, $onChunk);
-            }
-        );
+            return $this->resolveHandler()->stream((string) $processed->getUri(), $options, $onChunk);
+        }, true);
     }
 
     /**
@@ -962,30 +952,18 @@ class HttpClient implements HttpClientInterface
      */
     public function upload(string $url, string $source, ?callable $onProgress = null): PromiseInterface
     {
-        $expandedUrl = $this->expandUriTemplate($url);
         $method = $this->methodExplicitlySet ? $this->getMethod() : 'PUT';
-        $initialRequest = $this->request
-            ->withMethod($method)
-            ->withUri(new Uri($expandedUrl))
-        ;
+        $uri = $this->createValidatedUri($url);
+        $initialRequest = $this->request->withMethod($method)->withUri($uri);
 
-        return $this->interceptorHandler->process(
-            request: $initialRequest,
-            interceptors: $this->interceptors,
-            executor: function (RequestInterface $processed) use ($source, $onProgress) {
-                $effectiveTimeout = $this->timeoutExplicitlySet ? $this->timeout : 0;
-                $clientOptions = $this->buildClientOptionsFromProcessed($processed, timeout: $effectiveTimeout);
-                $options = $this->resolveTransportOptionsBuilder()->buildForUpload($clientOptions, $source);
+        /** @var PromiseInterface<array{url: string, status: int, headers: array<mixed>, protocol_version: string|null}> */
+        return $this->dispatchWithRedirects($initialRequest, function (RequestInterface $processed) use ($source, $onProgress): PromiseInterface {
+            $effectiveTimeout = $this->timeoutExplicitlySet ? $this->timeout : 0;
+            $clientOptions = $this->buildClientOptionsFromProcessed($processed, timeout: $effectiveTimeout);
+            $options = $this->resolveTransportOptionsBuilder()->buildForUpload($clientOptions, $source);
 
-                return $this->resolveHandler()->upload(
-                    (string) $processed->getUri(),
-                    $source,
-                    $options,
-                    $onProgress,
-                );
-            },
-            requireResponse: false
-        );
+            return $this->resolveHandler()->upload((string) $processed->getUri(), $source, $options, $onProgress);
+        }, false);
     }
 
     /**
@@ -993,32 +971,17 @@ class HttpClient implements HttpClientInterface
      */
     public function download(string $url, string $destination, ?callable $onProgress = null): PromiseInterface
     {
-        $expandedUrl = $this->expandUriTemplate($url);
-        $initialRequest = $this->request
-            ->withMethod($this->getMethod())
-            ->withUri(new Uri($expandedUrl))
-        ;
+        $uri = $this->createValidatedUri($url);
+        $initialRequest = $this->request->withMethod($this->getMethod())->withUri($uri);
 
-        /** @var PromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}> $promise */
-        $promise = $this->interceptorHandler->process(
-            request: $initialRequest,
-            interceptors: $this->interceptors,
-            executor: function (RequestInterface $processed) use ($destination, $onProgress) {
-                $effectiveTimeout = $this->timeoutExplicitlySet ? $this->timeout : 0;
-                $clientOptions = $this->buildClientOptionsFromProcessed($processed, timeout: $effectiveTimeout);
-                $options = $this->resolveTransportOptionsBuilder()->buildForDownload($clientOptions, $destination);
+        /** @var PromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}> */
+        return $this->dispatchWithRedirects($initialRequest, function (RequestInterface $processed) use ($destination, $onProgress): PromiseInterface {
+            $effectiveTimeout = $this->timeoutExplicitlySet ? $this->timeout : 0;
+            $clientOptions = $this->buildClientOptionsFromProcessed($processed, timeout: $effectiveTimeout);
+            $options = $this->resolveTransportOptionsBuilder()->buildForDownload($clientOptions, $destination);
 
-                return $this->resolveHandler()->download(
-                    (string) $processed->getUri(),
-                    $destination,
-                    $options,
-                    $onProgress,
-                );
-            },
-            requireResponse: false
-        );
-
-        return $promise;
+            return $this->resolveHandler()->download((string) $processed->getUri(), $destination, $options, $onProgress);
+        }, false);
     }
 
     /**
@@ -1026,16 +989,12 @@ class HttpClient implements HttpClientInterface
      */
     public function sse(string $url): SSEBuilderInterface
     {
-        $expandedUrl = $this->expandUriTemplate($url);
-
         $method = $this->methodExplicitlySet
             ? $this->getMethod()
             : ($this->request->getBody()->getSize() > 0 ? 'POST' : 'GET');
 
-        $initialRequest = $this->request
-            ->withMethod($method)
-            ->withUri(new Uri($expandedUrl))
-        ;
+        $uri = $this->createValidatedUri($url);
+        $initialRequest = $this->request->withMethod($method)->withUri($uri);
 
         $effectiveTimeout = $this->timeoutExplicitlySet ? $this->timeout : 0;
 
@@ -1046,14 +1005,13 @@ class HttpClient implements HttpClientInterface
         };
 
         $connector = new SSEConnector(
-            interceptorHandler: $this->interceptorHandler,
-            httpHandler: $this->resolveHandler(),
-            interceptors: $this->interceptors,
-            request: $initialRequest,
-            optionsBuilder: $optionsBuilder
+            $this->resolveHandler(),
+            $initialRequest,
+            $optionsBuilder,
+            $this->dispatchWithRedirects(...)
         );
 
-        return new SSEBuilder($expandedUrl, $connector);
+        return new SSEBuilder((string)$uri, $connector);
     }
 
     /**
@@ -1183,7 +1141,7 @@ class HttpClient implements HttpClientInterface
 
                 $param = $this->urlParameters[$key];
 
-                if (! is_scalar($param) && ! ($param instanceof \Stringable)) {
+                if (! \is_scalar($param) && ! ($param instanceof \Stringable)) {
                     return $matches[0];
                 }
 
@@ -1205,7 +1163,7 @@ class HttpClient implements HttpClientInterface
     private static function resolveRequest(mixed $value, bool $fromPromise): RequestInterface
     {
         if ($value === null) {
-            throw new \LogicException(sprintf(
+            throw new \LogicException(\sprintf(
                 '%s passed to interceptRequest() must %s a %s instance, got null/void.',
                 $fromPromise ? 'The ' . PromiseInterface::class : 'Callback',
                 $fromPromise ? 'resolve to' : 'return',
@@ -1272,5 +1230,46 @@ class HttpClient implements HttpClientInterface
                 'The cURL extension is not loaded. Please install and enable ext-curl.'
             );
         }
+    }
+
+    /**
+     * Expands a URI template, validates it against control characters, and returns a safe Uri object.
+     */
+    private function createValidatedUri(string $url): UriInterface
+    {
+        $expandedUrl = $this->expandUriTemplate($url);
+
+        UriValidator::assertNoControlCharacters($expandedUrl);
+
+        $uri = new Uri($expandedUrl);
+        UriValidator::assertAllowedScheme($uri);
+
+        return $uri;
+    }
+
+    /**
+     * Delegates the request execution to the RedirectHandler, allowing it to recursively
+     * manage 3xx responses and re-feed them through the interceptor pipeline.
+     *
+     * @template TResult
+     *
+     * @param RequestInterface $request
+     * @param callable(RequestInterface): PromiseInterface<TResult> $executor
+     * @param bool $requireResponse
+     * @return PromiseInterface<TResult>
+     */
+    private function dispatchWithRedirects(
+        RequestInterface $request,
+        callable $executor,
+        bool $requireResponse
+    ): PromiseInterface {
+        $redirectHandler = new RedirectHandler(
+            $this->interceptorHandler,
+            $this->interceptors,
+            $this->followRedirects,
+            $this->maxRedirects
+        );
+
+        return $redirectHandler->dispatch($request, $executor, $requireResponse);
     }
 }
