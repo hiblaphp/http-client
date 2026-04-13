@@ -21,24 +21,24 @@ class RetryConfig
         504, // Gateway Timeout
     ];
 
-   /**
-     * Default error substrings that indicate transport-level failures.
-     */
+    /**
+      * Default error substrings that indicate transport-level failures.
+      */
     private const array DEFAULT_EXCEPTIONS = [
         'timeout',
         'Simulated timeout',
         'cURL error',
         'Operation timed out',
         'connection failed',
-        'Connection refused',    
-        'Connection reset',         
-        'Failed to connect',      
-        'Couldn\'t connect',       
+        'Connection refused',
+        'Connection reset',
+        'Failed to connect',
+        'Couldn\'t connect',
         'Could not resolve host',
         'Resolving timed out',
         'Connection timed out',
         'SSL connection timeout',
-        'Network is unreachable',   
+        'Network is unreachable',
     ];
 
     /**

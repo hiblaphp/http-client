@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Interfaces\SSE;
 
+use Hibla\HttpClient\Interfaces\SSEResponseInterface;
 use Hibla\HttpClient\SSE\SSEControl;
 use Hibla\HttpClient\SSE\SSEDataFormat;
 use Hibla\HttpClient\SSE\SSEReconnectConfig;
-use Hibla\HttpClient\SSE\SSEResponse;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
 /**
@@ -96,7 +96,7 @@ interface SSEBuilderInterface
     /**
      * Open the SSE connection with the current configuration.
      *
-     * @return PromiseInterface<SSEResponse>
+     * @return PromiseInterface<SSEResponseInterface>
      */
     public function connect(): PromiseInterface;
 }
