@@ -75,7 +75,6 @@ final class ProxySetup
     public static function readPrivate(object $object, string $property): mixed
     {
         $ref = new \ReflectionProperty($object, $property);
-        $ref->setAccessible(true);
 
         return $ref->getValue($object);
     }
