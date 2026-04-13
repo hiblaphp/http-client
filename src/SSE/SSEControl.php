@@ -13,7 +13,7 @@ class SSEControl implements SSEControlInterface
     private bool $cancelled = false;
 
     /**
-     *  @var PromiseInterface<SSEResponseInterface>|null
+     * @var PromiseInterface<SSEResponseInterface>|null
      */
     private ?PromiseInterface $promise = null;
 

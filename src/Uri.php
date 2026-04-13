@@ -32,7 +32,7 @@ class Uri implements UriInterface
     /**
      * Initializes a new URI instance by parsing a URI string.
      *
-     * @param  string  $uri  The URI to parse.
+     * @param string $uri The URI to parse.
      *
      * @throws \InvalidArgumentException If the given URI cannot be parsed.
      */
@@ -277,8 +277,9 @@ class Uri implements UriInterface
     /**
      * Checks if the given port is a standard port for the given scheme.
      *
-     * @param  string  $scheme  The URI scheme
-     * @param  int  $port  The port number
+     * @param string $scheme The URI scheme
+     * @param int $port The port number
+     *
      * @return bool True if it's a standard port, false otherwise
      */
     private function isStandardPort(string $scheme, int $port): bool

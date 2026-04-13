@@ -23,21 +23,23 @@ interface HttpHandlerInterface
     * The main entry point for sending a request from the Request builder.
     * It intelligently applies caching and retry logic before dispatching the request.
     *
-    * @param  string  $url  The target URL.
-    * @param  array<int|string, mixed>  $curlOptions  cURL options for the request.
-    * @param  RetryConfig|null  $retryConfig  Optional retry configuration.
-    * @return PromiseInterface<ResponseInterface>
+     * @param string $url The target URL.
+     * @param array<int|string, mixed> $curlOptions cURL options for the request.
+     * @param RetryConfig|null $retryConfig Optional retry configuration.
+    *
+     * @return PromiseInterface<ResponseInterface>
     */
     public function sendRequest(string $url, array $curlOptions, ?RetryConfig $retryConfig = null): PromiseInterface;
 
     /**
      * Creates an SSE (Server-Sent Events) connection with optional reconnection.
      *
-     * @param  string  $url  The SSE endpoint URL
-     * @param  array<int|string, mixed>  $options  Request options (already prepared by builder)
-     * @param  callable(SSEEvent): void|null  $onEvent  Optional callback for each SSE event
-     * @param  callable(string): void|null  $onError  Optional callback for connection errors
-     * @param  SSEReconnectConfig|null  $reconnectConfig  Optional reconnection configuration
+     * @param string $url The SSE endpoint URL
+     * @param array<int|string, mixed> $options Request options (already prepared by builder)
+     * @param callable(SSEEvent): void|null $onEvent Optional callback for each SSE event
+     * @param callable(string): void|null $onError Optional callback for connection errors
+     * @param SSEReconnectConfig|null $reconnectConfig Optional reconnection configuration
+     *
      * @return PromiseInterface<SSEResponseInterface>
      *
      * @internal This method is designed for extension by TestingHttpHandler and internal use.
@@ -55,9 +57,10 @@ interface HttpHandlerInterface
      *
      * Ideal for large responses that should not be fully loaded into memory.
      *
-     * @param  string  $url  The URL to stream from.
-     * @param  array<int|string, mixed>  $options  Request options for internal use and testing extensions.
-     * @param  callable(string): void|null  $onChunk  An optional callback to execute for each received data chunk.
+     * @param string $url The URL to stream from.
+     * @param array<int|string, mixed> $options Request options for internal use and testing extensions.
+     * @param callable(string): void|null $onChunk An optional callback to execute for each received data chunk.
+     *
      * @return PromiseInterface<StreamingResponseInterface>
      */
     public function stream(string $url, array $options = [], ?callable $onChunk = null): PromiseInterface;
@@ -65,10 +68,10 @@ interface HttpHandlerInterface
     /**
      * Asynchronously downloads a file from a URL to a specified destination.
      *
-     * @param  string  $url  The URL of the file to download.
-     * @param  string  $destination  The local path to save the file.
-     * @param  array<int|string, mixed>  $options  Request options for internal use and testing extensions.
-     * @param  (callable(DownloadProgress): void)|null $onProgress
+     * @param string $url The URL of the file to download.
+     * @param string $destination The local path to save the file.
+     * @param array<int|string, mixed> $options Request options for internal use and testing extensions.
+     * @param (callable(DownloadProgress): void)|null $onProgress
      *
      * @return PromiseInterface<array{file: string, status: int, headers: array<mixed>, protocol_version: string|null, size: int|false}>
      */
@@ -77,10 +80,11 @@ interface HttpHandlerInterface
     /**
      * Asynchronously uploads a file from a local path to a URL.
      *
-     * @param  string  $url  The URL to upload the file to.
-     * @param  string  $source  The local path of the file to upload.
-     * @param  array<int|string, mixed>  $options  Request options for internal use and testing extensions.
-     * @param  (callable(UploadProgress): void)|null  $onProgress
+     * @param string $url The URL to upload the file to.
+     * @param string $source The local path of the file to upload.
+     * @param array<int|string, mixed> $options Request options for internal use and testing extensions.
+     * @param (callable(UploadProgress): void)|null $onProgress
+     *
      * @return PromiseInterface<array{url: string, status: int, headers: array<mixed>, protocol_version: string|null}>
      */
     public function upload(string $url, string $source, array $options = [], ?callable $onProgress = null): PromiseInterface;

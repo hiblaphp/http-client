@@ -46,6 +46,7 @@ final readonly class RedirectHandler
      * @param RequestInterface $request The initial request to dispatch.
      * @param callable(RequestInterface): PromiseInterface<TResult> $executor The transport execution closure.
      * @param bool $requireResponse Whether the pipeline must strictly return a ResponseInterface.
+     *
      * @return PromiseInterface<TResult>
      */
     public function dispatch(

@@ -18,7 +18,9 @@ use Hibla\Stream\Handlers\ReadLineHandler;
  */
 class Stream implements StreamInterface
 {
-    /** @var resource|null The underlying temporary stream resource. */
+    /**
+     * @var resource|null The underlying temporary stream resource.
+     */
     private $resource;
 
     private HttpStreamStateHandler $handler;
@@ -30,7 +32,7 @@ class Stream implements StreamInterface
     /**
      * Initializes a new Stream instance.
      *
-     * @param  resource|null  $resource  Optional pre-existing PHP stream resource.
+     * @param resource|null $resource Optional pre-existing PHP stream resource.
      *
      * @throws HttpStreamException if the provided argument is not a resource.
      */
@@ -61,7 +63,7 @@ class Stream implements StreamInterface
     /**
      * Creates a new Stream instance from a string.
      *
-     * @param  string  $content  The content to be streamed.
+     * @param string $content The content to be streamed.
      *
      * @return self A new Stream instance.
      */

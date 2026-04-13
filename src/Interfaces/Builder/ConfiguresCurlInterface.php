@@ -24,7 +24,7 @@ interface ConfiguresCurlInterface
      * @param int $option A CURLOPT_* constant.
      * @param mixed $value The value for the option.
      *
-     * @throws \RuntimeException  When the cURL extension is not loaded.
+     * @throws \RuntimeException When the cURL extension is not loaded.
      */
     public function withCurlOption(int $option, mixed $value): static;
 
@@ -36,7 +36,7 @@ interface ConfiguresCurlInterface
      *
      * @param array<int, mixed> $options
      *
-     * @throws \RuntimeException  When the cURL extension is not loaded.
+     * @throws \RuntimeException When the cURL extension is not loaded.
      */
     public function withCurlOptions(array $options): static;
 }

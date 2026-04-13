@@ -352,8 +352,9 @@ class Http
      * sse, on_event / onEvent, on_error / onError, reconnect.
      * Integer keys are forwarded as raw cURL options.
      *
-     * @param  string $url
-     * @param  array<int|string, mixed>  $options
+     * @param string $url
+     * @param array<int|string, mixed> $options
+     *
      * @return PromiseInterface<ResponseInterface>
      */
     public static function fetch(string $url, array $options = []): PromiseInterface
@@ -420,7 +421,7 @@ class Http
      * Follows the same pattern as Laravel's Http::fake(). Delegates directly
      * to TestingHttpHandler::mock() for fluent mock configuration.
      *
-     * @param  string  $method  HTTP method to mock, or '*' to match any method.
+     * @param string $method HTTP method to mock, or '*' to match any method.
      *
      * @throws \RuntimeException If not in testing mode.
      */
@@ -474,11 +475,12 @@ class Http
      *
      * Note: fetch() is a real static method above and never reaches here.
      *
-     * @param  string        $method     The method name.
-     * @param  array<mixed>  $arguments  The arguments to pass to the method.
+     * @param string $method The method name.
+     * @param array<mixed> $arguments The arguments to pass to the method.
+     *
      * @return mixed The result of the proxied method call.
      *
-     * @throws \RuntimeException      If an assertion method is called outside testing mode.
+     * @throws \RuntimeException If an assertion method is called outside testing mode.
      * @throws \BadMethodCallException If the method does not exist on HttpClient.
      */
     public static function __callStatic(string $method, array $arguments): mixed

@@ -20,6 +20,7 @@ class PipelineLoggerInterceptor
 
     /**
      * @param callable(RequestInterface): PromiseInterface<ResponseInterface> $next
+     *
      * @return PromiseInterface<ResponseInterface>
      */
     public function __invoke(RequestInterface $request, callable $next): PromiseInterface

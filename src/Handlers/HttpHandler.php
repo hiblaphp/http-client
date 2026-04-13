@@ -29,8 +29,11 @@ use Hibla\Promise\Interfaces\PromiseInterface;
 class HttpHandler implements HttpHandlerInterface
 {
     protected StreamingHandlerInterface $streamingHandler;
+
     protected RequestExecutorHandlerInterface $requestExecutorHandler;
+
     protected RetryHandlerInterface $retryHandler;
+
     protected SSEHandlerInterface $sseHandler;
 
     /**

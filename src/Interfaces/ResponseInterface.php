@@ -35,6 +35,7 @@ interface ResponseInterface extends Psr7ResponseInterface
      *
      * @param string|null $key Optional dot-notation path to a specific value.
      * @param mixed $default Fallback value when the key is absent or decode fails.
+     *
      * @return mixed
      */
     public function json(?string $key = null, mixed $default = null): mixed;

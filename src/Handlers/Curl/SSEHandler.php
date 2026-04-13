@@ -45,7 +45,8 @@ class SSEHandler implements SSEHandlerInterface
     /**
      * Creates an SSE connection with automatic reconnection logic.
      *
-     * @param  array<int|string, mixed>  $options
+     * @param array<int|string, mixed> $options
+     *
      * @return PromiseInterface<SSEResponse>
      */
     private function connectWithReconnection(
@@ -76,8 +77,8 @@ class SSEHandler implements SSEHandlerInterface
     /**
      * Attempts to establish an SSE connection.
      *
-     * @param  SSEConnectionState<SSEResponse>  $connectionState
-     * @param  Promise<SSEResponse>  $mainPromise
+     * @param SSEConnectionState<SSEResponse> $connectionState
+     * @param Promise<SSEResponse> $mainPromise
      */
     private function attemptConnection(
         SSEConnectionState $connectionState,
@@ -125,7 +126,7 @@ class SSEHandler implements SSEHandlerInterface
 
         $connectionPromise->then(
             /**
-             * @param  mixed  $response
+             * @param mixed $response
              */
             function ($response) use ($mainPromise, $connectionState): void {
                 if ($connectionState->isCancelled()) {
@@ -182,7 +183,8 @@ class SSEHandler implements SSEHandlerInterface
     /**
      * Creates a basic SSE connection without reconnection.
      *
-     * @param  array<int|string, mixed>  $options
+     * @param array<int|string, mixed> $options
+     *
      * @return PromiseInterface<SSEResponse>
      */
     private function createSSEConnection(
@@ -360,7 +362,7 @@ class SSEHandler implements SSEHandlerInterface
     /**
      * Wraps the event callback to handle last event ID tracking.
      *
-     * @param  SSEConnectionState<SSEResponse>  $state
+     * @param SSEConnectionState<SSEResponse> $state
      */
     private function wrapEventCallback(?callable $onEvent, SSEConnectionState $state): ?callable
     {
@@ -382,7 +384,7 @@ class SSEHandler implements SSEHandlerInterface
     /**
      * Wraps the error callback to handle reconnection logic.
      *
-     * @param  SSEConnectionState<SSEResponse>  $state
+     * @param SSEConnectionState<SSEResponse> $state
      */
     private function wrapErrorCallback(?callable $onError, SSEConnectionState $state): callable
     {

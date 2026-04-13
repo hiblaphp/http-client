@@ -101,11 +101,11 @@ class Request extends Message implements RequestInterface
      * named-constructor form avoids positional-argument awkwardness when only
      * a subset of fields need to be seeded.
      *
-     * @param  string                          $method   HTTP method token (case-insensitive, stored upper-case).
-     * @param  string|UriInterface             $uri      Request URI or a raw URL string.
-     * @param  array<string, string|string[]>  $headers  Header map applied via {@see withHeaders()}.
-     * @param  string|StreamInterface|null     $body     Raw body string or an existing stream.
-     * @param  string                          $version  HTTP protocol version (e.g. "1.1", "2").
+     * @param string $method HTTP method token (case-insensitive, stored upper-case).
+     * @param string|UriInterface $uri Request URI or a raw URL string.
+     * @param array<string, string|string[]> $headers Header map applied via {@see withHeaders()}.
+     * @param string|StreamInterface|null $body Raw body string or an existing stream.
+     * @param string $version HTTP protocol version (e.g. "1.1", "2").
      *
      * @throws InvalidArgumentException If the method token, any header name/value, or protocol
      *                                  version fails RFC 9110 / 9112 validation.
@@ -504,7 +504,7 @@ class Request extends Message implements RequestInterface
      *   withCookie('data', base64_encode($arbitraryValue))
      *
      * @throws InvalidArgumentException If the name or value would produce a
-     *         malformed Cookie header.
+     *                                  malformed Cookie header.
      *
      * @inheritDoc
      */
@@ -656,7 +656,7 @@ class Request extends Message implements RequestInterface
      * entry into the multipart map without duplicating withMultipart()'s
      * bookkeeping, and without exposing raw options to the public API.
      *
-     * @param  array<string, mixed>  $entry
+     * @param array<string, mixed> $entry
      *
      * @internal Called by HttpClient::withFile() after resolving the resource.
      */

@@ -19,8 +19,8 @@ interface ConfiguresAuthInterface
      * the prefix is stripped before constructing the header value
      * to prevent duplication.
      *
-     * @param  string $token The raw token value.
-     * @param  string $type Token scheme (default: 'Bearer').
+     * @param string $token The raw token value.
+     * @param string $type Token scheme (default: 'Bearer').
      */
     public function withToken(string $token, string $type = 'Bearer'): static;
 

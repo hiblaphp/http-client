@@ -17,6 +17,7 @@ final class RedirectUriResolver
      *
      * @param UriInterface $base The base URI (the original request URI).
      * @param string $location The Location header value from the redirect response.
+     *
      * @return UriInterface The fully resolved absolute URI.
      */
     public static function resolve(UriInterface $base, string $location): UriInterface

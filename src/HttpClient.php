@@ -1083,7 +1083,7 @@ class HttpClient implements HttpClientInterface
      * immutability is preserved on every step of the chain without
      * repeating the clone-and-assign boilerplate in every method.
      *
-     * @param  callable(Request): Request  $fn
+     * @param callable(Request): Request $fn
      */
     private function withUpdatedRequest(callable $fn): static
     {
@@ -1256,6 +1256,7 @@ class HttpClient implements HttpClientInterface
      * @param RequestInterface $request
      * @param callable(RequestInterface): PromiseInterface<TResult> $executor
      * @param bool $requireResponse
+     *
      * @return PromiseInterface<TResult>
      */
     private function dispatchWithRedirects(

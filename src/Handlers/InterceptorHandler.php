@@ -22,10 +22,11 @@ class InterceptorHandler
     /**
      * @template TResult
      *
-     * @param  RequestInterface $request
-     * @param  array<callable(RequestInterface, callable): mixed> $interceptors
-     * @param  callable(RequestInterface): PromiseInterface<TResult> $executor
-     * @param  bool $requireResponse
+     * @param RequestInterface $request
+     * @param array<callable(RequestInterface, callable): mixed> $interceptors
+     * @param callable(RequestInterface): PromiseInterface<TResult> $executor
+     * @param bool $requireResponse
+     *
      * @return PromiseInterface<TResult>
      */
     public function process(

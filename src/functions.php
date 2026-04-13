@@ -13,8 +13,9 @@ use Hibla\Promise\Interfaces\PromiseInterface;
  * Provides a JavaScript-like fetch interface for making HTTP requests
  * with flexible options configuration.
  *
- * @param  string  $url  The URL to fetch from
- * @param  array<int|string, mixed>  $options  Request options (method, headers, body, etc.)
+ * @param string $url The URL to fetch from
+ * @param array<int|string, mixed> $options Request options (method, headers, body, etc.)
+ *
  * @return PromiseInterface<ResponseInterface> Promise that resolves with the response
  *
  * @example

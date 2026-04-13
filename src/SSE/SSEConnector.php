@@ -36,6 +36,7 @@ final class SSEConnector
      * @param callable|null $onEvent The callback to invoke on each event
      * @param callable|null $onError The callback to invoke on error
      * @param SSEReconnectConfig|null $reconnectConfig The reconnect config to use
+     *
      * @return PromiseInterface<SSEResponseInterface> The promise for the SSE connection
      */
     public function __invoke(

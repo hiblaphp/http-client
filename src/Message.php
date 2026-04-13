@@ -223,7 +223,7 @@ abstract class Message implements MessageInterface
      *
      * @internal Called by the concrete subclass constructors and transport layer.
      *
-     * @param  array<string, string|string[]>  $headers
+     * @param array<string, string|string[]> $headers
      *
      * @throws \InvalidArgumentException If any name or value violates RFC 9110.
      */
@@ -263,11 +263,12 @@ abstract class Message implements MessageInterface
      * {@see HeaderValidator::assertValidValue()} before it is returned, so
      * callers can trust that the resulting array is RFC 9110 §5.5 compliant.
      *
-     * @param  mixed  $value
+     * @param mixed $value
+     *
      * @return string[]
      *
      * @throws \InvalidArgumentException If the value is an empty array or any
-     *         individual string violates RFC 9110 §5.5.
+     *                                   individual string violates RFC 9110 §5.5.
      */
     private function normalizeHeaderValue(mixed $value): array
     {
@@ -300,7 +301,7 @@ abstract class Message implements MessageInterface
      * per RFC 9110 §5.5, and silently stripping it would mask malformed
      * input rather than surface it early.
      *
-     * @param  mixed  $value
+     * @param mixed $value
      */
     private function coerceToString(mixed $value): string
     {

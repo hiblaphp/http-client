@@ -29,6 +29,7 @@ class RequestExecutorHandler implements RequestExecutorHandlerInterface
      *
      * @param string $url The target URL.
      * @param array<int|string, mixed> $curlOptions cURL options.
+     *
      * @return PromiseInterface<Response>
      */
     public function execute(string $url, array $curlOptions): PromiseInterface
@@ -109,6 +110,7 @@ class RequestExecutorHandler implements RequestExecutorHandlerInterface
      * @param string $url The request URL
      * @param int|float|null $timeout The operation timeout value
      * @param int|float|null $connectTimeout The connection timeout value
+     *
      * @return NetworkException|TimeoutException
      */
     private function createExceptionFromError(

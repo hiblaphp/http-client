@@ -63,7 +63,7 @@ interface ConfiguresHeadersInterface
      *
      * Existing headers with the same name are replaced, not appended.
      *
-     * @param  array<string, string|string[]>  $headers
+     * @param array<string, string|string[]> $headers
      */
     public function withHeaders(array $headers): static;
 }

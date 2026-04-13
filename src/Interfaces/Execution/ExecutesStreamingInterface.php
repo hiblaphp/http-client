@@ -15,7 +15,8 @@ interface ExecutesStreamingInterface
     /**
      * Open a streaming GET request.
      *
-     * @param  (callable(string): void)|null $onChunk
+     * @param (callable(string): void)|null $onChunk
+     *
      * @return PromiseInterface<StreamingResponseInterface>
      */
     public function stream(string $url, ?callable $onChunk = null): PromiseInterface;
@@ -23,8 +24,9 @@ interface ExecutesStreamingInterface
     /**
      * Download a remote resource and write it to $destination.
      *
-     * @param  string  $destination  Absolute path where the file should be written.
-     * @param  (callable(DownloadProgress): void)|null $onProgress
+     * @param string $destination Absolute path where the file should be written.
+     * @param (callable(DownloadProgress): void)|null $onProgress
+     *
      * @return PromiseInterface<array{
      *     file: string,
      *     status: int,
@@ -38,9 +40,10 @@ interface ExecutesStreamingInterface
     /**
      * Upload a local file to the given URL using a non-buffered chunked read, with an optional progress callback.
      *
-     * @param  string  $url  The URL to upload to.
-     * @param  string  $source  The local path to the file to upload.
-     * @param  (callable(UploadProgress): void)|null $onProgress
+     * @param string $url The URL to upload to.
+     * @param string $source The local path to the file to upload.
+     * @param (callable(UploadProgress): void)|null $onProgress
+     *
      * @return PromiseInterface<array{
      *     url: string,
      *     status: int,
@@ -53,7 +56,8 @@ interface ExecutesStreamingInterface
     /**
      * Create a fluent SSE connection builder.
      *
-     * @param  string  $url  The SSE endpoint URL.
+     * @param string $url The SSE endpoint URL.
+     *
      * @return SSEBuilderInterface Fluent SSE connection builder.
      */
     public function sse(string $url): SSEBuilderInterface;

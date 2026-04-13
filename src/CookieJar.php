@@ -120,7 +120,7 @@ final class CookieJar implements CookieJarInterface
      * per RFC 6265 section 5.3 step 6.
      *
      * @param string[] $setCookieHeaders
-     * @param string|null $originHost  The host that sent the Set-Cookie headers.
+     * @param string|null $originHost The host that sent the Set-Cookie headers.
      */
     public static function fromSetCookieHeaders(array $setCookieHeaders, ?string $originHost = null): self
     {

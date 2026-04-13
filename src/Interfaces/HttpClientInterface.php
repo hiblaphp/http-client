@@ -65,7 +65,7 @@ interface HttpClientInterface extends
      *
      * Note: This is an extemely advanced feature, use with caution.
      *
-     * @param  TransportOptionsBuilderInterface<array<int|string, mixed>>  $builder
+     * @param TransportOptionsBuilderInterface<array<int|string, mixed>> $builder
      */
     public function withTransportOptionsBuilder(TransportOptionsBuilderInterface $builder): static;
 }

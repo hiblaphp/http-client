@@ -29,7 +29,7 @@ class SSEResponse extends Response implements SSEResponseInterface
      * @param StreamInterface $stream The live SSE stream.
      * @param int $statusCode HTTP status code.
      * @param array<string, string|string[]> $headers Response headers.
-     * @param string|null $requestId  Event loop request ID for this connection.
+     * @param string|null $requestId Event loop request ID for this connection.
      */
     public function __construct(
         StreamInterface $stream,
@@ -83,7 +83,8 @@ class SSEResponse extends Response implements SSEResponseInterface
      *
      * @internal
      *
-     * @param  string  $chunk  Raw SSE data chunk from the transport layer.
+     * @param string $chunk Raw SSE data chunk from the transport layer.
+     *
      * @return \Generator<SSEEvent>
      */
     public function parseEvents(string $chunk): \Generator

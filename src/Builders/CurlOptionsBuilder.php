@@ -171,6 +171,7 @@ class CurlOptionsBuilder implements TransportOptionsBuilderInterface
 
     /**
      * @param array<string, array<string>> $headers
+     *
      * @return array<string, array<string>>
      */
     private function mergeCookieHeader(string $url, array $headers, CookieJarInterface $cookieJar): array

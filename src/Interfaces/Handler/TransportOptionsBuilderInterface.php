@@ -23,6 +23,7 @@ interface TransportOptionsBuilderInterface
      * Build options for a standard synchronous or async HTTP request.
      *
      * @param ClientOptions $options
+     *
      * @return TOptions
      */
     public function build(ClientOptions $options): mixed;
@@ -32,6 +33,7 @@ interface TransportOptionsBuilderInterface
      * is consumed chunk by chunk rather than buffered in full.
      *
      * @param ClientOptions $options
+     *
      * @return TOptions
      */
     public function buildForStreaming(ClientOptions $options): mixed;
@@ -44,6 +46,7 @@ interface TransportOptionsBuilderInterface
      *
      * @param ClientOptions $options
      * @param string $destination Absolute path where the file should be written.
+     *
      * @return TOptions
      */
     public function buildForDownload(ClientOptions $options, string $destination): mixed;
@@ -56,6 +59,7 @@ interface TransportOptionsBuilderInterface
      *
      * @param ClientOptions $options
      * @param string $source Absolute path of the file to upload.
+     *
      * @return TOptions
      */
     public function buildForUpload(ClientOptions $options, string $source): mixed;
@@ -68,6 +72,7 @@ interface TransportOptionsBuilderInterface
      * connection can remain open indefinitely.
      *
      * @param ClientOptions $options
+     *
      * @return TOptions
      */
     public function buildForSSE(ClientOptions $options): mixed;

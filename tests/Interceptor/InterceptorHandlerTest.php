@@ -224,6 +224,7 @@ describe('InterceptorHandler', function () {
 
         expect($result)->toBeArray()
             ->and($result['file'])->toBe('/tmp/download.txt')
-            ->and($result['intercepted'])->toBeTrue();
+            ->and($result['intercepted'])->toBeTrue()
+        ;
     });
 });

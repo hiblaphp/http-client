@@ -31,9 +31,10 @@ interface RequestExecutorHandlerInterface
      * to a Response on any completed HTTP exchange, or rejects with a
      * NetworkException or TimeoutException on transport failure.
      *
-     * @param  string $url The fully resolved target URL.
-     * @param  array<int|string, mixed> $options Transport-specific options produced
-     * by TransportOptionsBuilderInterface::build().
+     * @param string $url The fully resolved target URL.
+     * @param array<int|string, mixed> $options Transport-specific options produced
+     *                                          by TransportOptionsBuilderInterface::build().
+     *
      * @return PromiseInterface<Response>
      */
     public function execute(string $url, array $options): PromiseInterface;

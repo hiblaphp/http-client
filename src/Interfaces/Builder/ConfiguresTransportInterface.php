@@ -32,8 +32,8 @@ interface ConfiguresTransportInterface
     /**
      * Configure automatic redirect following.
      *
-     * @param  bool  $follow  Whether to follow Location headers automatically.
-     * @param  int   $max     Maximum number of redirects before giving up.
+     * @param bool $follow Whether to follow Location headers automatically.
+     * @param int $max Maximum number of redirects before giving up.
      */
     public function redirects(bool $follow = true, int $max = 5): static;
 

@@ -47,7 +47,7 @@ interface HttpInterceptorInterface
      *
      * await() is safe to use inside the callback.
      *
-     * @param  callable(RequestInterface): (RequestInterface|PromiseInterface<RequestInterface>) $callback
+     * @param callable(RequestInterface): (RequestInterface|PromiseInterface<RequestInterface>) $callback
      */
     public function interceptRequest(callable $callback): static;
 
@@ -59,7 +59,7 @@ interface HttpInterceptorInterface
      *
      * await() is safe to use inside the callback.
      *
-     * @param  callable(ResponseInterface): (ResponseInterface|PromiseInterface<ResponseInterface>) $callback
+     * @param callable(ResponseInterface): (ResponseInterface|PromiseInterface<ResponseInterface>) $callback
      */
     public function interceptResponse(callable $callback): static;
 

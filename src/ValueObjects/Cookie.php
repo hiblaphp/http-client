@@ -343,9 +343,9 @@ class Cookie
      *   and the domain is set to the canonicalized request-host (step 6).
      * - The persistent-flag is set to true when Max-Age or Expires is present (step 3).
      *
-     * @param string      $setCookieHeader The raw Set-Cookie header value.
-     * @param string|null $originHost      The host that sent the response. Required
-     *                                     for correct host-only-flag behaviour.
+     * @param string $setCookieHeader The raw Set-Cookie header value.
+     * @param string|null $originHost The host that sent the response. Required
+     *                                for correct host-only-flag behaviour.
      */
     public static function fromSetCookieHeader(string $setCookieHeader, ?string $originHost = null): ?self
     {

@@ -20,11 +20,13 @@ use RuntimeException;
  */
 class HttpStreamStateHandler
 {
-    /** @var resource|null */
+    /**
+     * @var resource|null
+     */
     private $resource;
 
     /**
-     *  @var array<int, array{promise: Promise<string|null>, length: int}>
+     * @var array<int, array{promise: Promise<string|null>, length: int}>
      */
     private array $readQueue = [];
 

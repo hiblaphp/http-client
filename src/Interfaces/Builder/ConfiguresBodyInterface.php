@@ -39,7 +39,7 @@ interface ConfiguresBodyInterface
      *
      * @param array<string, mixed> $data
      *
-     * @throws \InvalidArgumentException  When $data cannot be JSON-encoded.
+     * @throws \InvalidArgumentException When $data cannot be JSON-encoded.
      */
     public function withJson(array $data): static;
 

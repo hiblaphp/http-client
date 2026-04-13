@@ -28,14 +28,15 @@ interface SSEHandlerInterface
      * Open an SSE connection to $url and return a promise that resolves
      * to an SSEResponse once the connection is established.
      *
-     * @param  string $url The SSE endpoint URL.
-     * @param  array<int|string, mixed> $options Transport-specific options produced
-     * by TransportOptionsBuilderInterface::buildForSSE().
-     * @param  (callable(SSEEvent): void)|null $onEvent Invoked for each successfully parsed event.
-     * @param  (callable(string): void)|null $onError Invoked when a connection error occurs.
-     * Receives a human-readable error description.
-     * @param  SSEReconnectConfig|null $reconnectConfig When non-null and enabled, governs
-     * automatic reconnection behaviour.
+     * @param string $url The SSE endpoint URL.
+     * @param array<int|string, mixed> $options Transport-specific options produced
+     *                                          by TransportOptionsBuilderInterface::buildForSSE().
+     * @param (callable(SSEEvent): void)|null $onEvent Invoked for each successfully parsed event.
+     * @param (callable(string): void)|null $onError Invoked when a connection error occurs.
+     *                                               Receives a human-readable error description.
+     * @param SSEReconnectConfig|null $reconnectConfig When non-null and enabled, governs
+     *                                                 automatic reconnection behaviour.
+     *
      * @return PromiseInterface<SSEResponse>
      */
     public function connect(

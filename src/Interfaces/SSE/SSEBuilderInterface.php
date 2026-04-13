@@ -69,11 +69,11 @@ interface SSEBuilderInterface
     /**
      * Enable automatic reconnection with exponential backoff.
      *
-     * @param int   $maxAttempts       Maximum reconnection attempts before giving up.
-     * @param float $initialDelay      Seconds before the first retry.
-     * @param float $maxDelay          Upper bound on delay between retries.
+     * @param int $maxAttempts Maximum reconnection attempts before giving up.
+     * @param float $initialDelay Seconds before the first retry.
+     * @param float $maxDelay Upper bound on delay between retries.
      * @param float $backoffMultiplier Factor applied to delay on each attempt.
-     * @param bool  $jitter            Adds randomness to prevent thundering herd.
+     * @param bool $jitter Adds randomness to prevent thundering herd.
      */
     public function reconnect(
         int $maxAttempts = 10,

@@ -29,8 +29,8 @@ class StreamingResponse extends Response implements StreamingResponseInterface
     private ?string $requestId = null;
 
     /**
-     * @param StreamInterface              $stream  The live response stream.
-     * @param int                          $status  HTTP status code.
+     * @param StreamInterface $stream The live response stream.
+     * @param int $status HTTP status code.
      * @param array<string, string|string[]> $headers Optional response headers.
      */
     public function __construct(

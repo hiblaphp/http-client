@@ -30,10 +30,11 @@ interface RetryHandlerInterface
      * The promise rejects with a NetworkException only after all
      * retry attempts have been exhausted.
      *
-     * @param  string $url The fully resolved target URL.
-     * @param  array<int|string, mixed> $options Transport-specific options.
-     * @param  RetryConfig $retryConfig Policy governing retry attempts,
-     * delays, and retryable conditions.
+     * @param string $url The fully resolved target URL.
+     * @param array<int|string, mixed> $options Transport-specific options.
+     * @param RetryConfig $retryConfig Policy governing retry attempts,
+     *                                 delays, and retryable conditions.
+     *
      * @return PromiseInterface<Response>
      */
     public function execute(string $url, array $options, RetryConfig $retryConfig): PromiseInterface;

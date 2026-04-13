@@ -73,6 +73,7 @@ class UploadedFile implements UploadedFileInterface
      * Create an UploadedFile instance from a $_FILES array entry.
      *
      * @param array{tmp_name?: string, size?: int, error?: int, name?: string, type?: string} $fileSpec A single file specification from $_FILES
+     *
      * @return self
      */
     public static function fromArray(array $fileSpec): self

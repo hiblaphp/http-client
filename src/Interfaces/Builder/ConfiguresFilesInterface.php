@@ -29,12 +29,12 @@ interface ConfiguresFilesInterface
      * client filename is used. When $contentType is null the MIME
      * type is detected from the file or defaults to application/octet-stream.
      *
-     * @param string  $name Form field name.
+     * @param string $name Form field name.
      * @param string|resource|UploadedFileInterface|StreamInterface $file
      * @param string|null $filename Override the filename sent to the server.
      * @param string|null $contentType Override the MIME type.
      *
-     * @throws \InvalidArgumentException  When $file is not a readable path, resource, StreamInterface, or UploadedFileInterface.
+     * @throws \InvalidArgumentException When $file is not a readable path, resource, StreamInterface, or UploadedFileInterface.
      */
     public function withFile(
         string $name,
@@ -61,7 +61,7 @@ interface ConfiguresFilesInterface
      *
      * Equivalent to calling withMultipart($data)->withFiles($files).
      *
-     * @param array<string, mixed> $data   Form fields to include in the multipart body.
+     * @param array<string, mixed> $data Form fields to include in the multipart body.
      * @param array<string, string|resource|UploadedFileInterface|StreamInterface|array{path: string, name?: string, type?: string}> $files
      */
     public function multipartWithFiles(array $data = [], array $files = []): static;

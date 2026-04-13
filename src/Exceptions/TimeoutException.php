@@ -13,6 +13,7 @@ use Hibla\HttpClient\Interfaces\Exception\NetworkExceptionInterface;
 class TimeoutException extends NetworkException implements NetworkExceptionInterface
 {
     private ?float $timeout = null;
+
     private ?string $timeoutType = null; // 'connection' or 'operation'
 
     public function __construct(

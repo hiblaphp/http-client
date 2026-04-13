@@ -19,6 +19,7 @@ interface FetchRequestInterface
      * @param HttpClientInterface $client The client builder instance.
      * @param string $url The target URL.
      * @param array<int|string, mixed> $options Flat options array.
+     *
      * @return PromiseInterface<ResponseInterface>
      */
     public function send(

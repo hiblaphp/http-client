@@ -73,7 +73,8 @@ class SSEParser
     /**
      * Parses incoming SSE data chunks and yields events.
      *
-     * @param  string  $chunk  Raw SSE data chunk.
+     * @param string $chunk Raw SSE data chunk.
+     *
      * @return \Generator<SSEEvent>
      */
     public function parse(string $chunk): \Generator

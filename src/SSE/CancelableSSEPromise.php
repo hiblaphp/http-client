@@ -15,16 +15,21 @@ use Hibla\Promise\Promise;
  * and clean up the underlying connection, whether it's a real SSE stream or a mock.
  *
  * @template-extends Promise<SSEResponse>
+ *
  * @implements PromiseInterface<SSEResponse>
  */
 class CancelableSSEPromise extends Promise implements PromiseInterface
 {
-    /** @var PromiseInterface<SSEResponse> */
+    /**
+     * @var PromiseInterface<SSEResponse>
+     */
     private PromiseInterface $innerPromise;
 
     private ?SSEResponse $sseResponse = null;
 
-    /** @var list<callable> */
+    /**
+     * @var list<callable>
+     */
     private array $cancelCallbacks = [];
 
     /**

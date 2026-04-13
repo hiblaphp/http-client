@@ -22,7 +22,7 @@ interface ConfiguresRetryInterface
      * @param int $maxRetries Number of retry attempts after the initial failure.
      * @param float $baseDelay Seconds to wait before the first retry.
      * @param float $backoffMultiplier Multiplier applied to $baseDelay on each subsequent attempt.
-     *                                  A value of 2.0 doubles the delay after each failure.
+     *                                 A value of 2.0 doubles the delay after each failure.
      */
     public function retry(
         int $maxRetries = 3,

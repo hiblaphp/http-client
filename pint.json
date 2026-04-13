@@ -1,9 +1,13 @@
 {
-   "preset": "psr12",
+    "preset": "psr12",
     "rules": {
         "ordered_imports": {
             "sort_algorithm": "alpha",
-            "imports_order": ["class", "function", "const"]
+            "imports_order": [
+                "class",
+                "function",
+                "const"
+            ]
         },
         "no_extra_blank_lines": {
             "tokens": [
@@ -34,8 +38,19 @@
         "phpdoc_var_without_name": true,
         "class_attributes_separation": {
             "elements": {
-                "method": "one"
+                "method": "one",
+                "property": "one"
             }
+        },
+        "phpdoc_line_span": {
+            "property": "multi",
+            "method": "multi",
+            "const": "multi"
+        },
+        "phpdoc_separation": true,
+        "phpdoc_trim": true,
+        "phpdoc_align": {
+            "align": "left"
         },
         "method_argument_space": {
             "on_multiline": "ensure_fully_multiline",

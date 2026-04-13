@@ -17,15 +17,20 @@ use Hibla\Promise\Interfaces\PromiseInterface;
 class SSEConnectionState
 {
     private int $attemptCount = 0;
+
     private ?string $lastEventId = null;
+
     private ?int $retryInterval = null;
 
     /**
      * @var PromiseInterface<TResponse>|null
      */
     private ?PromiseInterface $currentConnection = null;
+
     private ?Exception $lastError = null;
+
     private bool $cancelled = false;
+
     private ?string $reconnectTimerId = null;
 
     /**

@@ -17,17 +17,17 @@ use Hibla\Promise\Interfaces\PromiseInterface;
 class SSEBuilder implements SSEBuilderInterface
 {
     /**
-     *  @var (callable(mixed): mixed)|null
+     * @var (callable(mixed): mixed)|null
      */
     private $mapper = null;
 
     /**
-     *  @var (callable(mixed, SSEControl): void)|null
+     * @var (callable(mixed, SSEControl): void)|null
      */
     private $onEvent = null;
 
     /**
-     *  @var (callable(\Throwable): void)|null
+     * @var (callable(\Throwable): void)|null
      */
     private $onError = null;
 
@@ -216,7 +216,7 @@ class SSEBuilder implements SSEBuilderInterface
     }
 
     /**
-     *  @return array<string, mixed>
+     * @return array<string, mixed>
      */
     private function toArrayWithParsedData(SSEEvent $event): array
     {

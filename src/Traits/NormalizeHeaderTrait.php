@@ -10,6 +10,7 @@ trait NormalizeHeaderTrait
      * Normalizes headers array to the expected format.
      *
      * @param array<mixed> $headers The headers to normalize.
+     *
      * @return array<string, array<string>|string> Normalized headers.
      */
     private function normalizeHeaders(array $headers): array
@@ -45,6 +46,7 @@ trait NormalizeHeaderTrait
      * a single array under that name, complying with PSR-7 structure.
      *
      * @param string[] $rawHeaders Array of raw header lines (e.g., "Content-Type: text/html").
+     *
      * @return array<string, array<int, string>> Parsed headers.
      */
     private function parseRawHeaders(array $rawHeaders): array

@@ -26,7 +26,8 @@ trait StreamTrait
     /**
      * Creates a new stream from a string.
      *
-     * @param  string  $content  The initial content of the stream.
+     * @param string $content The initial content of the stream.
+     *
      * @return StreamInterface A new Stream object.
      *
      * @throws HttpStreamException If temporary stream creation fails.
@@ -54,7 +55,7 @@ trait StreamTrait
     /**
      * Safely converts mixed values to string.
      *
-     * @param  mixed  $value  The value to convert to string
+     * @param mixed $value The value to convert to string
      */
     private function convertToString($value): string
     {

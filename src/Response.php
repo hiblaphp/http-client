@@ -77,13 +77,15 @@ class Response extends Message implements ResponseInterface
     ];
 
     private int $statusCode;
+
     private string $reasonPhrase;
+
     private ?string $negotiatedHttpVersion = null;
 
     /**
      * @param string|StreamInterface $body The response body as a string or stream.
      * @param int $status The HTTP status code.
-     * @param array<string, string|string[]> $headers  Response headers.
+     * @param array<string, string|string[]> $headers Response headers.
      *
      * @throws HttpStreamException
      */
