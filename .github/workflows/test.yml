@@ -9,7 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: ['8.4', '8.5']
+        php: ['8.4']
 
     steps:
       - name: Checkout
@@ -21,7 +21,7 @@ jobs:
           php-version: ${{ matrix.php }}
           tools: composer:v2
           coverage: xdebug
-          extensions: pcntl, posix
+          extensions: pcntl, posix, curl
 
       - name: Cache Composer dependencies
         uses: actions/cache@v3
@@ -34,6 +34,36 @@ jobs:
 
       - name: Install Dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
-        
+
+      - name: Create Docker network
+        run: php docker/create-network.php
+
+      - name: Start httpbin
+        run: composer httpbin:up
+
+      - name: Start proxy services
+        run: composer proxy:up
+
+      - name: Wait for services to be healthy
+        run: |
+          echo "Waiting for httpbin..."
+          timeout 30 bash -c 'until curl -sf http://127.0.0.1:8080/get > /dev/null; do sleep 1; done'
+          echo "Waiting for HTTP proxy..."
+          timeout 30 bash -c 'until nc -z 127.0.0.1 8888; do sleep 1; done'
+          echo "Waiting for SOCKS5 proxy..."
+          timeout 30 bash -c 'until nc -z 127.0.0.1 1080; do sleep 1; done'
+          echo "Waiting for SOCKS4 proxy..."
+          timeout 30 bash -c 'until nc -z 127.0.0.1 1081; do sleep 1; done'
+          echo "All services ready."
+
       - name: Run Static Analysis
-        run: ./vendor/bin/phpstan analyse
+        run: composer analyze
+
+      - name: Run Tests
+        run: composer test
+
+      - name: Stop services
+        if: always()
+        run: |
+          composer httpbin:down
+          composer proxy:down
