@@ -7,18 +7,29 @@ use Psr\Http\Message\StreamInterface;
 use Tests\Fixtures\ConcreteMessage;
 
 describe('Protocol Version', function () {
-    it('defaults to protocol version 1.1', function () {
+    it('defaults to protocol version 2.0', function () {
         $message = new ConcreteMessage();
-        expect($message->getProtocolVersion())->toBe('1.1');
+
+        expect($message->getProtocolVersion())->toBe('2.0');
     });
 
     it('is immutable when changing protocol version', function () {
         $message1 = new ConcreteMessage();
-        $message2 = $message1->withProtocolVersion('2.0');
+
+        $message2 = $message1->withProtocolVersion('1.1');
 
         expect($message1)->not->toBe($message2);
-        expect($message1->getProtocolVersion())->toBe('1.1');
-        expect($message2->getProtocolVersion())->toBe('2.0');
+
+        expect($message1->getProtocolVersion())->toBe('2.0');
+        expect($message2->getProtocolVersion())->toBe('1.1');
+    });
+
+    it('returns the same instance if the protocol version is unchanged', function () {
+        $message1 = new ConcreteMessage();
+
+        $message2 = $message1->withProtocolVersion('2.0');
+
+        expect($message1)->toBe($message2);
     });
 });
 
