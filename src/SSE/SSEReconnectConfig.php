@@ -19,6 +19,8 @@ class SSEReconnectConfig
         'Connection refused',
         'Connection reset',
         'Connection timed out',
+        'Failed to connect',
+        'Couldn\'t connect',
         'Could not resolve host',
         'Resolving timed out',
         'SSL connection timeout',
