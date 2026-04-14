@@ -18,50 +18,50 @@ describe('Cookie Security Test', function () {
     describe('Header injection prevention', function () {
 
         test('a cookie name containing CRLF is rejected before any network call is made', function () {
-            expect(fn () => (new HttpClient())->withCookie("inject\r\nX-Injected: evil", 'value'))
+            expect(fn () => new HttpClient()->withCookie("inject\r\nX-Injected: evil", 'value'))
                 ->toThrow(InvalidArgumentException::class, 'not permitted in an HTTP token')
             ;
         });
 
         test('a cookie name containing a lone CR is rejected before any network call is made', function () {
-            expect(fn () => (new HttpClient())->withCookie("inject\rX-Injected: evil", 'value'))
+            expect(fn () => new HttpClient()->withCookie("inject\rX-Injected: evil", 'value'))
                 ->toThrow(InvalidArgumentException::class, 'not permitted in an HTTP token')
             ;
         });
 
         test('a cookie name containing a lone LF is rejected before any network call is made', function () {
-            expect(fn () => (new HttpClient())->withCookie("inject\nX-Injected: evil", 'value'))
+            expect(fn () => new HttpClient()->withCookie("inject\nX-Injected: evil", 'value'))
                 ->toThrow(InvalidArgumentException::class, 'not permitted in an HTTP token')
             ;
         });
 
         test('a cookie value containing CRLF is rejected before any network call is made', function () {
-            expect(fn () => (new HttpClient())->withCookie('name', "value\r\nX-Injected: evil"))
+            expect(fn () => new HttpClient()->withCookie('name', "value\r\nX-Injected: evil"))
                 ->toThrow(InvalidArgumentException::class, 'cookie-octet set')
             ;
         });
 
         test('a cookie value containing a semicolon cannot break out of the cookie field', function () {
-            expect(fn () => (new HttpClient())->withCookie('name', 'value; X-Injected: evil'))
+            expect(fn () => new HttpClient()->withCookie('name', 'value; X-Injected: evil'))
                 ->toThrow(InvalidArgumentException::class, 'cookie-octet set')
             ;
         });
 
         test('a cookie name containing null bytes is rejected', function () {
-            expect(fn () => (new HttpClient())->withCookie("name\x00evil", 'value'))
+            expect(fn () => new HttpClient()->withCookie("name\x00evil", 'value'))
                 ->toThrow(InvalidArgumentException::class, 'not permitted in an HTTP token')
             ;
         });
 
         test('a cookie value containing null bytes is rejected', function () {
-            expect(fn () => (new HttpClient())->withCookie('name', "value\x00evil"))
+            expect(fn () => new HttpClient()->withCookie('name', "value\x00evil"))
                 ->toThrow(InvalidArgumentException::class, 'cookie-octet set')
             ;
         });
 
         test('a streaming cookie name containing CRLF is rejected before any network call', function () {
             expect(
-                fn () => (new HttpClient())
+                fn () => new HttpClient()
                     ->withCookie("bad\r\nname", 'value')
                     ->stream(HttpBin::url('/stream/1'))
             )->toThrow(InvalidArgumentException::class);
@@ -69,7 +69,7 @@ describe('Cookie Security Test', function () {
 
         test('a streaming cookie name containing a lone LF is rejected before any network call', function () {
             expect(
-                fn () => (new HttpClient())
+                fn () => new HttpClient()
                     ->withCookie("bad\nname", 'value')
                     ->stream(HttpBin::url('/stream/1'))
             )->toThrow(InvalidArgumentException::class);
@@ -77,7 +77,7 @@ describe('Cookie Security Test', function () {
 
         test('a streaming cookie name containing a lone CR is rejected before any network call', function () {
             expect(
-                fn () => (new HttpClient())
+                fn () => new HttpClient()
                     ->withCookie("bad\rname", 'value')
                     ->stream(HttpBin::url('/stream/1'))
             )->toThrow(InvalidArgumentException::class);
@@ -85,7 +85,7 @@ describe('Cookie Security Test', function () {
 
         test('a streaming cookie value containing CRLF is rejected before any network call', function () {
             expect(
-                fn () => (new HttpClient())
+                fn () => new HttpClient()
                     ->withCookie('name', "bad\r\nvalue")
                     ->stream(HttpBin::url('/stream/1'))
             )->toThrow(InvalidArgumentException::class);
@@ -93,7 +93,7 @@ describe('Cookie Security Test', function () {
 
         test('a streaming cookie name containing null bytes is rejected before any network call', function () {
             expect(
-                fn () => (new HttpClient())
+                fn () => new HttpClient()
                     ->withCookie("name\x00evil", 'value')
                     ->stream(HttpBin::url('/stream/1'))
             )->toThrow(InvalidArgumentException::class);
@@ -101,7 +101,7 @@ describe('Cookie Security Test', function () {
 
         test('a streaming cookie value containing null bytes is rejected before any network call', function () {
             expect(
-                fn () => (new HttpClient())
+                fn () => new HttpClient()
                     ->withCookie('name', "value\x00evil")
                     ->stream(HttpBin::url('/stream/1'))
             )->toThrow(InvalidArgumentException::class);
@@ -109,7 +109,7 @@ describe('Cookie Security Test', function () {
 
         test('a streaming cookie value containing a semicolon is rejected before any network call', function () {
             expect(
-                fn () => (new HttpClient())
+                fn () => new HttpClient()
                     ->withCookie('legit', 'val; injected=bad')
                     ->stream(HttpBin::url('/cookies'))
             )->toThrow(InvalidArgumentException::class);
@@ -117,7 +117,7 @@ describe('Cookie Security Test', function () {
 
         test('an SSE cookie name containing CRLF is rejected before any network call', function () {
             expect(
-                fn () => (new HttpClient())
+                fn () => new HttpClient()
                     ->withCookie("bad\r\nname", 'value')
                     ->sse(HttpBin::url('/response-headers'))
                     ->connect()
@@ -126,7 +126,7 @@ describe('Cookie Security Test', function () {
 
         test('an SSE cookie name containing a lone LF is rejected before any network call', function () {
             expect(
-                fn () => (new HttpClient())
+                fn () => new HttpClient()
                     ->withCookie("bad\nname", 'value')
                     ->sse(HttpBin::url('/response-headers'))
                     ->connect()
@@ -135,7 +135,7 @@ describe('Cookie Security Test', function () {
 
         test('an SSE cookie value containing CRLF is rejected before any network call', function () {
             expect(
-                fn () => (new HttpClient())
+                fn () => new HttpClient()
                     ->withCookie('name', "bad\r\nvalue")
                     ->sse(HttpBin::url('/response-headers'))
                     ->connect()
@@ -144,7 +144,7 @@ describe('Cookie Security Test', function () {
 
         test('an SSE cookie name containing null bytes is rejected before any network call', function () {
             expect(
-                fn () => (new HttpClient())
+                fn () => new HttpClient()
                     ->withCookie("name\x00evil", 'value')
                     ->sse(HttpBin::url('/response-headers'))
                     ->connect()
@@ -153,7 +153,7 @@ describe('Cookie Security Test', function () {
 
         test('an SSE cookie value containing null bytes is rejected before any network call', function () {
             expect(
-                fn () => (new HttpClient())
+                fn () => new HttpClient()
                     ->withCookie('name', "value\x00evil")
                     ->sse(HttpBin::url('/response-headers'))
                     ->connect()
@@ -165,7 +165,7 @@ describe('Cookie Security Test', function () {
 
             try {
                 expect(
-                    fn () => (new HttpClient())
+                    fn () => new HttpClient()
                         ->withCookie("bad\r\nname", 'value')
                         ->download(HttpBin::url('/get'), $destination)
                 )->toThrow(InvalidArgumentException::class);
@@ -181,7 +181,7 @@ describe('Cookie Security Test', function () {
 
             try {
                 expect(
-                    fn () => (new HttpClient())
+                    fn () => new HttpClient()
                         ->withCookie('name', "bad\r\nvalue")
                         ->download(HttpBin::url('/get'), $destination)
                 )->toThrow(InvalidArgumentException::class);
@@ -198,7 +198,7 @@ describe('Cookie Security Test', function () {
 
             try {
                 expect(
-                    fn () => (new HttpClient())
+                    fn () => new HttpClient()
                         ->withCookie("bad\r\nname", 'value')
                         ->upload(HttpBin::url('/put'), $source)
                 )->toThrow(InvalidArgumentException::class);
@@ -215,7 +215,7 @@ describe('Cookie Security Test', function () {
 
             try {
                 expect(
-                    fn () => (new HttpClient())
+                    fn () => new HttpClient()
                         ->withCookie('name', "bad\r\nvalue")
                         ->upload(HttpBin::url('/put'), $source)
                 )->toThrow(InvalidArgumentException::class);
@@ -261,7 +261,7 @@ describe('Cookie Security Test', function () {
             $jar = new CookieJar();
 
             await(
-                (new HttpClient())
+                new HttpClient()
                     ->useCookieJar($jar)
                     ->redirects(true)
                     ->get(HttpBin::url('/cookies/set?private=yes'))
@@ -277,7 +277,7 @@ describe('Cookie Security Test', function () {
             $jar = new CookieJar();
 
             await(
-                (new HttpClient())
+                new HttpClient()
                     ->useCookieJar($jar)
                     ->stream(HttpBin::url('/response-headers?' . http_build_query([
                         'Set-Cookie' => 'stream_secret=yes; Path=/; Domain=' . HttpBin::host(),
@@ -309,7 +309,7 @@ describe('Cookie Security Test', function () {
             $jar = new CookieJar();
 
             await(
-                (new HttpClient())
+                new HttpClient()
                     ->useCookieJar($jar)
                     ->sse(HttpBin::url('/response-headers?' . http_build_query([
                         'Set-Cookie' => 'sse_secret=yes; Path=/; Domain=' . HttpBin::host(),
@@ -344,7 +344,7 @@ describe('Cookie Security Test', function () {
 
             try {
                 await(
-                    (new HttpClient())
+                    new HttpClient()
                         ->useCookieJar($jar)
                         ->download(
                             HttpBin::url('/response-headers?' . http_build_query([
@@ -462,7 +462,7 @@ describe('Cookie Security Test', function () {
             $chunks = '';
 
             await(
-                (new HttpClient())
+                new HttpClient()
                     ->useCookieJar($jar)
                     ->stream(HttpBin::url('/cookies'), function (string $chunk) use (&$chunks): void {
                         $chunks .= $chunk;
@@ -517,7 +517,7 @@ describe('Cookie Security Test', function () {
 
             try {
                 await(
-                    (new HttpClient())
+                    new HttpClient()
                         ->useCookieJar($jar)
                         ->download(HttpBin::url('/cookies'), $destination)
                 );
@@ -543,7 +543,7 @@ describe('Cookie Security Test', function () {
 
             try {
                 $result = await(
-                    (new HttpClient())
+                    new HttpClient()
                         ->useCookieJar($jar)
                         ->upload(HttpBin::url('/put'), $source)
                 );
@@ -565,7 +565,7 @@ describe('Cookie Security Test', function () {
             $chunks = '';
 
             await(
-                (new HttpClient())
+                new HttpClient()
                     ->useCookieJar($jar)
                     ->stream(HttpBin::url('/stream/1'), function (string $chunk) use (&$chunks): void {
                         $chunks .= $chunk;

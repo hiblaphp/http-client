@@ -19,7 +19,7 @@ describe('Cookie Handling Integration Test', function () {
 
         test('a single cookie set via withCookie is received by the server', function () {
             $response = await(
-                (new HttpClient())
+                new HttpClient()
                     ->withCookie('session', 'abc123')
                     ->get(HttpBin::url('/cookies'))
             );
@@ -30,7 +30,7 @@ describe('Cookie Handling Integration Test', function () {
 
         test('multiple cookies set via withCookies are all received by the server', function () {
             $response = await(
-                (new HttpClient())
+                new HttpClient()
                     ->withCookies(['user' => 'john', 'theme' => 'dark', 'lang' => 'en'])
                     ->get(HttpBin::url('/cookies'))
             );
@@ -45,7 +45,7 @@ describe('Cookie Handling Integration Test', function () {
 
         test('withCookie and withCookies can be chained and all cookies are sent', function () {
             $response = await(
-                (new HttpClient())
+                new HttpClient()
                     ->withCookie('a', '1')
                     ->withCookies(['b' => '2', 'c' => '3'])
                     ->withCookie('d', '4')
@@ -62,7 +62,7 @@ describe('Cookie Handling Integration Test', function () {
 
         test('setting the same cookie name twice keeps only the last value', function () {
             $response = await(
-                (new HttpClient())
+                new HttpClient()
                     ->withCookie('token', 'first')
                     ->withCookie('token', 'second')
                     ->get(HttpBin::url('/cookies'))
@@ -74,7 +74,7 @@ describe('Cookie Handling Integration Test', function () {
         test('values containing special characters must be Base64-encoded before sending', function () {
             $encoded = base64_encode('hello world');
             $response = await(
-                (new HttpClient())
+                new HttpClient()
                     ->withCookie('data', $encoded)
                     ->get(HttpBin::url('/cookies'))
             );
@@ -87,7 +87,7 @@ describe('Cookie Handling Integration Test', function () {
             $encoded = base64_encode($original);
 
             $response = await(
-                (new HttpClient())
+                new HttpClient()
                     ->withCookie('creds', $encoded)
                     ->get(HttpBin::url('/cookies'))
             );
@@ -100,7 +100,7 @@ describe('Cookie Handling Integration Test', function () {
 
         test('a DQUOTE-wrapped cookie value is accepted and sent to the server', function () {
             $response = await(
-                (new HttpClient())
+                new HttpClient()
                     ->withCookie('wrapped', '"quoted-value"')
                     ->get(HttpBin::url('/cookies'))
             );
@@ -111,7 +111,7 @@ describe('Cookie Handling Integration Test', function () {
 
         test('cookie value at the boundary of the allowed octet range is accepted', function () {
             $response = await(
-                (new HttpClient())
+                new HttpClient()
                     ->withCookie('boundary', '!~')
                     ->get(HttpBin::url('/cookies'))
             );
@@ -140,43 +140,43 @@ describe('Cookie Handling Integration Test', function () {
     describe('Cookie validation enforcement', function () {
 
         test('withCookie rejects values containing spaces', function () {
-            expect(fn () => (new HttpClient())->withCookie('data', 'hello world'))
+            expect(fn () => new HttpClient()->withCookie('data', 'hello world'))
                 ->toThrow(InvalidArgumentException::class, 'cookie-octet set')
             ;
         });
 
         test('withCookie rejects values containing semicolons', function () {
-            expect(fn () => (new HttpClient())->withCookie('data', 'a;b'))
+            expect(fn () => new HttpClient()->withCookie('data', 'a;b'))
                 ->toThrow(InvalidArgumentException::class, 'cookie-octet set')
             ;
         });
 
         test('withCookie rejects values containing commas', function () {
-            expect(fn () => (new HttpClient())->withCookie('data', 'a,b'))
+            expect(fn () => new HttpClient()->withCookie('data', 'a,b'))
                 ->toThrow(InvalidArgumentException::class, 'cookie-octet set')
             ;
         });
 
         test('withCookie rejects an empty cookie name', function () {
-            expect(fn () => (new HttpClient())->withCookie('', 'value'))
+            expect(fn () => new HttpClient()->withCookie('', 'value'))
                 ->toThrow(InvalidArgumentException::class, 'must not be empty')
             ;
         });
 
         test('withCookie rejects a name containing separator characters', function () {
-            expect(fn () => (new HttpClient())->withCookie('bad name', 'value'))
+            expect(fn () => new HttpClient()->withCookie('bad name', 'value'))
                 ->toThrow(InvalidArgumentException::class, 'not permitted in an HTTP token')
             ;
         });
 
         test('withCookie rejects a name containing control characters', function () {
-            expect(fn () => (new HttpClient())->withCookie("bad\x01name", 'value'))
+            expect(fn () => new HttpClient()->withCookie("bad\x01name", 'value'))
                 ->toThrow(InvalidArgumentException::class, 'not permitted in an HTTP token')
             ;
         });
 
         test('withCookies propagates validation exceptions for invalid entries', function () {
-            expect(fn () => (new HttpClient())->withCookies(['valid' => 'ok', 'bad name' => 'value']))
+            expect(fn () => new HttpClient()->withCookies(['valid' => 'ok', 'bad name' => 'value']))
                 ->toThrow(InvalidArgumentException::class)
             ;
         });
@@ -188,7 +188,7 @@ describe('Cookie Handling Integration Test', function () {
             $jar = new CookieJar();
 
             await(
-                (new HttpClient())
+                new HttpClient()
                     ->useCookieJar($jar)
                     ->redirects(true)
                     ->get(HttpBin::url('/cookies/set?token=xyz'))
@@ -243,8 +243,8 @@ describe('Cookie Handling Integration Test', function () {
 
         test('the same jar shared across two HttpClient instances shares cookies between them', function () {
             $jar = new CookieJar();
-            $client1 = (new HttpClient())->useCookieJar($jar)->redirects(true);
-            $client2 = (new HttpClient())->useCookieJar($jar);
+            $client1 = new HttpClient()->useCookieJar($jar)->redirects(true);
+            $client2 = new HttpClient()->useCookieJar($jar);
 
             await($client1->get(HttpBin::url('/cookies/set?shared=yes')));
 
@@ -258,12 +258,12 @@ describe('Cookie Handling Integration Test', function () {
             $jar2 = new CookieJar();
 
             await(
-                (new HttpClient())->useCookieJar($jar1)->redirects(true)
+                new HttpClient()->useCookieJar($jar1)->redirects(true)
                     ->get(HttpBin::url('/cookies/set?jar1cookie=yes'))
             );
 
             $response = await(
-                (new HttpClient())->useCookieJar($jar2)
+                new HttpClient()->useCookieJar($jar2)
                     ->get(HttpBin::url('/cookies'))
             );
 
@@ -271,7 +271,7 @@ describe('Cookie Handling Integration Test', function () {
         });
 
         test('withCookieJar creates a fresh internal jar that is used automatically', function () {
-            $http = (new HttpClient())
+            $http = new HttpClient()
                 ->withCookieJar()
                 ->redirects(true)
             ;
@@ -289,7 +289,7 @@ describe('Cookie Handling Integration Test', function () {
             ]);
 
             $response = await(
-                (new HttpClient())
+                new HttpClient()
                     ->useCookieJar($jar)
                     ->get(HttpBin::url('/cookies'))
             );
@@ -307,7 +307,7 @@ describe('Cookie Handling Integration Test', function () {
             ));
 
             $response = await(
-                (new HttpClient())
+                new HttpClient()
                     ->useCookieJar($jar)
                     ->withCookie('manualCookie', 'manual')
                     ->get(HttpBin::url('/cookies'))
@@ -387,7 +387,7 @@ describe('Cookie Handling Integration Test', function () {
             ));
 
             $response = await(
-                (new HttpClient())
+                new HttpClient()
                     ->useCookieJar($jar)
                     ->get(HttpBin::url('/cookies'))
             );
@@ -425,7 +425,7 @@ describe('Cookie Handling Integration Test', function () {
             ));
 
             $response = await(
-                (new HttpClient())
+                new HttpClient()
                     ->useCookieJar($jar)
                     ->get(HttpBin::url('/cookies'))
             );
@@ -453,7 +453,7 @@ describe('Cookie Handling Integration Test', function () {
             ));
 
             $response = await(
-                (new HttpClient())
+                new HttpClient()
                     ->useCookieJar($jar)
                     ->get(HttpBin::url('/cookies'))
             );
@@ -475,7 +475,7 @@ describe('Cookie Handling Integration Test', function () {
             ));
 
             $response = await(
-                (new HttpClient())
+                new HttpClient()
                     ->useCookieJar($jar)
                     ->get(HttpBin::url('/cookies'))
             );
@@ -534,7 +534,7 @@ describe('Cookie Handling Integration Test', function () {
 
         test('a cookie built with cookieWithAttributes is sent to the server', function () {
             $response = await(
-                (new HttpClient())
+                new HttpClient()
                     ->cookieWithAttributes('custom', 'value', [
                         'domain' => HttpBin::host(),
                         'path' => '/',
@@ -547,7 +547,7 @@ describe('Cookie Handling Integration Test', function () {
 
         test('an expired cookieWithAttributes cookie is not sent to the server', function () {
             $response = await(
-                (new HttpClient())
+                new HttpClient()
                     ->cookieWithAttributes('stale', 'gone', [
                         'domain' => HttpBin::host(),
                         'path' => '/',
@@ -564,7 +564,7 @@ describe('Cookie Handling Integration Test', function () {
 
         test('clearCookies prevents previously set manual cookies from being sent', function () {
             $response = await(
-                (new HttpClient())
+                new HttpClient()
                     ->withCookie('ghost', 'should-not-appear')
                     ->clearCookies()
                     ->get(HttpBin::url('/cookies'))
@@ -575,7 +575,7 @@ describe('Cookie Handling Integration Test', function () {
 
         test('cookies added after clearCookies are still sent', function () {
             $response = await(
-                (new HttpClient())
+                new HttpClient()
                     ->withCookie('before', 'cleared')
                     ->clearCookies()
                     ->withCookie('after', 'kept')
@@ -598,7 +598,7 @@ describe('Cookie Handling Integration Test', function () {
             ));
 
             $response = await(
-                (new HttpClient())
+                new HttpClient()
                     ->useCookieJar($jar)
                     ->clearCookies()
                     ->get(HttpBin::url('/cookies'))
@@ -612,7 +612,7 @@ describe('Cookie Handling Integration Test', function () {
     describe('Redirect handling edge cases', function () {
 
         test('Authorization header is stripped when redirecting to a different host', function () {
-            $client = (new HttpClient())
+            $client = new HttpClient()
                 ->withToken('secret-token')
                 ->redirects(true)
             ;
@@ -624,7 +624,7 @@ describe('Cookie Handling Integration Test', function () {
 
         test('POST request switches to GET on 303 See Other', function () {
             $response = await(
-                (new HttpClient())
+                new HttpClient()
                     ->redirects(true)
                     ->withJson(['foo' => 'bar'])
                     ->post(HttpBin::url('/status/303'))
@@ -636,7 +636,7 @@ describe('Cookie Handling Integration Test', function () {
 
         test('POST request switches to GET on 301/302 redirects per common practice', function () {
             $response = await(
-                (new HttpClient())
+                new HttpClient()
                     ->redirects(true)
                     ->withForm(['user' => 'test'])
                     ->post(HttpBin::url('/status/302'))
@@ -647,7 +647,7 @@ describe('Cookie Handling Integration Test', function () {
 
         test('relative redirect paths are resolved correctly against the base URL', function () {
             $response = await(
-                (new HttpClient())
+                new HttpClient()
                     ->redirects(true)
                     ->get(HttpBin::url('/relative-redirect/1'))
             );
@@ -657,7 +657,7 @@ describe('Cookie Handling Integration Test', function () {
         });
 
         test('maxRedirects limit prevents infinite loops', function () {
-            $client = (new HttpClient())
+            $client = new HttpClient()
                 ->redirects(true, 2)
             ;
             expect(fn () => await($client->get(HttpBin::url('/redirect/5'))))
@@ -675,7 +675,7 @@ describe('Cookie Handling Integration Test', function () {
             $url = HttpBin::url('/redirect-to?url=' . urlencode($target));
 
             $response = await(
-                (new HttpClient())
+                new HttpClient()
                     ->useCookieJar($jar)
                     ->redirects(true)
                     ->get($url)

@@ -69,7 +69,7 @@ final class ProxySetup
 
     public static function client(int $timeout = 15): HttpClient
     {
-        return (new HttpClient())->timeout($timeout);
+        return new HttpClient()->timeout($timeout);
     }
 
     public static function readPrivate(object $object, string $property): mixed

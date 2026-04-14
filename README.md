@@ -298,7 +298,7 @@ Because `HttpClient` is immutable, a single pre-configured instance is safe to s
 
 ```php
 $container->singleton(HttpClientInterface::class, function () {
-    return (new HttpClient())
+    return new HttpClient()
         ->withToken(config('api.token'))
         ->withUserAgent('MyApp/1.0')
         ->timeout(30)

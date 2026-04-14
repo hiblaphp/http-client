@@ -29,7 +29,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
             $chunks = '';
 
             await(
-                (new HttpClient())
+                new HttpClient()
                     ->useCookieJar($jar)
                     ->stream(HttpBin::url('/cookies'), function (string $chunk) use (&$chunks): void {
                         $chunks .= $chunk;
@@ -44,7 +44,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
             $jar = new CookieJar();
 
             await(
-                (new HttpClient())
+                new HttpClient()
                     ->useCookieJar($jar)
                     ->stream(HttpBin::url('/response-headers?' . http_build_query([
                         'Set-Cookie' => 'stream_inbound=yes; Path=/; Domain=' . HttpBin::host(),
@@ -61,7 +61,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
             $jar = new CookieJar();
 
             await(
-                (new HttpClient())
+                new HttpClient()
                     ->useCookieJar($jar)
                     ->stream(HttpBin::url('/response-headers?' . http_build_query([
                         'Set-Cookie' => 'stream_replay=yes; Path=/; Domain=' . HttpBin::host(),
@@ -69,7 +69,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
             );
 
             $response = await(
-                (new HttpClient())
+                new HttpClient()
                     ->useCookieJar($jar)
                     ->get(HttpBin::url('/cookies'))
             );
@@ -81,7 +81,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
             $jar = new CookieJar();
 
             await(
-                (new HttpClient())
+                new HttpClient()
                     ->useCookieJar($jar)
                     ->stream(HttpBin::url('/response-headers?' . http_build_query([
                         'Set-Cookie' => 'stream_chain=chained; Path=/; Domain=' . HttpBin::host(),
@@ -90,7 +90,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
 
             $chunks = '';
             await(
-                (new HttpClient())
+                new HttpClient()
                     ->useCookieJar($jar)
                     ->stream(HttpBin::url('/cookies'), function (string $chunk) use (&$chunks): void {
                         $chunks .= $chunk;
@@ -113,7 +113,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
             $chunks = '';
 
             await(
-                (new HttpClient())
+                new HttpClient()
                     ->useCookieJar($jar)
                     ->withCookie('manual_stream', 'manual')
                     ->stream(HttpBin::url('/cookies'), function (string $chunk) use (&$chunks): void {
@@ -141,7 +141,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
             $chunks = '';
 
             await(
-                (new HttpClient())
+                new HttpClient()
                     ->useCookieJar($jar)
                     ->stream(HttpBin::url('/cookies'), function (string $chunk) use (&$chunks): void {
                         $chunks .= $chunk;
@@ -168,7 +168,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
 
             try {
                 await(
-                    (new HttpClient())
+                    new HttpClient()
                         ->useCookieJar($jar)
                         ->download(HttpBin::url('/cookies'), $destination)
                 );
@@ -188,7 +188,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
 
             try {
                 await(
-                    (new HttpClient())
+                    new HttpClient()
                         ->useCookieJar($jar)
                         ->download(
                             HttpBin::url('/response-headers?' . http_build_query([
@@ -215,7 +215,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
 
             try {
                 await(
-                    (new HttpClient())
+                    new HttpClient()
                         ->useCookieJar($jar)
                         ->download(
                             HttpBin::url('/response-headers?' . http_build_query([
@@ -226,7 +226,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 );
 
                 $response = await(
-                    (new HttpClient())
+                    new HttpClient()
                         ->useCookieJar($jar)
                         ->get(HttpBin::url('/cookies'))
                 );
@@ -246,7 +246,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
 
             try {
                 await(
-                    (new HttpClient())
+                    new HttpClient()
                         ->useCookieJar($jar)
                         ->download(
                             HttpBin::url('/response-headers?' . http_build_query([
@@ -257,7 +257,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 );
 
                 await(
-                    (new HttpClient())
+                    new HttpClient()
                         ->useCookieJar($jar)
                         ->download(HttpBin::url('/cookies'), $destination2)
                 );
@@ -287,7 +287,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
 
             try {
                 await(
-                    (new HttpClient())
+                    new HttpClient()
                         ->useCookieJar($jar)
                         ->download(HttpBin::url('/cookies'), $destination)
                 );
@@ -311,7 +311,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
 
             try {
                 await(
-                    (new HttpClient())
+                    new HttpClient()
                         ->useCookieJar($jar)
                         ->download(HttpBin::url('/cookies'), $destination)
                 );
@@ -346,7 +346,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
 
             try {
                 $result = await(
-                    (new HttpClient())
+                    new HttpClient()
                         ->useCookieJar($jar)
                         ->upload(HttpBin::url('/put'), $source)
                 );
@@ -369,7 +369,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
 
             try {
                 await(
-                    (new HttpClient())
+                    new HttpClient()
                         ->useCookieJar($jar)
                         ->withMethod('GET')
                         ->upload(
@@ -398,7 +398,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
 
             try {
                 await(
-                    (new HttpClient())
+                    new HttpClient()
                         ->useCookieJar($jar)
                         ->withMethod('GET')
                         ->upload(
@@ -410,7 +410,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
                 );
 
                 $response = await(
-                    (new HttpClient())
+                    new HttpClient()
                         ->useCookieJar($jar)
                         ->get(HttpBin::url('/cookies'))
                 );
@@ -438,7 +438,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
 
             try {
                 $result = await(
-                    (new HttpClient())
+                    new HttpClient()
                         ->useCookieJar($jar)
                         ->upload(HttpBin::url('/put'), $source)
                 );
@@ -466,7 +466,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
 
             try {
                 await(
-                    (new HttpClient())
+                    new HttpClient()
                         ->useCookieJar($jar)
                         ->upload(HttpBin::url('/put'), $source)
                 );
@@ -495,7 +495,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
             ));
 
             await(
-                (new HttpClient())
+                new HttpClient()
                     ->useCookieJar($jar)
                     ->sse(HttpBin::url('/cookies'))
                     ->connect()
@@ -511,7 +511,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
             $jar = new CookieJar();
 
             await(
-                (new HttpClient())
+                new HttpClient()
                     ->useCookieJar($jar)
                     ->sse(HttpBin::url('/response-headers?' . http_build_query([
                         'Set-Cookie' => 'sse_inbound=yes; Path=/; Domain=' . HttpBin::host(),
@@ -529,7 +529,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
             $jar = new CookieJar();
 
             await(
-                (new HttpClient())
+                new HttpClient()
                     ->useCookieJar($jar)
                     ->sse(HttpBin::url('/response-headers?' . http_build_query([
                         'Set-Cookie' => 'sse_replay=yes; Path=/; Domain=' . HttpBin::host(),
@@ -538,7 +538,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
             );
 
             $response = await(
-                (new HttpClient())
+                new HttpClient()
                     ->useCookieJar($jar)
                     ->get(HttpBin::url('/cookies'))
             );
@@ -557,7 +557,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
             ));
 
             await(
-                (new HttpClient())
+                new HttpClient()
                     ->useCookieJar($jar)
                     ->sse(HttpBin::url('/response-headers'))
                     ->connect()
@@ -576,7 +576,7 @@ describe('Cookie Streaming Handling Integration Test', function () {
             ));
 
             await(
-                (new HttpClient())
+                new HttpClient()
                     ->useCookieJar($jar)
                     ->sse(HttpBin::url('/response-headers'))
                     ->connect()

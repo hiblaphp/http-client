@@ -248,7 +248,7 @@ describe('Mock Handler Integration Tests', function () {
             ->register()
         ;
 
-        $response = (new HttpClient())
+        $response = new HttpClient()
             ->withHandler($handler)
             ->get(HttpBin::url('/get'))
             ->wait()
@@ -271,7 +271,7 @@ describe('Mock Handler Integration Tests', function () {
 
         $start = microtime(true);
 
-        $response = (new HttpClient())
+        $response = new HttpClient()
             ->withHandler($handler)
             ->get(HttpBin::url('/delay/1'))
             ->wait()
@@ -293,7 +293,7 @@ describe('Mock Handler Integration Tests', function () {
             ->register()
         ;
 
-        $response = (new HttpClient())
+        $response = new HttpClient()
             ->withHandler($handler)
             ->retry(5, 0.01)
             ->withJson(['title' => 'Test', 'body' => 'Test', 'userId' => 1])
@@ -315,7 +315,7 @@ describe('Mock Handler Integration Tests', function () {
             ->register()
         ;
 
-        $response = (new HttpClient())
+        $response = new HttpClient()
             ->withHandler($handler)
             ->retry(5, 0.01)
             ->get(HttpBin::url('/get'))
@@ -337,7 +337,7 @@ describe('Mock Handler Integration Tests', function () {
             ->register()
         ;
 
-        $client = (new HttpClient())->withHandler($handler);
+        $client = new HttpClient()->withHandler($handler);
 
         $response1 = $client->get(HttpBin::url('/get') . '?page=1')->wait();
         $response2 = $client->get(HttpBin::url('/get') . '?page=2')->wait();
