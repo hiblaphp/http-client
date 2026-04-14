@@ -47,7 +47,7 @@ class InterceptorHandler
 
                     if ($result === null) {
                         throw new \LogicException(
-                            'Callback passed to intercept() must return a ' . PromiseInterface::class . ' or ' . Response::class . ', ' .
+                            'Callback passed to withInterceptor() must return a ' . PromiseInterface::class . ' or ' . Response::class . ', ' .
                                 'got null/void. Did you forget to return $next($request) or the response?'
                         );
                     }
@@ -58,7 +58,7 @@ class InterceptorHandler
 
                     if (! $result instanceof PromiseInterface) {
                         throw new \LogicException(\sprintf(
-                            'Callback passed to intercept() must return a %s or %s, got %s. ' .
+                            'Callback passed to withInterceptor() must return a %s or %s, got %s. ' .
                                 'Did you forget to return $next($request) or the response?',
                             PromiseInterface::class,
                             Response::class,
@@ -107,14 +107,14 @@ class InterceptorHandler
         if ($requireResponse) {
             if ($value === null) {
                 throw new \LogicException(
-                    'The ' . PromiseInterface::class . ' returned by the callback passed to intercept() ' .
+                    'The ' . PromiseInterface::class . ' returned by the callback passed to withInterceptor() ' .
                         'must resolve to a ' . Response::class . ' instance, got null/void.'
                 );
             }
 
             if (! $value instanceof Response) {
                 throw new \LogicException(\sprintf(
-                    'The %s returned by the callback passed to intercept() ' .
+                    'The %s returned by the callback passed to withInterceptor() ' .
                         'must resolve to a %s instance, got %s.',
                     PromiseInterface::class,
                     Response::class,
@@ -127,7 +127,7 @@ class InterceptorHandler
 
         if (! is_array($value)) {
             throw new \LogicException(\sprintf(
-                'The %s returned by the callback passed to intercept() for a download request ' .
+                'The %s returned by the callback passed to withInterceptor() for a download request ' .
                     'must resolve to an array, got %s.',
                 PromiseInterface::class,
                 get_debug_type($value),

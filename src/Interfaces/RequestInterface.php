@@ -24,7 +24,7 @@ use Psr\Http\Message\RequestInterface as Psr7RequestInterface;
  *   - Read/rewrite the URI and method  (RequestInterface)
  *
  * Example:
- *   Http::intercept(function (RequestInterface $request, callable $next) {
+ *   Http::withInterceptor(function (RequestInterface $request, callable $next) {
  *       $token = await(TokenStore::get('api_token'));
  *       $request = $request->withToken($token)
  *                          ->withCookie('session', $sessionId)

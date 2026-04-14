@@ -65,7 +65,7 @@ use Psr\Http\Message\UploadedFileInterface;
  * $client = Http::client()
  *     ->withToken($token)
  *     ->withUserAgent('MyApp/1.0')
- *     ->intercept($loggingMiddleware)
+ *     ->withInterceptor($loggingMiddleware)
  *     ->timeout(30);
  *
  * // Each call returns a new clone — $client stays clean
@@ -152,9 +152,9 @@ use Psr\Http\Message\UploadedFileInterface;
  * @method static HttpClientInterface withUrlParameters(array<string, mixed> $parameters) Set multiple URL parameters for URI template substitution.
  *
  * Interceptor methods (HttpInterceptorInterface):
- * @method static HttpClientInterface intercept(callable(RequestInterface, callable(RequestInterface): PromiseInterface<ResponseInterface>): PromiseInterface<ResponseInterface> $middleware) Add a full pipeline interceptor.
- * @method static HttpClientInterface interceptRequest(callable(RequestInterface): (RequestInterface|PromiseInterface<RequestInterface>) $callback) Start building a request with a request interceptor.
- * @method static HttpClientInterface interceptResponse(callable(ResponseInterface): (ResponseInterface|PromiseInterface<ResponseInterface>) $callback) Start building a request with a response interceptor.
+ * @method static HttpClientInterface withInterceptor(callable(RequestInterface, callable(RequestInterface): PromiseInterface<ResponseInterface>): PromiseInterface<ResponseInterface> $middleware) Add a full pipeline interceptor.
+ * @method static HttpClientInterface withRequestInterceptor(callable(RequestInterface): (RequestInterface|PromiseInterface<RequestInterface>) $callback) Start building a request with a request interceptor.
+ * @method static HttpClientInterface withResponseInterceptor(callable(ResponseInterface): (ResponseInterface|PromiseInterface<ResponseInterface>) $callback) Start building a request with a response interceptor.
  *
  * cURL escape-hatch methods (ConfiguresCurlInterface):
  * @method static HttpClientInterface withCurlOption(int $option, mixed $value) Start building a request with a raw cURL option.
@@ -349,7 +349,8 @@ class Http
      * connect_timeout, follow_redirects, max_redirects, verify_ssl,
      * user_agent, http_version / protocol, retry, proxy, cookies,
      * cookie_jar, stream, on_chunk / onChunk, download / save_to,
-     * sse, on_event / onEvent, on_error / onError, reconnect.
+     * sse, on_event / onEvent, on_error / onError, reconnect,
+     * intercept, intercept_request, intercept_response.
      * Integer keys are forwarded as raw cURL options.
      *
      * @param string $url

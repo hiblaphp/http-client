@@ -79,9 +79,9 @@ A high-performance Psr7 Async Compatible HTTP client with a clean chainable API,
 
 **Interceptors**
 - [Overview](#overview)
-- [`interceptRequest()`](#interceptrequest)
-- [`interceptResponse()`](#interceptresponse)
-- [`intercept()` — full pipeline control](#intercept--full-pipeline-control)
+- [`withRequestInterceptor()`](#withRequestInterceptor)
+- [`withResponseInterceptor()`](#withResponseInterceptor)
+- [`withInterceptor()` — full pipeline control](#withInterceptor--full-pipeline-control)
 - [Interceptor ordering](#interceptor-ordering)
 - [Shared interceptor stacks](#shared-interceptor-stacks)
 - [Throwing on 4xx and 5xx with an interceptor](#throwing-on-4xx-and-5xx-with-an-interceptor)
@@ -302,8 +302,8 @@ $container->singleton(HttpClientInterface::class, function () {
         ->withToken(config('api.token'))
         ->withUserAgent('MyApp/1.0')
         ->timeout(30)
-        ->intercept($loggingMiddleware)
-        ->intercept($metricsMiddleware);
+        ->withInterceptor($loggingMiddleware)
+        ->withInterceptor($metricsMiddleware);
 });
 ```
 
@@ -417,14 +417,14 @@ Supported options:
 | `max_redirects`     | `int`                               | Maximum number of redirects                        |
 | `verify_ssl`        | `bool`                              | Whether to verify SSL certificates                 |
 | `user_agent`        | `string`                            | Custom User-Agent string                           |
-| `http_version`      | `string`                            | Protocol version (`1.1`, `2`, `2.0`, `3`, `3.0`)  |
+| `http_version`      | `string`                            | Protocol version (`1.1`, `2`, `2.0`, `3`, `3.0`)   |
 | `retry`             | `bool\|array\|RetryConfig`          | Retry configuration                                |
 | `proxy`             | `string\|array\|ProxyConfig`        | Proxy configuration                                |
 | `cookies`           | `array<string, string>`             | One-shot cookies for this request                  |
 | `cookie_jar`        | `CookieJarInterface`                | Cookie jar instance for session management         |
 | `intercept`         | `callable\|callable[]`              | Full pipeline interceptor(s)                       |
-| `interceptRequest`  | `callable\|callable[]`              | Request interceptor(s)                             |
-| `interceptResponse` | `callable\|callable[]`              | Response interceptor(s)                            |
+| `intercept_request` | `callable\|callable[]`              | Request interceptor(s)                             |
+| `intercept_response`| `callable\|callable[]`              | Response interceptor(s)                            |
 | `<int>`             | `mixed`                             | Raw cURL option (integer key = `CURLOPT_*`)        |
 
 ### Headers
@@ -1163,35 +1163,35 @@ Interceptors operate exclusively on the HTTP message layer (headers, body, metho
 **The interceptor pipeline runs inside a dedicated fiber.** This means `await()` is safe to call freely inside any interceptor. It suspends only the current fiber, not the event loop itself, so other in-flight requests continue running concurrently while an interceptor awaits async work. There is no additional fiber overhead per interceptor; all three interceptor tiers share a single fiber per request.
 
 ```php
-$client = Http::client()->interceptRequest(function (RequestInterface $request): RequestInterface {
+$client = Http::client()->withRequestInterceptor(function (RequestInterface $request): RequestInterface {
     $token = await(TokenCache::getOrRefresh()); // suspends this fiber only
     return $request->withToken($token);
 });
 ```
 
-### `interceptRequest()`
+### `withRequestInterceptor()`
 
 The simplest tier. Receives the outgoing `RequestInterface` and returns a (potentially modified) `RequestInterface`. The callback may return a plain `RequestInterface` or a `PromiseInterface` that resolves to one:
 
 ```php
 // Synchronous transform
-$client = Http::client()->interceptRequest(function (RequestInterface $request): RequestInterface {
+$client = Http::client()->withRequestInterceptor(function (RequestInterface $request): RequestInterface {
     return $request->withHeader('X-Request-Id', uniqid());
 });
 
 // Async work — await() is safe because the pipeline runs in a fiber
-$client = Http::client()->interceptRequest(function (RequestInterface $request): RequestInterface {
+$client = Http::client()->withRequestInterceptor(function (RequestInterface $request): RequestInterface {
     $token = await(TokenCache::getOrRefresh());
     return $request->withToken($token);
 });
 ```
 
-### `interceptResponse()`
+### `withResponseInterceptor()`
 
 Receives the incoming `ResponseInterface` and returns a (potentially modified) `ResponseInterface`. Async work is fully supported:
 
 ```php
-$client = Http::client()->interceptResponse(function (ResponseInterface $response): ResponseInterface {
+$client = Http::client()->withResponseInterceptor(function (ResponseInterface $response): ResponseInterface {
     if ($response->status() === 401) {
         logger()->warning('Unauthorized response');
     }
@@ -1199,12 +1199,12 @@ $client = Http::client()->interceptResponse(function (ResponseInterface $respons
 });
 ```
 
-### `intercept()` — full pipeline control
+### `withInterceptor()` — full pipeline control
 
 The most powerful tier. Receives the `RequestInterface` and a `$next` callable that executes the rest of the pipeline. Calling `$next($request)` returns a `PromiseInterface<ResponseInterface>`. The interceptor can modify the request before dispatching, modify the response after, short-circuit without calling `$next`, or retry by calling `$next` multiple times:
 
 ```php
-$client = Http::client()->intercept(
+$client = Http::client()->withInterceptor(
     function (RequestInterface $request, callable $next): PromiseInterface {
         $token = await(TokenStore::getOrRefresh());
         $request = $request->withToken($token);
@@ -1226,7 +1226,7 @@ $client = Http::client()->intercept(
 Returning a `Response` directly short-circuits the entire pipeline, which is useful for caching:
 
 ```php
-$client = Http::client()->intercept(
+$client = Http::client()->withInterceptor(
     function (RequestInterface $request, callable $next): PromiseInterface {
         $cacheKey = md5((string) $request->getUri());
 
@@ -1251,9 +1251,9 @@ Interceptors execute in **registration order**. The first registered interceptor
 
 ```php
 $client = Http::client()
-    ->interceptRequest(fn($r) => $r->withHeader('X-Auth', $token))    // runs 1st on request
-    ->interceptRequest(fn($r) => $r->withHeader('X-Trace', $traceId)) // runs 2nd on request
-    ->interceptResponse(fn($r) => logResponse($r));                    // runs on response
+    ->withRequestInterceptor(fn($r) => $r->withHeader('X-Auth', $token))    // runs 1st on request
+    ->withRequestInterceptor(fn($r) => $r->withHeader('X-Trace', $traceId)) // runs 2nd on request
+    ->withResponseInterceptor(fn($r) => logResponse($r));                    // runs on response
 ```
 
 ### Shared interceptor stacks
@@ -1263,8 +1263,8 @@ Interceptors registered on a base instance are inherited by every clone:
 ```php
 $apiClient = Http::client()
     ->withToken($token)
-    ->intercept($authRefreshMiddleware)
-    ->intercept($loggingMiddleware)
+    ->withInterceptor($authRefreshMiddleware)
+    ->withInterceptor($loggingMiddleware)
     ->timeout(30);
 
 await($apiClient->get('/users'));
@@ -1277,7 +1277,7 @@ await($apiClient->post('/orders', $data));
 use Hibla\HttpClient\Exceptions\ClientException;
 use Hibla\HttpClient\Exceptions\ServerException;
 
-$client = Http::client()->interceptResponse(function (ResponseInterface $response): ResponseInterface {
+$client = Http::client()->withResponseInterceptor(function (ResponseInterface $response): ResponseInterface {
     if ($response->clientError()) {
         throw new ClientException(
             message:         "HTTP {$response->status()} Client Error",
@@ -2137,9 +2137,9 @@ The interface representing an in-flight request within the interceptor pipeline.
 | `withCurlOptions(array $opts)` | Multiple raw cURL options |
 | `withUrlParameter(string $key, mixed $value)` | URI template parameter |
 | `withUrlParameters(array $params)` | Multiple URI template parameters |
-| `interceptRequest(callable $cb)` | Request interceptor |
-| `interceptResponse(callable $cb)` | Response interceptor |
-| `intercept(callable $middleware)` | Full pipeline interceptor |
+| `withRequestInterceptor(callable $cb)` | Request interceptor |
+| `withResponseInterceptor(callable $cb)` | Response interceptor |
+| `withInterceptor(callable $middleware)` | Full pipeline interceptor |
 | `send(string $method, string $url)` | Dispatch with arbitrary method |
 | `stream(string $url, ?callable $onChunk)` | Stream response body |
 | `download(string $url, string $dest, ...)` | Download file to disk |

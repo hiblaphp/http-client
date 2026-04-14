@@ -14,11 +14,11 @@ use Hibla\Promise\Interfaces\PromiseInterface;
  * Three tiers of interception are available, in order of complexity:
  *
  *   Tier 1 — simple transforms with no async knowledge needed:
- *     interceptRequest(fn(RequestInterface $r): RequestInterface => ...)
- *     interceptResponse(fn(ResponseInterface $r): ResponseInterface => ...)
+ *     withRequestInterceptor(fn(RequestInterface $r): RequestInterface => ...)
+ *     withResponseInterceptor(fn(ResponseInterface $r): ResponseInterface => ...)
  *
  *   Tier 2 — full pipeline control where await() works freely:
- *     intercept(fn(RequestInterface $r, callable $next): PromiseInterface => ...)
+ *     withInterceptor(fn(RequestInterface $r, callable $next): PromiseInterface => ...)
  *
  * Interceptors are executed in registration order. Each interceptor
  * wraps the next, forming a pipeline where the innermost layer is
@@ -29,7 +29,7 @@ use Hibla\Promise\Interfaces\PromiseInterface;
  * additional fiber overhead.
  *
  * Example:
- *   Http::intercept(function (RequestInterface $request, callable $next) {
+ *   Http::withInterceptor(function (RequestInterface $request, callable $next) {
  *       $token = await(TokenStore::get('api_token'));
  *       $request = $request->withToken($token);
  *       $response = await($next($request));
@@ -49,7 +49,7 @@ interface HttpInterceptorInterface
      *
      * @param callable(RequestInterface): (RequestInterface|PromiseInterface<RequestInterface>) $callback
      */
-    public function interceptRequest(callable $callback): static;
+    public function withRequestInterceptor(callable $callback): static;
 
     /**
      * Register a response interceptor.
@@ -61,7 +61,7 @@ interface HttpInterceptorInterface
      *
      * @param callable(ResponseInterface): (ResponseInterface|PromiseInterface<ResponseInterface>) $callback
      */
-    public function interceptResponse(callable $callback): static;
+    public function withResponseInterceptor(callable $callback): static;
 
     /**
      * Register a full pipeline interceptor.
@@ -78,5 +78,5 @@ interface HttpInterceptorInterface
      *
      * @param callable(RequestInterface, callable(RequestInterface): PromiseInterface<ResponseInterface>): PromiseInterface<ResponseInterface> $middleware
      */
-    public function intercept(callable $middleware): static;
+    public function withInterceptor(callable $middleware): static;
 }

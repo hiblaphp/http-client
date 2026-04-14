@@ -41,8 +41,8 @@ use Hibla\Promise\Interfaces\PromiseInterface;
  *   cookies               array<string, string>
  *   cookie_jar            CookieJarInterface
  *   intercept             callable | callable[]
- *   interceptRequest      callable | callable[]
- *   interceptResponse     callable | callable[]
+ *   intercept_request     callable | callable[]
+ *   intercept_response    callable | callable[]
  *   <int>                 mixed    raw cURL option key
  */
 final class CurlFetchRequest implements FetchRequestInterface
@@ -304,25 +304,25 @@ final class CurlFetchRequest implements FetchRequestInterface
             $interceptors = \is_array($options['intercept']) ? $options['intercept'] : [$options['intercept']];
             foreach ($interceptors as $i) {
                 if (\is_callable($i)) {
-                    $client = $client->intercept($i);
+                    $client = $client->withInterceptor($i);
                 }
             }
         }
 
-        if (isset($options['interceptRequest'])) {
-            $interceptors = \is_array($options['interceptRequest']) ? $options['interceptRequest'] : [$options['interceptRequest']];
+        if (isset($options['intercept_request'])) {
+            $interceptors = \is_array($options['intercept_request']) ? $options['intercept_request'] : [$options['intercept_request']];
             foreach ($interceptors as $i) {
                 if (\is_callable($i)) {
-                    $client = $client->interceptRequest($i);
+                    $client = $client->withRequestInterceptor($i);
                 }
             }
         }
 
-        if (isset($options['interceptResponse'])) {
-            $interceptors = \is_array($options['interceptResponse']) ? $options['interceptResponse'] : [$options['interceptResponse']];
+        if (isset($options['intercept_response'])) {
+            $interceptors = \is_array($options['intercept_response']) ? $options['intercept_response'] : [$options['intercept_response']];
             foreach ($interceptors as $i) {
                 if (\is_callable($i)) {
-                    $client = $client->interceptResponse($i);
+                    $client = $client->withResponseInterceptor($i);
                 }
             }
         }

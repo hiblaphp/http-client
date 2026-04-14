@@ -20,11 +20,11 @@ describe('Interceptor Pipeline Validation', function () {
         Http::stopTesting();
     });
 
-    describe('intercept()', function () {
+    describe('withInterceptor()', function () {
 
         test('throws when callback returns void', function () {
             await(Http::client()
-                ->intercept(function (Request $request, callable $next): void {
+                ->withInterceptor(function (Request $request, callable $next): void {
                     // forgot to return
                 })
                 ->get('https://example.com'));
@@ -32,7 +32,7 @@ describe('Interceptor Pipeline Validation', function () {
 
         test('throws when callback returns wrong type', function () {
             await(Http::client()
-                ->intercept(function (Request $request, callable $next) {
+                ->withInterceptor(function (Request $request, callable $next) {
                     return 'oops';
                 })
                 ->get('https://example.com'));
@@ -40,18 +40,18 @@ describe('Interceptor Pipeline Validation', function () {
 
         test('throws when async callback returns void', function () {
             await(Http::client()
-                ->intercept(asyncFn(function (Request $request, callable $next): void {
+                ->withInterceptor(asyncFn(function (Request $request, callable $next): void {
                     // forgot to return
                 }))
                 ->get('https://example.com'));
         })->throws(LogicException::class);
     });
 
-    describe('interceptRequest()', function () {
+    describe('withRequestInterceptor()', function () {
 
         test('throws when callback returns void', function () {
             await(Http::client()
-                ->interceptRequest(function (Request $request): void {
+                ->withRequestInterceptor(function (Request $request): void {
                     // forgot to return
                 })
                 ->get('https://example.com'));
@@ -59,7 +59,7 @@ describe('Interceptor Pipeline Validation', function () {
 
         test('throws when callback returns wrong type', function () {
             await(Http::client()
-                ->interceptRequest(function (Request $request) {
+                ->withRequestInterceptor(function (Request $request) {
                     return 'oops';
                 })
                 ->get('https://example.com'));
@@ -67,18 +67,18 @@ describe('Interceptor Pipeline Validation', function () {
 
         test('throws when async callback returns void', function () {
             await(Http::client()
-                ->interceptRequest(asyncFn(function (Request $request): void {
+                ->withRequestInterceptor(asyncFn(function (Request $request): void {
                     // forgot to return
                 }))
                 ->get('https://example.com'));
         })->throws(LogicException::class);
     });
 
-    describe('interceptResponse()', function () {
+    describe('withResponseInterceptor()', function () {
 
         test('throws when callback returns void', function () {
             await(Http::client()
-                ->interceptResponse(function (ResponseInterface $response): void {
+                ->withResponseInterceptor(function (ResponseInterface $response): void {
                     // forgot to return
                 })
                 ->get('https://example.com'));
@@ -86,7 +86,7 @@ describe('Interceptor Pipeline Validation', function () {
 
         test('throws when callback returns wrong type', function () {
             await(Http::client()
-                ->interceptResponse(function (ResponseInterface $response) {
+                ->withResponseInterceptor(function (ResponseInterface $response) {
                     return 'oops';
                 })
                 ->get('https://example.com'));
@@ -94,7 +94,7 @@ describe('Interceptor Pipeline Validation', function () {
 
         test('throws when async callback returns void', function () {
             await(Http::client()
-                ->interceptResponse(asyncFn(function (ResponseInterface $response): void {
+                ->withResponseInterceptor(asyncFn(function (ResponseInterface $response): void {
                     // forgot to return
                 }))
                 ->get('https://example.com'));
@@ -105,13 +105,13 @@ describe('Interceptor Pipeline Validation', function () {
 
         test('all interceptors valid returns 200', function () {
             $response = await(Http::client()
-                ->intercept(function (Request $request, callable $next) {
+                ->withInterceptor(function (Request $request, callable $next) {
                     return $next($request);
                 })
-                ->interceptRequest(function (Request $request): Request {
+                ->withRequestInterceptor(function (Request $request): Request {
                     return $request->withHeader('X-Test', 'hello');
                 })
-                ->interceptResponse(function (ResponseInterface $response): ResponseInterface {
+                ->withResponseInterceptor(function (ResponseInterface $response): ResponseInterface {
                     return $response;
                 })
                 ->get('https://example.com'));

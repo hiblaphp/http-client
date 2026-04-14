@@ -161,14 +161,13 @@ describe('Request Builder: Advanced Features', function () {
         $jar = new CookieJar();
         $request = (new HttpClient())->useCookieJar($jar);
 
-        // Cookie jar is exposed via a public getter
         expect($request->getCookieJar())->toBe($jar);
     });
 
     it('configures interceptors', function () {
         $reqInt = fn (Request $r) => $r;
         $resInt = fn (Response $r) => $r;
-        $request = (new HttpClient())->interceptRequest($reqInt)->interceptResponse($resInt);
+        $request = (new HttpClient())->withRequestInterceptor($reqInt)->withResponseInterceptor($resInt);
 
         $interceptors = getPrivateProperty($request, 'interceptors');
         expect($interceptors)->toHaveCount(2);

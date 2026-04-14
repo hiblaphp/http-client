@@ -18,7 +18,7 @@ describe('Request Interceptor Integration (HttpBin)', function () {
 
     it('successfully injects custom headers into the outgoing network request', function () {
         $response = Http::client()
-            ->interceptRequest(fn (RequestInterface $r) => $r->withHeader('X-Integration-Test', 'hibla-v1'))
+            ->withRequestInterceptor(fn (RequestInterface $r) => $r->withHeader('X-Integration-Test', 'hibla-v1'))
             ->get(HttpBin::url('/headers'))
             ->wait()
         ;
@@ -28,7 +28,7 @@ describe('Request Interceptor Integration (HttpBin)', function () {
 
     it('rewrites the URL path before the request is dispatched', function () {
         $response = Http::client()
-            ->interceptRequest(function (RequestInterface $request) {
+            ->withRequestInterceptor(function (RequestInterface $request) {
                 $uri = $request->getUri();
                 if ($uri->getPath() === '/anything') {
                     return $request->withUri($uri->withPath('/get'));
@@ -45,7 +45,7 @@ describe('Request Interceptor Integration (HttpBin)', function () {
 
     it('injects dynamic authentication tokens asynchronously via Promise', function () {
         $response = Http::client()
-            ->interceptRequest(function (RequestInterface $request) {
+            ->withRequestInterceptor(function (RequestInterface $request) {
                 return delay(0.05)->then(fn () => $request->withToken('real-network-token-123'));
             })
             ->get(HttpBin::url('/bearer'))
@@ -60,7 +60,7 @@ describe('Request Interceptor Integration (HttpBin)', function () {
 
     it('modifies the request body for POST requests', function () {
         $response = Http::client()
-            ->interceptRequest(function (RequestInterface $request) {
+            ->withRequestInterceptor(function (RequestInterface $request) {
                 $content = $request->getBody()->getContents();
 
                 return $request->body($content . '-modified-by-interceptor');
@@ -75,7 +75,7 @@ describe('Request Interceptor Integration (HttpBin)', function () {
 
     it('appends global query parameters to the URI', function () {
         $response = Http::client()
-            ->interceptRequest(function (RequestInterface $request) {
+            ->withRequestInterceptor(function (RequestInterface $request) {
                 $uri = $request->getUri();
                 $query = $uri->getQuery();
                 $separator = $query ? '&' : '';
@@ -93,9 +93,9 @@ describe('Request Interceptor Integration (HttpBin)', function () {
 
     it('accumulates changes through a chain of multiple interceptors', function () {
         $response = Http::client()
-            ->interceptRequest(fn ($r) => $r->withHeader('X-Order', '1'))
-            ->interceptRequest(fn ($r) => $r->withHeader('X-Order', $r->getHeaderLine('X-Order') . '2'))
-            ->interceptRequest(fn ($r) => $r->withHeader('X-Order', $r->getHeaderLine('X-Order') . '3'))
+            ->withRequestInterceptor(fn ($r) => $r->withHeader('X-Order', '1'))
+            ->withRequestInterceptor(fn ($r) => $r->withHeader('X-Order', $r->getHeaderLine('X-Order') . '2'))
+            ->withRequestInterceptor(fn ($r) => $r->withHeader('X-Order', $r->getHeaderLine('X-Order') . '3'))
             ->get(HttpBin::url('/headers'))
             ->wait()
         ;
@@ -105,7 +105,7 @@ describe('Request Interceptor Integration (HttpBin)', function () {
 
     it('handles method-specific logic within a global interceptor', function () {
         $client = Http::client()
-            ->interceptRequest(function (RequestInterface $request) {
+            ->withRequestInterceptor(function (RequestInterface $request) {
                 if ($request->getMethod() === 'DELETE') {
                     return $request->withHeader('X-Confirm-Delete', 'true');
                 }

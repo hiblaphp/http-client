@@ -70,9 +70,9 @@ describe('CurlFetchRequest Lifecycle Integration (HttpBin)', function () {
         'basic' => [['basic' => ['username' => 'u', 'password' => 'p']], '/basic-auth/u/p', 'authenticated'],
     ]);
 
-    test('lifecycle: interceptRequest can modify the outgoing request asynchronously', function () {
+    test('lifecycle: intercept_request can modify the outgoing request asynchronously', function () {
         $response = await(fetch(HttpBin::url('/headers'), [
-            'interceptRequest' => function (RequestInterface $request) {
+            'intercept_request' => function (RequestInterface $request) {
                 $promise = new Promise();
                 $promise->resolve($request->withHeader('X-Async-Token', 'Resolved-123'));
 
@@ -83,9 +83,9 @@ describe('CurlFetchRequest Lifecycle Integration (HttpBin)', function () {
         expect(extractHttpBinValue($response->json('headers.X-Async-Token')))->toBe('Resolved-123');
     });
 
-    test('lifecycle: interceptResponse can process the response body before resolving', function () {
+    test('lifecycle: intercept_response can process the response body before resolving', function () {
         $response = await(fetch(HttpBin::url('/get'), [
-            'interceptResponse' => function (ResponseInterface $response) {
+            'intercept_response' => function (ResponseInterface $response) {
                 $body = $response->json();
                 $body['injected_by_interceptor'] = true;
 

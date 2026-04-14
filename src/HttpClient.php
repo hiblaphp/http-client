@@ -767,9 +767,9 @@ class HttpClient implements HttpClientInterface
     /**
      * @inheritDoc
      */
-    public function interceptRequest(callable $callback): static
+    public function withRequestInterceptor(callable $callback): static
     {
-        return $this->intercept(
+        return $this->withInterceptor(
             static function (RequestInterface $request, callable $next) use ($callback): PromiseInterface {
                 /** @var callable(RequestInterface): PromiseInterface<ResponseInterface> $next */
                 $result = $callback($request);
@@ -795,9 +795,9 @@ class HttpClient implements HttpClientInterface
     /**
      * @inheritDoc
      */
-    public function interceptResponse(callable $callback): static
+    public function withResponseInterceptor(callable $callback): static
     {
-        return $this->intercept(
+        return $this->withInterceptor(
             static function (RequestInterface $request, callable $next) use ($callback): PromiseInterface {
                 $nextPromise = $next($request);
 
@@ -822,7 +822,7 @@ class HttpClient implements HttpClientInterface
     /**
      * @inheritDoc
      */
-    public function intercept(callable $middleware): static
+    public function withInterceptor(callable $middleware): static
     {
         $new = clone $this;
         $new->interceptors[] = $middleware;
@@ -1156,7 +1156,7 @@ class HttpClient implements HttpClientInterface
     }
 
     /**
-     * Assert that an interceptRequest callback returned a RequestInterface.
+     * Assert that an withRequestInterceptor callback returned a RequestInterface.
      *
      * @throws \LogicException
      */
@@ -1164,7 +1164,7 @@ class HttpClient implements HttpClientInterface
     {
         if ($value === null) {
             throw new \LogicException(\sprintf(
-                '%s passed to interceptRequest() must %s a %s instance, got null/void.',
+                '%s passed to withRequestInterceptor() must %s a %s instance, got null/void.',
                 $fromPromise ? 'The ' . PromiseInterface::class : 'Callback',
                 $fromPromise ? 'resolve to' : 'return',
                 RequestInterface::class,
@@ -1173,7 +1173,7 @@ class HttpClient implements HttpClientInterface
 
         if (! $value instanceof RequestInterface) {
             throw new \LogicException(\sprintf(
-                '%s passed to interceptRequest() must %s a %s instance, got %s.',
+                '%s passed to withRequestInterceptor() must %s a %s instance, got %s.',
                 $fromPromise ? 'The ' . PromiseInterface::class : 'Callback',
                 $fromPromise ? 'resolve to' : 'return',
                 RequestInterface::class,
@@ -1185,7 +1185,7 @@ class HttpClient implements HttpClientInterface
     }
 
     /**
-     * Assert that an interceptResponse callback returned an ResponseInterface.
+     * Assert that an withResponseInterceptor callback returned an ResponseInterface.
      *
      * @throws \LogicException
      */
@@ -1193,7 +1193,7 @@ class HttpClient implements HttpClientInterface
     {
         if ($value === null) {
             throw new \LogicException(\sprintf(
-                '%s passed to interceptResponse() must %s a %s instance, got null/void.',
+                '%s passed to withResponseInterceptor() must %s a %s instance, got null/void.',
                 $fromPromise ? 'The ' . PromiseInterface::class : 'Callback',
                 $fromPromise ? 'resolve to' : 'return',
                 ResponseInterface::class,
@@ -1202,7 +1202,7 @@ class HttpClient implements HttpClientInterface
 
         if (! $value instanceof ResponseInterface) {
             throw new \LogicException(\sprintf(
-                '%s passed to interceptResponse() must %s a %s instance, got %s.',
+                '%s passed to withResponseInterceptor() must %s a %s instance, got %s.',
                 $fromPromise ? 'The ' . PromiseInterface::class : 'Callback',
                 $fromPromise ? 'resolve to' : 'return',
                 ResponseInterface::class,
