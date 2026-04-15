@@ -1528,6 +1528,8 @@ The resolved array shape:
 
 ### SSE basic usage
 
+The SSE Parser internally use by the SSE Builder is base on [WHATWG SSE specification](https://html.spec.whatwg.org/multipage/server-sent-events.html).
+
 `sse()` returns a fluent `SSEBuilderInterface`. Call `connect()` to open the connection.
 
 The following request headers are set automatically on every SSE connection:
