@@ -2,7 +2,7 @@
     "name": "hiblaphp/http-client",
     "type": "library",
     "license": "MIT",
-    "minimum-stability": "dev",
+    "minimum-stability": "alpha",
     "prefer-stable": true,
     "autoload": {
         "psr-4": {
@@ -25,16 +25,16 @@
     ],
     "require": {
         "php": "^8.4",
-        "hiblaphp/event-loop":"^1.0@alpha",
-        "hiblaphp/promise": "^1.0@alpha",
-        "hiblaphp/async": "^1.0@alpha",
-        "hiblaphp/cancellation": "^1.0@alpha",
-        "hiblaphp/stream": "^1.0@alpha",
+        "hiblaphp/event-loop":"^1.0",
+        "hiblaphp/promise": "^1.0",
+        "hiblaphp/async": "^1.0",
+        "hiblaphp/cancellation": "^1.0",
+        "hiblaphp/stream": "^1.0",
         "psr/http-message": "^2.0"
     },
     "require-dev": {
         "pestphp/pest": "^4.0",
-        "hiblaphp/http-client-testing": "dev-main",
+        "hiblaphp/http-client-testing": "^1.0",
         "rcalicdan/config-loader": "^1.0",
         "phpstan/phpstan": "^2.1",
         "phpstan/phpstan-strict-rules": "^2.0",
