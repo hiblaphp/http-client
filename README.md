@@ -149,7 +149,7 @@ allows beta releases:
 ```
 
 ```bash
-composer require hiblaphp/socket
+composer require hiblaphp/http-client
 ```
 
 **Requirements:**
