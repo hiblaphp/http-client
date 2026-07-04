@@ -25,6 +25,7 @@ use Hibla\HttpClient\ValueObjects\ClientOptions;
 use Hibla\HttpClient\ValueObjects\ProxyConfig;
 use Hibla\HttpClient\ValueObjects\RetryConfig;
 use Hibla\Promise\Interfaces\PromiseInterface;
+use Hibla\Stream\Interfaces\ReadableStreamInterface;
 use InvalidArgumentException;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UploadedFileInterface;
@@ -365,7 +366,7 @@ class HttpClient implements HttpClientInterface
     /**
      * @inheritDoc
      */
-    public function body(string $content): static
+    public function body(string|StreamInterface|ReadableStreamInterface $content): static
     {
         return $this->withUpdatedRequest(fn (Request $request) => $request->body($content));
     }

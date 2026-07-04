@@ -7,6 +7,7 @@ namespace Hibla\HttpClient\Builders;
 use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
 use Hibla\HttpClient\Interfaces\Handler\TransportOptionsBuilderInterface;
 use Hibla\HttpClient\Uri;
+use Hibla\HttpClient\Utils\HiblaStreamAdapter;
 use Hibla\HttpClient\ValueObjects\ClientOptions;
 use Hibla\HttpClient\ValueObjects\ProxyConfig;
 use Psr\Http\Message\StreamInterface;
@@ -18,6 +19,14 @@ use Psr\Http\Message\StreamInterface;
  */
 class CurlOptionsBuilder implements TransportOptionsBuilderInterface
 {
+    /**
+     * Missing from PHP's ext-curl constants. Used to immediately abort a transfer
+     * from within the CURLOPT_READFUNCTION callback.
+     *
+     * @see https://curl.se/libcurl/c/CURLOPT_READFUNCTION.html
+     */
+    private const int CURL_READFUNC_ABORT = 0x10000000;
+
     /**
      * @return array<int|string, mixed>
      */
@@ -80,7 +89,7 @@ class CurlOptionsBuilder implements TransportOptionsBuilderInterface
                     $existing = [];
                 }
                 $incoming = \is_array($value) ? $value : [];
-                $curlOptions[CURLOPT_HTTPHEADER] = array_merge($existing, $incoming);
+                $curlOptions[CURLOPT_HTTPHEADER] = [...$existing, ...$incoming];
 
                 continue;
             }
@@ -151,7 +160,7 @@ class CurlOptionsBuilder implements TransportOptionsBuilderInterface
             'Connection: keep-alive',
         ];
 
-        $curlOptions[CURLOPT_HTTPHEADER] = array_merge($existingHeaders, $sseHeaders);
+        $curlOptions[CURLOPT_HTTPHEADER] = [...$existingHeaders, ...$sseHeaders];
 
         return $curlOptions;
     }
@@ -273,6 +282,96 @@ class CurlOptionsBuilder implements TransportOptionsBuilderInterface
             if ($tmpFiles !== []) {
                 $options['_tmp_files'] = $tmpFiles;
             }
+        } elseif ($body instanceof HiblaStreamAdapter) {
+            $hiblaStream = $body->hiblaStream;
+            $options['_hibla_stream'] = $hiblaStream;
+
+            $state = new \stdClass();
+            $state->buffer = '';
+            $state->eof = false;
+            $state->ch = null;
+            $state->isCurlPaused = false;
+            $state->hasError = false;
+
+            $options[CURLOPT_UPLOAD] = true;
+
+            // If we don't know the exact file size, we MUST tell cURL to use Chunked encoding,
+            // otherwise strict servers (like AWS S3 or Nginx) will reject it with 411 Length Required.
+            $existingHeaders = $options[CURLOPT_HTTPHEADER] ?? [];
+            $options[CURLOPT_HTTPHEADER] = [
+                ...(\is_array($existingHeaders) ? $existingHeaders : []),
+                'Transfer-Encoding: chunked',
+            ];
+
+            $hiblaStream->on('data', function (string $chunk) use ($state, $hiblaStream): void {
+                if ($state->hasError) {
+                    return;
+                }
+
+                $state->buffer .= $chunk;
+
+                if ($state->isCurlPaused && $state->ch !== null) {
+                    $state->isCurlPaused = false;
+                    @curl_pause($state->ch, CURLPAUSE_CONT);
+                }
+
+                if (\strlen($state->buffer) > 65536) {
+                    $hiblaStream->pause();
+                }
+            });
+
+            $hiblaStream->on('end', function () use ($state): void {
+                $state->eof = true;
+
+                if ($state->isCurlPaused && $state->ch !== null) {
+                    $state->isCurlPaused = false;
+                    @curl_pause($state->ch, CURLPAUSE_CONT);
+                }
+
+                $state->ch = null;
+            });
+
+            $hiblaStream->on('error', function (\Throwable $e) use ($state): void {
+                $state->hasError = true;
+                $state->eof = true;
+
+                if ($state->isCurlPaused && $state->ch !== null) {
+                    $state->isCurlPaused = false;
+                    @curl_pause($state->ch, CURLPAUSE_CONT);
+                }
+
+                $state->ch = null;
+            });
+
+            //Critical: resume the stream to start reading data because the stream is paused by default.
+            $hiblaStream->resume();
+
+            $options[CURLOPT_READFUNCTION] = function ($ch, $fd, int $length) use ($state, $hiblaStream): string|int {
+                $state->ch = $ch;
+
+                if ($state->hasError) {
+                    return self::CURL_READFUNC_ABORT;
+                }
+
+                if ($state->buffer !== '') {
+                    $chunk = substr($state->buffer, 0, $length);
+                    $state->buffer = substr($state->buffer, \strlen($chunk));
+
+                    if (\strlen($state->buffer) < 32768 && ! $state->eof) {
+                        $hiblaStream->resume();
+                    }
+
+                    return $chunk;
+                }
+
+                if ($state->eof) {
+                    return '';
+                }
+
+                $state->isCurlPaused = true;
+
+                return CURL_READFUNC_PAUSE;
+            };
         } elseif ($body->getSize() > 0) {
             $options[CURLOPT_POSTFIELDS] = (string) $body;
         }

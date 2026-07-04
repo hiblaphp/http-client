@@ -46,6 +46,10 @@ class StreamingHandler implements StreamingHandlerInterface
         $tmpFiles = $options['_tmp_files'] ?? [];
         unset($options['_tmp_files']);
 
+        /** @var \Hibla\Stream\Interfaces\ReadableStreamInterface|null $hiblaStream */
+        $hiblaStream = $options['_hibla_stream'] ?? null;
+        unset($options['_hibla_stream']);
+
         $cookieJar = $options['_cookie_jar'] ?? null;
         unset($options['_cookie_jar']);
 
@@ -110,13 +114,14 @@ class StreamingHandler implements StreamingHandlerInterface
         $requestId = Loop::addCurlRequest(
             $url,
             $streamingOptions,
-            function (?string $error) use ($url, $promise, $stream, $tmpFiles): void {
+            function (?string $error) use ($url, $promise, $stream, $tmpFiles, $hiblaStream): void {
 
                 foreach ($tmpFiles as $file) {
                     if (file_exists($file)) {
                         @unlink($file);
                     }
                 }
+                $hiblaStream?->close();
 
                 if ($error !== null) {
                     if (! $promise->isSettled()) {
@@ -133,7 +138,7 @@ class StreamingHandler implements StreamingHandlerInterface
             $streamingResponse->setRequestId($requestId);
         }
 
-        $promise->onCancel(function () use (&$requestId, $stream, $tmpFiles): void {
+        $promise->onCancel(function () use (&$requestId, $stream, $tmpFiles, $hiblaStream): void {
             Loop::cancelCurlRequest($requestId);
 
             $stream->close();
@@ -143,6 +148,7 @@ class StreamingHandler implements StreamingHandlerInterface
                     @unlink($file);
                 }
             }
+            $hiblaStream?->close();
         });
 
         return $promise;
@@ -162,6 +168,10 @@ class StreamingHandler implements StreamingHandlerInterface
 
         $cookieJar = $options['_cookie_jar'] ?? null;
         unset($options['_cookie_jar']);
+
+        /** @var \Hibla\Stream\Interfaces\ReadableStreamInterface|null $hiblaStream */
+        $hiblaStream = $options['_hibla_stream'] ?? null;
+        unset($options['_hibla_stream']);
 
         $file = fopen($destination, 'wb');
         if ($file === false) {
@@ -202,8 +212,9 @@ class StreamingHandler implements StreamingHandlerInterface
         $requestId = Loop::addCurlRequest(
             $url,
             $downloadOptions,
-            function (?string $error, $response, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $promise, $file, $destination, $cookieJar): void {
+            function (?string $error, $response, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $promise, $file, $destination, $cookieJar, $hiblaStream): void {
                 fclose($file);
+                $hiblaStream?->close();
 
                 if ($promise->isCancelled()) {
                     if (file_exists($destination)) {
@@ -254,7 +265,7 @@ class StreamingHandler implements StreamingHandlerInterface
             }
         );
 
-        $promise->onCancel(function () use ($requestId, $file, $destination): void {
+        $promise->onCancel(function () use ($requestId, $file, $destination, $hiblaStream): void {
             Loop::cancelCurlRequest($requestId);
             if (\is_resource($file)) {
                 fclose($file);
@@ -262,6 +273,7 @@ class StreamingHandler implements StreamingHandlerInterface
             if (file_exists($destination)) {
                 unlink($destination);
             }
+            $hiblaStream?->close();
         });
 
         return $promise;
@@ -281,6 +293,10 @@ class StreamingHandler implements StreamingHandlerInterface
 
         $cookieJar = $options['_cookie_jar'] ?? null;
         unset($options['_cookie_jar']);
+
+        /** @var \Hibla\Stream\Interfaces\ReadableStreamInterface|null $hiblaStream */
+        $hiblaStream = $options['_hibla_stream'] ?? null;
+        unset($options['_hibla_stream']);
 
         if (! file_exists($source)) {
             $exception = new HttpStreamException("Cannot open file for reading: {$source}", 0, null, $url);
@@ -339,8 +355,9 @@ class StreamingHandler implements StreamingHandlerInterface
         $requestId = Loop::addCurlRequest(
             $url,
             $uploadOptions,
-            function (?string $error, $response, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $promise, $file, $cookieJar): void {
+            function (?string $error, $response, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $promise, $file, $cookieJar, $hiblaStream): void {
                 fclose($file);
+                $hiblaStream?->close();
 
                 if ($promise->isCancelled()) {
                     return;
@@ -380,11 +397,12 @@ class StreamingHandler implements StreamingHandlerInterface
             }
         );
 
-        $promise->onCancel(function () use ($requestId, $file): void {
+        $promise->onCancel(function () use ($requestId, $file, $hiblaStream): void {
             Loop::cancelCurlRequest($requestId);
             if (\is_resource($file)) {
                 fclose($file);
             }
+            $hiblaStream?->close();
         });
 
         return $promise;

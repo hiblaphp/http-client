@@ -7,8 +7,10 @@ namespace Hibla\HttpClient;
 use Hibla\HttpClient\Interfaces\Cookie\CookieJarInterface;
 use Hibla\HttpClient\Interfaces\RequestInterface;
 use Hibla\HttpClient\Traits\StreamTrait;
+use Hibla\HttpClient\Utils\HiblaStreamAdapter;
 use Hibla\HttpClient\Validators\HeaderValidator;
 use Hibla\HttpClient\ValueObjects\Cookie;
+use Hibla\Stream\Interfaces\ReadableStreamInterface;
 use InvalidArgumentException;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UriInterface;
@@ -104,7 +106,7 @@ class Request extends Message implements RequestInterface
      * @param string $method HTTP method token (case-insensitive, stored upper-case).
      * @param string|UriInterface $uri Request URI or a raw URL string.
      * @param array<string, string|string[]> $headers Header map applied via {@see withHeaders()}.
-     * @param string|StreamInterface|null $body Raw body string or an existing stream.
+     * @param string|StreamInterface|ReadableStreamInterface|null $body Raw body string or an existing stream.
      * @param string $version HTTP protocol version (e.g. "1.1", "2").
      *
      * @throws InvalidArgumentException If the method token, any header name/value, or protocol
@@ -114,7 +116,7 @@ class Request extends Message implements RequestInterface
         string $method = 'GET',
         string|UriInterface $uri = '',
         array $headers = [],
-        string|StreamInterface|null $body = null,
+        string|StreamInterface|ReadableStreamInterface|null $body = null,
         string $version = '2.0',
     ) {
         $this->uri = new Uri('');
@@ -135,11 +137,7 @@ class Request extends Message implements RequestInterface
         }
 
         if ($body !== null) {
-            $this->applyFrom(
-                $body instanceof StreamInterface
-                    ? $this->withBody($body)
-                    : $this->body($body),
-            );
+            $this->applyFrom($this->body($body));
         }
 
         if ($version !== '2.0') {
@@ -425,13 +423,21 @@ class Request extends Message implements RequestInterface
     /**
      * @inheritDoc
      */
-    public function body(string $content): static
+    public function body(string|StreamInterface|ReadableStreamInterface $content): static
     {
-        $stream = $this->createTempStream();
-        $stream->write($content);
-        $stream->rewind();
+        if ($content instanceof ReadableStreamInterface) {
+            return $this->withBody(new HiblaStreamAdapter($content));
+        }
 
-        return $this->withBody($stream);
+        if (\is_string($content)) {
+            $stream = $this->createTempStream();
+            $stream->write($content);
+            $stream->rewind();
+
+            return $this->withBody($stream);
+        }
+
+        return $this->withBody($content);
     }
 
     /**

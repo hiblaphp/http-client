@@ -39,6 +39,10 @@ class RetryHandler implements RetryHandlerInterface
         $tmpFiles = $curlOptions['_tmp_files'] ?? [];
         unset($curlOptions['_tmp_files']);
 
+        /** @var \Hibla\Stream\Interfaces\ReadableStreamInterface|null $hiblaStream */
+        $hiblaStream = $curlOptions['_hibla_stream'] ?? null;
+        unset($curlOptions['_hibla_stream']);
+
         /** @var array<int, mixed> $curlOnlyOptions */
         $curlOnlyOptions = array_filter($curlOptions, 'is_int', ARRAY_FILTER_USE_KEY);
 
@@ -53,26 +57,26 @@ class RetryHandler implements RetryHandlerInterface
             &$executeRequest,
             $cookieJar,
             &$timerId,
-            $tmpFiles
+            $tmpFiles,
+            $hiblaStream
         ) {
             $totalAttempts++;
 
             $requestId = Loop::addCurlRequest(
                 $url,
                 $curlOnlyOptions,
-                function (?string $error, ?string $responseBody, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $retryConfig, $promise, &$attempt, &$totalAttempts, &$executeRequest, $cookieJar, &$timerId, $tmpFiles) {
+                function (?string $error, ?string $responseBody, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $retryConfig, $promise, &$attempt, &$totalAttempts, &$executeRequest, $cookieJar, &$timerId, $tmpFiles, $hiblaStream) {
                     if ($promise->isCancelled()) {
-                        // Clean up temporary multipart files if cancelled mid-flight
                         foreach ($tmpFiles as $file) {
                             if (file_exists($file)) {
                                 @unlink($file);
                             }
                         }
+                        $hiblaStream?->close();
 
                         return;
                     }
 
-                    // Cancel any pending timer if we're about to resolve/reject
                     if ($timerId !== null) {
                         Loop::cancelTimer($timerId);
                         $timerId = null;
@@ -93,12 +97,12 @@ class RetryHandler implements RetryHandlerInterface
                         return;
                     }
 
-                    // We reached the final resolution (success or final failure). Clean up tmp files.
                     foreach ($tmpFiles as $file) {
                         if (file_exists($file)) {
                             @unlink($file);
                         }
                     }
+                    $hiblaStream?->close();
 
                     if ($error !== null) {
                         $promise->reject(new NetworkException(
@@ -131,7 +135,7 @@ class RetryHandler implements RetryHandlerInterface
 
         $executeRequest();
 
-        $promise->onCancel(function () use (&$requestId, &$timerId, $tmpFiles) {
+        $promise->onCancel(function () use (&$requestId, &$timerId, $tmpFiles, $hiblaStream) {
             if ($requestId !== null) {
                 Loop::cancelCurlRequest($requestId);
             }
@@ -140,12 +144,12 @@ class RetryHandler implements RetryHandlerInterface
                 Loop::cancelTimer($timerId);
             }
 
-            // Clean up temporary multipart files on cancellation
             foreach ($tmpFiles as $file) {
                 if (file_exists($file)) {
                     @unlink($file);
                 }
             }
+            $hiblaStream?->close();
         });
 
         return $promise;

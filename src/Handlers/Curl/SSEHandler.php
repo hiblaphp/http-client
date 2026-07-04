@@ -209,6 +209,10 @@ class SSEHandler implements SSEHandlerInterface
         $tmpFiles = (array) ($options['_tmp_files'] ?? []);
         unset($options['_tmp_files']);
 
+        /** @var \Hibla\Stream\Interfaces\ReadableStreamInterface|null $hiblaStream */
+        $hiblaStream = $options['_hibla_stream'] ?? null;
+        unset($options['_hibla_stream']);
+
         $cookieJar = $options['_cookie_jar'] ?? null;
         unset($options['_cookie_jar']);
 
@@ -296,13 +300,14 @@ class SSEHandler implements SSEHandlerInterface
         $state->requestId = Loop::addCurlRequest(
             $url,
             $sseOptions,
-            function (?string $error, ?string $response, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $promise, $onError, $tmpFiles, &$stream, &$sseResponse) {
+            function (?string $error, ?string $response, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $promise, $onError, $tmpFiles, $hiblaStream, &$stream, &$sseResponse) {
 
                 foreach ($tmpFiles as $file) {
                     if (file_exists($file)) {
                         @unlink($file);
                     }
                 }
+                $hiblaStream?->close();
 
                 if ($promise->isSettled()) {
                     if ($onError !== null && $error !== null) {
@@ -342,7 +347,7 @@ class SSEHandler implements SSEHandlerInterface
             $sseResponse->setRequestId($state->requestId);
         }
 
-        $promise->onCancel(function () use ($state, &$sseResponse, $tmpFiles): void {
+        $promise->onCancel(function () use ($state, &$sseResponse, $tmpFiles, $hiblaStream): void {
             if (\is_string($state->requestId)) {
                 Loop::cancelCurlRequest($state->requestId);
             }
@@ -354,6 +359,7 @@ class SSEHandler implements SSEHandlerInterface
                     @unlink($file);
                 }
             }
+            $hiblaStream?->close();
         });
 
         return $promise;

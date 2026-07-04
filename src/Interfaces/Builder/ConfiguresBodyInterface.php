@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Hibla\HttpClient\Interfaces\Builder;
 
+use Hibla\Stream\Interfaces\ReadableStreamInterface;
+use Psr\Http\Message\StreamInterface;
+
 /**
  * Fluent interface for setting the request body.
  *
@@ -15,12 +18,15 @@ namespace Hibla\HttpClient\Interfaces\Builder;
 interface ConfiguresBodyInterface
 {
     /**
-     * Set the request body from a raw string.
+     * Set the request body.
      *
-     * Does not modify the Content-Type header — callers are responsible
+     * Accepts a raw string, a standard PSR-7 StreamInterface, or a native
+     * Hibla async ReadableStreamInterface for zero-memory streaming uploads.
+     *
+     * Does not modify the Content-Type header and callers are responsible
      * for setting an appropriate type via contentType() when needed.
      */
-    public function body(string $content): static;
+    public function body(string|StreamInterface|ReadableStreamInterface $content): static;
 
     /**
      * Set the request body as XML.

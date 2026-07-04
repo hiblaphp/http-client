@@ -44,6 +44,10 @@ class RequestExecutorHandler implements RequestExecutorHandlerInterface
         $tmpFiles = $curlOptions['_tmp_files'] ?? [];
         unset($curlOptions['_tmp_files']);
 
+        /** @var \Hibla\Stream\Interfaces\ReadableStreamInterface|null $hiblaStream */
+        $hiblaStream = $curlOptions['_hibla_stream'] ?? null;
+        unset($curlOptions['_hibla_stream']);
+
         /** @var array<int, mixed> $curlOnlyOptions */
         $curlOnlyOptions = array_filter($curlOptions, 'is_int', ARRAY_FILTER_USE_KEY);
 
@@ -53,7 +57,7 @@ class RequestExecutorHandler implements RequestExecutorHandlerInterface
         $requestId = Loop::addCurlRequest(
             $url,
             $curlOnlyOptions,
-            function (?string $error, ?string $response, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $promise, $cookieJar, $timeout, $connectTimeout, $tmpFiles) {
+            function (?string $error, ?string $response, ?int $httpCode, array $headers = [], ?string $httpVersion = null) use ($url, $promise, $cookieJar, $timeout, $connectTimeout, $tmpFiles, $hiblaStream) {
 
                 // Clean up temporary multipart files
                 foreach ($tmpFiles as $file) {
@@ -61,6 +65,7 @@ class RequestExecutorHandler implements RequestExecutorHandlerInterface
                         @unlink($file);
                     }
                 }
+                $hiblaStream?->close();
 
                 if ($promise->isCancelled()) {
                     return;
@@ -89,15 +94,15 @@ class RequestExecutorHandler implements RequestExecutorHandlerInterface
             }
         );
 
-        $promise->onCancel(function () use ($requestId, $tmpFiles) {
+        $promise->onCancel(function () use ($requestId, $tmpFiles, $hiblaStream) {
             Loop::cancelCurlRequest($requestId);
 
-            // Clean up temporary multipart files on cancellation
             foreach ($tmpFiles as $file) {
                 if (file_exists($file)) {
                     @unlink($file);
                 }
             }
+            $hiblaStream?->close();
         });
 
         return $promise;
