@@ -629,7 +629,7 @@ $response = await(
 
 For ultimate memory efficiency, you can pass an asynchronous, non-blocking `ReadableStreamInterface` (such as a `ThroughStream`) directly as the request body. The client automatically negotiates `Transfer-Encoding: chunked`, intercepts stream pauses/resumes (backpressure), and safely pipes data to cURL in real-time as your stream generates it.
 
-This keeps memory usage completely flat ($O(1)$), making it ideal for streaming real-time log exports, dynamic ZIP compression on-the-fly, or massive API proxy tunnels:
+This keeps memory usage completely flat (O(1)), making it ideal for streaming real-time log exports, dynamic ZIP compression on-the-fly, S3 stream, or massive API proxy tunnels:
 
 ```php
 use Hibla\Stream\ThroughStream;
