@@ -286,16 +286,17 @@ class CurlOptionsBuilder implements TransportOptionsBuilderInterface
             $hiblaStream = $body->hiblaStream;
             $options['_hibla_stream'] = $hiblaStream;
 
-            $state = new \stdClass();
-            $state->buffer = '';
-            $state->eof = false;
-            $state->ch = null;
-            $state->isCurlPaused = false;
-            $state->hasError = false;
+            $state = new class() {
+                public string $buffer = '';
+                public bool $eof = false;
+                public ?\CurlHandle $ch = null;
+                public bool $isCurlPaused = false;
+                public bool $hasError = false;
+            };
 
             $options[CURLOPT_UPLOAD] = true;
 
-            // If we don't know the exact file size, we MUST tell cURL to use Chunked encoding,
+            // If the client don't know the exact file size, it MUST tell cURL to use Chunked encoding,
             // otherwise strict servers (like AWS S3 or Nginx) will reject it with 411 Length Required.
             $existingHeaders = $options[CURLOPT_HTTPHEADER] ?? [];
             $options[CURLOPT_HTTPHEADER] = [
@@ -346,7 +347,7 @@ class CurlOptionsBuilder implements TransportOptionsBuilderInterface
             //Critical: resume the stream to start reading data because the stream is paused by default.
             $hiblaStream->resume();
 
-            $options[CURLOPT_READFUNCTION] = function ($ch, $fd, int $length) use ($state, $hiblaStream): string|int {
+            $options[CURLOPT_READFUNCTION] = function (\CurlHandle $ch, mixed $fd, int $length) use ($state, $hiblaStream): string|int {
                 $state->ch = $ch;
 
                 if ($state->hasError) {

@@ -41,6 +41,7 @@ A high-performance Psr7 Async Compatible HTTP client with a clean chainable API,
   - [Form data](#form-data)
   - [Multipart and file attachments](#multipart-and-file-attachments)
   - [Raw body](#raw-body)
+  - [Streaming raw bodies (ReadableStreamInterface)](#streaming-raw-bodies-readablestreaminterface)
   - [XML](#xml)
 
 **Working with responses**
@@ -501,8 +502,6 @@ Http::client()->withBasicAuth('username', 'password');
 Http::client()->withDigestAuth('username', 'password');
 ```
 
-Here is the updated documentation for the HTTP versioning and fallback behavior.
-
 ---
 
 ### HTTP Version & Negotiation
@@ -541,7 +540,6 @@ if ($response->getHttpVersion() !== '3') {
     // Connection fell back to a lower protocol
 }
 ```
-
 
 > Note: HTTP/3 support in PHP requires a very recent version of `ext-curl` and a cURL binary compiled with HTTP/3 support. If these requirements are not met, the client ensures your application remains functional by utilizing the HTTP/1.1 fallback path automatically.
 
@@ -625,6 +623,38 @@ $response = await(
         ->contentType('application/json')
         ->post('https://api.example.com/data')
 );
+```
+
+#### Streaming raw bodies (ReadableStreamInterface)
+
+For ultimate memory efficiency, you can pass an asynchronous, non-blocking `ReadableStreamInterface` (such as a `ThroughStream`) directly as the request body. The client automatically negotiates `Transfer-Encoding: chunked`, intercepts stream pauses/resumes (backpressure), and safely pipes data to cURL in real-time as your stream generates it.
+
+This keeps memory usage completely flat ($O(1)$), making it ideal for streaming real-time log exports, dynamic ZIP compression on-the-fly, or massive API proxy tunnels:
+
+```php
+use Hibla\Stream\ThroughStream;
+use Hibla\HttpClient\Http;
+use Hibla\EventLoop\Loop;
+use function Hibla\await;
+
+$stream = new ThroughStream();
+
+// Push data to the stream asynchronously over time
+Loop::addTimer(0.1, fn() => $stream->write("Part 1: Initializing...\n"));
+Loop::addTimer(0.2, fn() => $stream->write("Part 2: Active processing...\n"));
+Loop::addTimer(0.3, function () use ($stream) {
+    $stream->write("Part 3: Complete!\n");
+    $stream->end(); // Closing the stream completes the HTTP upload
+});
+
+// Pass the stream directly to body(). It manages backpressure and cURL pausing under the hood.
+$response = await(
+    Http::client()
+        ->body($stream)
+        ->post('https://api.example.com/upload')
+);
+
+echo $response->status(); // 200
 ```
 
 #### XML
@@ -1090,7 +1120,7 @@ Http::client()->cookieWithAttributes('session', 'abc123', [
 ]);
 ```
 
-If no jar is active when `cookieWithAttributes()` is called, an in-memory `CookieJar` is initialised automatically.
+if no jar is active when `cookieWithAttributes()` is called, an in-memory `CookieJar` is initialised automatically.
 
 ### Clearing cookies
 
@@ -1871,7 +1901,7 @@ These variants wait for every request to complete regardless of success or failu
 $results = await(Promise::concurrentSettled($tasks, concurrency: 5));
 
 foreach ($results as $result) {
-    if ($result->isFulfilled()) {
+    if ($result->isFileFilled()) {
         echo "Success: " . $result->value->status();
     } elseif ($result->isRejected()) {
         echo "Error: " . $result->reason->getMessage();
@@ -2019,8 +2049,8 @@ See the [hiblaphp/http-client-testing](https://github.com/hiblaphp/http-client-t
 | `Http::head(string $url)` | HEAD request |
 | `Http::options(string $url)` | OPTIONS request |
 | `Http::stream(string $url, ?callable $onChunk)` | Streaming response |
-| `Http::download(string $url, string $dest, ?callable $onProgress)` | File download |
-| `Http::upload(string $url, string $src, ?callable $onProgress)` | File upload |
+| `Http::download(string $url, string $dest, ...)` | Download file to disk |
+| `Http::upload(string $url, string $src, ...)` | Upload file from disk |
 | `Http::sse(string $url)` | SSE builder |
 
 ### `RequestInterface`
@@ -2065,7 +2095,7 @@ The interface representing an in-flight request within the interceptor pipeline.
 |--------|-------------|-------------|
 | `getBody()` | `StreamInterface` | Gets the body of the message. |
 | `withBody(StreamInterface $body)` | `static` | Returns a clone with the specified message body. |
-| `body(string $content)` | `static` | Returns a clone with the raw string body. |
+| `body(string\|StreamInterface\|ReadableStreamInterface $content)` | `static` | Returns a clone with the raw body, supporting async stream uploads. |
 | `withJson(array $data)` | `static` | Encodes data to JSON and sets the `Content-Type`. |
 | `withForm(array $data)` | `static` | URL-encodes data and sets the `Content-Type`. |
 | `withXml(string\|SimpleXMLElement $xml)` | `static` | Sets the body as XML and sets the `Content-Type`. |
@@ -2088,7 +2118,6 @@ The interface representing an in-flight request within the interceptor pipeline.
 | `getProtocolVersion()` | `string` | Returns the HTTP protocol version (e.g., `'1.1'`). |
 | `withProtocolVersion(string $v)` | `static` | Returns a clone with the specified protocol version. |
 
-
 ---
 
 ### Builder methods
@@ -2108,7 +2137,7 @@ The interface representing an in-flight request within the interceptor pipeline.
 | `withToken(string $token, string $type)` | Bearer/custom token auth |
 | `withBasicAuth(string $u, string $p)` | HTTP Basic auth |
 | `withDigestAuth(string $u, string $p)` | HTTP Digest auth |
-| `body(string $content)` | Raw body |
+| `body(string\|StreamInterface\|ReadableStreamInterface $content)` | Raw body, supporting async streams |
 | `withJson(array $data)` | JSON body |
 | `withForm(array $data)` | Form-encoded body |
 | `withMultipart(array $data)` | Multipart body |

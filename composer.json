@@ -39,7 +39,8 @@
         "phpstan/phpstan": "^2.1",
         "phpstan/phpstan-strict-rules": "^2.0",
         "laravel/pint": "^1.25",
-        "mockery/mockery": "^1.6"
+        "mockery/mockery": "^1.6",
+        "hiblaphp/http-server": "^1.0@beta"
     },
     "suggest": {
         "hiblaphp/http-client-testing": "Install this package to use Http::startTesting() for advanced mocking, network simulation, and testing assertions."
