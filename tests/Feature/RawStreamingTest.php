@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+namespace Tests\Feature;
+
 use Hibla\EventLoop\Loop;
 use Hibla\HttpClient\Http;
 use Hibla\HttpClient\StreamingResponse;
@@ -9,11 +11,15 @@ use Tests\Fixtures\HttpBin;
 
 use function Hibla\await;
 
-describe('Streaming Integration (Push and Pull)', function () {
+beforeEach(function () {
+    HttpBin::skipIfUnreachable();
+});
 
-    beforeEach(function () {
-        HttpBin::skipIfUnreachable();
-    });
+afterEach(function () {
+    Loop::reset();
+});
+
+describe('Streaming Integration (Push and Pull)', function () {
 
     describe('Push Approach (Callbacks)', function () {
 
@@ -130,7 +136,7 @@ describe('Streaming Integration (Push and Pull)', function () {
 
             try {
                 $promise->wait();
-            } catch (Throwable $e) {
+            } catch (\Throwable $e) {
                 $exceptionThrown = true;
             }
 
@@ -142,11 +148,14 @@ describe('Streaming Integration (Push and Pull)', function () {
             $promise = Http::client()->stream(
                 HttpBin::url('/stream/3'),
                 function (string $chunk) {
-                    throw new RuntimeException('User callback failed');
+                    throw new \RuntimeException('User callback failed');
                 }
             );
 
-            expect(fn () => $promise->wait())->toThrow(RuntimeException::class, 'User callback failed');
+            expect(function () use ($promise) {
+                $response = $promise->wait();
+                $response->readAllAsync()->wait();
+            })->toThrow(\RuntimeException::class, 'User callback failed');
         });
     });
 
@@ -211,7 +220,7 @@ describe('Streaming Integration (Push and Pull)', function () {
         it('safely handles readAllAsync() on a large payload', function () {
             $response = await(Http::client()->stream(HttpBin::url('/bytes/1048576'))); // 1MB
 
-            $data = await($response->readAllAsync());
+            $data = await($response->readAllAsync(1048576 * 2));
             expect(strlen($data))->toBe(1048576);
         });
 

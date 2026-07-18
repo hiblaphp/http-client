@@ -9,6 +9,8 @@ use Hibla\HttpClient\Interfaces\StreamingResponseInterface;
 use Hibla\HttpClient\Interfaces\StreamInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
+use function Hibla\await;
+
 /**
  * A streaming HTTP response whose body is consumed incrementally.
  *
@@ -57,7 +59,8 @@ class StreamingResponse extends Response implements StreamingResponseInterface
             $this->stream->rewind();
         }
 
-        $content = $this->stream->getContents();
+        $content = await($this->stream->readAllAsync(PHP_INT_MAX));
+        
         $this->streamConsumed = true;
         $this->body = Stream::fromString($content);
 
